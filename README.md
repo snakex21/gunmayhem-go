@@ -98,6 +98,8 @@ Files are stored in the operating system user config directory under `GunMayhemR
 
 See [ASSETS.md](ASSETS.md) for the runtime/reference split. The Go runtime reads only `assets/`; `source/` is kept separate for 1:1 reverse-engineering work.
 
+The developed `main` branch also has an experimental host-authoritative two-player network mode. See [MULTIPLAYER.md](MULTIPLAYER.md) for `--host`, `--port` and `--join` usage.
+
 ## Development rule
 
 When behavior differs from the original, the original Flash source wins.

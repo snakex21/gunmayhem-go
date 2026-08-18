@@ -5,10 +5,22 @@ import (
 	"math/rand"
 )
 
+type PlayerInputState struct {
+	Left    bool
+	Right   bool
+	Up      bool
+	Down    bool
+	Shoot   bool
+	Grenade bool
+}
+
 type Player struct {
 	ID       int
 	Name     string
 	Controls Controls
+
+	RemoteControlled bool
+	RemoteInput      PlayerInputState
 
 	X, Y       float64
 	VX, VY     float64
@@ -133,10 +145,10 @@ type Player struct {
 	DamageMulti      float64
 	FirepowerMulti   float64
 
-	Team             int
-	OwnerPlayerID    int
-	IsDouble         bool
-	DoubleTime       int
+	Team                   int
+	OwnerPlayerID          int
+	IsDouble               bool
+	DoubleTime             int
 	PersistentDouble       bool
 	WantsDouble            bool
 	DoubleSpawnPositionSet bool
@@ -195,6 +207,9 @@ func NewPlayer(id int, m Map) *Player {
 }
 
 func (p *Player) movementInput() (left, right, up, down bool) {
+	if p.RemoteControlled {
+		return p.RemoteInput.Left, p.RemoteInput.Right, p.RemoteInput.Up, p.RemoteInput.Down
+	}
 	if p.AI {
 		return p.AILeft, p.AIRight, p.AIUp, p.AIDown
 	}
@@ -206,6 +221,9 @@ func (p *Player) movementInput() (left, right, up, down bool) {
 }
 
 func (p *Player) shootPressed() bool {
+	if p.RemoteControlled {
+		return p.RemoteInput.Shoot
+	}
 	if p.AI {
 		return p.AIShoot
 	}
@@ -213,6 +231,9 @@ func (p *Player) shootPressed() bool {
 }
 
 func (p *Player) grenadePressed() bool {
+	if p.RemoteControlled {
+		return p.RemoteInput.Grenade
+	}
 	if p.AI {
 		return p.AIGrenade
 	}

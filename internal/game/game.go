@@ -138,6 +138,8 @@ type Game struct {
 	windowedX           int
 	windowedY           int
 	windowPositionSaved bool
+
+	netplay *netplaySession
 }
 
 func New() *Game {
@@ -200,6 +202,22 @@ func New() *Game {
 }
 
 func (g *Game) Update() error {
+	if g.netplay != nil && g.netplay.mode == netplayClient {
+		if inpututil.IsKeyJustPressed(ebiten.KeyF11) {
+			if !ebiten.IsFullscreen() {
+				g.captureWindowedState()
+			}
+			ebiten.SetFullscreen(!ebiten.IsFullscreen())
+			_ = g.saveConfig()
+		}
+		return g.updateNetClient()
+	}
+	if g.netplay != nil && g.netplay.mode == netplayHost {
+		g.applyHostRemoteInput()
+		defer func() {
+			g.netplay.queueState(g.makeNetSnapshot())
+		}()
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyF11) {
 		if !ebiten.IsFullscreen() {
 			g.captureWindowedState()
@@ -674,6 +692,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.syncSourceMusic()
 	}
 	screen.Fill(color.RGBA{R: 30, G: 35, B: 41, A: 255})
+	if g.netplay != nil && g.netplay.mode == netplayClient && (!g.netplay.hasState.Load() || g.screen != screenGameplay && g.screen != screenPostGame) {
+		ebitenutil.DebugPrintAt(screen, "MULTIPLAYER", 20, 20)
+		ebitenutil.DebugPrintAt(screen, g.NetplayStatus(), 20, 42)
+		ebitenutil.DebugPrintAt(screen, "Waiting for the host to start a game...", 20, 64)
+		return
+	}
 	if g.screen != screenGameplay {
 		g.drawMenu(screen)
 		g.drawGlobalFade(screen)
