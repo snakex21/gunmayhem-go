@@ -1,0 +1,25 @@
+Gun Mayhem Go - Developer Mode
+================================
+
+The normal game starts with developer tools disabled.
+
+To enable them, run:
+
+    GunMayhem.exe --dev
+
+You can also use:
+
+    GunMayhem.exe --debug
+
+Developer shortcuts:
+
+    F1  - toggle debug/collision overlay
+    F2  - next map
+    F3  - previous map
+    F4  - toggle Player 2 AI
+    R   - reset the current arena
+    F10 - unlock all campaign levels for testing
+
+F11 fullscreen works in both normal and developer mode.
+
+Developer mode is intended for testing and porting. It is disabled during normal startup so the release behaves like the regular game.
