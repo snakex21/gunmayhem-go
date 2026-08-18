@@ -117,6 +117,7 @@ type Game struct {
 	// GM2 has 16 missions and 7 timed challenges.
 	gm2CampaignLevels [16]int
 	gm2Challenges     [7]GM2ChallengeProgress
+	campaignSetGM2    bool
 
 	// arenagamedata2 defaults used by the source Options screen.
 	musicOn                 bool
@@ -131,6 +132,7 @@ type Game struct {
 
 	gunLibrarySelected int
 	gunLibraryPressed  int
+	gunLibraryGM2      bool
 
 	gototest        bool
 	testGunNumber   int
@@ -309,7 +311,7 @@ func (g *Game) Update() error {
 		if p.DeathSerial != g.seenDeaths[p.ID] {
 			g.seenDeaths[p.ID] = p.DeathSerial
 			g.playRandomDeathSound()
-			if g.campaignMode && g.campaignLevel == 4 && !p.AI && !p.IsDouble {
+			if g.campaignMode && !g.campaignSetGM2 && g.campaignLevel == 4 && !p.AI && !p.IsDouble {
 				// DefineSprite_697.gotkilled(): a human death in level 4 destroys
 				// Pylon Man's currently spawned helper named `double`.
 				g.killCampaignDouble()
@@ -545,7 +547,7 @@ func (g *Game) spawnRequestedDoubles() {
 
 		d := NewPlayer(g.nextEntityID, g.arena)
 		g.nextEntityID++
-		campaignDouble := g.campaignMode && g.campaignLevel == 4 && owner.AISpecial == sourceAISpecialDoubleSpawner
+		campaignDouble := g.campaignMode && !g.campaignSetGM2 && g.campaignLevel == 4 && owner.AISpecial == sourceAISpecialDoubleSpawner
 		spawnX, spawnY := owner.X, owner.Y
 		if campaignDouble && owner.DoubleSpawnPositionSet {
 			spawnX, spawnY = owner.DoubleSpawnX, owner.DoubleSpawnY

@@ -27,7 +27,7 @@ func (g *Game) playerNameByID(id int) string {
 }
 
 func (g *Game) appendSourceKillFeed(victim *Player) {
-	if victim == nil || g.GameMode == SourceGameModeSurvival || (g.campaignMode && g.campaignLevel == 1) {
+	if victim == nil || g.GameMode == SourceGameModeSurvival || (g.campaignMode && !g.campaignSetGM2 && g.campaignLevel == 1) {
 		return
 	}
 	killer := "none"

@@ -28,11 +28,21 @@ func (g *Game) enterCampaignMenu() {
 	g.campaignPhase = 1
 	g.campaignDetailAlpha = 0
 	g.campaignPressed = campaignHitNone
-	// Symbol948 startup unlock propagation. Level2 is available from a fresh
-	// SharedObject, so propagation starts at completed level2 -> level3.
-	for i := 1; i < 9; i++ {
-		if g.campaignLevels[i] == 2 && g.campaignLevels[i+1] == 0 {
-			g.campaignLevels[i+1] = 1
+	// Both Flash campaigns expose missions 1 and 2 from a fresh save and then
+	// propagate completion forward. Keep the two progress arrays independent.
+	if g.campaignSetGM2 {
+		for i := 1; i < 15; i++ {
+			if g.gm2CampaignLevels[i] == 2 && g.gm2CampaignLevels[i+1] == 0 {
+				g.gm2CampaignLevels[i+1] = 1
+			}
+		}
+	} else {
+		// Symbol948 startup unlock propagation. Level2 is available from a fresh
+		// SharedObject, so propagation starts at completed level2 -> level3.
+		for i := 1; i < 9; i++ {
+			if g.campaignLevels[i] == 2 && g.campaignLevels[i+1] == 0 {
+				g.campaignLevels[i+1] = 1
+			}
 		}
 	}
 	if g.campaignSliderX > 0 {
@@ -69,6 +79,36 @@ func (g *Game) unlockAllCampaignLevelsCheat() {
 }
 
 func (g *Game) updateCampaignMenu() {
+	if g.campaignSetGM2 {
+		g.updateGM2CampaignMenu()
+		return
+	}
+
+	// Developed branch selector. It lives above the source GM1 campaign and is
+	// only active on the mission-slider phase so it cannot interfere with the
+	// original player/detail controls.
+	if g.campaignPhase == 1 {
+		mx, my := ebiten.CursorPosition()
+		tabHit := campaignSetHitAt(float64(mx), float64(my))
+		if tabHit != campaignHitNone {
+			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+				g.campaignPressed = tabHit
+				return
+			}
+			if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+				pressed := g.campaignPressed
+				g.campaignPressed = campaignHitNone
+				if pressed == campaignHitSetGM2 && tabHit == campaignHitSetGM2 {
+					g.campaignSetGM2 = true
+					g.campaignLevel = 0
+					g.campaignSliderVX = 0
+					g.playSourceSFX("menu.wav", false)
+				}
+				return
+			}
+		}
+	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyF10) {
 		g.unlockAllCampaignLevelsCheat()
 		g.playSourceSFX("menu.wav", false)
@@ -213,11 +253,16 @@ func (g *Game) updateCampaignUnlockPopup() {
 }
 
 func (g *Game) drawCampaignMenu(screen *ebiten.Image) {
+	if g.campaignSetGM2 {
+		g.drawGM2CampaignMenu(screen)
+		return
+	}
 	// Recompose Symbol948 instead of using its flattened FFDec PNG. The flat
 	// export bakes show_unlock into the image even though ActionScript removes
 	// that movie clip whenever root.showunlocks==0.
 	drawSourceRaster(screen, g.assets.CampaignBase, 0, 0, 1, 1, 1)
 	drawSourceMenuText(screen, "CAMPAIGN", menuFontCondensed, 42.4, color.Black, 34, 27.75)
+	g.drawCampaignSetTabs(screen)
 	drawSourceRaster(screen, g.assets.CampaignBack, 27, 525.15, 1, 1, 1)
 	drawSourceMenuText(screen, "Back", menuFontCondensed, 26.5, color.Black, 74.05, 536.35)
 
@@ -267,6 +312,7 @@ func (g *Game) drawCampaignSlider(screen *ebiten.Image, alpha float64) {
 }
 
 func (g *Game) startCampaignMission() {
+	g.campaignSetGM2 = false
 	level := g.campaignLevel
 	if level < 1 || level > 10 || g.fadeActive {
 		return

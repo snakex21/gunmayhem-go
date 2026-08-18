@@ -140,7 +140,7 @@ func (b gunLibraryButton) contains(x, y float64) bool {
 }
 
 func isGunLibraryGunNumber(gun int) bool {
-	return (gun >= 1 && gun <= 6) || (gun >= 10 && gun <= 66)
+	return (gun >= 1 && gun <= 6) || (gun >= 10 && gun <= 86)
 }
 
 func (g *Game) gunUnlocked(gun int) bool {
@@ -149,6 +149,9 @@ func (g *Game) gunUnlocked(gun int) bool {
 	// always selectable. Campaign unlocks only gate guns 10..66.
 	if gun >= 1 && gun <= 6 {
 		return true
+	}
+	if gun >= 67 && gun <= 86 {
+		return gm2WeaponAssetsAvailable()
 	}
 	idx := gun - 10
 	return idx >= 0 && idx < len(g.campaignGuns) && g.campaignGuns[idx]
@@ -175,7 +178,14 @@ func (g *Game) updateGunLibraryMenu() {
 	// Symbol1197 is at (458.1,457.6), testbtn local (320.05,65.55).
 	testRect := sourceMenuHitRect(Rect{X: 0, Y: 0, W: 76.5, H: 82.4}, 778.15, 523.15, 1, 0.484222412109375)
 
-	hit := g.gunLibraryHitAt(x, y)
+	hit := gunLibrarySetHitAt(x, y)
+	if hit == 0 {
+		if g.gunLibraryGM2 {
+			hit = gm2GunLibraryHitAt(x, y)
+		} else {
+			hit = g.gunLibraryHitAt(x, y)
+		}
+	}
 	const hitBack = -1
 	const hitTest = -2
 	if backRect.Contains(x, y) {
@@ -199,8 +209,20 @@ func (g *Game) updateGunLibraryMenu() {
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 	case hitTest:
 		g.startGunLibraryTest()
+	case gunLibraryHitSetGM1:
+		g.gunLibraryGM2 = false
+		if g.gunLibrarySelected > 66 {
+			g.gunLibrarySelected = 0
+		}
+	case gunLibraryHitSetGM2:
+		if gm2WeaponAssetsAvailable() {
+			g.gunLibraryGM2 = true
+			if g.gunLibrarySelected < 67 || g.gunLibrarySelected > 86 {
+				g.gunLibrarySelected = 67
+			}
+		}
 	default:
-		if isGunLibraryGunNumber(pressed) {
+		if isGunLibraryGunNumber(pressed) && g.gunUnlocked(pressed) {
 			g.gunLibrarySelected = pressed
 		}
 	}
@@ -317,6 +339,11 @@ func (g *Game) drawGunLibraryButtons(screen *ebiten.Image) {
 
 func (g *Game) drawGunLibraryInteractions(screen *ebiten.Image) {
 	g.assets.EnsureGunLibrary()
+	g.drawGunLibrarySetTabs(screen)
+	if g.gunLibraryGM2 {
+		g.drawGM2GunLibrary(screen)
+		return
+	}
 	g.drawGunLibraryButtons(screen)
 
 	frame := g.gunLibrarySelected
@@ -424,7 +451,7 @@ func (g *Game) updateTestGunPickup() {
 }
 
 func (g *Game) drawTestGunPickup(screen *ebiten.Image) {
-	if !g.gototest || g.testGunDisabled || g.testGunNumber < 10 || g.testGunNumber > 66 {
+	if !g.gototest || g.testGunDisabled || g.testGunNumber < 10 || g.testGunNumber > 86 {
 		return
 	}
 	// Source Symbol1443 frame2: persistent pedestal/base plus dropgun at

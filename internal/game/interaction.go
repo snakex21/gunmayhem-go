@@ -85,9 +85,15 @@ func (g *Game) finishSourceGameBeforeScreenChange() {
 				break
 			}
 		}
-		if playerWin && g.campaignLevel >= 1 && g.campaignLevel <= 10 {
-			g.completeCampaignLevel(g.campaignLevel)
-			g.campaignShowUnlock = g.campaignLevel
+		if playerWin {
+			if g.campaignSetGM2 {
+				if g.campaignLevel >= 1 && g.campaignLevel <= 16 {
+					g.completeGM2CampaignLevel(g.campaignLevel)
+				}
+			} else if g.campaignLevel >= 1 && g.campaignLevel <= 10 {
+				g.completeCampaignLevel(g.campaignLevel)
+				g.campaignShowUnlock = g.campaignLevel
+			}
 		}
 	}
 	g.paused = false
@@ -246,7 +252,7 @@ func (g *Game) updateMatchInteractions() {
 	}
 
 	// Player/AI source clips handle the last survivor differently in campaign.
-	if !g.TeamGame && !g.teamGameWin && !g.GameWin && len(active) == 1 && g.GameMode != SourceGameModeSurvival {
+	if !g.TeamGame && !g.teamGameWin && !g.GameWin && len(active) == 1 && g.GameMode != SourceGameModeSurvival && !(g.campaignSetGM2 && g.campaignLevel == 1) {
 		winner := active[0]
 		if g.campaignMode && winner.AI {
 			// playerAI: campaign loss sets teamgamewin and attaches fx_campaignlose.
