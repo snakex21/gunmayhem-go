@@ -1,0 +1,53 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1410" itemID="6a368e80-0000024c" lastModified="1781960269">
+     <timeline>
+          <DOMTimeline name="Symbol 1410">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#d23c9b">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>this.onEnterFrame = function()
+{
+   _parent.swaptime += 1;
+   if(_parent.swaptime &gt;= _parent.swaptotal)
+   {
+      if(_parent.swaptotal &gt;= 10)
+      {
+         _parent.randgun = dropgun._currentframe;
+         delete this.onEnterFrame;
+      }
+      else
+      {
+         dropgun.gotoAndStop(random(57) + 10);
+         _parent.randgun = dropgun._currentframe * -1;
+      }
+      _parent.swaptime = 0;
+      _parent.swaptotal *= 1.25;
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#7550db" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 595" name="dropgun" centerPoint3DX="78.45" centerPoint3DY="87.8">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0" a="0.79998779296875" d="0.79998779296875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

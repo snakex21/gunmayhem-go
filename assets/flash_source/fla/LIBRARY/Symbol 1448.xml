@@ -1,0 +1,55 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1448" itemID="6a368e80-00000260" lastModified="1781960269">
+     <timeline>
+          <DOMTimeline name="Symbol 1448">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#bdc6ab">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>fps = 40;
+starttime = new Date();
+lasttime = starttime.getMilliseconds();
+counter = 0;
+this.onEnterFrame = function()
+{
+   counter += 1;
+   if(counter &gt;= 10)
+   {
+      counter = 0;
+      time = new Date();
+      timepassed = time.getMilliseconds() - lasttime &lt; 0 ? 1000 + (time.getMilliseconds() - lasttime) : time.getMilliseconds() - lasttime;
+      fps = Math.round(10000 / timepassed);
+      lasttime = time.getMilliseconds();
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#34d7d0" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText antiAliasSharpness="0" antiAliasThickness="0" width="26.0" height="21.45" renderAsHTML="true" isSelectable="false" variableName="fps">
+                                             <matrix>
+                                                  <Matrix tx="2.0" ty="2.0" a="1.0" d="0.9980316162109375"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>88</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="right" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="19" bitmapSize="380" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

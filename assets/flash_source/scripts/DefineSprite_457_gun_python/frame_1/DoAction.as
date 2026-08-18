@@ -1,0 +1,16 @@
+shootx = 23;
+shooty = 2;
+handx = 28;
+handy = -5;
+shellX = 25;
+flashX = 50;
+Name = "SNAKE";
+_parent._parent.rof = 22;
+_parent._parent.firepower = 36;
+_parent._parent.recoil = 5;
+_parent._parent.blowback = 40;
+_parent._parent.bullets = 6;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 20;
+_parent._parent.weight = 0.95;

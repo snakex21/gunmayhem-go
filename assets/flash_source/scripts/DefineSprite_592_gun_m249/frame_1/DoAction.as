@@ -1,0 +1,16 @@
+shootx = 14;
+shooty = 1;
+handx = 50;
+handy = -8;
+shellX = 19;
+flashX = 68;
+Name = "MILITARY MACHINE GUN";
+_parent._parent.rof = 3;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 7;
+_parent._parent.bullets = 60;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.7;

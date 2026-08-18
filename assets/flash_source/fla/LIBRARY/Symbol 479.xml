@@ -1,0 +1,36 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 479" itemID="6a368e80-00000130" lastModified="1781960264">
+     <timeline>
+          <DOMTimeline name="Symbol 479">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#3cc4db" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#cccccc" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="0.5" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#000000"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! -6 -37[ 31 -11 36 50[ 40 110 -5 145[ -50 179 -94 187[ -68 255 -133 335[ -202 419 -258 412[ -314 404 -347 377[ -393 325 -388 283[ -384 240 -352 199| -317 165[ -213 96 -142 131[ -83 164 -26 107[ 0 81 -3 50[ -9 1 -38 -8| -6 -37"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="1" edges="! -289 200[ -191 140 -148 190[ -121 261 -163 312[ -212 371 -285 359[ -302 355 -312 344[ -334 326 -337 288[ -334 250 -312 223| -289 200"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

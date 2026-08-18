@@ -1,0 +1,16 @@
+shootx = 15;
+shooty = 3;
+handx = 47;
+handy = -12;
+shellX = 25;
+flashX = 50;
+Name = "LIGHT SMG";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 15;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 32;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.9;

@@ -1,0 +1,120 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 95" itemID="6a368e80-00000075" lastModified="1781960263">
+     <timeline>
+          <DOMTimeline name="Symbol 95">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#09e5a7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>switch(this._name)
+{
+   case "panel1":
+      number = 1;
+      break;
+   case "panel2":
+      number = 2;
+      break;
+   case "panel3":
+      number = 3;
+      break;
+   case "panel4":
+      number = 4;
+      break;
+   case "panel5":
+      number = 5;
+      break;
+   case "panel6":
+      number = 6;
+      break;
+   case "panel7":
+      number = 7;
+      break;
+   case "panel8":
+      number = 8;
+      break;
+   case "panel9":
+      number = 9;
+      break;
+   case "panel10":
+      number = 10;
+}
+cicon.gotoAndStop(number);
+if(_root.savedata3.data.levelarray[number - 1] == 2)
+{
+   lock.gotoAndStop(3);
+}
+if(_root.savedata3.data.levelarray[number - 1] == 1)
+{
+   lock.gotoAndStop(2);
+}
+if(_root.savedata3.data.levelarray[number - 1] == 0)
+{
+   this.useHandCursor = false;
+}
+this.onPress = function()
+{
+   if(_parent._alpha &gt;= 100 &amp;&amp; lock._currentframe != 1 &amp;&amp; this.useHandCursor)
+   {
+      _root.playsound("menu.wav");
+      _parent.disableall();
+      _parent._parent.gotolevel(number);
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#bee1fa">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 94" name="lock" centerPoint3DX="154.95" centerPoint3DY="92.5">
+                                             <matrix>
+                                                  <Matrix tx="5.0" ty="5.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#c344f4">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 90" name="cicon" centerPoint3DX="155.0" centerPoint3DY="92.5">
+                                             <matrix>
+                                                  <Matrix tx="5.0" ty="5.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#83b7f9" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 47" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="61.65" a="1.5500030517578125" d="0.1541595458984375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

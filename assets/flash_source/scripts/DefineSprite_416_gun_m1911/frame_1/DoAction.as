@@ -1,0 +1,16 @@
+shootx = 25;
+shooty = 2;
+handx = 30;
+handy = -5;
+shellX = 25;
+flashX = 45;
+Name = "COOL PISTOL";
+_parent._parent.rof = 10;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 1;
+_parent._parent.blowback = 30;
+_parent._parent.bullets = 9;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 0;
+_parent._parent.weight = 1;

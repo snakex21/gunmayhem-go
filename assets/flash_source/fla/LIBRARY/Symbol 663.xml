@@ -1,0 +1,185 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 663" itemID="6a368e80-0000018b" lastModified="1781960265" linkageIdentifier="wep_ducky" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 663">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#4de68b">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>vx = 0;
+vy = -5;
+fusetime = 0;
+if(asdf &lt; 0)
+{
+   vx = -2 + asdf * 1.8;
+   _xscale = -100;
+   _rotation = _rotation - 10;
+}
+else
+{
+   vx = 2 + asdf * 1.8;
+}
+if(random(2) == 0)
+{
+   rotationspeed *= -1;
+}
+freepass = true;
+hitground = false;
+_xscale = _xscale * 0.8;
+_yscale = _yscale * 0.8;
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      if(vy &lt; 24)
+      {
+         vy += _root.gravity;
+      }
+      if(_xscale &gt; 0)
+      {
+         if(vx &gt; 2)
+         {
+            vx += (2 - vx) / 10;
+         }
+      }
+      else if(vx &lt; -2)
+      {
+         vx += (-2 - vx) / 10;
+      }
+      _X = _X + vx;
+      _Y = _Y + vy;
+      if(!freepass)
+      {
+         if(_root.ground.hitTest(_X,_Y + 8,true) &amp;&amp; vy &gt; 0)
+         {
+            _Y = _Y - vy;
+            i = 1;
+            while(i &lt;= 5)
+            {
+               if(_root.ground.hitTest(_X,_Y + 8 + i * (vy / 5),true))
+               {
+                  _Y = _Y + vy / 5 * (i - 1);
+                  vy *= -0.4;
+                  break;
+               }
+               i++;
+            }
+         }
+      }
+      if(!_root.ground.hitTest(_X,_Y,true) &amp;&amp; !_root.ground.hitTest(_X,_Y + 10,true))
+      {
+         freepass = false;
+      }
+      if(_root.ground.hitTest(_X,_Y,true) &amp;&amp; !freepass)
+      {
+         freepass = true;
+      }
+      fusetime += 1;
+      if(fusetime &gt; 80)
+      {
+         i = 0;
+         while(i &lt; _root.activeplayers.length)
+         {
+            distance = Math.round(Math.sqrt(Math.pow(_root.activeplayers[i]._x - _X,2) + Math.pow(_root.activeplayers[i]._y - 30 - _Y,2)));
+            if(distance &lt;= 200)
+            {
+               radians = Math.atan2(_root.activeplayers[i]._y - 30 - _Y,_root.activeplayers[i]._x - _X);
+               degrees = radians * 180 / 3.141592653589793;
+               if(_root.activeplayers[i].perknumber == 6 || _root.activeplayers[i].shieldtime &gt; 0)
+               {
+                  pushx = Math.cos(degrees * 3.141592653589793 / 180) * (350 - distance) / 25;
+                  pushy = Math.sin(degrees * 3.141592653589793 / 180) * (350 - distance) / 50;
+                  if(_root.activeplayers[i].shield._alpha &gt; 99)
+                  {
+                     _root.activeplayers[i].shield.gotoAndPlay(23);
+                  }
+               }
+               else
+               {
+                  pushx = Math.cos(degrees * 3.141592653589793 / 180) * (350 - distance) / 5;
+                  pushy = Math.sin(degrees * 3.141592653589793 / 180) * (350 - distance) / 10;
+               }
+               _root.activeplayers[i].vx += pushx;
+               _root.activeplayers[i].vy += pushy;
+            }
+            i++;
+         }
+         shake = random(30) + 20;
+         if(random(2) == 0)
+         {
+            shake *= -1;
+         }
+         _root._x += shake;
+         _root.CP("fx_ex6",_X,_Y - 20,0);
+         _root.CP("fx_ex2",_X,_Y - 20,0);
+         _root.CP("fx_ex",_X,_Y - 20,0);
+         _root.CP("fx_ex4",_X,_Y - 20,0);
+         if(_root._quality != "LOW")
+         {
+            i = 0;
+            while(i &lt; 5)
+            {
+               _root.CP("fx_ex5",_X,_Y - 20,0);
+               i++;
+            }
+            i = 0;
+            while(i &lt; 5)
+            {
+               _root.CP("fx_ex7",_X,_Y - 20,0);
+               i++;
+            }
+         }
+         _root.explodesound();
+         _root.CP("fx_combo",_X,_Y - 50,0,-3);
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+      if(_Y &gt;= 900 || _X &lt; -500 || _X &gt; 1400 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#e3c4a3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 662" centerPoint3DX="27.15" centerPoint3DY="10.7">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="-19.05"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#a1f5d5" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 655" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="45.95" ty="-30.5" a="0.0040435791015625" d="0.022918701171875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

@@ -1,0 +1,95 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 831" itemID="6a368e80-000001c7" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 831">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#d5566d">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>if(_X &lt; 140)
+{
+   xx = 3;
+}
+if(_X &lt; 80)
+{
+   xx = 2;
+}
+if(_X &lt; 15)
+{
+   xx = 1;
+}
+if(_Y &lt; 660)
+{
+   yy = 3;
+}
+if(_Y &lt; 600)
+{
+   yy = 2;
+}
+if(_Y &lt; 540)
+{
+   yy = 1;
+}
+if(_Y &lt; 480)
+{
+   yy = 0;
+}
+NUMBER = yy * 3 + xx;
+if(NUMBER == 3 &amp;&amp; _root.savedata3.data.levelarray[1] != 2)
+{
+   NUMBER = 10;
+}
+if(NUMBER == 6 &amp;&amp; _root.savedata3.data.levelarray[4] != 2)
+{
+   NUMBER = 10;
+}
+if(NUMBER == 9 &amp;&amp; _root.savedata3.data.levelarray[5] != 2)
+{
+   NUMBER = 10;
+}
+if(NUMBER == 10)
+{
+   this.useHandCursor = false;
+}
+perkdisplay.gotoAndStop(NUMBER);
+asdf = _parent._parent;
+this.onRelease = function()
+{
+   if(NUMBER != 10)
+   {
+      asdf.perkdisplay.gotoAndStop(NUMBER);
+      updatetime = 1;
+      asdf.slideback();
+      asdf.slide = 1;
+   }
+};
+this.onRollOver = function()
+{
+   asdf.displaytext.text = perkdisplay.id;
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#9b9ef9" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 830" name="perkdisplay" centerPoint3DX="36.45" centerPoint3DY="39.15">
+                                             <matrix>
+                                                  <Matrix tx="-3.85" ty="11.65"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

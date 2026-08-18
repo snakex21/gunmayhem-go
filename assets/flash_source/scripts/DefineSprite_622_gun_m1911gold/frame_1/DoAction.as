@@ -1,0 +1,15 @@
+shootx = 25;
+shooty = 2;
+handx = 0;
+handy = 0;
+shellX = 25;
+flashX = 45;
+Name = "LAME GUN";
+_parent._parent.rof = 10;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 1;
+_parent._parent.blowback = 30;
+_parent._parent.bullets = 24;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 0;

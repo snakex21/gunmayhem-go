@@ -1,0 +1,16 @@
+shootx = -10;
+shooty = -3;
+handx = 40;
+handy = -22;
+shellX = 20;
+flashX = 71;
+Name = "MINIGUN";
+_parent._parent.rof = 2;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 0.5;
+_parent._parent.blowback = 0;
+_parent._parent.bullets = 150;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.7;

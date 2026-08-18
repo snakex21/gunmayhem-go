@@ -1,0 +1,57 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 333" itemID="6a368e80-000000eb" lastModified="1781960264" linkageIdentifier="fx_double" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 333">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#73bc75">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_Y = _Y - 10;
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      _alpha = _alpha - 5;
+      _xscale = _xscale - 5;
+      _yscale = _xscale;
+      _Y = _Y + 1;
+      if(_alpha &lt;= 1 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#a0cc97" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills/>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="5.0" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#ffffff"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="1" edges="! 284 -107[ 400 -62 400 0[ 400 62 284 105[ 166 150 0 150[ -166 150 -282 105[ -400 62 -400 0[ -400 -62 -282 -107[ -166 -150 0 -150[ 166 -150 284 -107"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

@@ -1,0 +1,16 @@
+shootx = 2;
+shooty = -3;
+handx = 48;
+handy = -12;
+shellX = 20;
+flashX = 55;
+Name = "SAWED OFF SHOTGUN";
+_parent._parent.rof = 25;
+_parent._parent.firepower = 8;
+_parent._parent.recoil = 5;
+_parent._parent.blowback = 20;
+_parent._parent.bullets = 7;
+_parent._parent.idlerotate = -80;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+shotgun = 7;

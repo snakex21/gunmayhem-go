@@ -1,0 +1,433 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 948" itemID="6a368e80-000001e3" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 948">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#626ad1">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>function startmission()
+{
+   if(menu1._currentframe == menu1._totalframes)
+   {
+      WRITE_DATA();
+      _root.p1name = menu1.inputname.text;
+      _root.p1color = menu1.colornumber;
+      _root.p1shirt = menu1.player.shirt._currentframe;
+      _root.p1hat = menu1.player.hat._currentframe;
+      _root.p1gun = menu1.player.gundisplay._currentframe;
+      _root.p1perk = menu1.perkdisplay._currentframe;
+      _root.p1ptype = menu1.playertype;
+      _root.p1team = menu1.teamselect.team;
+      _root.p2name = menu2.inputname.text;
+      _root.p2color = menu2.colornumber;
+      _root.p2shirt = menu2.player.shirt._currentframe;
+      _root.p2hat = menu2.player.hat._currentframe;
+      _root.p2gun = menu2.player.gundisplay._currentframe;
+      _root.p2perk = menu2.perkdisplay._currentframe;
+      _root.p2ptype = menu2.playertype;
+      _root.p2team = menu2.teamselect.team;
+      totalplayers = 0;
+      if(_root.p1ptype &gt; 0)
+      {
+         totalplayers += 1;
+      }
+      if(_root.p2ptype &gt; 0)
+      {
+         totalplayers += 1;
+      }
+      if(totalplayers &gt;= 1)
+      {
+         _root.totallives = 10;
+         _root.mapnumber = 5;
+         _root.campaignmode = true;
+         newmc = _root.attachMovie("fadeaway","fadeaway",_root.fadedepth);
+         newmc.targetframe = 10;
+         _root.gototest = false;
+      }
+      else
+      {
+         warning.play();
+      }
+   }
+}
+function WRITE_DATA()
+{
+   _root.savedata3.data.p1name = menu1.inputname.text;
+   _root.savedata3.data.p1color = menu1.colornumber;
+   _root.savedata3.data.p1shirt = menu1.player.shirt._currentframe;
+   _root.savedata3.data.p1hat = menu1.player.hat._currentframe;
+   _root.savedata3.data.p1gun = menu1.player.gundisplay._currentframe;
+   _root.savedata3.data.p1perk = menu1.perkdisplay._currentframe;
+   _root.savedata3.data.p1ptype = menu1.playertype;
+   _root.savedata3.data.p1team = menu1.teamselect.team;
+   _root.savedata3.data.p2name = menu2.inputname.text;
+   _root.savedata3.data.p2color = menu2.colornumber;
+   _root.savedata3.data.p2shirt = menu2.player.shirt._currentframe;
+   _root.savedata3.data.p2hat = menu2.player.hat._currentframe;
+   _root.savedata3.data.p2gun = menu2.player.gundisplay._currentframe;
+   _root.savedata3.data.p2perk = menu2.perkdisplay._currentframe;
+   _root.savedata3.data.p2ptype = menu2.playertype;
+   _root.savedata3.data.p2team = menu2.teamselect.team;
+}
+function gotolevel(input)
+{
+   phase = 2;
+   infopanel.number = input;
+   _root.campaignlevel = input;
+}
+btn_back.onRelease = function()
+{
+   if(!_root.fadeaway)
+   {
+      if(phase == 1)
+      {
+         btn_back.useHandCursor = false;
+         newmc = _root.attachMovie("fadeaway","fadeaway",_root.fadedepth);
+         newmc.targetframe = 10;
+         _root.gotomenu = true;
+      }
+      else if(phase == 3)
+      {
+         phase = 4;
+      }
+      _root.playsound("menu.wav");
+   }
+};
+phase = 1;
+menu1._alpha = 0;
+menu2._alpha = 0;
+infopanel._alpha = 0;
+slider._x = _root.slideprevx;
+vx = 0;
+if(_root.savedata3.data.levelarray[1] == 2 &amp;&amp; _root.savedata3.data.levelarray[2] == 0)
+{
+   _root.savedata3.data.levelarray[2] = 1;
+}
+if(_root.savedata3.data.levelarray[2] == 2 &amp;&amp; _root.savedata3.data.levelarray[3] == 0)
+{
+   _root.savedata3.data.levelarray[3] = 1;
+}
+if(_root.savedata3.data.levelarray[3] == 2 &amp;&amp; _root.savedata3.data.levelarray[4] == 0)
+{
+   _root.savedata3.data.levelarray[4] = 1;
+}
+if(_root.savedata3.data.levelarray[4] == 2 &amp;&amp; _root.savedata3.data.levelarray[5] == 0)
+{
+   _root.savedata3.data.levelarray[5] = 1;
+}
+if(_root.savedata3.data.levelarray[5] == 2 &amp;&amp; _root.savedata3.data.levelarray[6] == 0)
+{
+   _root.savedata3.data.levelarray[6] = 1;
+}
+if(_root.savedata3.data.levelarray[6] == 2 &amp;&amp; _root.savedata3.data.levelarray[7] == 0)
+{
+   _root.savedata3.data.levelarray[7] = 1;
+}
+if(_root.savedata3.data.levelarray[7] == 2 &amp;&amp; _root.savedata3.data.levelarray[8] == 0)
+{
+   _root.savedata3.data.levelarray[8] = 1;
+}
+if(_root.savedata3.data.levelarray[8] == 2 &amp;&amp; _root.savedata3.data.levelarray[9] == 0)
+{
+   _root.savedata3.data.levelarray[9] = 1;
+}
+if(_root.showunlocks != 0)
+{
+   show_unlock.gotoAndStop(_root.showunlocks);
+   show_unlock._alpha = 100;
+}
+else
+{
+   show_unlock._alpha = 0;
+   show_unlock.swapDepths(1);
+   removeMovieClip(show_unlock);
+}
+this.onEnterFrame = function()
+{
+   if(phase == 1)
+   {
+      if(_ymouse &gt; 100 &amp;&amp; _ymouse &lt; 510 &amp;&amp; _root.showunlocks == 0)
+      {
+         if(_xmouse &lt; 150 &amp;&amp; slider._x &lt; 0)
+         {
+            vx += (150 - _xmouse) / 8;
+         }
+         if(_xmouse &gt; 750 &amp;&amp; slider._x &gt; -857)
+         {
+            vx -= (_xmouse - 750) / 8;
+         }
+      }
+      vx *= 0.8;
+      slider._x += vx;
+      if(slider._x &gt; 0)
+      {
+         slider._x = 0;
+         vx = 0;
+      }
+      if(slider._x &lt; -857)
+      {
+         vx = 0;
+         slider._x = -857;
+      }
+      slider._x = Math.round(slider._x);
+      _root.slideprevx = slider._x;
+   }
+   else if(phase == 2)
+   {
+      if(slider &amp;&amp; slider._alpha &gt; 1)
+      {
+         slider._alpha -= 20;
+      }
+      if(slider &amp;&amp; slider._alpha &lt;= 1)
+      {
+         slider.swapDepths(1);
+         removeMovieClip(slider);
+         delete slider.onEnterFrame;
+      }
+      if(menu1._currentframe == 1)
+      {
+         menu1.gotoAndStop(menu1._totalframes);
+         menu2.gotoAndStop(menu2._totalframes);
+         infopanel.gotoAndStop(2);
+      }
+      if(menu1._alpha &lt; 100)
+      {
+         menu1._alpha += 20;
+         menu2._alpha = menu1._alpha;
+         infopanel._alpha = menu1._alpha;
+         if(menu1._alpha &gt;= 100)
+         {
+            phase = 3;
+         }
+      }
+   }
+   else if(phase == 4)
+   {
+      if(!slider)
+      {
+         asdf = this.attachMovie("menuc_slider","slider",2);
+         asdf._alpha = 0;
+         asdf._x = _root.slideprevx;
+      }
+      if(menu1._alpha &gt; 1)
+      {
+         menu1._alpha -= 20;
+         menu2._alpha = menu1._alpha;
+         infopanel._alpha = menu1._alpha;
+         asdf._alpha += 20;
+      }
+      else
+      {
+         menu1._alpha = 0;
+         menu2._alpha = 0;
+         infopanel._alpha = 0;
+         asdf._alpha = 100;
+         menu1.gotoAndStop(1);
+         menu2.gotoAndStop(1);
+         infopanel.gotoAndStop(1);
+         phase = 1;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#ce59a6">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 947" name="show_unlock" centerPoint3DX="450.0" centerPoint3DY="300.0">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#1debae">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 907" name="warning" centerPoint3DX="237.55" centerPoint3DY="291.55">
+                                             <matrix>
+                                                  <Matrix tx="93.05" ty="240.55"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#f0d9de">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 96" name="slider" centerPoint3DX="849.0" centerPoint3DY="200.5">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#7037dc" layerType="mask" locked="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#0099ff"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 17379 11760| 9141 11760| 9141 2000| 17379 2000| 17379 11760"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 4540 2000| 4540 10000| 540 10000| 540 2000| 4540 2000"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 8940 10000| 4940 10000| 4940 2000| 8940 2000| 8940 10000"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#c72df8" parentLayerIndex="4" locked="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 904" name="infopanel" centerPoint3DX="668.0" centerPoint3DY="337.55">
+                                             <matrix>
+                                                  <Matrix tx="467.1" ty="100.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 7" color="#64d4c7" parentLayerIndex="4" locked="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 857" name="menu2" centerPoint3DX="448.6" centerPoint3DY="700.0">
+                                             <matrix>
+                                                  <Matrix tx="247.0" ty="100.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 8" color="#b5d46a" parentLayerIndex="4" locked="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 857" name="menu1" centerPoint3DX="228.6" centerPoint3DY="700.0">
+                                             <matrix>
+                                                  <Matrix tx="27.0" ty="100.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 9" color="#a26af8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1868" height="787" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="34.0" ty="27.75"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>CAMPAIGN</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="42.4" bitmapSize="848" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 10" color="#7cbafb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="662" height="514" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="74.05" ty="536.35"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Back</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="26.5" bitmapSize="530" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 11" color="#84ceb5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 792" name="btn_back" centerPoint3DX="94.5" centerPoint3DY="551.65">
+                                             <matrix>
+                                                  <Matrix tx="27.0" ty="525.15"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 12" color="#59d751">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 790" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

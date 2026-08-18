@@ -1,0 +1,63 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 707" itemID="6a368e80-000001a6" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 707">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#72d9f2" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <LinearGradient>
+                                                            <matrix>
+                                                                 <Matrix tx="71.95" ty="-0.3" a="-0.075714111328125" d="-0.0259246826171875" b="0.003387451171875" c="-0.00115966796875"/>
+                                                            </matrix>
+                                                            <GradientEntry color="#ffffff" alpha="0.0" ratio="0.0"/>
+                                                            <GradientEntry color="#ffffff" alpha="0.69411767" ratio="1.0"/>
+                                                       </LinearGradient>
+                                                  </FillStyle>
+                                                  <FillStyle index="2">
+                                                       <LinearGradient>
+                                                            <matrix>
+                                                                 <Matrix tx="0.05" ty="72.2" a="-0.003387451171875" d="-0.00115966796875" b="-0.075714111328125" c="0.0259246826171875"/>
+                                                            </matrix>
+                                                            <GradientEntry color="#ffffff" alpha="0.0" ratio="0.0"/>
+                                                            <GradientEntry color="#ffffff" alpha="0.69411767" ratio="1.0"/>
+                                                       </LinearGradient>
+                                                  </FillStyle>
+                                                  <FillStyle index="3">
+                                                       <LinearGradient>
+                                                            <matrix>
+                                                                 <Matrix tx="-72.45" ty="0.3" a="0.075714111328125" d="0.0259246826171875" b="-0.003387451171875" c="0.00115966796875"/>
+                                                            </matrix>
+                                                            <GradientEntry color="#ffffff" alpha="0.0" ratio="0.0"/>
+                                                            <GradientEntry color="#ffffff" alpha="0.69411767" ratio="1.0"/>
+                                                       </LinearGradient>
+                                                  </FillStyle>
+                                                  <FillStyle index="4">
+                                                       <LinearGradient>
+                                                            <matrix>
+                                                                 <Matrix tx="-0.55" ty="-72.2" a="0.003387451171875" d="0.00115966796875" b="0.075714111328125" c="-0.0259246826171875"/>
+                                                            </matrix>
+                                                            <GradientEntry color="#ffffff" alpha="0.0" ratio="0.0"/>
+                                                            <GradientEntry color="#ffffff" alpha="0.69411767" ratio="1.0"/>
+                                                       </LinearGradient>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="3" fillStyle1="0" strokeStyle="0" edges="! -5 0| -2766 -360| -2756 490| -5 0"/>
+                                                  <Edge fillStyle0="0" fillStyle1="4" strokeStyle="0" edges="! -5 0| -495 -2751| 355 -2761| -5 0"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! -5 0| 2746 -490| 2756 360| -5 0"/>
+                                                  <Edge fillStyle0="0" fillStyle1="2" strokeStyle="0" edges="! -5 0| 485 2751| -365 2761| -5 0"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

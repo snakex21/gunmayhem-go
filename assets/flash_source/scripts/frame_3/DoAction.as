@@ -1,0 +1,16 @@
+stop();
+musictemp1 = _root.createEmptyMovieClip("sound510",510);
+music111 = new Sound(musictemp1);
+music111.attachSound("music111");
+musictemp2 = _root.createEmptyMovieClip("sound511",511);
+music222 = new Sound(musictemp2);
+music222.attachSound("music222");
+musictemp3 = _root.createEmptyMovieClip("sound512",512);
+music333 = new Sound(musictemp3);
+music333.attachSound("music333");
+musictemp4 = _root.createEmptyMovieClip("sound513",513);
+music444 = new Sound(musictemp4);
+music444.attachSound("music444");
+musictemp5 = _root.createEmptyMovieClip("sound514",514);
+music555 = new Sound(musictemp5);
+music555.attachSound("music555");

@@ -1,0 +1,1202 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 947" itemID="6a368e80-000001e2" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 947">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#48ea51">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+btn_continue.onRelease = function()
+{
+   _root.showunlocks = 0;
+   _parent.slider.enableall();
+   _parent.show_unlock.swapDepths(1);
+   removeMovieClip(_parent.show_unlock);
+   _root.playsound("menu.wav");
+};
+_parent.slider.disableall();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="7" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="8" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="9" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#c7e1fd">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 2 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" duration="2" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 5 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 6 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" duration="4" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#b479bb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-12.5" antiAliasSharpness="0" antiAliasThickness="0" width="1069" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="542.5" ty="307.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Perk: Triple Jump</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" duration="2" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-12.95" antiAliasSharpness="0" antiAliasThickness="0" width="1078" height="333" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="540.6" ty="303.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Perk: Blast Shield</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-11.15" antiAliasSharpness="0" antiAliasThickness="0" width="1042" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="547.15" ty="306.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Perk: Gun Spawn</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" duration="4" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#a46e80">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 1 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="31.8" antiAliasSharpness="0" antiAliasThickness="0" width="797" height="367" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="505.45" ty="254.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>JUMP+ </characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="0" indent="0" leftMargin="9" lineSpacing="0" rightMargin="0" fillColor="#ff3399" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="5"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 3 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters/>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 4 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters/>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="31.8" antiAliasSharpness="0" antiAliasThickness="0" width="699" height="688" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="515.05" ty="242.7"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>BLAST </characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="-0.05" indent="0" leftMargin="5" lineSpacing="-4" rightMargin="0" fillColor="#0066ff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                                  <DOMTextRun>
+                                                       <characters>&#13;SHIELD</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="0" indent="0" leftMargin="1" lineSpacing="-4" rightMargin="0" fillColor="#0066ff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="5"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="31.8" antiAliasSharpness="0" antiAliasThickness="0" width="734" height="688" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="519.4" ty="244.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>GUN </characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="0" indent="0" leftMargin="12" lineSpacing="-4" rightMargin="0" fillColor="#99ff00" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                                  <DOMTextRun>
+                                                       <characters>&#13;SPAWN</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="-0.05" indent="0" leftMargin="2" lineSpacing="-4" rightMargin="0" fillColor="#99ff00" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="5"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 7 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters/>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="7" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 8 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters/>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="8" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2013" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 9 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters/>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="9" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2130" height="661" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="257.65" ty="155.55"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Level 10 Completed</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="28.25" bitmapSize="565" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters/>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#7ddb62">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="819" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="473.15" ty="315.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Rapid Sniper</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-26.6" antiAliasSharpness="0" antiAliasThickness="0" width="1350" height="332" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="412.95" ty="307.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Futuristic Assault Rifle</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-3.9" antiAliasSharpness="0" antiAliasThickness="0" width="901" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="489.0" ty="304.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Stealth Sniper</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-4.05" antiAliasSharpness="0" antiAliasThickness="0" width="899" height="332" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="495.1" ty="306.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Hi-Power Rifle</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-4.8" antiAliasSharpness="0" antiAliasThickness="0" width="914" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="418.55" ty="303.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Rugged Sniper</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-25.75" antiAliasSharpness="0" antiAliasThickness="0" width="1339" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="421.1" ty="306.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Top Load Machine Gun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-10.5" antiAliasSharpness="0" antiAliasThickness="0" width="1032" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="471.6" ty="296.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>American Sniper</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="7" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-23.05" antiAliasSharpness="0" antiAliasThickness="0" width="1283" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="488.1" ty="302.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Military Machine Gun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="8" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-0.1" antiAliasSharpness="0" antiAliasThickness="0" width="820" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="473.6" ty="298.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Lever Sniper</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="9" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-22.05" antiAliasSharpness="0" antiAliasThickness="0" width="1259" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="472.1" ty="300.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Bullpup Machine Gun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#77ab72">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="828" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="347.1" ty="315.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Antique SMG</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-10.65" antiAliasSharpness="0" antiAliasThickness="0" width="1042" height="332" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="283.4" ty="307.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Anti Aircraft Gun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-24.1" antiAliasSharpness="0" antiAliasThickness="0" width="1308" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="355.95" ty="304.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Compact Assault Rifle</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-9.2" antiAliasSharpness="0" antiAliasThickness="0" width="1013" height="395" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="365.55" ty="306.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Assault Shotgun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-4.8" antiAliasSharpness="0" antiAliasThickness="0" width="924" height="333" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="288.5" ty="303.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Advanced SMG</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-10.05" antiAliasSharpness="0" antiAliasThickness="0" width="1026" height="395" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="282.55" ty="306.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Hunting Shotgun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="6.35" antiAliasSharpness="0" antiAliasThickness="0" width="702" height="333" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="350.05" ty="296.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Micro SMG</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="7" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-14.15" antiAliasSharpness="0" antiAliasThickness="0" width="1109" height="395" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="351.55" ty="302.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Futuristic Shotgun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="8" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="11.5" antiAliasSharpness="0" antiAliasThickness="0" width="596" height="333" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="356.05" ty="298.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Old SMG</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="9" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-7.35" antiAliasSharpness="0" antiAliasThickness="0" width="977" height="398" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="350.05" ty="300.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Stubby Shotgun</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 7" color="#91f0d2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="568.15" centerPoint3DY="347.8">
+                                             <matrix>
+                                                  <Matrix tx="505.4" ty="277.6" a="0.932586669921875" d="0.932586669921875" b="0.7552032470703125" c="-0.7552032470703125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="506.2" centerPoint3DY="334.1">
+                                             <matrix>
+                                                  <Matrix tx="443.45" ty="263.9" a="0.563323974609375" d="0.563323974609375" b="1.0594940185546875" c="-1.0594940185546875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="582.55" centerPoint3DY="329.95">
+                                             <matrix>
+                                                  <Matrix tx="519.8" ty="259.75" a="0.9192352294921875" d="0.9192352294921875" b="0.7713775634765625" c="-0.7713775634765625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="586.25" centerPoint3DY="330.5">
+                                             <matrix>
+                                                  <Matrix tx="523.5" ty="260.3" a="0.5447540283203125" d="0.5447540283203125" b="1.06915283203125" c="-1.06915283203125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="507.65" centerPoint3DY="333.7">
+                                             <matrix>
+                                                  <Matrix tx="444.9" ty="263.5" a="0.905670166015625" d="0.905670166015625" b="0.7872772216796875" c="-0.787261962890625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="508.75" centerPoint3DY="338.9">
+                                             <matrix>
+                                                  <Matrix tx="446.0" ty="268.7" a="0.526031494140625" d="0.526031494140625" b="1.0784912109375" c="-1.0784912109375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="561.45" centerPoint3DY="322.35">
+                                             <matrix>
+                                                  <Matrix tx="498.7" ty="252.15" a="0.891754150390625" d="0.891754150390625" b="0.8029327392578125" c="-0.8029327392578125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="7" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="575.6" centerPoint3DY="333.55">
+                                             <matrix>
+                                                  <Matrix tx="512.85" ty="263.35" a="0.5071258544921875" d="0.5071258544921875" b="1.0875244140625" c="-1.0875244140625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="8" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="562.85" centerPoint3DY="326.7">
+                                             <matrix>
+                                                  <Matrix tx="500.1" ty="256.5" a="0.8775787353515625" d="0.8775787353515625" b="0.8183746337890625" c="-0.8183746337890625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="9" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="561.0" centerPoint3DY="333.0">
+                                             <matrix>
+                                                  <Matrix tx="498.25" ty="262.8" a="0.488067626953125" d="0.488067626953125" b="1.09619140625" c="-1.09619140625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 8" color="#bd74ed">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="446.55" centerPoint3DY="346.15">
+                                             <matrix>
+                                                  <Matrix tx="383.8" ty="275.95" a="1.05950927734375" d="1.05950927734375" b="0.5633392333984375" c="-0.5633392333984375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="379.5" centerPoint3DY="337.6">
+                                             <matrix>
+                                                  <Matrix tx="316.75" ty="267.4" a="0.7713623046875" d="0.7713623046875" b="0.9192352294921875" c="-0.9192352294921875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="456.0" centerPoint3DY="336.6">
+                                             <matrix>
+                                                  <Matrix tx="393.25" ty="266.4" a="1.04949951171875" d="1.04949951171875" b="0.581756591796875" c="-0.581756591796875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="461.05" centerPoint3DY="335.45">
+                                             <matrix>
+                                                  <Matrix tx="398.3" ty="265.25" a="0.7551727294921875" d="0.7551727294921875" b="0.9326019287109375" c="-0.9326019287109375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="384.35" centerPoint3DY="334.3">
+                                             <matrix>
+                                                  <Matrix tx="321.6" ty="264.1" a="1.039215087890625" d="1.039215087890625" b="0.600006103515625" c="-0.5999755859375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="380.6" centerPoint3DY="337.7">
+                                             <matrix>
+                                                  <Matrix tx="317.85" ty="267.5" a="0.7387847900390625" d="0.7387847900390625" b="0.9456329345703125" c="-0.9456329345703125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="447.3" centerPoint3DY="324.0">
+                                             <matrix>
+                                                  <Matrix tx="384.55" ty="253.8" a="1.0285491943359375" d="1.0285491943359375" b="0.6180267333984375" c="-0.6180267333984375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="7" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="445.8" centerPoint3DY="334.7">
+                                             <matrix>
+                                                  <Matrix tx="383.05" ty="264.5" a="0.722198486328125" d="0.722198486328125" b="0.9583740234375" c="-0.9583740234375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="8" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="451.85" centerPoint3DY="327.2">
+                                             <matrix>
+                                                  <Matrix tx="389.1" ty="257.0" a="1.0176239013671875" d="1.0176239013671875" b="0.6358642578125" c="-0.6358642578125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="9" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="451.65" centerPoint3DY="330.4">
+                                             <matrix>
+                                                  <Matrix tx="388.9" ty="260.2" a="0.7053375244140625" d="0.7053375244140625" b="0.970855712890625" c="-0.970855712890625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 9" color="#de28a6">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 819" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="-6.1" ty="1.55"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" duration="2" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 819" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="-4.85" ty="-1.05"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 819" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" duration="4" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 10" color="#3dfdef">
+                         <frames>
+                              <DOMFrame index="0" duration="10" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="24.95" antiAliasSharpness="0" antiAliasThickness="0" width="829" height="424" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="389.8" ty="358.45"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Continue</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="21.2" bitmapSize="424" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 11" color="#6be34a">
+                         <frames>
+                              <DOMFrame index="0" duration="10" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 806" name="btn_continue" centerPoint3DX="419.1" centerPoint3DY="368.1">
+                                             <matrix>
+                                                  <Matrix tx="344.85" ty="356.1" a="1.3468017578125" d="1.25"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 12" color="#aa7ba1">
+                         <frames>
+                              <DOMFrame index="0" duration="10" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="24.95" antiAliasSharpness="0" antiAliasThickness="0" width="1335" height="485" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="235.7" ty="199.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>New Unlocks:</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="24.75" bitmapSize="495" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" alpha="0.8" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 13" color="#de9f9b">
+                         <frames>
+                              <DOMFrame index="0" duration="10" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 908" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

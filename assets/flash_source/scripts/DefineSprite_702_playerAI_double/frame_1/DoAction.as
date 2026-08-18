@@ -1,0 +1,1746 @@
+function getgun(wepnum)
+{
+   hand1.gun.swapDepths(1);
+   removeMovieClip(hand1.gun);
+   wepnumber = wepnum;
+   switch(wepnum)
+   {
+      case 1:
+         hand1.attachMovie("gun_m1911","gun",1);
+         break;
+      case 2:
+         hand1.attachMovie("gun_deagle","gun",1);
+         break;
+      case 3:
+         hand1.attachMovie("gun_glock","gun",1);
+         break;
+      case 4:
+         hand1.attachMovie("gun_bull","gun",1);
+         break;
+      case 5:
+         hand1.attachMovie("gun_49","gun",1);
+         break;
+      case 6:
+         hand1.attachMovie("gun_python","gun",1);
+         break;
+      case 8:
+         hand1.attachMovie("gun_m1911weak","gun",1);
+         break;
+      case 9:
+         hand1.attachMovie("gun_instagib","gun",1);
+         break;
+      case 10:
+         hand1.attachMovie("gun_ak47","gun",1);
+         break;
+      case 11:
+         hand1.attachMovie("gun_hk","gun",1);
+         break;
+      case 12:
+         hand1.attachMovie("gun_mp5k","gun",1);
+         break;
+      case 13:
+         hand1.attachMovie("gun_ithaca","gun",1);
+         break;
+      case 14:
+         hand1.attachMovie("gun_scar","gun",1);
+         break;
+      case 15:
+         hand1.attachMovie("gun_usas","gun",1);
+         break;
+      case 16:
+         hand1.attachMovie("gun_501","gun",1);
+         break;
+      case 17:
+         hand1.attachMovie("gun_mini14","gun",1);
+         break;
+      case 18:
+         hand1.attachMovie("gun_lever","gun",1);
+         break;
+      case 19:
+         hand1.attachMovie("gun_p90","gun",1);
+         break;
+      case 20:
+         hand1.attachMovie("gun_m17","gun",1);
+         break;
+      case 21:
+         hand1.attachMovie("gun_bizon","gun",1);
+         break;
+      case 22:
+         hand1.attachMovie("gun_tommy","gun",1);
+         break;
+      case 23:
+         hand1.attachMovie("gun_ump","gun",1);
+         break;
+      case 24:
+         hand1.attachMovie("gun_augsmg","gun",1);
+         break;
+      case 25:
+         hand1.attachMovie("gun_mp5a3","gun",1);
+         break;
+      case 26:
+         hand1.attachMovie("gun_lusa","gun",1);
+         break;
+      case 27:
+         hand1.attachMovie("gun_m12","gun",1);
+         break;
+      case 28:
+         hand1.attachMovie("gun_mas38","gun",1);
+         break;
+      case 29:
+         hand1.attachMovie("gun_aksu","gun",1);
+         break;
+      case 30:
+         hand1.attachMovie("gun_kriss","gun",1);
+         break;
+      case 31:
+         hand1.attachMovie("gun_mp9","gun",1);
+         break;
+      case 32:
+         hand1.attachMovie("gun_mas","gun",1);
+         break;
+      case 33:
+         hand1.attachMovie("gun_awm","gun",1);
+         break;
+      case 34:
+         hand1.attachMovie("gun_hecate","gun",1);
+         break;
+      case 35:
+         hand1.attachMovie("gun_m95","gun",1);
+         break;
+      case 36:
+         hand1.attachMovie("gun_dsr","gun",1);
+         break;
+      case 37:
+         hand1.attachMovie("gun_ssg69","gun",1);
+         break;
+      case 38:
+         hand1.attachMovie("gun_lrs2","gun",1);
+         break;
+      case 39:
+         hand1.attachMovie("gun_galatz","gun",1);
+         break;
+      case 40:
+         hand1.attachMovie("gun_vss","gun",1);
+         break;
+      case 41:
+         hand1.attachMovie("gun_m76","gun",1);
+         break;
+      case 42:
+         hand1.attachMovie("gun_sr25","gun",1);
+         break;
+      case 43:
+         hand1.attachMovie("gun_leversniper","gun",1);
+         break;
+      case 44:
+         hand1.attachMovie("gun_sawnoff","gun",1);
+         break;
+      case 45:
+         hand1.attachMovie("gun_ksg","gun",1);
+         break;
+      case 46:
+         hand1.attachMovie("gun_aa12","gun",1);
+         break;
+      case 47:
+         hand1.attachMovie("gun_jackhammer","gun",1);
+         break;
+      case 48:
+         hand1.attachMovie("gun_pm12","gun",1);
+         break;
+      case 49:
+         hand1.attachMovie("gun_870","gun",1);
+         break;
+      case 50:
+         hand1.attachMovie("gun_spas12","gun",1);
+         break;
+      case 51:
+         hand1.attachMovie("gun_saiga12","gun",1);
+         break;
+      case 52:
+         hand1.attachMovie("gun_saiga20","gun",1);
+         break;
+      case 53:
+         hand1.attachMovie("gun_spas97","gun",1);
+         break;
+      case 54:
+         hand1.attachMovie("gun_moss500","gun",1);
+         break;
+      case 55:
+         hand1.attachMovie("gun_mini","gun",1);
+         break;
+      case 56:
+         hand1.attachMovie("gun_g36c","gun",1);
+         break;
+      case 57:
+         hand1.attachMovie("gun_rpk","gun",1);
+         break;
+      case 58:
+         hand1.attachMovie("gun_sig552","gun",1);
+         break;
+      case 59:
+         hand1.attachMovie("gun_galil","gun",1);
+         break;
+      case 60:
+         hand1.attachMovie("gun_m4","gun",1);
+         break;
+      case 61:
+         hand1.attachMovie("gun_hk33","gun",1);
+         break;
+      case 62:
+         hand1.attachMovie("gun_f2000","gun",1);
+         break;
+      case 63:
+         hand1.attachMovie("gun_scarh","gun",1);
+         break;
+      case 64:
+         hand1.attachMovie("gun_stoner","gun",1);
+         break;
+      case 65:
+         hand1.attachMovie("gun_m249","gun",1);
+         break;
+      case 66:
+         hand1.attachMovie("gun_hbar","gun",1);
+   }
+   if(wepnumber >= 9)
+   {
+      greedykill = true;
+   }
+   waittime = 0;
+   hand1.hand.swapDepths(2);
+   hand1.hand._alpha = 100;
+   hand2.hand._alpha = 100;
+}
+function FIREBULLET()
+{
+   if(firepower > 3)
+   {
+      if(wepnumber == 55)
+      {
+         if(firepower > 3)
+         {
+            _root.CP("fx_flash",_X + hand1.gun.flashX * facing * minimulti,_Y - 25 * minimulti,-90 + facing * 90,0);
+         }
+         temp = Math.random() * 14 - 7;
+         if(facing == 1)
+         {
+            _root.CP("bullet6",_X + 23 * minimulti,_Y - 25 * minimulti + temp,0,firepower + random(8) - 4 + PLAYERNUMBER * 1000,teamnumber);
+         }
+         else
+         {
+            _root.CP("bullet6",_X - 23 * minimulti,_Y - 25 * minimulti + temp,180,firepower + random(8) - 4 + PLAYERNUMBER * 1000,teamnumber);
+         }
+      }
+      else if(wepnumber == 9)
+      {
+         if(firepower > 3)
+         {
+            _root.CP("fx_flash",_X + hand1.gun.flashX * facing * minimulti,_Y - 38 * minimulti,-90 + facing * 90,0);
+         }
+         temp = Math.random() * 6 - 3;
+         if(facing == 1)
+         {
+            _root.CP("bullet3",_X + 23 * minimulti,_Y - 38 * minimulti + temp,0,firepower + random(8) - 4 + PLAYERNUMBER * 1000,teamnumber);
+         }
+         else
+         {
+            _root.CP("bullet3",_X - 23 * minimulti,_Y - 38 * minimulti + temp,180,firepower + random(8) - 4 + PLAYERNUMBER * 1000,teamnumber);
+         }
+      }
+      else if(hand1.gun.shotgun > 0)
+      {
+         if(firepower > 3)
+         {
+            _root.CP("fx_flash",_X + hand1.gun.flashX * facing * minimulti,_Y - 38 * minimulti,-90 + facing * 90,0);
+         }
+         i = 0;
+         while(i < hand1.gun.shotgun)
+         {
+            _root.CP("bullet2",_X + 23 * minimulti * facing,_Y - 38 * minimulti,-90 + 90 * facing - hand1.gun.shotgun / 1.9 + i * 2,firepower + PLAYERNUMBER * 1000,teamnumber);
+            i++;
+         }
+      }
+      else
+      {
+         if(firepower > 3)
+         {
+            _root.CP("fx_flash",_X + hand1.gun.flashX * facing * minimulti,_Y - 38 * minimulti,-90 + facing * 90,0);
+         }
+         temp = Math.random() * 6 - 3;
+         if(facing == 1)
+         {
+            _root.CP("bullet",_X + 23 * minimulti,_Y - 38 * minimulti + temp,0,firepower + random(8) - 4 + PLAYERNUMBER * 1000,teamnumber);
+         }
+         else
+         {
+            _root.CP("bullet",_X - 23 * minimulti,_Y - 38 * minimulti + temp,180,firepower + random(8) - 4 + PLAYERNUMBER * 1000,teamnumber);
+         }
+      }
+      _root.gunsound(wepnumber);
+   }
+}
+function adjustrof()
+{
+   waittime = rof - 2;
+   if(wepnumber < 10)
+   {
+      waittime = -10;
+   }
+   if(wepnumber >= 10 && _root.gamemode != 4)
+   {
+      _root.CP("fx_cratename",_X,_Y - 70,0,PLAYERNUMBER);
+   }
+   if(perknumber == 7)
+   {
+      bullets += Math.ceil(bullets * 0.333);
+   }
+   if(_root.gamemode == 4)
+   {
+      waittime = -10;
+   }
+   if(_root.campaignlevel == 2 && _root.campaignmode)
+   {
+      firepower *= 0.6;
+      damagemulti = 1.3;
+   }
+}
+function adjustrof2()
+{
+   if(perknumber == 7)
+   {
+      bullets += Math.ceil(bullets * 0.333);
+   }
+}
+function ejectshell()
+{
+   _root.CP("fx_shell",_X + hand1.gun.shellX * minimulti * facing,_Y - 38 * minimulti,0,0);
+}
+function ejectshell2()
+{
+   _root.CP("fx_shell2",_X + hand1.gun.shellX * minimulti * facing,_Y - 38 * minimulti,0,0);
+}
+function ejectshell3()
+{
+   _root.CP("fx_shell3",_X + hand1.gun.shellX * minimulti * facing,_Y - 27 * minimulti,0,0);
+}
+function ejectshell4()
+{
+   _root.CP("fx_shell3",_X + hand1.gun.shellX * minimulti * facing,_Y - 38 * minimulti,0,0);
+}
+function ejectshot()
+{
+   _root.CP("fx_shot",_X + hand1.gun.shellX * minimulti * facing,_Y - 38 * minimulti,0,0);
+}
+function ejectshot3()
+{
+   _root.CP("fx_shot3",_X + hand1.gun.shellX * minimulti * facing,_Y - 27 * minimulti,0,0);
+}
+function gotkilled()
+{
+   _root.diesound();
+   if(_name != "double")
+   {
+      _root.pgsdata[PLAYERNUMBER - 1][2] += 1;
+   }
+   lives -= 1;
+   _root.pDepth += 1;
+   newmc = _root.attachMovie("fx_bling","trash" + _root.pDepth,_root.pDepth);
+   if(gothitby == _root.p1name)
+   {
+      newmc.asdf = _root.player1;
+      _root.pgsdata[0][1] += 1;
+      if(_root.gamemode == 4)
+      {
+         _root.player1.UPGRADE();
+      }
+   }
+   else if(gothitby == _root.p2name)
+   {
+      newmc.asdf = _root.player2;
+      _root.pgsdata[1][1] += 1;
+      if(_root.gamemode == 4)
+      {
+         _root.player2.UPGRADE();
+      }
+   }
+   else if(gothitby == _root.p3name)
+   {
+      newmc.asdf = _root.player3;
+      _root.pgsdata[2][1] += 1;
+      if(_root.gamemode == 4)
+      {
+         _root.player3.UPGRADE();
+      }
+   }
+   else if(gothitby == _root.p4name)
+   {
+      newmc.asdf = _root.player4;
+      _root.pgsdata[3][1] += 1;
+      if(_root.gamemode == 4)
+      {
+         _root.player4.UPGRADE();
+      }
+   }
+   newmc.mod = 1;
+   if(cheapshottimer < 120)
+   {
+      newmc.mod = 2;
+   }
+   else if(greedykill)
+   {
+      newmc.mod = 3;
+   }
+   else if(hitbynade)
+   {
+      newmc.mod = 4;
+   }
+   if(_root.gamemode == 4)
+   {
+      newmc.mod = 5;
+      newmc.leveldisplay = newmc.asdf.currentlevel;
+   }
+   if(cheapshottimer < 120)
+   {
+      _root.hud.killupdate(nametag.nametext.text,gothitby,2);
+   }
+   else if(greedykill)
+   {
+      _root.hud.killupdate(nametag.nametext.text,gothitby,4);
+   }
+   else if(hitbynade)
+   {
+      _root.hud.killupdate(nametag.nametext.text,gothitby,3);
+   }
+   else
+   {
+      _root.hud.killupdate(nametag.nametext.text,gothitby,1);
+   }
+   if(lives > 0)
+   {
+      respawn();
+   }
+   else
+   {
+      _root.hud.update();
+      i = 0;
+      while(i < _root.activeplayers.length)
+      {
+         if(_root.activeplayers[i] == this)
+         {
+            _root.activeplayers.splice(i,1);
+         }
+         i++;
+      }
+      _X = 0;
+      _Y = 1100;
+      _alpha = 0;
+      shieldtime = 0;
+      invisibletime = 0;
+      jetfuel = 0;
+      if(this._name == "double")
+      {
+         this.swapDepths(1);
+         removeMovieClip(this);
+      }
+      delete this.onEnterFrame;
+   }
+}
+function respawn()
+{
+   fadedoubletimer = -80;
+   cheapshottimer = 0;
+   gothitby = "none";
+   hitbynade = false;
+   if(_root.gamemode == 1)
+   {
+      getgun(defaultgun);
+   }
+   if(_root.gamemode == 2)
+   {
+      getgun(9);
+   }
+   if(_root.gamemode == 4)
+   {
+      getgun(currentgun);
+   }
+   if(_name != "double")
+   {
+      _Y = -1000;
+      _X = _root.ground._x + _root.ground.spawnarea._x + random(_root.ground.spawnarea._width);
+   }
+   vy = 0;
+   vx = 0;
+   jumpnum = 1;
+   offhandammo = 3;
+   shieldtime = 0;
+   invisibletime = 0;
+   jetfuel = 0;
+   speedtime = 0;
+   minitime = 0;
+   instagib.gotoAndStop(1);
+   _xscale = 80;
+   _yscale = 80;
+   minimulti = 1;
+   _root.hud.update();
+   if(perknumber == 9 && _root.gamemode != 4 && _root.gamemode != 2)
+   {
+      randgun = random(57) + 10;
+      getgun(randgun);
+   }
+}
+function startwalk()
+{
+   if(leg1._currentframe == 1)
+   {
+      leg1.gotoAndPlay(2);
+      leg2.gotoAndPlay(2);
+   }
+}
+function SELFDESTRUCT()
+{
+   _root.CP("fx_ex6",_X,_Y - 20,0);
+   i = 0;
+   while(i < 5)
+   {
+      _root.CP("fx_ex5",_X,_Y - 20,0);
+      i++;
+   }
+   i = 0;
+   while(i < 5)
+   {
+      _root.CP("fx_ex3",_X,_Y - 20,0);
+      i++;
+   }
+   j = 0;
+   while(j < 5)
+   {
+      _root.CP("fx_blood",_X,_Y,0,0);
+      j++;
+   }
+   _root.CP("fx_combo",_X,_Y - 50,0,-5);
+   _root.CP("fx_bloodstain",_X,_Y,0,0);
+   gotkilled();
+}
+function spawnfriend()
+{
+   newmc = _root.attachMovie("playerAI","double",-5);
+   newmc._x = _X;
+   newmc._y = _Y;
+   newmc.asdf = this.PLAYERNUMBER;
+}
+function lifebling()
+{
+   _root.pDepth += 1;
+   newmc = _root.attachMovie("fx_bling","trash" + _root.pDepth,_root.pDepth);
+   newmc.asdf = this;
+   newmc.mod = 6;
+}
+function UPGRADE()
+{
+   currentlevel += 1;
+   switch(currentlevel)
+   {
+      case 1:
+         currentgun = 2;
+         break;
+      case 2:
+         currentgun = 29;
+         break;
+      case 3:
+         currentgun = 19;
+         break;
+      case 4:
+         currentgun = 46;
+         break;
+      case 5:
+         currentgun = 13;
+         break;
+      case 6:
+         currentgun = 51;
+         break;
+      case 7:
+         currentgun = 50;
+         break;
+      case 8:
+         currentgun = 11;
+         break;
+      case 9:
+         currentgun = 38;
+         break;
+      case 10:
+         currentgun = 33;
+         break;
+      case 11:
+         currentgun = 58;
+         break;
+      case 12:
+         currentgun = 62;
+         break;
+      case 13:
+         currentgun = 66;
+         break;
+      case 14:
+         currentgun = 65;
+         break;
+      case 15:
+         currentgun = 44;
+   }
+   if(currentlevel == 16)
+   {
+      j = 0;
+      while(j < _root.activeplayers.length)
+      {
+         if(_root.activeplayers[j]._name != this._name)
+         {
+            _root.activeplayers[j].lives = 0;
+            _root.activeplayers[j].killself = true;
+         }
+         j++;
+      }
+   }
+   else
+   {
+      getgun(currentgun);
+   }
+}
+AI = true;
+vy = 0;
+vx = 0;
+jumpnum = 0;
+jumpkey = false;
+nadekey = false;
+downkey = false;
+freepass = false;
+facing = 1;
+walkanim = 0;
+lives = _root.totallives;
+if(_root.gamemode == 4)
+{
+   lives = 99999;
+}
+offhandnumber = 1;
+if(_root.gamemode == 4)
+{
+   offhandnumber = -1;
+}
+offhandammo = 3;
+gothitby = "none";
+hitbynade = false;
+greedykill = false;
+cheapshottimer = 0;
+destructkey = false;
+waittime = 100;
+idletime = 40;
+idlemax = 40;
+nadepower = 0;
+wepnumber = 1;
+rof = 12;
+firepower = 25;
+recoil = 0.8;
+blowback = 30;
+bullets = 9999;
+idlerotate = 40;
+pushback = 0;
+disabled = false;
+hitnumber = 0;
+hittimer = 0;
+_xscale = 80;
+_yscale = 80;
+KEYUP = false;
+KEYDOWN = false;
+KEYLEFT = false;
+KEYRIGHT = false;
+KEYSHOOT = false;
+KEYNADE = false;
+doubletime = -100;
+switch(this._name)
+{
+   case "player1":
+      PLAYERNUMBER = 1;
+      playernumber = _root.p1color;
+      KEYSPLODE = 75;
+      displayname = _root.p1name;
+      _root.attachMovie("player_arrow","arrow1",_root.arrow1depth);
+      defaultgun = _root.p1gun;
+      perknumber = _root.p1perk;
+      teamnumber = _root.p1team;
+      break;
+   case "player2":
+      PLAYERNUMBER = 2;
+      playernumber = _root.p2color;
+      KEYSPLODE = 76;
+      displayname = _root.p2name;
+      _root.attachMovie("player_arrow","arrow2",_root.arrow2depth);
+      defaultgun = _root.p2gun;
+      perknumber = _root.p2perk;
+      teamnumber = _root.p2team;
+      break;
+   case "player3":
+      PLAYERNUMBER = 3;
+      playernumber = _root.p3color;
+      KEYSPLODE = 186;
+      displayname = _root.p3name;
+      _root.attachMovie("player_arrow","arrow3",_root.arrow3depth);
+      defaultgun = _root.p3gun;
+      perknumber = _root.p3perk;
+      teamnumber = _root.p3team;
+      break;
+   case "player4":
+      PLAYERNUMBER = 4;
+      playernumber = _root.p4color;
+      KEYSPLODE = 222;
+      displayname = _root.p4name;
+      _root.attachMovie("player_arrow","arrow4",_root.arrow4depth);
+      defaultgun = _root.p4gun;
+      perknumber = _root.p4perk;
+      teamnumber = _root.p4team;
+}
+if(this._name == "double")
+{
+   doubletime = 600;
+   _root.activeplayers[_root.activeplayers.length] = this;
+   lives = 1;
+   PLAYERNUMBER = asdf;
+   switch(asdf)
+   {
+      case 1:
+         playernumber = _root.p1color;
+         displayname = _root.p1name;
+         defaultgun = _root.p1gun;
+         teamnumber = _root.p1team;
+         break;
+      case 2:
+         playernumber = _root.p2color;
+         displayname = _root.p2name;
+         defaultgun = _root.p2gun;
+         teamnumber = _root.p2team;
+         break;
+      case 3:
+         playernumber = _root.p3color;
+         displayname = _root.p3name;
+         defaultgun = _root.p3gun;
+         teamnumber = _root.p3team;
+         break;
+      case 4:
+         playernumber = _root.p4color;
+         displayname = _root.p4name;
+         defaultgun = _root.p4gun;
+         teamnumber = _root.p4team;
+   }
+}
+if(_root.teamgame)
+{
+   nametag.gotoAndStop(teamnumber + 1);
+   nametag.nametext.text = displayname;
+}
+else
+{
+   nametag.gotoAndStop(1);
+   nametag.nametext.text = displayname;
+}
+triplejump = false;
+if(perknumber == 3)
+{
+   triplejump = true;
+}
+if(perknumber == 8)
+{
+   offhandammo += 2;
+}
+currentlevel = 0;
+UPGRADE();
+currentgun = 2;
+respawn();
+targettime = 0;
+groundleft = _root.ground._x + _root.ground.platform._x;
+groundright = _root.ground._x + _root.ground.platform._x + _root.ground.platform._width;
+groundmiddle = (groundleft + groundright) / 2;
+lockleft = 0;
+lockright = 0;
+lockup = 0;
+cratearray = new Array();
+targetplayer = false;
+idletime2 = 0;
+prevx = 0;
+invisibletime = 0;
+shieldtime = 0;
+jetfuel = 0;
+speedtime = 0;
+minitime = 0;
+minimulti = 1;
+playerspeed = _root.speed;
+dummy = false;
+if(_root.gototest)
+{
+   dummy = true;
+}
+killself = false;
+iszombie = false;
+damagemulti = 1;
+fakedoubletime = -80;
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      if(!_root.double)
+      {
+         fakedoubletime += 1;
+         if(fakedoubletime >= 35)
+         {
+            fakedoubletime = -120;
+            spawnfriend();
+         }
+      }
+      if(_root.gamewin)
+      {
+         vx = 0;
+         vy = 0;
+      }
+      if(doubletime >= 0)
+      {
+         doubletime -= 1;
+         if(doubletime <= 30)
+         {
+            SELFDESTRUCT();
+         }
+      }
+      targettime += 1;
+      if(targettime >= 40)
+      {
+         low = 5000;
+         i = 0;
+         while(i < _root.activeplayers.length)
+         {
+            if(_root.activeplayers[i].teamnumber != teamnumber)
+            {
+               if(_root.activeplayers[i].PLAYERNUMBER != this.PLAYERNUMBER)
+               {
+                  distance = Math.round(Math.sqrt(Math.pow(_root.activeplayers[i]._x - _X,2) + Math.pow(_root.activeplayers[i]._y - 30 - _Y,2)));
+                  if(distance < low)
+                  {
+                     low = distance;
+                     target = _root.activeplayers[i];
+                     targetplayer = true;
+                  }
+               }
+            }
+            i++;
+         }
+         i = 0;
+         while(i < _root.cratearray.length)
+         {
+            distance = Math.round(Math.sqrt(Math.pow(_root.cratearray[i]._x - _X,2) + Math.pow(_root.cratearray[i]._y - 30 - _Y,2)));
+            if(distance < low)
+            {
+               low = distance;
+               target = _root.cratearray[i];
+               targetplayer = false;
+            }
+            if(this._name != "double" && _root.cratearray[i].powerupnumber == 0 || _root.cratearray[i].powerupnumber == 3)
+            {
+               target = _root.cratearray[i];
+               targetplayer = false;
+               break;
+            }
+            i++;
+         }
+         targettime = 0;
+      }
+      _X = _X + vx;
+      _Y = _Y + vy;
+      if(!freepass)
+      {
+         if(_root.ground.platform.hitTest(_X,_Y,true) && vy > 0)
+         {
+            if(Math.abs(vx) < 3)
+            {
+               gothitby = "none";
+               hitbynade = false;
+               greedykill = false;
+            }
+            jumpnum = 2;
+            if(perknumber == 3)
+            {
+               triplejump = true;
+            }
+            _Y = _Y - vy * 1.01;
+            i = 1;
+            while(i <= 5)
+            {
+               if(_root.ground.platform.hitTest(_X,_Y + i * (vy / 5),true))
+               {
+                  _Y = _Y + vy / 5 * (i - 0.5);
+                  break;
+               }
+               i++;
+            }
+            if(Math.abs(vy) > 3)
+            {
+               eyes._y += 10;
+               hand1._y += 10;
+               hand2._y += 8;
+               i = 0;
+               while(i < 10)
+               {
+                  _root.CP("fx_jumpland",_X,_Y,0);
+                  i++;
+               }
+               _root.dropsound();
+            }
+            vy = 0;
+         }
+         else if(jumpnum == 2)
+         {
+            jumpnum = 1;
+         }
+      }
+      if(!_root.ground.platform.hitTest(_X,_Y - 8,true) && !_root.ground.platform.hitTest(_X,_Y,true))
+      {
+         freepass = false;
+      }
+      if(_root.ground.platform.hitTest(_X,_Y - 8,true) && !freepass)
+      {
+         freepass = true;
+      }
+      if(_Y > 1000 || _X < -600 || _X > 1500)
+      {
+         gotkilled();
+      }
+      land1x = _X + land1._x * 0.8;
+      land1y = _Y + land1._y * 0.8;
+      land2x = _X + land2._x * 0.8;
+      land2y = _Y + land2._y * 0.8;
+      noland = _Y + noland._y * 0.8;
+      if(prevx == Math.round(_X) && !dummy)
+      {
+         idletime2 += 1;
+         if(idletime2 >= 4)
+         {
+            idletime2 = 0;
+            if(jumpnum == 2)
+            {
+               KEYUP = true;
+            }
+            if(target._x < _X)
+            {
+               lockleft = 10;
+            }
+            if(target._x >= _X)
+            {
+               lockright = 10;
+            }
+         }
+      }
+      else
+      {
+         idletime2 = 0;
+      }
+      prevx = Math.round(_X);
+      if(target._y <= _Y + 10 && target._y >= _Y - 80 && jumpnum == 2)
+      {
+         if(targetplayer)
+         {
+            if(target._x >= groundmiddle)
+            {
+               dir = 1;
+            }
+            if(target._x < groundmiddle)
+            {
+               dir = -1;
+            }
+            optimalx = target._x - 150 * dir;
+         }
+         else
+         {
+            optimalx = target._x;
+         }
+         if(_X > groundleft + 200)
+         {
+            if(optimalx < _X - 40)
+            {
+               KEYLEFT = true;
+            }
+         }
+         if(_X < groundright - 200)
+         {
+            if(optimalx > _X + 40)
+            {
+               KEYRIGHT = true;
+            }
+         }
+         if(_X > optimalx - 40 && _X < optimalx + 40)
+         {
+            if(target._x > _X && facing == -1)
+            {
+               KEYRIGHT = true;
+            }
+            if(target._x <= _X && facing == 1)
+            {
+               KEYLEFT = true;
+            }
+         }
+      }
+      else if(target._y > _Y + 10)
+      {
+         if(_X > groundleft + 50 && target.jumpnum == 2 || _X > groundleft - 10 && !targetplayer)
+         {
+            if(target._x < _X - 30)
+            {
+               KEYLEFT = true;
+            }
+         }
+         if(_X < groundright - 50 && target.jumpnum == 2 || _X < groundright + 10 && !targetplayer)
+         {
+            if(target._x > _X + 30)
+            {
+               KEYRIGHT = true;
+            }
+         }
+         if(_X > target._x - 30 && _X < target._x + 30 && Math.round(target.vy) == 1 && target.jumpnum == 2 || _X > target._x - 30 && _X < target._x + 30 && !targetplayer)
+         {
+            KEYDOWN = true;
+         }
+         if(_root.ground.platform.hitTest(_X,_Y + 95,true) && target.jumpnum == 2)
+         {
+            KEYDOWN = true;
+         }
+      }
+      else if(target._y < _Y - 80)
+      {
+         if(vy < 0 && jumpnum == 1 && _root.ground.platform.hitTest(_X,_Y - 30,true) && Math.abs(vx) <= 5)
+         {
+            KEYUP = true;
+         }
+         if(jumpnum == 2 && _root.ground.platform.hitTest(_X,_Y - 75,true) && Math.abs(vx) <= 5 || jumpnum == 2 && _root.ground.platform.hitTest(_X,_Y - 120,true) && Math.abs(vx) <= 5)
+         {
+            KEYUP = true;
+         }
+         else if(jumpnum == 2 && _root.ground.platform.hitTest(_X - 100,_Y - 80,true) && lockleft == 0 && vx >= -5 || jumpnum == 2 && _root.ground.platform.hitTest(_X - 100,_Y - 120,true) && lockleft == 0 && vx >= -5)
+         {
+            KEYUP = true;
+            lockleft = 20;
+         }
+         else if(jumpnum == 2 && _root.ground.platform.hitTest(_X + 100,_Y - 80,true) && lockright == 0 && vx <= 5 || jumpnum == 2 && _root.ground.platform.hitTest(_X + 100,_Y - 120,true) && lockright == 0 && vx <= 5)
+         {
+            KEYUP = true;
+            lockright = 20;
+         }
+         else if(jumpnum == 2)
+         {
+            if(target._x < _X && lockright == 0)
+            {
+               lockleft = 10;
+            }
+            else if(target._x > _X && lockleft == 0)
+            {
+               lockright = 10;
+            }
+         }
+      }
+      if(_X < groundleft + 100 || _X > groundright - 100)
+      {
+         if(groundmiddle < _X - 40)
+         {
+            KEYLEFT = true;
+         }
+         if(groundmiddle > _X + 40)
+         {
+            KEYRIGHT = true;
+         }
+      }
+      if(Math.abs(vx) > 30)
+      {
+         if(jumpnum == 2)
+         {
+            KEYUP = true;
+         }
+      }
+      if(vx > 15 || vx < -15)
+      {
+         if(jumpnum == 2)
+         {
+            KEYUP = true;
+         }
+      }
+      if(!_root.ground.platform.hitTest(land2x,land2y,true) && vx > 10)
+      {
+         if(jumpnum == 2)
+         {
+            KEYUP = true;
+         }
+      }
+      if(!_root.ground.platform.hitTest(land1x,land1y,true) && vx < -10)
+      {
+         if(jumpnum == 2)
+         {
+            KEYUP = true;
+         }
+      }
+      if(_X > groundright - 100 && targetplayer || _X > groundright && !targetplayer)
+      {
+         if(jetfuel > 0 && _X > groundright && vy > -1)
+         {
+            lockup = 10;
+         }
+         if(jumpnum == 2)
+         {
+            KEYUP = true;
+         }
+         if(vy > 0 && vx < -1 && jumpnum == 1 && _X < groundright + 100 || vy > 0 && vx < -1 && jumpnum == 11 && _X < groundright + 100)
+         {
+            KEYUP = true;
+         }
+         if(_X > groundright && !_root.ground.platform.hitTest(_X,noland,true) && jumpnum == 1 && _Y > _root.ground._y + _root.ground.lowest._y - 100 || jumpnum == 11 && _X > groundright && !_root.ground.platform.hitTest(_X,noland,true) && _Y > _root.ground._y + _root.ground.lowest._y - 100)
+         {
+            KEYUP = true;
+         }
+      }
+      if(_X < groundleft + 100 && targetplayer || _X < groundleft && !targetplayer)
+      {
+         if(jetfuel > 0 && _X < groundleft && vy > -1)
+         {
+            lockup = 10;
+         }
+         if(jumpnum == 2)
+         {
+            KEYUP = true;
+         }
+         if(vy > 0 && vx > 1 && jumpnum == 1 && _X > groundleft - 100 || vy > 0 && vx > 1 && jumpnum == 11 && _X > groundleft - 100)
+         {
+            KEYUP = true;
+         }
+         if(_X < groundleft && !_root.ground.platform.hitTest(_X,noland,true) && jumpnum == 1 && _Y > _root.ground._y + _root.ground.lowest._y - 100 || jumpnum == 11 && _X < groundleft && !_root.ground.platform.hitTest(_X,noland,true) && _Y > _root.ground._y + _root.ground.lowest._y - 100)
+         {
+            KEYUP = true;
+         }
+      }
+      if(!_root.ground.platform.hitTest(land2x,land2y,true) && jumpnum == 2)
+      {
+         KEYRIGHT = false;
+      }
+      if(!_root.ground.platform.hitTest(land1x,land1y,true) && jumpnum == 2)
+      {
+         KEYLEFT = false;
+      }
+      if(!_root.ground.platform.hitTest(land2x - 15,land2y,true) && jumpnum == 2)
+      {
+         KEYRIGHT = false;
+         KEYLEFT = true;
+      }
+      if(!_root.ground.platform.hitTest(land1x + 15,land1y,true) && jumpnum == 2)
+      {
+         KEYLEFT = false;
+         KEYRIGHT = true;
+      }
+      if(lockright >= lockleft)
+      {
+         lockleft = 0;
+      }
+      if(lockleft > lockright)
+      {
+         lockright = 0;
+      }
+      if(lockright > 0)
+      {
+         KEYRIGHT = true;
+         lockright -= 1;
+      }
+      if(lockleft > 0)
+      {
+         KEYLEFT = true;
+         lockleft -= 1;
+      }
+      if(lockup > 0)
+      {
+         KEYUP = true;
+         lockup -= 1;
+      }
+      if(targetplayer && target._y < _Y + 20 && target._y > _Y - 80)
+      {
+         if(target._x > _X && facing == 1 || target._x < _X && facing == -1)
+         {
+            if(hand1.gun.shotgun > 0)
+            {
+               if(Math.abs(target._x - _X) > 15 && Math.abs(target._x - _X) < 150)
+               {
+                  KEYSHOOT = true;
+               }
+            }
+            else
+            {
+               KEYSHOOT = true;
+            }
+         }
+      }
+      if(!disabled && !_root.gamewin)
+      {
+         if(KEYDOWN && jumpnum == 2 && !freepass && !downkey)
+         {
+            if(_Y < _root.ground._y + _root.ground.lowest._y)
+            {
+               freepass = true;
+               vy += 1;
+               _Y = _Y + 5;
+               jumpnum = 1;
+               downkey = true;
+            }
+         }
+         else if(!KEYDOWN && downkey)
+         {
+            downkey = false;
+         }
+         if(KEYUP && !jumpkey && jumpnum > 0)
+         {
+            jumpkey = true;
+            jumpnum -= 1;
+            if(jumpnum == 1)
+            {
+               vy = (- _root.power) * 1;
+               i = 0;
+               while(i < 10)
+               {
+                  _root.CP("fx_jumpland",_X,_Y,0);
+                  i++;
+               }
+            }
+            else if(jumpnum == 0)
+            {
+               vy = (- _root.power) * 0.83;
+               _root.CP("fx_double",_X,_Y);
+               if(triplejump && jumpnum == 0)
+               {
+                  jumpnum = 11;
+                  triplejump = false;
+               }
+            }
+            if(jumpnum == 10)
+            {
+               jumpnum = 0;
+               if(vy < -4)
+               {
+                  vy -= _root.power * 0.2;
+               }
+               else
+               {
+                  vy = (- _root.power) * 0.65;
+               }
+               _root.CP("fx_double",_X,_Y);
+            }
+            _Y = _Y - 1;
+         }
+         if(!KEYUP)
+         {
+            jumpkey = false;
+         }
+         if(KEYUP && jumpnum <= 0 && jetfuel > 0 && !jumpkey)
+         {
+            if(body.jetpack._alpha != 100)
+            {
+               body.jetpack._alpha = 100;
+            }
+            if(KEYUP)
+            {
+               vy += (-15 - vy) / 4;
+               _root.CP("fx_jetpack",_X - 22 * facing,_Y - 18,0);
+               jetfuel -= 1.5;
+            }
+         }
+         if(body.jetpack._alpha >= 100)
+         {
+            body.jetpack.fuel._yscale = jetfuel;
+         }
+         if(body.jetpack._alpha != 0 && jetfuel <= 0)
+         {
+            _root.CP("fx_droppack",_X - 20 * facing,_Y - 40,facing * -1,0);
+            body.jetpack._alpha = 0;
+         }
+         if(jetfuel > 0 && body.jetpack._alpha != 100)
+         {
+            body.jetpack._alpha = 100;
+         }
+         if(KEYLEFT)
+         {
+            startwalk();
+            if(jumpnum == 2)
+            {
+               vx -= playerspeed * weight;
+            }
+            else if(_root.ground.lowfriction)
+            {
+               vx -= playerspeed / 1.4;
+            }
+            else
+            {
+               vx -= playerspeed / 1.1 * weight;
+            }
+            if(facing == 1)
+            {
+               leg1._rotation *= -1;
+               leg2._rotation *= -1;
+            }
+            facing = -1;
+         }
+         if(KEYRIGHT)
+         {
+            startwalk();
+            if(jumpnum == 2)
+            {
+               vx += playerspeed * weight;
+            }
+            else if(_root.ground.lowfriction)
+            {
+               vx += playerspeed / 1.4;
+            }
+            else
+            {
+               vx += playerspeed / 1.1 * weight;
+            }
+            if(facing == -1)
+            {
+               leg1._rotation *= -1;
+               leg2._rotation *= -1;
+            }
+            facing = 1;
+         }
+      }
+      if(_root.gamewin && perknumber == 1)
+      {
+         if(Key.isDown(32))
+         {
+            body._rotation += (-15 * facing - body._rotation) / 2;
+            hand1._x += (-10 * facing - hand1._x) / 2;
+            hand2._x += (-10 * facing - hand2._x) / 2;
+         }
+         else
+         {
+            body._rotation += (- body._rotation) / 3;
+            hand1._x += (- hand1._x) / 3;
+            hand2._x += (- hand2._x) / 3;
+         }
+      }
+      if(!_root.gamewin && _root.gamemode != 2)
+      {
+         if(offhandnumber == 1 && offhandammo > 0)
+         {
+            if(KEYNADE && !nadekey)
+            {
+               nadekey = true;
+               hand2.gotoAndPlay(2);
+               nadepower = 1;
+            }
+            else if(!KEYNADE && nadekey)
+            {
+               nadekey = false;
+               _root.CP("wep_grenade",_X + 30 * facing,_Y - 35,facing,nadepower + PLAYERNUMBER * 1000);
+               offhandammo -= 1;
+               hand2.gotoAndPlay(6);
+            }
+            if(KEYNADE)
+            {
+               if(nadepower < 14)
+               {
+                  nadepower += 0.5;
+               }
+            }
+         }
+         else if(offhandnumber == 2 && offhandammo > 0)
+         {
+            if(KEYNADE && !nadekey)
+            {
+               nadekey = true;
+               if(hand2._currentframe == 1)
+               {
+                  hand2.gotoAndPlay(20);
+               }
+            }
+            else if(KEYNADE && nadekey)
+            {
+               nadekey = false;
+            }
+         }
+         else if(offhandnumber == 3)
+         {
+            if(KEYNADE && !nadekey)
+            {
+               nadekey = true;
+               if(hand2._currentframe == 1)
+               {
+                  hand2.gotoAndPlay(40);
+               }
+            }
+            else if(KEYNADE && nadekey)
+            {
+               nadekey = false;
+            }
+         }
+      }
+      if(dummy)
+      {
+         KEYSHOOT = false;
+      }
+      if(waittime < rof)
+      {
+         waittime += 1;
+      }
+      if(KEYSHOOT && waittime >= rof && !_root.gamewin && hand1.gun._currentframe == 2 && bullets > 0)
+      {
+         waittime = 0;
+         idletime = 0;
+         vx -= recoil * facing;
+         if(firepower == 0)
+         {
+            _root.CP("bullet5_grenade",_X + 30 * facing,_Y - 20,facing,20 + PLAYERNUMBER * 1000);
+         }
+         hand2.hand._y = hand1.gun.handy;
+         hand1.gun._rotation = - blowback;
+         hand1.hand._x = hand1.gun.shootx;
+         hand1.hand._y = hand1.gun.shooty;
+         hand2.hand._x = hand1.gun.handx;
+         hand2.hand._y = hand1.gun.handy;
+         hand1.gun._x = hand1.gun.shootx;
+         hand1.gun._y = hand1.gun.shooty;
+         hand1.hand._x -= pushback;
+         hand2.hand._x -= pushback;
+         if(blowback >= 20 && hand1.gun.handx > 40)
+         {
+            hand2.hand._y = - blowback;
+         }
+         hand1.gun.play();
+         FIREBULLET();
+         _root.pgsdata[PLAYERNUMBER - 1][3] += 1;
+         bullets -= 1;
+         if(bullets <= 0)
+         {
+            if(wepnumber >= 9)
+            {
+               _root.CP("fx_dropgun",_X + 20 * facing,_Y - 40,facing,wepnumber);
+               if(_root.gamemode == 1)
+               {
+                  getgun(defaultgun);
+               }
+               if(_root.gamemode == 2)
+               {
+                  getgun(8);
+               }
+               if(_root.gamemode == 4)
+               {
+                  currentlevel -= 2;
+                  UPGRADE();
+                  getgun(currentgun);
+               }
+            }
+            else
+            {
+               hand1.gun.gotoAndPlay(10);
+            }
+         }
+      }
+      if(idletime <= idlemax)
+      {
+         idletime += 1;
+      }
+      if(idletime >= idlemax && wepnumber != 55 && hand1.gun._currentframe < 40)
+      {
+         hand1.gun._x += (-5.5 - hand1.gun._x) / 3;
+         hand1.gun._y += (10.85 - hand1.gun._y) / 3;
+         hand1.gun._rotation += (idlerotate - hand1.gun._rotation) / 3;
+      }
+      else
+      {
+         hand1.hand._x += (hand1.gun.shootx - hand1.hand._x) / 3;
+         hand1.hand._y += (hand1.gun.shooty - hand1.hand._y) / 3;
+         hand2.hand._x += (hand1.gun.handx - hand2.hand._x) / 3;
+         hand2.hand._y += (hand1.gun.handy - hand2.hand._y) / 3;
+         hand1.gun._x += (hand1.gun.shootx - hand1.gun._x) / 3;
+         hand1.gun._y += (hand1.gun.shooty - hand1.gun._y) / 3;
+         hand1.gun._rotation += (- hand1.gun._rotation) / 3;
+      }
+      if(hittimer <= 40)
+      {
+         hittimer += 1;
+      }
+      if(hittimer > 40)
+      {
+         hitnumber = 0;
+      }
+      if(cheapshottimer < 120)
+      {
+         cheapshottimer += 1;
+      }
+      if(_root.activeplayers.length == 1 && _root.activeplayers[0] == this && _root.gamemode != 3 && !_root.teamgame)
+      {
+         if(_root.campaignmode && !_root.fx_teamwin)
+         {
+            _root.teamgamewin = true;
+            _root.attachMovie("fx_campaignlose","fx_teamwin",_root.teamwindepth);
+         }
+         else if(!_root.campaignmode)
+         {
+            _root.hud.countdown.play();
+         }
+      }
+      if(_root.gamewin && !player_winner)
+      {
+         this.attachMovie("player_winner","player_winner",this.getNextHighestDepth());
+      }
+      vx *= _root.friction;
+      if(vy < 24)
+      {
+         vy += _root.gravity;
+      }
+      if(Math.abs(vx) <= 0.1)
+      {
+         vx = 0;
+      }
+      if(perknumber == 2 && weight != 1)
+      {
+         weight = 1;
+      }
+      if(perknumber == 5 && recoil != 0)
+      {
+         recoil = 0;
+      }
+      if(jetfuel > 0)
+      {
+         jetfuel -= 0.12;
+      }
+      if(idletime >= idlemax && wepnumber != 55 && hand1.gun._currentframe < 40)
+      {
+         if(walkanim == 1)
+         {
+            hand1.hand._x += (- hand1.hand._x) / 3;
+            hand2.hand._x += (15 - hand2.hand._x) / 3;
+            hand1.hand._y += (10.5 - hand1.hand._y) / 3;
+            hand2.hand._y += (-3.75 - hand2.hand._y) / 3;
+         }
+         else if(walkanim == 2)
+         {
+            hand1.hand._x += (-10 - hand1.hand._x) / 3;
+            hand2.hand._x += (25 - hand2.hand._x) / 3;
+            hand1.hand._y += (10.5 - hand1.hand._y) / 3;
+            hand2.hand._y += (-3.75 - hand2.hand._y) / 3;
+         }
+         else
+         {
+            hand1.hand._x += (-5 - hand1.hand._x) / 3;
+            hand2.hand._x += (20 - hand2.hand._x) / 3;
+            hand1.hand._y += (10.5 - hand1.hand._y) / 3;
+            hand2.hand._y += (-3.75 - hand2.hand._y) / 3;
+         }
+      }
+      hand1.gun._x = hand1.hand._x;
+      if(wepnumber == 6)
+      {
+         hand1.gun.glove2._x = (hand1.gun._x * 2 - 5) * -1;
+      }
+      if(Math.abs(vx) > 3)
+      {
+         leg1.play();
+         leg2.play();
+      }
+      else if(leg1._currentframe == 1)
+      {
+         walkanim = 0;
+      }
+      if(jumpnum != 2)
+      {
+         leg1.gotoAndStop(1);
+         leg2.gotoAndStop(1);
+         walkanim = 0;
+      }
+      if(vy <= -2)
+      {
+         leg1._rotation += (80 * facing - leg1._rotation) / 3;
+         leg2._rotation += (80 * facing - leg2._rotation) / 3;
+         body._y += (-70 - body._y) / 5;
+      }
+      else if(vy >= 2)
+      {
+         leg1._rotation += (-10 * facing - leg1._rotation) / 3;
+         leg2._rotation += (-10 * facing - leg2._rotation) / 3;
+         body._y += (-55 - body._y) / 5;
+      }
+      else
+      {
+         leg1._rotation += (- leg1._rotation) / 1.5;
+         leg2._rotation += (- leg2._rotation) / 1.5;
+         body._y += (-60 - body._y) / 2;
+      }
+      leg1._x = -12 * facing;
+      leg2._x = 9 * facing;
+      if(Math.abs(-46 + body.head.head._y - eyes._y) >= 1)
+      {
+         eyes._y += (-46 - eyes._y) / 5;
+         hand1._y += (-35 - hand1._y) / 5;
+         hand2._y += (-25 - hand2._y) / 5;
+      }
+      else
+      {
+         eyes._y = -46 + body.head.head._y;
+         eyes._y = Math.round(eyes._y);
+      }
+      if(facing == 1)
+      {
+         body._xscale = 100;
+         eyes._xscale = 100;
+         hand1._xscale = 100;
+         hand2._xscale = 100;
+         leg1._xscale = 100;
+         leg2._xscale = 100;
+         instagib._xscale = 100;
+         player_hat._xscale = 100;
+         player_hat._x = 9.55 * facing;
+      }
+      else
+      {
+         body._xscale = -100;
+         eyes._xscale = -100;
+         hand1._xscale = -100;
+         hand2._xscale = -100;
+         leg1._xscale = -100;
+         leg2._xscale = -100;
+         instagib._xscale = -100;
+         player_hat._xscale = -100;
+         player_hat._x = 9.55 * facing;
+      }
+      player_hat._y = -75 + body.head.head._y + (body._y + 60);
+      if(nametag.nametext.text == "Sinusoidal Sam" && eyes._currentframe != 31)
+      {
+         eyes.gotoAndStop(31);
+      }
+      if(nametag.nametext.text == "Homer" && eyes._currentframe != 32)
+      {
+         player_hat.gotoAndStop(32);
+         eyes.gotoAndStop(32);
+      }
+      if(invisibletime > 0)
+      {
+         invisibletime -= 1;
+         if(_alpha > 0)
+         {
+            _alpha = _alpha - 10;
+         }
+         else
+         {
+            _alpha = 0;
+         }
+      }
+      else if(_alpha < 100)
+      {
+         _alpha = _alpha + 10;
+      }
+      if(shieldtime > 0)
+      {
+         shieldtime -= 1;
+         if(shield._alpha < 100)
+         {
+            shield._alpha += 100;
+         }
+         if(shield._currentframe == 1)
+         {
+            shield.play();
+         }
+      }
+      else
+      {
+         if(shield._alpha > 0)
+         {
+            shield._alpha -= 10;
+         }
+         if(shield._alpha <= 1 && shield._currentframe != 1)
+         {
+            shield.gotoAndPlay(1);
+         }
+      }
+      if(speedtime >= 0)
+      {
+         speedtime -= 1;
+         if(playerspeed != _root.speed * 2)
+         {
+            playerspeed = _root.speed * 2;
+         }
+         if(speedtime % 2 == 0)
+         {
+            if(minitime <= 0)
+            {
+               _root.CP2("fx_playertrail",_X,_Y,PLAYERNUMBER,facing);
+            }
+            if(minitime > 0)
+            {
+               _root.CP2("fx_playertrail",_X,_Y,PLAYERNUMBER * -1,facing);
+            }
+         }
+      }
+      else if(playerspeed != _root.speed)
+      {
+         playerspeed = _root.speed;
+      }
+      if(minitime >= 0)
+      {
+         minitime -= 1;
+         if(minitime > 260)
+         {
+            minimulti += (0.6 - minimulti) / 6;
+            _xscale = _xscale + (50 - _xscale) / 3;
+            _yscale = _xscale;
+         }
+         if(minitime == 260)
+         {
+            if(minimulti != 0.6)
+            {
+               minimulti = 0.6;
+            }
+            _xscale = 50;
+            _yscale = 50;
+         }
+         if(minitime <= 40)
+         {
+            minimulti += (1 - minimulti) / 6;
+            _xscale = _xscale + (80 - _xscale) / 3;
+            _yscale = _xscale;
+         }
+      }
+      else
+      {
+         if(minimulti != 1)
+         {
+            minimulti = 1;
+         }
+         if(_xscale != 80)
+         {
+            _xscale = 80;
+            _yscale = 80;
+         }
+      }
+      instagib._y = body._y + 60 - 2.65;
+      KEYUP = false;
+      KEYDOWN = false;
+      KEYLEFT = false;
+      KEYRIGHT = false;
+      KEYSHOOT = false;
+      KEYNADE = false;
+      if(this._name == "double" && lives > 1)
+      {
+         lives = 0;
+      }
+      if(this._name == "double" && jetfuel != 0)
+      {
+         jetfuel = 0;
+      }
+      if(this._name == "double" && invisibletime != 0)
+      {
+         invisibletime = 0;
+      }
+      if(this._name == "double" && shieldtime != 0)
+      {
+         shieldtime = 0;
+      }
+      if(this._name == "double" && speedtime != 0)
+      {
+         speedtime = 0;
+         playerspeed = _root.speed;
+      }
+      if(killself)
+      {
+         SELFDESTRUCT();
+      }
+   }
+};

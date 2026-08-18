@@ -1,0 +1,138 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 283" itemID="6a368e80-000000ce" lastModified="1781960264" linkageIdentifier="fx_playertrail" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 283">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#4fe260">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+_xscale = 80 * asdf;
+_yscale = 80;
+if(_rotation &lt; 0)
+{
+   _xscale = 50 * asdf;
+   _yscale = 50;
+   _rotation = Math.abs(_rotation);
+}
+PLAYERNUMBER = Math.floor(_rotation);
+switch(PLAYERNUMBER)
+{
+   case 1:
+      playernumber = _root.p1color;
+      break;
+   case 2:
+      playernumber = _root.p2color;
+      break;
+   case 3:
+      playernumber = _root.p3color;
+      break;
+   case 4:
+      playernumber = _root.p4color;
+}
+_rotation = 0;
+_alpha = 20;
+time = 10;
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      time -= 1;
+      if(_alpha &lt;= 1 || time &lt;= 0)
+      {
+         this.swapDepths(1);
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#02e8bc">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 282" name="leg1" centerPoint3DX="7.75" centerPoint3DY="12.85" cacheAsBitmap="true">
+                                             <matrix>
+                                                  <Matrix tx="-12.0" ty="-0.2" a="0.999969482421875" d="0.9999542236328125" b="1.52587890625E-5" c="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#b35296">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 281" name="eyes" centerPoint3DX="25.85" centerPoint3DY="-26.0" cacheAsBitmap="true">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="-46.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#2ec0f0">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 269" name="player_hat" centerPoint3DX="47.45" centerPoint3DY="-41.1" cacheAsBitmap="true">
+                                             <matrix>
+                                                  <Matrix tx="9.55" ty="-75.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#edb7f4">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 240" name="body" centerPoint3DX="30.65" centerPoint3DY="-21.95" cacheAsBitmap="true">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="-60.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#87f04c" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 189" name="leg2" centerPoint3DX="28.8" centerPoint3DY="6.95" cacheAsBitmap="true">
+                                             <matrix>
+                                                  <Matrix tx="9.0" ty="-5.6" a="0.999969482421875" d="0.9999542236328125" b="1.52587890625E-5" c="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

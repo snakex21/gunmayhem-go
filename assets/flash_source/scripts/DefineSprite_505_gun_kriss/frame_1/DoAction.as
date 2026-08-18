@@ -1,0 +1,16 @@
+shootx = 15;
+shooty = -6;
+handx = 51;
+handy = -12;
+shellX = 25;
+flashX = 53;
+Name = "ADVANCED SMG";
+_parent._parent.rof = 3;
+_parent._parent.firepower = 16;
+_parent._parent.recoil = 0.2;
+_parent._parent.blowback = 5;
+_parent._parent.bullets = 28;
+_parent._parent.idlerotate = 20;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.9;

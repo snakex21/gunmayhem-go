@@ -1,0 +1,17 @@
+shootx = 2;
+shooty = 0;
+handx = 40;
+handy = -12;
+shellX = 20;
+flashX = 55;
+Name = "LEVER SHOTGUN";
+_parent._parent.rof = 18;
+_parent._parent.firepower = 8;
+_parent._parent.recoil = 5;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 7;
+_parent._parent.idlerotate = -80;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 20;
+_parent._parent.weight = 0.8;
+shotgun = 7;

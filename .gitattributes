@@ -1,0 +1,16 @@
+* text=auto
+
+*.go text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.xml text eol=lf
+*.as text eol=lf
+
+*.png binary
+*.ttf binary
+*.mp3 binary
+*.wav binary
+*.dat binary
+*.sqlite binary
+*.swf binary
+*.exe binary

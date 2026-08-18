@@ -1,0 +1,32 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1440" itemID="6a368e80-0000025b" lastModified="1781960269">
+     <timeline>
+          <DOMTimeline name="Symbol 1440">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#d8a474" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#000000"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! 16914 1777| 0 1777| 0 2377| 16914 2377| 16914 1777"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! 14086 3457| 11798 3457| 11798 3857| 14086 3857| 14086 3457"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! 14152 5330| 2298 5330| 2298 5810| 3300 5810| 3300 6130| 12942 6130| 12942 5810| 14152 5810| 14152 5330"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! 12644 0| 8894 0| 8894 400| 12644 400| 12644 0"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 7540 400| 3791 400| 3791 0| 7540 0| 7540 400"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 4702 3857| 2444 3857| 2444 3457| 4702 3457| 4702 3857"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

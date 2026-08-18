@@ -1,0 +1,16 @@
+shootx = 15;
+shooty = -3;
+handx = 45;
+handy = -16;
+shellX = 20;
+flashX = 77;
+Name = "STEALTH SNIPER";
+_parent._parent.rof = 15;
+_parent._parent.firepower = 56;
+_parent._parent.recoil = 1.2;
+_parent._parent.blowback = 8;
+_parent._parent.bullets = 10;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 15;
+_parent._parent.weight = 0.8;

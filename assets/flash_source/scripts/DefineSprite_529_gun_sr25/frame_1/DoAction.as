@@ -1,0 +1,16 @@
+shootx = 12;
+shooty = 3;
+handx = 50;
+handy = -12;
+shellX = 20;
+flashX = 79;
+Name = "AMERICAN SNIPER";
+_parent._parent.rof = 12;
+_parent._parent.firepower = 55;
+_parent._parent.recoil = 1.5;
+_parent._parent.blowback = 8;
+_parent._parent.bullets = 8;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 15;
+_parent._parent.weight = 0.7;

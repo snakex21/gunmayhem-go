@@ -1,0 +1,17 @@
+shootx = 11;
+shooty = -7;
+handx = 53;
+handy = -13;
+shellX = 20;
+flashX = 50;
+Name = "CHROME SHOTGUN";
+_parent._parent.rof = 25;
+_parent._parent.firepower = 8;
+_parent._parent.recoil = 5;
+_parent._parent.blowback = 20;
+_parent._parent.bullets = 7;
+_parent._parent.idlerotate = -80;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+_parent._parent.weight = 0.8;
+shotgun = 7;

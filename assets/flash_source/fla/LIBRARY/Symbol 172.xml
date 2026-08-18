@@ -1,0 +1,84 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 172" itemID="6a368e80-0000009a" lastModified="1781960263" linkageIdentifier="fx_droppack" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 172">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#f6a62a">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>if(_rotation &lt; 0)
+{
+   _xscale = -100;
+}
+vx = 5 * _rotation;
+vy = -5;
+vy = Math.random() * 5 - 10;
+rotationspeed = Math.random() * 2 + 5;
+if(random(2) == 0)
+{
+   rotationspeed *= -1;
+}
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      _X = _X + vx;
+      _Y = _Y + vy;
+      _rotation = _rotation + rotationspeed;
+      vy += _root.gravity * 1.3;
+      if(_Y &gt;= 900 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#f3a77e" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#990000" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="2">
+                                                       <SolidColor color="#333333" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="3">
+                                                       <SolidColor color="#666666" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="2.0" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#000000"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="1" fillStyle1="1" strokeStyle="1" edges="! -12 -291| -14 -295"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="1" edges="! -14 -295[ -123 -419 -216 -267"/>
+                                                  <Edge fillStyle0="1" fillStyle1="2" strokeStyle="1" edges="! -216 -267[ -135 -201 -15 -252| 4 -261| -12 -291[ 74 -223 205 -287"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="1" edges="! 205 -287[ 94 -467 -14 -295"/>
+                                                  <Edge fillStyle0="2" fillStyle1="3" strokeStyle="0" edges="! -118 -187| -118 329[ -155 326 -186 304| -186 -204[ -158 -191 -118 -187"/>
+                                                  <Edge fillStyle0="0" fillStyle1="2" strokeStyle="1" edges="! 205 -287| 205 325[ 86 365 4 313| 4 352[ -129 397 -216 325| -216 -267"/>
+                                                  <Edge fillStyle0="2" fillStyle1="2" strokeStyle="1" edges="! 4 313| 4 -261"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

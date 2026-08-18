@@ -1,0 +1,16 @@
+shootx = 23;
+shooty = 2;
+handx = 28;
+handy = -5;
+shellX = 25;
+flashX = 45;
+Name = "ANGRY COW";
+_parent._parent.rof = 16;
+_parent._parent.firepower = 30;
+_parent._parent.recoil = 3;
+_parent._parent.blowback = 30;
+_parent._parent.bullets = 6;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.95;

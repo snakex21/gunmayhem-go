@@ -1,0 +1,38 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1375" itemID="6a368e80-00000236" lastModified="1781960267">
+     <timeline>
+          <DOMTimeline name="Symbol 1375">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#72947f" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="4999" height="1562" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="2.0" ty="2.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>The goal of the game is simple:</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="35.35" bitmapSize="707" letterSpacing="0" indent="0" leftMargin="47" lineSpacing="5" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                                  <DOMTextRun>
+                                                       <characters>&#13;KNOCK YOUR OPPONENTS OFF THE MAP!</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="35.35" bitmapSize="707" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="5" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

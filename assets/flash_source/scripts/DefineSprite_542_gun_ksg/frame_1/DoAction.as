@@ -1,0 +1,17 @@
+shootx = 16;
+shooty = 2;
+handx = 58;
+handy = -7;
+shellX = 0;
+flashX = 50;
+Name = "TACTICAL SHOTGUN";
+_parent._parent.rof = 24;
+_parent._parent.firepower = 8;
+_parent._parent.recoil = 5;
+_parent._parent.blowback = 20;
+_parent._parent.bullets = 7;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+_parent._parent.weight = 0.8;
+shotgun = 7;

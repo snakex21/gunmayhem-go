@@ -1,0 +1,16 @@
+shootx = 25;
+shooty = 2;
+handx = 47;
+handy = -10;
+shellX = 0;
+flashX = 53;
+Name = "BULLPUP SMG";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 30;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.9;

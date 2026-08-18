@@ -1,0 +1,43 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 712" itemID="6a368e80-000001a9" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 712">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#6d918c" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#ff0000" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="2.0" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#000000"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                                  <StrokeStyle index="2">
+                                                       <SolidStroke weight="2.0" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#ffffff"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! 152 -225[ 210 -225 251 -178[ 292 -129 292 -62| 289 -26[ 281 17 253 50| 251 53| -3 306| -230 54[ -269 7 -269 -58[ -269 -126 -228 -174[ -187 -222 -128 -222[ -71 -222 -28 -194[ 15 -168 18 -168| 57 -196[ 94 -225 152 -225"/>
+                                                  <Edge fillStyle0="1" fillStyle1="1" strokeStyle="2" edges="! 146 -158[ 179 -158 201 -132[ 224 -105 224 -67| 223 -47"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

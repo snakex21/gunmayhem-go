@@ -1,0 +1,16 @@
+shootx = 12;
+shooty = 1;
+handx = 48;
+handy = -14;
+shellX = 20;
+flashX = 75;
+Name = "COMPACT RIFLE";
+_parent._parent.rof = 5;
+_parent._parent.firepower = 30;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 8;
+_parent._parent.bullets = 15;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 12;
+_parent._parent.weight = 0.85;

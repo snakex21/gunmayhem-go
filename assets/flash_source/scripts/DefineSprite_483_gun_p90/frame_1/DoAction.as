@@ -1,0 +1,16 @@
+shootx = 30;
+shooty = -5;
+handx = 45;
+handy = -11;
+shellX = 5;
+flashX = 65;
+Name = "TACTICAL SMG";
+_parent._parent.rof = 3;
+_parent._parent.firepower = 14;
+_parent._parent.recoil = 0.3;
+_parent._parent.blowback = 5;
+_parent._parent.bullets = 50;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.9;

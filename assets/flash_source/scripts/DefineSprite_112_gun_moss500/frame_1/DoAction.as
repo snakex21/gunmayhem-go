@@ -1,0 +1,17 @@
+shootx = 0;
+shooty = 2;
+handx = 51;
+handy = -4;
+shellX = 20;
+flashX = 38;
+Name = "STUBBY SHOTGUN";
+_parent._parent.rof = 18;
+_parent._parent.firepower = 6;
+_parent._parent.recoil = 3;
+_parent._parent.blowback = 20;
+_parent._parent.bullets = 5;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 20;
+_parent._parent.weight = 0.9;
+shotgun = 7;

@@ -1,0 +1,302 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 399" itemID="6a368e80-00000106" lastModified="1781960264" linkageIdentifier="hud_killfeed" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 399">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#67f285">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_alpha = 0;
+time = 0;
+if(mckiller != "none")
+{
+   messagebox.text = mckiller;
+   messagebox3.text = mcname;
+   messagebox2._x = mckiller.length * 11 + 23;
+   if(_currentframe == 1)
+   {
+      messagebox2.text = "KILLED";
+      messagebox3._x = messagebox2._x + 80;
+   }
+   else if(_currentframe == 3)
+   {
+      messagebox2.text = "CHEAPSHOT\'d";
+      messagebox3._x = messagebox2._x + 140;
+   }
+   else if(_currentframe == 4)
+   {
+      messagebox2.text = "EXPLODED";
+      messagebox3._x = messagebox2._x + 110;
+   }
+   else if(_currentframe == 5)
+   {
+      messagebox2.text = "GREEDYKILLED";
+      messagebox3._x = messagebox2._x + 150;
+   }
+}
+else
+{
+   messagebox.text = mcname;
+}
+stop();
+this.onEnterFrame = function()
+{
+   time += 1;
+   _Y = _Y + ((feednumber - 1) * 30 - _Y) / 3;
+   if(time &lt;= 10 &amp;&amp; _alpha &lt; 100)
+   {
+      _alpha = _alpha + 10;
+   }
+   if(time &gt; 110)
+   {
+      _alpha = _alpha - 10;
+      if(_alpha &lt;= 1)
+      {
+         _parent.feednumber = _parent.feednumber - 1;
+         _parent.scrollup = true;
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+   if(_parent.scrollup)
+   {
+      feednumber -= 1;
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#f550b6">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox3" antiAliasSharpness="0" antiAliasThickness="0" width="188.05" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="361.6" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ASDFASDFASDF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffffff"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox2" antiAliasSharpness="0" antiAliasThickness="0" width="158.95" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="198.55" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>CHEAPSHOT</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffcc00"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                                  <DOMTextRun>
+                                                       <characters>'</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffcc00"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                                  <DOMTextRun>
+                                                       <characters>d</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffcc00"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox2" antiAliasSharpness="0" antiAliasThickness="0" width="158.95" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="198.55" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>EXPLODED</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ff6600"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox2" antiAliasSharpness="0" antiAliasThickness="0" width="158.95" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="198.55" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>GREEDYKILLED</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#006600"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#f457c5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox2" antiAliasSharpness="0" antiAliasThickness="0" width="188.05" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="198.55" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ASDFASDFASDF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#990000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="456" height="728" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="7.0" ty="5.6" a="1.0" d="0.792510986328125"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>N</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="46.9" bitmapSize="938" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Wingdings"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" duration="3" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox" antiAliasSharpness="0" antiAliasThickness="0" width="188.05" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="12.0" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ASDFASDFASDF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffffff"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#7db7e9" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox" antiAliasSharpness="0" antiAliasThickness="0" width="188.05" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="12.0" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ASDFASDFASDF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffffff"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox" antiAliasSharpness="0" antiAliasThickness="0" width="861.95" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="61.0" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ASDFASDFASDF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffffff"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" duration="3" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="messagebox3" antiAliasSharpness="0" antiAliasThickness="0" width="188.05" height="34.6" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="361.6" ty="12.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ASDFASDFASDF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="24" bitmapSize="480" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffffff"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

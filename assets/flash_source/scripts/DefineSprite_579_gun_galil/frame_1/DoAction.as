@@ -1,0 +1,16 @@
+shootx = 12;
+shooty = -1;
+handx = 48;
+handy = -14;
+shellX = 20;
+flashX = 72;
+Name = "GUERILLA ASSAULT RIFLE";
+_parent._parent.rof = 5;
+_parent._parent.firepower = 25;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 7;
+_parent._parent.bullets = 35;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.8;

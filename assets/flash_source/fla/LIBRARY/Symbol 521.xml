@@ -1,0 +1,403 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 521" itemID="6a368e80-00000145" lastModified="1781960264" linkageIdentifier="gun_lrs2" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 521">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#fc14b8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>shootx = 13;
+shooty = 1;
+handx = 42;
+handy = -11;
+shellX = 25;
+flashX = 75;
+Name = "ASSASSIN SNIPER";
+_parent._parent.rof = 25;
+_parent._parent.firepower = 60;
+_parent._parent.recoil = 10;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 5;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+_parent._parent.weight = 0.9;
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+_parent.hand._alpha = 100;
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_parent.hand._alpha = 0;
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="3" duration="2" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_root.playsound("bolt1.wav");
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="6" duration="6" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="12" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_parent._parent.ejectshell2();
+_root.playsound("bolt2.wav");
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="13" duration="10" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="23" keyMode="9728">
+                                   <Actionscript>
+                                        <script>gotoAndPlay(2);
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#76f4d5">
+                         <frames>
+                              <DOMFrame index="0" duration="2" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="6.9" centerPoint3DY="9.1">
+                                             <matrix>
+                                                  <Matrix tx="-0.1" ty="2.1"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="9.45" centerPoint3DY="7.3">
+                                             <matrix>
+                                                  <Matrix tx="2.45" ty="0.3"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="17.1" centerPoint3DY="1.95">
+                                             <matrix>
+                                                  <Matrix tx="10.1" ty="-5.05"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" duration="3" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="29.85" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="22.85" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="8" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="24.75" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="17.75" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="9" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="20.85" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="13.85" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="10" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="18.0" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="11.0" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="11" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="16.3" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="9.3" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="12" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="15.75" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="8.75" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="13" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="20.85" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="13.85" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="14" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="24.75" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="17.75" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="15" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="27.6" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="20.6" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="16" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="29.3" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="22.3" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="17" duration="3" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="29.85" centerPoint3DY="-7.0">
+                                             <matrix>
+                                                  <Matrix tx="22.85" ty="-14.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="20" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="19.8" centerPoint3DY="0.05">
+                                             <matrix>
+                                                  <Matrix tx="12.8" ty="-6.95"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="21" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="12.65" centerPoint3DY="5.1">
+                                             <matrix>
+                                                  <Matrix tx="5.65" ty="-1.9"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="22" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="8.35" centerPoint3DY="8.1">
+                                             <matrix>
+                                                  <Matrix tx="1.35" ty="1.1"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="23" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 111" name="gunhand" centerPoint3DX="6.9" centerPoint3DY="9.1">
+                                             <matrix>
+                                                  <Matrix tx="-0.1" ty="2.1"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#b8acd0" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" duration="24" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#626768" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="2">
+                                                       <SolidColor color="#484944" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="3">
+                                                       <SolidColor color="#282826" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="4">
+                                                       <SolidColor color="#5b5c56" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="5">
+                                                       <SolidColor color="#454545" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="6">
+                                                       <SolidColor color="#484846" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="7">
+                                                       <SolidColor color="#68696d" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="8">
+                                                       <SolidColor color="#3a3935" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="9">
+                                                       <SolidColor color="#383836" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="10">
+                                                       <SolidColor color="#212121" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="0.5" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#000000"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! 365 -396| 365 -412| 394 -412| 394 -396"/>
+                                                  <Edge fillStyle0="0" fillStyle1="5" strokeStyle="1" edges="! 394 -396| 542 -396"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! 542 -396| 542 -410| 574 -410| 574 -396"/>
+                                                  <Edge fillStyle0="0" fillStyle1="2" strokeStyle="1" edges="! 574 -396| 757 -425"/>
+                                                  <Edge fillStyle0="0" fillStyle1="4" strokeStyle="1" edges="! 757 -425| 920 -425| 920 -288| 757 -288"/>
+                                                  <Edge fillStyle0="0" fillStyle1="2" strokeStyle="1" edges="! 757 -288| 574 -310"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! 574 -310| 574 -249"/>
+                                                  <Edge fillStyle0="0" fillStyle1="7" strokeStyle="1" edges="! 574 -249| 1679 -249| 1679 -177| 701 -177"/>
+                                                  <Edge fillStyle0="0" fillStyle1="6" strokeStyle="1" edges="! 701 -177[ 707 -156 730 -144| 1064 -144| 1082 -112| 429 -23| 207 -23| 72 -41[ 38 -51 41 -17| 41 101"/>
+                                                  <Edge fillStyle0="0" fillStyle1="8" strokeStyle="1" edges="! 41 101| 69 101| 69 138| -78 138| -78 101| -54 101"/>
+                                                  <Edge fillStyle0="0" fillStyle1="6" strokeStyle="1" edges="! -54 101[ -52 88 -58 83[ -65 74 -82 76| -343 111[ -369 126 -357 153[ -339 176 -357 180| -426 180| -426 126| -579 126| -654 152| -642 124[ -592 -15 -642 -122| -654 -143| -377 -143| -357 -16| -259 -30"/>
+                                                  <Edge fillStyle0="0" fillStyle1="10" strokeStyle="1" edges="! -259 -30| -264 -75"/>
+                                                  <Edge fillStyle0="0" fillStyle1="9" strokeStyle="1" edges="! -264 -75| -301 -71| -317 -187| -39 -187[ -75 -160 -95 -101| -180 -88"/>
+                                                  <Edge fillStyle0="0" fillStyle1="10" strokeStyle="1" edges="! -180 -88| -173 -41"/>
+                                                  <Edge fillStyle0="0" fillStyle1="6" strokeStyle="1" edges="! -173 -41| -90 -53[ -16 -67 -2 -132| 75 -187| 140 -187"/>
+                                                  <Edge fillStyle0="0" fillStyle1="7" strokeStyle="1" edges="! 140 -187| 192 -215"/>
+                                                  <Edge fillStyle0="0" fillStyle1="3" strokeStyle="1" edges="! 192 -215| 255 -249| 365 -249"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! 365 -249| 365 -312"/>
+                                                  <Edge fillStyle0="0" fillStyle1="5" strokeStyle="1" edges="! 365 -312| 268 -312"/>
+                                                  <Edge fillStyle0="0" fillStyle1="2" strokeStyle="1" edges="! 268 -312| 212 -290"/>
+                                                  <Edge fillStyle0="0" fillStyle1="4" strokeStyle="1" edges="! 212 -290| 37 -290| 37 -419| 212 -419"/>
+                                                  <Edge fillStyle0="0" fillStyle1="2" strokeStyle="1" edges="! 212 -419| 268 -396"/>
+                                                  <Edge fillStyle0="0" fillStyle1="5" strokeStyle="1" edges="! 268 -396| 365 -396"/>
+                                                  <Edge fillStyle0="1" fillStyle1="5" strokeStyle="1" edges="! 365 -396| 365 -312"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="1" edges="! 394 -249| 394 -312"/>
+                                                  <Edge fillStyle0="1" fillStyle1="5" strokeStyle="1" edges="! 394 -312| 394 -396"/>
+                                                  <Edge fillStyle0="3" fillStyle1="1" strokeStyle="1" edges="! 394 -249| 365 -249"/>
+                                                  <Edge fillStyle0="5" fillStyle1="2" strokeStyle="1" edges="! 268 -396| 268 -312"/>
+                                                  <Edge fillStyle0="4" fillStyle1="2" strokeStyle="1" edges="! 212 -290| 212 -419"/>
+                                                  <Edge fillStyle0="0" fillStyle1="6" strokeStyle="1" edges="! 87 -57| 203 -41| 203 -118| 87 -118| 87 -57"/>
+                                                  <Edge fillStyle0="4" fillStyle1="2" strokeStyle="1" edges="! 757 -425| 757 -288"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="1" edges="! 542 -312| 542 -249"/>
+                                                  <Edge fillStyle0="1" fillStyle1="7" strokeStyle="1" edges="! 542 -249| 574 -249"/>
+                                                  <Edge fillStyle0="1" fillStyle1="2" strokeStyle="1" edges="! 574 -310| 574 -396"/>
+                                                  <Edge fillStyle0="7" fillStyle1="0" strokeStyle="1" edges="! 542 -249| 422 -249"/>
+                                                  <Edge fillStyle0="7" fillStyle1="3" strokeStyle="1" edges="! 422 -249| 422 -215| 192 -215"/>
+                                                  <Edge fillStyle0="5" fillStyle1="1" strokeStyle="1" edges="! 542 -312| 542 -396"/>
+                                                  <Edge fillStyle0="7" fillStyle1="6" strokeStyle="1" edges="! 140 -187| 700 -187| 701 -177"/>
+                                                  <Edge fillStyle0="3" fillStyle1="0" strokeStyle="1" edges="! 422 -249| 394 -249"/>
+                                                  <Edge fillStyle0="5" fillStyle1="0" strokeStyle="1" edges="! 394 -312| 542 -312"/>
+                                                  <Edge fillStyle0="10" fillStyle1="6" strokeStyle="1" edges="! -259 -30| -240 -32"/>
+                                                  <Edge fillStyle0="10" fillStyle1="0" strokeStyle="1" edges="! -240 -32| -205 -36"/>
+                                                  <Edge fillStyle0="10" fillStyle1="6" strokeStyle="1" edges="! -205 -36| -173 -41"/>
+                                                  <Edge fillStyle0="6" fillStyle1="0" strokeStyle="1" edges="! -205 -36| -222 -34"/>
+                                                  <Edge fillStyle0="6" fillStyle1="0" strokeStyle="0" edges="! -222 -34| -240 -32"/>
+                                                  <Edge fillStyle0="9" fillStyle1="10" strokeStyle="1" edges="! -264 -75| -180 -88"/>
+                                                  <Edge fillStyle0="8" fillStyle1="6" strokeStyle="1" edges="! 41 101| -54 101"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

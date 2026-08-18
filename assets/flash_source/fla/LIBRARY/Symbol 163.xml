@@ -1,0 +1,74 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 163" itemID="6a368e80-00000095" lastModified="1781960263">
+     <timeline>
+          <DOMTimeline name="Symbol 163">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#de12b9">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#ae9286" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="displaytext" antiAliasSharpness="0" antiAliasThickness="0" width="146.0" height="44.55" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-73.0" ty="-22.3"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>HIT</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="center" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="102" bitmapSize="2040" face="Showcard Gothic" fillColor="#ff9900"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="displaytext" antiAliasSharpness="0" antiAliasThickness="0" width="176.0" height="44.55" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-88.0" ty="-22.3"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>HIT</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="center" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="102" bitmapSize="2040" face="Showcard Gothic" fillColor="#ff3300"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="displaytext" antiAliasSharpness="0" antiAliasThickness="0" width="146.0" height="44.55" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-73.0" ty="-22.3"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>HIT</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="center" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="102" bitmapSize="2040" face="Showcard Gothic" fillColor="#ffff00"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

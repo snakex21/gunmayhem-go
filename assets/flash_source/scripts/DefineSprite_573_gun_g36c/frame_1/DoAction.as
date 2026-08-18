@@ -1,0 +1,16 @@
+shootx = 16;
+shooty = -1;
+handx = 60;
+handy = -12;
+shellX = 25;
+flashX = 57;
+Name = "SHORT ASSAULT RIFLE";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 7;
+_parent._parent.bullets = 30;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.8;

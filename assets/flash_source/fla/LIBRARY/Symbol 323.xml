@@ -1,0 +1,78 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 323" itemID="6a368e80-000000e7" lastModified="1781960264" linkageIdentifier="fx_blood" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 323">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#52eec1">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_rotation = random(135) - 90;
+if(random(2) == 0)
+{
+   _rotation = _rotation + 180;
+}
+speed = Math.random() * 5 + 5;
+dirx = Math.cos(_rotation * 3.141592653589793 / 180) * speed;
+diry = Math.sin(_rotation * 3.141592653589793 / 180) * speed;
+_X = _X + dirx * 1;
+_Y = _Y + diry * 1;
+_xscale = _xscale - random(60);
+_yscale = _xscale;
+time = 0;
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      speed += 0.5;
+      if(_rotation &gt; -90 &amp;&amp; _rotation &lt; 90)
+      {
+         _rotation = _rotation + 4;
+      }
+      else
+      {
+         _rotation = _rotation - 4;
+      }
+      dirx = Math.cos(_rotation * 3.141592653589793 / 180) * speed;
+      diry = Math.sin(_rotation * 3.141592653589793 / 180) * speed;
+      _X = _X + dirx;
+      _Y = _Y + diry;
+      if(_Y &gt;= 900 || _alpha &lt;= 1 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#7986a7" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#990000"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="2">
+                                                       <SolidColor color="#800000"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="2" strokeStyle="0" edges="! 49 -59[ 70 -38 76 -6[ 82 26 55 53[ 27 80 3 80| -5 80| -7 80| -445 1| -9 -80| 3 -80[ 27 -80 49 -59"/>
+                                                  <Edge fillStyle0="2" fillStyle1="1" strokeStyle="0" edges="! 43 -20[ 49 -24 58 -16| 63 5[ 63 24 39 46[ 13 69 -17 69[ -54 69 -54 57| -51 51| -42 47| -16 49[ 3 49 24 32[ 43 16 43 6| 39 -12| 43 -20"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

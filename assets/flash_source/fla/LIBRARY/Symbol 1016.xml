@@ -1,0 +1,371 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1016" itemID="6a368e80-000001f3" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 1016">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#0aa8fc">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+switch(_name)
+{
+   case "p1":
+      number = 0;
+      break;
+   case "p2":
+      number = 1;
+      break;
+   case "p3":
+      number = 2;
+      break;
+   case "p4":
+      number = 3;
+}
+if(_root.pgsdata[number][1] == -1)
+{
+   gotoAndStop(2);
+}
+else
+{
+   text0.text = _root.pgsdata[number][0];
+   text1.text = _root.pgsdata[number][1];
+   if(parseInt(text1.text) &gt; _parent.win1.maxx)
+   {
+      _parent.win1.maxx = parseInt(text1.text);
+      _parent.win1._x = _X;
+   }
+   else if(parseInt(text1.text) == _parent.win1.maxx)
+   {
+      _parent.win1.maxx = parseInt(text1.text);
+      _parent.win1._x = -200;
+   }
+   text2.text = _root.pgsdata[number][2];
+   text3.text = Math.round(parseInt(text1.text) / parseInt(text2.text) * 100) / 100;
+   if(parseInt(text1.text) / parseInt(text2.text) &gt; 100000)
+   {
+      text3.text = text1.text;
+   }
+   if(isNaN(parseInt(text1.text) / parseInt(text2.text)))
+   {
+      text3.text = 0;
+   }
+   if(parseInt(text3.text) &gt; _parent.win2.maxx)
+   {
+      _parent.win2.maxx = parseInt(text3.text);
+      _parent.win2._x = _X;
+   }
+   else if(parseInt(text3.text) == _parent.win2.maxx)
+   {
+      _parent.win2.maxx = parseInt(text3.text);
+      _parent.win2._x = -200;
+   }
+   text4.text = _root.pgsdata[number][3];
+   text5.text = _root.pgsdata[number][4];
+   percentage = Math.round(parseInt(text5.text) / parseInt(text4.text) * 100);
+   text6.text = percentage + "%";
+   if(percentage &gt; _parent.win3.maxx)
+   {
+      _parent.win3.maxx = percentage;
+      _parent.win3._x = _X;
+   }
+   else if(percentage == _parent.win3.maxx)
+   {
+      _parent.win3.maxx = percentage;
+      _parent.win3._x = -200;
+   }
+   text7.text = _root.pgsdata[number][5];
+   text8.text = _root.pgsdata[number][6];
+   text9.text = _root.pgsdata[number][7] * percentage / 100;
+   if(parseInt(text9.text) &gt; _parent.win4.maxx)
+   {
+      _parent.win4.maxx = parseInt(text9.text);
+      _parent.win4._x = _X;
+   }
+   else if(parseInt(text9.text) == _parent.win4.maxx)
+   {
+      _parent.win4.maxx = parseInt(text9.text);
+      _parent.win4._x = -200;
+   }
+   if(isNaN(parseInt(text5.text) / parseInt(text4.text)))
+   {
+      text6.text = "0%";
+      text9.text = 0;
+   }
+}
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#e4b89f">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text9" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="348.85"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#5ff4bc">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text8" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="311.85"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#69b46f">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text7" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="275.35"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#f2c21a">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text6" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="240.3"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#f1c7ff">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text5" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="204.3"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 7" color="#cf51f3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text4" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="167.8"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 8" color="#b7a5f9">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text3" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="132.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 9" color="#25de8b">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text2" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="96.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 10" color="#758ed8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text1" antiAliasSharpness="0" antiAliasThickness="0" width="133.9" height="31.0" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.65" ty="59.75"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>89</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="28" bitmapSize="560" face="Century Gothic Bold" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 11" color="#ca9fee">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="text0" antiAliasSharpness="0" antiAliasThickness="0" width="134.9" height="20.1" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="5.15" ty="3.7"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Cool Dude</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="18" bitmapSize="360" face="Arial" fillColor="#000000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 12" color="#cbddbc" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#000000" alpha="0.2"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="2">
+                                                       <SolidColor color="#666666" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="2" fillStyle1="0" strokeStyle="0" edges="! 3000 1040| 3000 100[ 3000 0 2918 0| 81 0[ 11 0 2 76| 0 99| 0 100| 0 1040"/>
+                                                  <Edge fillStyle0="2" fillStyle1="1" strokeStyle="0" edges="! 0 1040| 3000 1040"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 3000 1040| 3000 7537[ 3000 7637 2918 7637| 81 7637[ 0 7637 0 7537| 0 1040"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

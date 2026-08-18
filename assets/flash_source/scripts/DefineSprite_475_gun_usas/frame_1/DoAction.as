@@ -1,0 +1,17 @@
+shootx = 12;
+shooty = 3;
+handx = 49;
+handy = -11;
+shellX = 20;
+flashX = 60;
+Name = "FAT SHOTGUN";
+_parent._parent.rof = 6;
+_parent._parent.firepower = 5;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 12;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 20;
+_parent._parent.weight = 0.75;
+shotgun = 7;

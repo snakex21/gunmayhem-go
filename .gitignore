@@ -1,0 +1,28 @@
+# Build outputs
+GunMayhem.exe
+build.exe
+*.exe
+*.test
+*.out
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local source-reference archive. These files are useful while reverse-engineering
+# the Flash original, but the Go runtime does not read them.
+assets/source_reference_only/
+
+# FFDec/XFL duplicate WAV exports. Runtime audio uses compact sounds/*.mp3,
+# with only five 11.025 kHz raw XFL fallbacks kept in fla/bin.
+assets/flash_source/fla/LIBRARY/*.wav
+
+# Source font binaries stay local and are not redistributed through Git.
+assets/flash_source/fonts/*.ttf
+
+# Temporary / profiling output
+*.log
+*.pprof
+coverage.out

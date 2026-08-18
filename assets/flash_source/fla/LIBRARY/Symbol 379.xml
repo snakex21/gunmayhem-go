@@ -1,0 +1,171 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 379" itemID="6a368e80-00000103" lastModified="1781960264" linkageIdentifier="bullet4" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 379">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#c69f88">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>function tagplayer(mc)
+{
+   switch(Math.floor(asdf / 1000))
+   {
+      case 1:
+         mc.gothitby = _root.p1name;
+         _root.pgsdata[0][4] += 1;
+         break;
+      case 2:
+         mc.gothitby = _root.p2name;
+         _root.pgsdata[1][4] += 1;
+         break;
+      case 3:
+         mc.gothitby = _root.p3name;
+         _root.pgsdata[2][4] += 1;
+         break;
+      case 4:
+         mc.gothitby = _root.p4name;
+         _root.pgsdata[3][4] += 1;
+   }
+   mc.hitbynade = false;
+}
+function dothehittest()
+{
+   if(!freepass)
+   {
+      if(_root.ground.hitTest(_X,_Y,true))
+      {
+         _X = _X - speed;
+         i = 1;
+         while(i &lt;= 5)
+         {
+            if(_root.ground.hitTest(_X + i * (speed / 5),_Y,true))
+            {
+               _X = _X + speed / 5 * (i - 1);
+               break;
+            }
+            i++;
+         }
+         i = 0;
+         while(i &lt; 3)
+         {
+            _root.CP("fx_spark",_X,_Y,0);
+            _root.CP("fx_debris",_X,_Y,0);
+            i++;
+         }
+         removethis = true;
+      }
+   }
+}
+function deletethis()
+{
+   removeMovieClip(this);
+   delete this.onEnterFrame;
+}
+speed = 25;
+facing = 1;
+if(_rotation != 0)
+{
+   speed *= -1;
+   facing = -1;
+}
+time = 1;
+trail._width = 20;
+trail._alpha = 0;
+freepass = false;
+firepower = Math.abs(asdf % 1000);
+if(firepower &gt; 50)
+{
+   trail.gotoAndStop(2);
+}
+_alpha = 0;
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      if(!removethis)
+      {
+         _X = _X + speed;
+         if(!removethis)
+         {
+            i = 0;
+            while(i &lt; _root.activeplayers.length)
+            {
+               if(_root.activeplayers[i].teamnumber != asdf2)
+               {
+                  if(_root.activeplayers[i].PLAYERNUMBER != Math.floor(asdf / 1000) &amp;&amp; _root.activeplayers[i].frame.hitTest(_X,_Y,true))
+                  {
+                     if(_root.activeplayers[i].shieldtime == 0)
+                     {
+                        _root.activeplayers[i].vx += firepower * facing * _root.activeplayers[i].damagemulti;
+                     }
+                     else
+                     {
+                        _root.activeplayers[i].vx += firepower * facing * 0.33;
+                        _root.activeplayers[i].shield.gotoAndPlay(23);
+                     }
+                     _root.activeplayers[i].hitnumber += 1;
+                     _root.activeplayers[i].hittimer = 0;
+                     qwer = _root.activeplayers[i].hitnumber;
+                     _root.hitsound();
+                     tagplayer(_root.activeplayers[i]);
+                     deletethis();
+                  }
+               }
+               i++;
+            }
+         }
+         _alpha = _alpha - 100;
+         if(_alpha &lt;= 1)
+         {
+            removeMovieClip(this);
+            delete this.onEnterFrame;
+         }
+         if(_X &lt; -600 || _X &gt; 1500)
+         {
+            deletethis();
+         }
+      }
+      else
+      {
+         _alpha = _alpha - 25;
+         if(_alpha &lt;= 1)
+         {
+            deletethis();
+         }
+      }
+      if(_root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#ef72ad" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 368" name="trail" centerPoint3DX="57.2" centerPoint3DY="2.7">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <BlurFilter blurX="2" blurY="2" quality="1"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

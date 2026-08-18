@@ -1,0 +1,16 @@
+shootx = 12;
+shooty = 0;
+handx = 42;
+handy = -14;
+shellX = 20;
+flashX = 65;
+Name = "DE- MATERIALIZER";
+_parent._parent.rof = 12;
+_parent._parent.firepower = 25;
+_parent._parent.recoil = 7;
+_parent._parent.blowback = 20;
+_parent._parent.bullets = 5;
+_parent._parent.idlerotate = -80;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 40;
+_parent._parent.weight = 1;

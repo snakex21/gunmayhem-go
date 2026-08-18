@@ -1,0 +1,16 @@
+shootx = 14;
+shooty = 1;
+handx = 50;
+handy = -11;
+shellX = 19;
+flashX = 70;
+Name = "TOP-LOAD MACHINE GUN";
+_parent._parent.rof = 3;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 7;
+_parent._parent.bullets = 50;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.7;

@@ -1,0 +1,17 @@
+shootx = 18;
+shooty = 6;
+handx = 43;
+handy = 1;
+shellX = 25;
+flashX = 30;
+Name = "POLICE GRENADE LAUNCHER";
+_parent._parent.rof = 40;
+_parent._parent.firepower = 0;
+_parent._parent.recoil = 1;
+_parent._parent.blowback = 20;
+_parent._parent.bullets = 5;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+_parent._parent.weight = 0.85;
+home = _parent._parent;

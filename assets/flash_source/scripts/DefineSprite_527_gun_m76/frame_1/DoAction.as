@@ -1,0 +1,16 @@
+shootx = 12;
+shooty = -2;
+handx = 50;
+handy = -16;
+shellX = 20;
+flashX = 79;
+Name = "RUGGED SNIPER";
+_parent._parent.rof = 12;
+_parent._parent.firepower = 55;
+_parent._parent.recoil = 1.2;
+_parent._parent.blowback = 8;
+_parent._parent.bullets = 10;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 15;
+_parent._parent.weight = 0.8;

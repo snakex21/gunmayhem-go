@@ -1,0 +1,2 @@
+stop();
+id = "COOL PISTOL";

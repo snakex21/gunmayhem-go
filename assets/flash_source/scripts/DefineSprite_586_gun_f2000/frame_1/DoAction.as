@@ -1,0 +1,16 @@
+shootx = 23;
+shooty = -1;
+handx = 47;
+handy = -9;
+shellX = 40;
+flashX = 56;
+Name = "FUTURISTIC ASSAULT RIFLE";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 25;
+_parent._parent.recoil = 0.2;
+_parent._parent.blowback = 3;
+_parent._parent.bullets = 30;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.8;

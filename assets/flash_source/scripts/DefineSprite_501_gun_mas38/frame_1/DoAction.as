@@ -1,0 +1,16 @@
+shootx = 18;
+shooty = 2;
+handx = 40;
+handy = -12;
+shellX = 25;
+flashX = 55;
+Name = "ANTIQUE SMG";
+_parent._parent.rof = 3;
+_parent._parent.firepower = 15;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 32;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.9;

@@ -1,0 +1,356 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1489" itemID="6a368e80-0000026e" lastModified="1781960269">
+     <timeline>
+          <DOMTimeline name="Symbol 1489">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#08dd9b">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>function killupdate(mcname, mckiller, mod)
+{
+   if(_root.gamemode != 5 &amp;&amp; _root.campaignlevel != 1)
+   {
+      newmc = this.attachMovie("hud_killfeed","mc" + this.getNextHighestDepth(),this.getNextHighestDepth());
+      newmc.mckiller = mckiller;
+      newmc.mcname = mcname;
+      if(mckiller != "none")
+      {
+         if(mod == 2)
+         {
+            newmc.gotoAndStop(3);
+         }
+         if(mod == 3)
+         {
+            newmc.gotoAndStop(4);
+         }
+         if(mod == 4)
+         {
+            newmc.gotoAndStop(5);
+         }
+      }
+      else
+      {
+         newmc.gotoAndStop(2);
+      }
+      newmc._x = 0;
+      feednumber += 1;
+      newmc._y = (feednumber - 1) * 30;
+      newmc.feednumber = feednumber;
+      if(countdown._currentframe != 1)
+      {
+         countdown.gotoAndStop(1);
+         _root._x = 0;
+         _root._y = 0;
+      }
+   }
+}
+function update()
+{
+   if(_root.gamemode != 4 &amp;&amp; _root.gamemode != 5)
+   {
+      card1.livedisplay.text = _root.player1.lives;
+      card2.livedisplay.text = _root.player2.lives;
+      card3.livedisplay.text = _root.player3.lives;
+      card4.livedisplay.text = _root.player4.lives;
+   }
+   else if(_root.gamemode == 4)
+   {
+      card1.livedisplay.text = _root.player1.currentlevel;
+      card2.livedisplay.text = _root.player2.currentlevel;
+      card3.livedisplay.text = _root.player3.currentlevel;
+      card4.livedisplay.text = _root.player4.currentlevel;
+   }
+   else if(_root.gamemode == 5)
+   {
+      card1.livedisplay.text = _root.player1.lives;
+      card2.livedisplay.text = _root.player2.lives;
+      card3.livedisplay.text = _root.player3.lives;
+      card4.livedisplay.text = _root.player4.lives;
+      if(_root.player1.lives == 0)
+      {
+         card1.player.gotoAndStop(2);
+      }
+      if(_root.player2.lives == 0)
+      {
+         card2.player.gotoAndStop(2);
+      }
+      if(_root.player3.lives == 0)
+      {
+         card3.player.gotoAndStop(2);
+      }
+      if(_root.player4.lives == 0)
+      {
+         card4.player.gotoAndStop(2);
+      }
+   }
+   if(card1.livedisplay.text != "0")
+   {
+      card1.ammodisplay.text = _root.player1.bullets;
+   }
+   if(card2.livedisplay.text != "0")
+   {
+      card2.ammodisplay.text = _root.player2.bullets;
+   }
+   if(card3.livedisplay.text != "0")
+   {
+      card3.ammodisplay.text = _root.player3.bullets;
+   }
+   if(card4.livedisplay.text != "0")
+   {
+      card4.ammodisplay.text = _root.player4.bullets;
+   }
+   if(card1.livedisplay.text != "0")
+   {
+      if(_root.player1.bullets &gt; 1000)
+      {
+         card1.ammodisplay.text = "∞";
+      }
+   }
+   if(card2.livedisplay.text != "0")
+   {
+      if(_root.player2.bullets &gt; 1000)
+      {
+         card2.ammodisplay.text = "∞";
+      }
+   }
+   if(card3.livedisplay.text != "0")
+   {
+      if(_root.player3.bullets &gt; 1000)
+      {
+         card3.ammodisplay.text = "∞";
+      }
+   }
+   if(card4.livedisplay.text != "0")
+   {
+      if(_root.player4.bullets &gt; 1000)
+      {
+         card4.ammodisplay.text = "∞";
+      }
+   }
+   if(card1.livedisplay.text != "0")
+   {
+      if(card1.gunname.text != _root.player1.hand1.gun.Name)
+      {
+         card1.gunname.text = _root.player1.hand1.gun.Name;
+      }
+   }
+   if(card2.livedisplay.text != "0")
+   {
+      if(card2.gunname.text != _root.player2.hand1.gun.Name)
+      {
+         card2.gunname.text = _root.player2.hand1.gun.Name;
+      }
+   }
+   if(card3.livedisplay.text != "0")
+   {
+      if(card3.gunname.text != _root.player3.hand1.gun.Name)
+      {
+         card3.gunname.text = _root.player3.hand1.gun.Name;
+      }
+   }
+   if(card4.livedisplay.text != "0")
+   {
+      if(card4.gunname.text != _root.player4.hand1.gun.Name)
+      {
+         card4.gunname.text = _root.player4.hand1.gun.Name;
+      }
+   }
+   if(!_root.player1)
+   {
+      card1._alpha = 0;
+   }
+   if(!_root.player2)
+   {
+      card2._alpha = 0;
+   }
+   if(!_root.player3)
+   {
+      card3._alpha = 0;
+   }
+   if(!_root.player4)
+   {
+      card4._alpha = 0;
+   }
+}
+this.swapDepths(_root.huddepth);
+scrollup = false;
+time = 0;
+qwerqwer._x = 20;
+qwerqwer._y = 20;
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      _X = - _root._x;
+      _Y = - _root._y;
+      update();
+      if(scrollup)
+      {
+         time += 1;
+         if(time &gt;= 2)
+         {
+            scrollup = false;
+            time = 0;
+         }
+      }
+      if(_root.gamemode == 5)
+      {
+         if(wavedisplay.wavedisplay.text != _root.zombiewave)
+         {
+            wavedisplay.wavedisplay.text = _root.zombiewave;
+         }
+         if(wavedisplay.killeddisplay.text != _root.zombiekilled)
+         {
+            wavedisplay.killeddisplay.text = _root.zombiekilled;
+         }
+         if(wavedisplay.killedtotaldisplay.text != _root.zombiekilledtotal)
+         {
+            wavedisplay.killedtotaldisplay.text = _root.zombiekilledtotal;
+         }
+      }
+   }
+};
+feednumber = 0;
+if(_root.gamemode == 5)
+{
+   this.attachMovie("hud_wavedisplay","wavedisplay",2);
+}
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#01b0ee">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="130" height="300" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-54.0" ty="19.75"/>
+                                             </matrix>
+                                             <textRuns/>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#febce9">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1487" name="countdown" centerPoint3DX="494.75" centerPoint3DY="439.5">
+                                             <matrix>
+                                                  <Matrix tx="450.0" ty="280.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#96ba6c">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1480" name="card4" centerPoint3DX="894.3" centerPoint3DY="628.85">
+                                             <matrix>
+                                                  <Matrix tx="780.0" ty="550.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#0ff1f3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1480" name="card3" centerPoint3DX="674.3" centerPoint3DY="628.85">
+                                             <matrix>
+                                                  <Matrix tx="560.0" ty="550.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#eb7b39">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1480" name="card2" centerPoint3DX="454.3" centerPoint3DY="628.85">
+                                             <matrix>
+                                                  <Matrix tx="340.0" ty="550.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 7" color="#d419c5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1480" name="card1" centerPoint3DX="234.3" centerPoint3DY="628.85">
+                                             <matrix>
+                                                  <Matrix tx="120.0" ty="550.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 8" color="#518bad">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1448" centerPoint3DX="20.0" centerPoint3DY="17.7">
+                                             <matrix>
+                                                  <Matrix tx="5.0" ty="5.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <color>
+                                                  <Color alphaMultiplier="0.0"/>
+                                             </color>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 9" color="#f2f5e0" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1446" centerPoint3DX="450.5" centerPoint3DY="300.5">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

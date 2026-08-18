@@ -1,0 +1,16 @@
+shootx = 15;
+shooty = 1;
+handx = 47;
+handy = -11;
+shellX = 20;
+flashX = 85;
+Name = "CLASSIC SNIPER";
+_parent._parent.rof = 25;
+_parent._parent.firepower = 56;
+_parent._parent.recoil = 8;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 6;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+_parent._parent.weight = 0.75;

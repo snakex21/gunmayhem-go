@@ -1,0 +1,863 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 991" itemID="6a368e80-000001f1" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 991">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#e9e437">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>function disableall()
+{
+   i = 0;
+   while(i &lt; btnarray.length)
+   {
+      btnarray[i].lockup();
+      i++;
+   }
+   btn_back.useHandCursor = false;
+   islocked = true;
+   lockup._alpha = 100;
+}
+function enableall()
+{
+   i = 0;
+   while(i &lt; btnarray.length)
+   {
+      btnarray[i].lockup2();
+      i++;
+   }
+   btn_back.useHandCursor = true;
+   islocked = false;
+   lockup._alpha = 0;
+}
+function checkifvalid(input)
+{
+   returnvalue = false;
+   switch(input)
+   {
+      case 8:
+         returnvalue = true;
+         break;
+      case 13:
+         returnvalue = true;
+         break;
+      case 16:
+         returnvalue = true;
+         break;
+      case 17:
+         returnvalue = true;
+         break;
+      case 20:
+         returnvalue = true;
+         break;
+      case 33:
+         returnvalue = true;
+         break;
+      case 34:
+         returnvalue = true;
+         break;
+      case 35:
+         returnvalue = true;
+         break;
+      case 36:
+         returnvalue = true;
+         break;
+      case 37:
+         returnvalue = true;
+         break;
+      case 38:
+         returnvalue = true;
+         break;
+      case 39:
+         returnvalue = true;
+         break;
+      case 40:
+         returnvalue = true;
+         break;
+      case 45:
+         returnvalue = true;
+         break;
+      case 46:
+         returnvalue = true;
+         break;
+      case 145:
+         returnvalue = true;
+         break;
+      case 96:
+         returnvalue = true;
+         break;
+      case 97:
+         returnvalue = true;
+         break;
+      case 98:
+         returnvalue = true;
+         break;
+      case 99:
+         returnvalue = true;
+         break;
+      case 100:
+         returnvalue = true;
+         break;
+      case 101:
+         returnvalue = true;
+         break;
+      case 102:
+         returnvalue = true;
+         break;
+      case 103:
+         returnvalue = true;
+         break;
+      case 104:
+         returnvalue = true;
+         break;
+      case 105:
+         returnvalue = true;
+         break;
+      case 106:
+         returnvalue = true;
+         break;
+      case 107:
+         returnvalue = true;
+         break;
+      case 109:
+         returnvalue = true;
+         break;
+      case 110:
+         returnvalue = true;
+         break;
+      case 111:
+         returnvalue = true;
+         break;
+      case 113:
+         returnvalue = true;
+         break;
+      case 115:
+         returnvalue = true;
+         break;
+      case 118:
+         returnvalue = true;
+         break;
+      case 119:
+         returnvalue = true;
+         break;
+      case 120:
+         returnvalue = true;
+         break;
+      case 121:
+         returnvalue = true;
+         break;
+      case 123:
+         returnvalue = true;
+         break;
+      case 186:
+         returnvalue = true;
+         break;
+      case 187:
+         returnvalue = true;
+         break;
+      case 188:
+         returnvalue = true;
+         break;
+      case 189:
+         returnvalue = true;
+         break;
+      case 190:
+         returnvalue = true;
+         break;
+      case 191:
+         returnvalue = true;
+         break;
+      case 192:
+         returnvalue = true;
+         break;
+      case 219:
+         returnvalue = true;
+         break;
+      case 220:
+         returnvalue = true;
+         break;
+      case 221:
+         returnvalue = true;
+         break;
+      case 222:
+         returnvalue = true;
+   }
+   if(input &gt;= 65 &amp;&amp; input &lt;= 90 || input &gt;= 48 &amp;&amp; input &lt;= 57)
+   {
+      returnvalue = true;
+   }
+   return returnvalue;
+}
+btn_back.onRelease = function()
+{
+   if(!_root.fadeaway &amp;&amp; !islocked)
+   {
+      btn_back.useHandCursor = false;
+      newmc = _root.attachMovie("fadeaway","fadeaway",_root.fadedepth);
+      newmc.targetframe = 10;
+      _root.gotomenu = true;
+      _root.playsound("menu.wav");
+   }
+};
+lockup._alpha = 0;
+btnarray = new Array();
+islocked = false;
+getinput = -1;
+keyListener = new Object();
+keyListener.onKeyDown = function()
+{
+   if(islocked &amp;&amp; checkifvalid(Key.getCode()))
+   {
+      islocked = false;
+      getinput = Key.getCode();
+      enableall();
+      targetkey.taketheinput();
+   }
+};
+Key.addListener(keyListener);
+if(_root.savedata2.data.musicON)
+{
+   music1.gotoAndStop(3);
+}
+if(!_root.savedata2.data.musicON)
+{
+   music2.gotoAndStop(3);
+}
+music1.onRelease = function()
+{
+   if(music1._currentframe != 3)
+   {
+      _root.savedata2.data.musicON = true;
+      music1.gotoAndStop(3);
+      music2.gotoAndStop(1);
+   }
+};
+music2.onRelease = function()
+{
+   if(music2._currentframe != 3)
+   {
+      _root.savedata2.data.musicON = false;
+      music2.gotoAndStop(3);
+      music1.gotoAndStop(1);
+      _root.stopallmusic();
+   }
+};
+if(_root.savedata2.data.soundON)
+{
+   sound1.gotoAndStop(3);
+}
+if(!_root.savedata2.data.soundON)
+{
+   sound2.gotoAndStop(3);
+}
+sound1.onRelease = function()
+{
+   if(sound1._currentframe != 3)
+   {
+      _root.savedata2.data.soundON = true;
+      sound1.gotoAndStop(3);
+      sound2.gotoAndStop(1);
+   }
+};
+sound2.onRelease = function()
+{
+   if(sound2._currentframe != 3)
+   {
+      _root.savedata2.data.soundON = false;
+      sound2.gotoAndStop(3);
+      sound1.gotoAndStop(1);
+   }
+};
+if(_root.savedata2.data.def_quality == 1)
+{
+   quality1.gotoAndStop(3);
+}
+if(_root.savedata2.data.def_quality == 2)
+{
+   quality2.gotoAndStop(3);
+}
+if(_root.savedata2.data.def_quality == 3)
+{
+   quality3.gotoAndStop(3);
+}
+quality1.onRelease = function()
+{
+   if(quality1._currentframe != 3)
+   {
+      _root.savedata2.data.def_quality = 1;
+      quality1.gotoAndStop(3);
+      quality2.gotoAndStop(1);
+      quality3.gotoAndStop(1);
+   }
+};
+quality2.onRelease = function()
+{
+   if(quality2._currentframe != 3)
+   {
+      _root.savedata2.data.def_quality = 2;
+      quality2.gotoAndStop(3);
+      quality1.gotoAndStop(1);
+      quality3.gotoAndStop(1);
+   }
+};
+quality3.onRelease = function()
+{
+   if(quality3._currentframe != 3)
+   {
+      _root.savedata2.data.def_quality = 3;
+      quality3.gotoAndStop(3);
+      quality1.gotoAndStop(1);
+      quality2.gotoAndStop(1);
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#25a5e2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 990" name="lockup" centerPoint3DX="450.0" centerPoint3DY="300.0">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#9f3bd7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="421" height="332" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="516.15" ty="518.3"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>HIGH</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="7" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#fed6c1">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="592" height="333" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="449.95" ty="518.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>MEDIUM</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="2" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#b9e5b5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="385" height="331" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="390.15" ty="518.75"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>LOW</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="15.9" bitmapSize="318" letterSpacing="0" indent="0" leftMargin="9" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#a509d3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="489" height="437" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="275.15" ty="514.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>OFF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="22.1" bitmapSize="442" letterSpacing="0" indent="0" leftMargin="7" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 7" color="#f72af3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="431" height="437" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="211.6" ty="514.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ON</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="22.1" bitmapSize="442" letterSpacing="0" indent="0" leftMargin="10" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 8" color="#9a9af8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="489" height="437" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="96.05" ty="514.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>OFF</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="22.1" bitmapSize="442" letterSpacing="0" indent="0" leftMargin="7" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 9" color="#d0745c">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="431" height="437" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="32.5" ty="514.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ON</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="22.1" bitmapSize="442" letterSpacing="0" indent="0" leftMargin="10" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 10" color="#85ae7a">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 982" name="quality3" centerPoint3DX="585.6" centerPoint3DY="527.9">
+                                             <matrix>
+                                                  <Matrix tx="557.1" ty="512.15"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 11" color="#da71f9">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 982" name="quality2" centerPoint3DX="522.6" centerPoint3DY="527.6">
+                                             <matrix>
+                                                  <Matrix tx="494.1" ty="511.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 12" color="#f0ab83">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 982" name="quality1" centerPoint3DX="459.6" centerPoint3DY="527.6">
+                                             <matrix>
+                                                  <Matrix tx="431.1" ty="511.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 13" color="#ab6c79">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 982" name="sound2" centerPoint3DX="344.05" centerPoint3DY="527.6">
+                                             <matrix>
+                                                  <Matrix tx="315.55" ty="511.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 14" color="#c15275">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 982" name="sound1" centerPoint3DX="281.05" centerPoint3DY="527.6">
+                                             <matrix>
+                                                  <Matrix tx="252.55" ty="511.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 15" color="#7ce1e2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 982" name="music2" centerPoint3DX="165.5" centerPoint3DY="527.6">
+                                             <matrix>
+                                                  <Matrix tx="137.0" ty="511.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 16" color="#fc5d6e">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 982" name="music1" centerPoint3DX="102.5" centerPoint3DY="527.6">
+                                             <matrix>
+                                                  <Matrix tx="74.0" ty="511.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="3" blurY="3" color="#000000" distance="3" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 17" color="#00d9d0">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1221" height="302" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="497.6" ty="489.95"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>medium recommended</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="14.15" bitmapSize="283" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 18" color="#24b7aa">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="49.55" antiAliasSharpness="0" antiAliasThickness="0" width="836" height="463" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="383.55" ty="483.4"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>QUALITY</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="22.1" bitmapSize="442" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 19" color="#c7faad">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="49.55" antiAliasSharpness="0" antiAliasThickness="0" width="944" height="439" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="205.0" ty="483.1"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>SOUND FX</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="22.1" bitmapSize="442" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 20" color="#08a3e8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="48.85" antiAliasSharpness="0" antiAliasThickness="0" width="679" height="439" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="27.15" ty="483.1"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>MUSIC</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="22.1" bitmapSize="442" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 21" color="#bbffbc">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="662" height="514" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="761.2" ty="523.35"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Back</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="26.5" bitmapSize="530" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 22" color="#aa55eb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-46.7" antiAliasSharpness="0" antiAliasThickness="0" width="1025" height="514" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="114.7" ty="21.75"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>OPTIONS</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="26.5" bitmapSize="530" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ff3300" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 23" color="#f9d123">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 792" name="btn_back" centerPoint3DX="781.65" centerPoint3DY="538.65">
+                                             <matrix>
+                                                  <Matrix tx="714.15" ty="512.15"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 24" color="#f705a4">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills/>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="1.5" scaleMode="normal" caps="square">
+                                                            <fill>
+                                                                 <SolidColor color="#ffffff"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="1" edges="! 1315 1096| 7837 1096"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 25" color="#09f6dd">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 972" name="p4" centerPoint3DX="776.7" centerPoint3DY="253.45">
+                                             <matrix>
+                                                  <Matrix tx="700.0" ty="83.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 26" color="#ec7ac2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 972" name="p3" centerPoint3DX="566.7" centerPoint3DY="253.45">
+                                             <matrix>
+                                                  <Matrix tx="490.0" ty="83.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 27" color="#6cac8c">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 972" name="p2" centerPoint3DX="346.7" centerPoint3DY="253.45">
+                                             <matrix>
+                                                  <Matrix tx="270.0" ty="83.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 28" color="#50f1c2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 972" name="p1" centerPoint3DX="126.7" centerPoint3DY="253.45">
+                                             <matrix>
+                                                  <Matrix tx="50.0" ty="83.85"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 29" color="#e0aae2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 949" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

@@ -1,0 +1,17 @@
+shootx = 6;
+shooty = -3;
+handx = 48;
+handy = -12;
+shellX = 20;
+flashX = 40;
+Name = "GANGSTER SHOTGUN";
+_parent._parent.rof = 40;
+_parent._parent.firepower = 10;
+_parent._parent.recoil = 8;
+_parent._parent.blowback = 4;
+_parent._parent.bullets = 4;
+_parent._parent.idlerotate = -80;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+_parent._parent.weight = 0.75;
+shotgun = 7;

@@ -1,0 +1,17 @@
+shootx = 12;
+shooty = 3;
+handx = 49;
+handy = -15;
+shellX = 20;
+flashX = 60;
+Name = "FULL AUTO SHOTGUN";
+_parent._parent.rof = 6;
+_parent._parent.firepower = 6;
+_parent._parent.recoil = 0.2;
+_parent._parent.blowback = 8;
+_parent._parent.bullets = 12;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 15;
+_parent._parent.weight = 0.75;
+shotgun = 7;

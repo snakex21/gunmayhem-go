@@ -1,0 +1,16 @@
+shootx = 10;
+shooty = 3;
+handx = 47;
+handy = -11;
+shellX = 20;
+flashX = 85;
+Name = "HI-POWER SNIPER";
+_parent._parent.rof = 31;
+_parent._parent.firepower = 70;
+_parent._parent.recoil = 10;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 5;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 30;
+_parent._parent.weight = 0.65;

@@ -1,0 +1,32 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1393" itemID="6a368e80-00000246" lastModified="1781960269">
+     <timeline>
+          <DOMTimeline name="Symbol 1393">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#983ac1" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#000000"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 18197 480| 0 480| 0 0| 18197 0| 18197 480"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 15670 2280| 10669 2280| 10669 1800| 15670 1800| 15670 2280"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 17238 6200| 1519 6200| 1519 5400| 17238 5400| 17238 6200"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 14642 4080| 11194 4080| 11194 3600| 14642 3600| 14642 4080"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 7425 2280| 2389 2280| 2389 1800| 7425 1800| 7425 2280"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 6845 4080| 3489 4080| 3489 3600| 6845 3600| 6845 4080"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

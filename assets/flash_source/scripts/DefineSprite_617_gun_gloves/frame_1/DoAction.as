@@ -1,0 +1,18 @@
+shootx = -5.5;
+shooty = 10.85;
+handx = 0;
+handy = 0;
+shellX = 0;
+flashX = 0;
+Name = "";
+_parent._parent.rof = 12;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 0;
+_parent._parent.blowback = 0;
+_parent._parent.bullets = 9999;
+_parent._parent.idlerotate = 0;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 0;
+_parent._parent.weight = 1;
+_parent._parent.hand2.hand._alpha = 0;
+_parent.hand._alpha = 0;

@@ -1,0 +1,1691 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1198" itemID="6a368e80-00000202" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 1198">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#5fedee">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>btn_back.onRelease = function()
+{
+   if(!_root.fadeaway)
+   {
+      btn_back.useHandCursor = false;
+      newmc = _root.attachMovie("fadeaway","fadeaway",_root.fadedepth);
+      newmc.targetframe = 10;
+      _root.gotomenu = true;
+      _root.playsound("menu.wav");
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#ec8555">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="393.6" centerPoint3DY="619.9">
+                                             <matrix>
+                                                  <Matrix tx="330.85" ty="549.7" a="0.9944915771484375" d="0.9944915771484375" b="0.104522705078125" c="-0.104522705078125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#ada4f1">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1197" name="guncard" centerPoint3DX="673.9" centerPoint3DY="556.15">
+                                             <matrix>
+                                                  <Matrix tx="458.1" ty="457.6"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="3" quality="1" strength="0.8"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#6acda7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="349.5" centerPoint3DY="618.95">
+                                             <matrix>
+                                                  <Matrix tx="286.75" ty="548.75" a="0.99615478515625" d="0.99615478515625" b="0.087158203125" c="-0.087158203125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#65bceb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="302.5" centerPoint3DY="619.25">
+                                             <matrix>
+                                                  <Matrix tx="239.75" ty="549.05" a="0.9975128173828125" d="0.9975128173828125" b="0.06976318359375" c="-0.06976318359375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#c688b8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="395.45" centerPoint3DY="573.65">
+                                             <matrix>
+                                                  <Matrix tx="332.7" ty="503.45" a="0.9985809326171875" d="0.9985809326171875" b="0.052337646484375" c="-0.052337646484375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 7" color="#7b76cb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="347.75" centerPoint3DY="574.9">
+                                             <matrix>
+                                                  <Matrix tx="285.0" ty="504.7" a="0.99932861328125" d="0.99932861328125" b="0.034881591796875" c="-0.034881591796875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 8" color="#d2a370">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="301.5" centerPoint3DY="574.2">
+                                             <matrix>
+                                                  <Matrix tx="238.75" ty="504.0" a="0.9998016357421875" d="0.9998016357421875" b="0.0174560546875" c="-0.0174560546875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 9" color="#9fb65a">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="177.35" centerPoint3DY="582.6">
+                                             <matrix>
+                                                  <Matrix tx="114.6" ty="512.4" a="0.57354736328125" d="0.57354736328125" b="0.819122314453125" c="-0.819122314453125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 10" color="#effae9">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 463" centerPoint3DX="771.9" centerPoint3DY="150.85">
+                                             <matrix>
+                                                  <Matrix tx="717.35" ty="134.7"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <color>
+                                                  <Color redMultiplier="0.0" greenMultiplier="0.0" blueMultiplier="0.0"/>
+                                             </color>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 11" color="#16cfdd">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="858.2" centerPoint3DY="484.6">
+                                             <matrix>
+                                                  <Matrix tx="795.45" ty="414.4" a="0.4067230224609375" d="0.4067230224609375" b="0.9134979248046875" c="-0.9134979248046875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 12" color="#4f9df5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="856.65" centerPoint3DY="445.65">
+                                             <matrix>
+                                                  <Matrix tx="793.9" ty="375.45" a="0.422607421875" d="0.422607421875" b="0.906280517578125" c="-0.906280517578125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 13" color="#28adca">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="857.55" centerPoint3DY="404.15">
+                                             <matrix>
+                                                  <Matrix tx="794.8" ty="333.95" a="0.4383544921875" d="0.4383544921875" b="0.89874267578125" c="-0.89874267578125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 14" color="#80cf76">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="857.6" centerPoint3DY="362.7">
+                                             <matrix>
+                                                  <Matrix tx="794.85" ty="292.5" a="0.4539642333984375" d="0.4539642333984375" b="0.8909759521484375" c="-0.8909759521484375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 15" color="#76dcb5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="854.95" centerPoint3DY="329.45">
+                                             <matrix>
+                                                  <Matrix tx="792.2" ty="259.25" a="0.4694366455078125" d="0.4694366455078125" b="0.8829193115234375" c="-0.8829193115234375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 16" color="#b88dbb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="858.75" centerPoint3DY="287.65">
+                                             <matrix>
+                                                  <Matrix tx="796.0" ty="217.45" a="0.4847869873046875" d="0.4847869873046875" b="0.87457275390625" c="-0.87457275390625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 17" color="#9a4dc7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="853.3" centerPoint3DY="257.1">
+                                             <matrix>
+                                                  <Matrix tx="790.55" ty="186.9" a="0.499969482421875" d="0.499969482421875" b="0.865966796875" c="-0.865966796875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 18" color="#dcec32">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="756.6" centerPoint3DY="487.5">
+                                             <matrix>
+                                                  <Matrix tx="693.85" ty="417.3" a="0.5150299072265625" d="0.5150299072265625" b="0.857147216796875" c="-0.857147216796875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 19" color="#369cdb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="754.65" centerPoint3DY="445.7">
+                                             <matrix>
+                                                  <Matrix tx="691.9" ty="375.5" a="0.5298919677734375" d="0.5298919677734375" b="0.8480072021484375" c="-0.8480072021484375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 20" color="#fcb3bb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="763.55" centerPoint3DY="403.05">
+                                             <matrix>
+                                                  <Matrix tx="700.8" ty="332.85" a="0.54461669921875" d="0.54461669921875" b="0.838653564453125" c="-0.838653564453125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 21" color="#8448b7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="754.55" centerPoint3DY="364.75">
+                                             <matrix>
+                                                  <Matrix tx="691.8" ty="294.55" a="0.55914306640625" d="0.55914306640625" b="0.829010009765625" c="-0.829010009765625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 22" color="#d06fcf">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="759.75" centerPoint3DY="326.4">
+                                             <matrix>
+                                                  <Matrix tx="697.0" ty="256.2" a="0.939666748046875" d="0.939666748046875" b="0.3420257568359375" c="-0.3420257568359375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 23" color="#a885a3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="762.5" centerPoint3DY="290.45">
+                                             <matrix>
+                                                  <Matrix tx="699.75" ty="220.25" a="0.956268310546875" d="0.956268310546875" b="0.2923736572265625" c="-0.2923736572265625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 24" color="#f18d87">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="759.3" centerPoint3DY="255.3">
+                                             <matrix>
+                                                  <Matrix tx="696.55" ty="185.1" a="0.9848175048828125" d="0.9848175048828125" b="0.1736602783203125" c="-0.1736602783203125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 25" color="#5edf47">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 554" centerPoint3DX="562.45" centerPoint3DY="140.75">
+                                             <matrix>
+                                                  <Matrix tx="515.1" ty="126.95"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <color>
+                                                  <Color redMultiplier="0.0" greenMultiplier="0.0" blueMultiplier="0.0"/>
+                                             </color>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 26" color="#c4ea94">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="648.7" centerPoint3DY="482.45">
+                                             <matrix>
+                                                  <Matrix tx="585.95" ty="412.25" a="0.5877838134765625" d="0.5877838134765625" b="0.809051513671875" c="-0.809051513671875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 27" color="#67a194">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="642.65" centerPoint3DY="446.6">
+                                             <matrix>
+                                                  <Matrix tx="579.9" ty="376.4" a="0.601837158203125" d="0.601837158203125" b="0.79864501953125" c="-0.79864501953125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 28" color="#88a9bf">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="646.55" centerPoint3DY="403.15">
+                                             <matrix>
+                                                  <Matrix tx="583.8" ty="332.95" a="0.61566162109375" d="0.61566162109375" b="0.78802490234375" c="-0.78802490234375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 29" color="#caed1e">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="641.6" centerPoint3DY="366.8">
+                                             <matrix>
+                                                  <Matrix tx="578.85" ty="296.6" a="0.6293182373046875" d="0.6293182373046875" b="0.7771759033203125" c="-0.7771759033203125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 30" color="#df2cb4">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="638.95" centerPoint3DY="326.55">
+                                             <matrix>
+                                                  <Matrix tx="576.2" ty="256.35" a="0.6428070068359375" d="0.6428070068359375" b="0.7660369873046875" c="-0.7660369873046875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 31" color="#dcbba2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="645.75" centerPoint3DY="287.85">
+                                             <matrix>
+                                                  <Matrix tx="583.0" ty="217.65" a="0.6560211181640625" d="0.6560211181640625" b="0.754669189453125" c="-0.754669189453125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 32" color="#e7b273">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="640.35" centerPoint3DY="257.3">
+                                             <matrix>
+                                                  <Matrix tx="577.6" ty="187.1" a="0.669097900390625" d="0.669097900390625" b="0.743133544921875" c="-0.743133544921875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 33" color="#c2ae1f">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="567.15" centerPoint3DY="487.85">
+                                             <matrix>
+                                                  <Matrix tx="504.4" ty="417.65" a="0.6819610595703125" d="0.6819610595703125" b="0.7313385009765625" c="-0.7313385009765625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 34" color="#6deeaf">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="567.15" centerPoint3DY="445.1">
+                                             <matrix>
+                                                  <Matrix tx="504.4" ty="374.9" a="0.6946563720703125" d="0.6946563720703125" b="0.719329833984375" c="-0.719329833984375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 35" color="#a414cc">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="565.05" centerPoint3DY="403.6">
+                                             <matrix>
+                                                  <Matrix tx="502.3" ty="333.4" a="0.7071075439453125" d="0.70709228515625" b="0.7070770263671875" c="-0.7070770263671875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 36" color="#c1f7a1">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="565.05" centerPoint3DY="365.3">
+                                             <matrix>
+                                                  <Matrix tx="502.3" ty="295.1" a="0.719329833984375" d="0.719329833984375" b="0.69464111328125" c="-0.69464111328125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 37" color="#77ffd5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="566.15" centerPoint3DY="326.8">
+                                             <matrix>
+                                                  <Matrix tx="503.4" ty="256.6" a="0.951019287109375" d="0.951019287109375" b="0.30902099609375" c="-0.30902099609375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 38" color="#88f91d">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="571.45" centerPoint3DY="290.9">
+                                             <matrix>
+                                                  <Matrix tx="508.7" ty="220.7" a="0.965911865234375" d="0.965911865234375" b="0.258819580078125" c="-0.258819580078125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 39" color="#a0dfcf">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="564.95" centerPoint3DY="254.6">
+                                             <matrix>
+                                                  <Matrix tx="502.2" ty="184.4" a="0.974395751953125" d="0.974395751953125" b="0.224945068359375" c="-0.224945068359375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 40" color="#5e64db">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 511" centerPoint3DX="348.6" centerPoint3DY="152.65">
+                                             <matrix>
+                                                  <Matrix tx="288.0" ty="137.1" a="0.9999847412109375" d="0.9999847412109375" b="0.0" c="1.52587890625E-5"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <color>
+                                                  <Color redMultiplier="0.0" greenMultiplier="0.0" blueMultiplier="0.0"/>
+                                             </color>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 41" color="#d7a936">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="428.1" centerPoint3DY="490.05">
+                                             <matrix>
+                                                  <Matrix tx="365.35" ty="419.85" a="0.7313232421875" d="0.7313232421875" b="0.681976318359375" c="-0.681976318359375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 42" color="#cb9580">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="426.15" centerPoint3DY="447.3">
+                                             <matrix>
+                                                  <Matrix tx="363.4" ty="377.1" a="0.743133544921875" d="0.743133544921875" b="0.6691131591796875" c="-0.6691131591796875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 43" color="#c4fc89">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="430.0" centerPoint3DY="407.9">
+                                             <matrix>
+                                                  <Matrix tx="367.25" ty="337.7" a="0.754730224609375" d="0.754730224609375" b="0.65606689453125" c="-0.6560516357421875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 44" color="#8077c7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="431.05" centerPoint3DY="370.6">
+                                             <matrix>
+                                                  <Matrix tx="368.3" ty="300.4" a="0.7660369873046875" d="0.7660369873046875" b="0.642822265625" c="-0.642822265625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 45" color="#9998d9">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="428.45" centerPoint3DY="328.35">
+                                             <matrix>
+                                                  <Matrix tx="365.7" ty="258.15" a="0.77716064453125" d="0.77716064453125" b="0.62933349609375" c="-0.62933349609375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 46" color="#afe9dd">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="430.15" centerPoint3DY="291.8">
+                                             <matrix>
+                                                  <Matrix tx="367.4" ty="221.6" a="0.78802490234375" d="0.78802490234375" b="0.6156768798828125" c="-0.6156768798828125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 47" color="#45fad3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="429.85" centerPoint3DY="255.25">
+                                             <matrix>
+                                                  <Matrix tx="367.1" ty="185.05" a="0.7986297607421875" d="0.7986297607421875" b="0.6018524169921875" c="-0.6018524169921875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 48" color="#b1fcb1">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="328.65" centerPoint3DY="490.9">
+                                             <matrix>
+                                                  <Matrix tx="265.9" ty="420.7" a="0.8090057373046875" d="0.8090057373046875" b="0.5877685546875" c="-0.5877685546875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 49" color="#19d0a9">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="325.7" centerPoint3DY="448.15">
+                                             <matrix>
+                                                  <Matrix tx="262.95" ty="377.95" a="0.8191375732421875" d="0.8191375732421875" b="0.57354736328125" c="-0.57354736328125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 50" color="#8e8eaf">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="323.6" centerPoint3DY="409.8">
+                                             <matrix>
+                                                  <Matrix tx="260.85" ty="339.6" a="0.8290252685546875" d="0.829010009765625" b="0.559173583984375" c="-0.559173583984375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 51" color="#38ecd3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="321.6" centerPoint3DY="369.5">
+                                             <matrix>
+                                                  <Matrix tx="258.85" ty="299.3" a="0.8386383056640625" d="0.8386383056640625" b="0.5446014404296875" c="-0.5446014404296875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 52" color="#c7e838">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 491" centerPoint3DX="136.05" centerPoint3DY="160.45">
+                                             <matrix>
+                                                  <Matrix tx="94.2" ty="139.85" a="0.9999847412109375" d="0.9999847412109375" b="0.0" c="1.52587890625E-5"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <color>
+                                                  <Color redMultiplier="0.0" greenMultiplier="0.0" blueMultiplier="0.0"/>
+                                             </color>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 53" color="#eea6d3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="775" height="367" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="62.35" ty="463.9"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>SPECIAL</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="-0.05" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 54" color="#72f4a6">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1055" height="367" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="226.6" ty="463.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>HANDGUNS</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="-0.05" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 55" color="#c47cfd">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="970" height="434" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="735.5" ty="129.85"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>ARs/LMGs</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="-0.05" indent="0" leftMargin="24" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 56" color="#7f92b3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="999" height="367" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="524.15" ty="134.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>SHOTGUNS</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="-0.05" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 57" color="#5860d6">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="822" height="367" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="319.95" ty="137.2"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>SNIPERS</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="0" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 58" color="#a86cda">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="600" height="367" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="74.85" ty="136.15"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>SMGs</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="18.8" bitmapSize="376" letterSpacing="0" indent="0" leftMargin="56" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 59" color="#cbe269">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="216.45" centerPoint3DY="490.45">
+                                             <matrix>
+                                                  <Matrix tx="153.7" ty="420.25" a="0.8480224609375" d="0.8480224609375" b="0.5298919677734375" c="-0.5298919677734375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 60" color="#9ef477">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="213.45" centerPoint3DY="448.7">
+                                             <matrix>
+                                                  <Matrix tx="150.7" ty="378.5" a="0.8571319580078125" d="0.8571319580078125" b="0.5150299072265625" c="-0.5150299072265625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 61" color="#e6e462">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="216.45" centerPoint3DY="408.4">
+                                             <matrix>
+                                                  <Matrix tx="153.7" ty="338.2" a="0.8660125732421875" d="0.8660125732421875" b="0.5" c="-0.4999847412109375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 62" color="#e0bcdf">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="211.45" centerPoint3DY="376.15">
+                                             <matrix>
+                                                  <Matrix tx="148.7" ty="305.95" a="0.8745880126953125" d="0.8745880126953125" b="0.48480224609375" c="-0.48480224609375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 63" color="#f3b308">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="215.45" centerPoint3DY="329.6">
+                                             <matrix>
+                                                  <Matrix tx="152.7" ty="259.4" a="0.8829345703125" d="0.8829345703125" b="0.469451904296875" c="-0.469451904296875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 64" color="#5de184">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="217.45" centerPoint3DY="293.75">
+                                             <matrix>
+                                                  <Matrix tx="154.7" ty="223.55" a="0.8909912109375" d="0.8909912109375" b="0.4539794921875" c="-0.4539794921875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 65" color="#e2c0e3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="211.45" centerPoint3DY="259.0">
+                                             <matrix>
+                                                  <Matrix tx="148.7" ty="188.8" a="0.8987579345703125" d="0.8987579345703125" b="0.4383697509765625" c="-0.4383697509765625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 66" color="#8b8b6a">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="132.75" centerPoint3DY="486.9">
+                                             <matrix>
+                                                  <Matrix tx="70.0" ty="416.7" a="0.9062652587890625" d="0.9062652587890625" b="0.4226226806640625" c="-0.4226226806640625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 67" color="#85eb8f">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="134.75" centerPoint3DY="448.8">
+                                             <matrix>
+                                                  <Matrix tx="72.0" ty="378.6" a="0.9135284423828125" d="0.9135284423828125" b="0.4067230224609375" c="-0.4067230224609375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 68" color="#f46df0">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="137.75" centerPoint3DY="408.05">
+                                             <matrix>
+                                                  <Matrix tx="75.0" ty="337.85" a="0.9204864501953125" d="0.9204864501953125" b="0.3907318115234375" c="-0.3907318115234375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 69" color="#5c7dbc">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="129.75" centerPoint3DY="367.2">
+                                             <matrix>
+                                                  <Matrix tx="67.0" ty="297.0" a="0.927154541015625" d="0.927154541015625" b="0.374603271484375" c="-0.374603271484375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 70" color="#d8a7e6">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="135.75" centerPoint3DY="331.45">
+                                             <matrix>
+                                                  <Matrix tx="73.0" ty="261.25" a="0.93353271484375" d="0.93353271484375" b="0.358367919921875" c="-0.358367919921875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 71" color="#3fdcab">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="132.75" centerPoint3DY="295.8">
+                                             <matrix>
+                                                  <Matrix tx="70.0" ty="225.6" a="0.94549560546875" d="0.94549560546875" b="0.3255615234375" c="-0.3255615234375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 72" color="#79f154">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="328.65" centerPoint3DY="327.25">
+                                             <matrix>
+                                                  <Matrix tx="265.9" ty="257.05" a="0.9612274169921875" d="0.9612274169921875" b="0.275634765625" c="-0.275634765625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 73" color="#24d6d8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="328.2" centerPoint3DY="289.1">
+                                             <matrix>
+                                                  <Matrix tx="265.45" ty="218.9" a="0.970306396484375" d="0.970306396484375" b="0.241943359375" c="-0.241943359375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 74" color="#8af848">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="327.5" centerPoint3DY="255.1">
+                                             <matrix>
+                                                  <Matrix tx="264.75" ty="184.9" a="0.9816436767578125" d="0.9816436767578125" b="0.1908111572265625" c="-0.1908111572265625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 75" color="#abebb7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 913" centerPoint3DX="130.75" centerPoint3DY="256.95">
+                                             <matrix>
+                                                  <Matrix tx="68.0" ty="186.75" a="0.9781494140625" d="0.9781494140625" b="0.207916259765625" c="-0.207916259765625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 76" color="#94add8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1052" centerPoint3DX="301.2" centerPoint3DY="631.35">
+                                             <matrix>
+                                                  <Matrix tx="213.8" ty="456.4" a="1.32135009765625" d="0.3305206298828125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="3" quality="1" strength="0.8"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 77" color="#1dd8cd">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1052" centerPoint3DX="120.35" centerPoint3DY="631.45">
+                                             <matrix>
+                                                  <Matrix tx="32.95" ty="456.5" a="0.9656829833984375" d="0.330291748046875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="3" quality="1" strength="0.8"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 78" color="#e2de0a">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1052" centerPoint3DX="742.25" centerPoint3DY="285.4">
+                                             <matrix>
+                                                  <Matrix tx="654.85" ty="110.45" a="1.1943359375" d="0.959991455078125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="3" quality="1" strength="0.8"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 79" color="#99a852">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1052" centerPoint3DX="546.2" centerPoint3DY="285.4">
+                                             <matrix>
+                                                  <Matrix tx="458.8" ty="110.45" a="1.085906982421875" d="0.959991455078125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="3" quality="1" strength="0.8"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 80" color="#f25af2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1052" centerPoint3DX="301.4" centerPoint3DY="285.4">
+                                             <matrix>
+                                                  <Matrix tx="214.0" ty="110.45" a="1.3192596435546875" d="0.959991455078125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="3" quality="1" strength="0.8"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 81" color="#95d484">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1052" centerPoint3DX="120.35" centerPoint3DY="285.4">
+                                             <matrix>
+                                                  <Matrix tx="32.95" ty="110.45" a="0.9656829833984375" d="0.9599456787109375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="3" quality="1" strength="0.8"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 82" color="#87b3f2">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1051" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="20.0" ty="100.0" a="4.3000030517578125" d="24.149993896484375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 83" color="#b6f5aa">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1680" height="979" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="753.6" ty="18.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>BACK</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="56.4" bitmapSize="1128" letterSpacing="-0.1" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 84" color="#9ea8cf">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1048" name="btn_back" centerPoint3DX="999.7" centerPoint3DY="50.05">
+                                             <matrix>
+                                                  <Matrix tx="679.75" ty="20.05" a="0.3125" d="0.9991607666015625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="5" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 85" color="#a68c72">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="3259" height="890" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="26.6" ty="21.2"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>GUN LIBRARY</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="50.75" bitmapSize="1015" letterSpacing="-0.1" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#000000" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 86" color="#5b87af">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1048" centerPoint3DX="339.95" centerPoint3DY="50.0">
+                                             <matrix>
+                                                  <Matrix tx="20.0" ty="20.0" a="0.9998321533203125" d="0.9991607666015625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="5" blurY="5" color="#000000" distance="5" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 87" color="#dabc72" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1047" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="70.25" ty="48.1" a="0.7977294921875" d="0.8351898193359375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

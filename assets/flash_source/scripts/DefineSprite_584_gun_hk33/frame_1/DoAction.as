@@ -1,0 +1,16 @@
+shootx = 7;
+shooty = 1;
+handx = 50;
+handy = -17;
+shellX = 15;
+flashX = 66;
+Name = "LONG RANGE RIFLE";
+_parent._parent.rof = 7;
+_parent._parent.firepower = 32;
+_parent._parent.recoil = 2;
+_parent._parent.blowback = 7;
+_parent._parent.bullets = 20;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.75;

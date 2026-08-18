@@ -1,0 +1,98 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 653" itemID="6a368e80-00000184" lastModified="1781960265">
+     <timeline>
+          <DOMTimeline name="Symbol 653">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#b37bea">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>stop();
+if(_parent.flawless == 1)
+{
+   gotoAndStop(2);
+}
+else if(_parent.flawless == 2)
+{
+   gotoAndStop(3);
+}
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#cd45ed">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="41.05" antiAliasSharpness="0" antiAliasThickness="0" width="2118" height="709" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-142.05" ty="156.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>FLAWLESS</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="113.35" bitmapSize="2267" letterSpacing="0.2" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ff6600" face="Showcard Gothic"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="10" blurY="10" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-58.7" antiAliasSharpness="0" antiAliasThickness="0" width="4124" height="836" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-142.05" ty="156.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Almost FLAWLESS :(</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="113.35" bitmapSize="2267" letterSpacing="0.2" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ff6600" face="Showcard Gothic"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="10" blurY="10" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#cd71f7" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" duration="3" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="31.1" antiAliasSharpness="0" antiAliasThickness="0" width="3075" height="1239" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-173.95" ty="-48.95"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>WINNER</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="198.4" bitmapSize="3968" letterSpacing="0.15" indent="0" leftMargin="0" lineSpacing="0" rightMargin="0" fillColor="#ff9900" face="Showcard Gothic"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="10" blurY="10" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

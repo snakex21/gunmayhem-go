@@ -1,0 +1,109 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 913" itemID="6a368e80-000001e1" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 913">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#8cff2b">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>gunnumber = Math.round(_rotation);
+dropgun.gotoAndStop(gunnumber);
+_rotation = -20;
+if(_root.showunlocks != 0)
+{
+   this.useHandCursor = false;
+}
+stop();
+if(_root.savedata3.data.gunarray[gunnumber - 10] == false)
+{
+   gotoAndStop(2);
+   this.useHandCursor = false;
+}
+this.onRelease = function()
+{
+   if(_currentframe == 1)
+   {
+      _parent.guncard.statdisplay.gotoAndStop(gunnumber);
+      _parent.guncard.dropgun.gotoAndStop(gunnumber);
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#dbdcff">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#ffffff"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! 532 -77| 452 -106| 342 199| 738 343| 848 38| 783 14| 819 -84[ 835 -129 810 -174[ 785 -219 733 -238| 673 -247| 632 -238[ 586 -221 570 -179| 532 -77"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! 758 -150[ 774 -123 765 -99| 730 -5| 587 -57| 622 -152| 626 -158| 626 -160| 631 -169| 658 -186[ 685 -197 716 -186[ 745 -175 758 -150"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#0c7afb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 595" name="dropgun" centerPoint3DX="78.45" centerPoint3DY="87.8">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0" a="0.79998779296875" d="0.79998779296875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="1" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 595" name="dropgun" centerPoint3DX="78.45" centerPoint3DY="87.8">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0" a="0.79998779296875" d="0.79998779296875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <color>
+                                                  <Color redMultiplier="0.0" greenMultiplier="0.0" blueMultiplier="0.0" redOffset="153" greenOffset="153" blueOffset="153"/>
+                                             </color>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#14f88e" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" duration="2" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 911" name="frame" centerPoint3DX="0.0" centerPoint3DY="0.0">
+                                             <matrix>
+                                                  <Matrix tx="-20.0" ty="-20.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

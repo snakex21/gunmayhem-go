@@ -1,0 +1,87 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 166" itemID="6a368e80-00000097" lastModified="1781960263" linkageIdentifier="fx_cratename" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 166">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#6d6ec7">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_alpha = 0;
+level = 1;
+time = 0;
+switch(asdf)
+{
+   case 1:
+      displaytext.text = _root.player1.hand1.gun.Name;
+      break;
+   case 2:
+      displaytext.text = _root.player2.hand1.gun.Name;
+      break;
+   case 3:
+      displaytext.text = _root.player3.hand1.gun.Name;
+      break;
+   case 4:
+      displaytext.text = _root.player4.hand1.gun.Name;
+}
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      _Y = _Y - 0.5;
+      if(level == 1)
+      {
+         if(_alpha &lt; 80)
+         {
+            _alpha = _alpha + 10;
+         }
+         time += 1;
+         if(time &gt;= 40)
+         {
+            level = 2;
+         }
+      }
+      if(level == 2)
+      {
+         _alpha = _alpha - 10;
+      }
+      if(_alpha &lt;= 1 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#b58981" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="displaytext" antiAliasSharpness="0" antiAliasThickness="0" width="146.0" height="35.0" renderAsHTML="true" isSelectable="false" lineType="multiline">
+                                             <matrix>
+                                                  <Matrix tx="-73.0" ty="-22.3"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>CLASSIC ASSAULT RIFLE</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="center" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" rightMargin="0.0" size="17" bitmapSize="340" face="Tw Cen MT Condensed Extra Bold" fillColor="#ffcc00"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

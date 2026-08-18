@@ -1,0 +1,16 @@
+shootx = 15;
+shooty = 3;
+handx = 42;
+handy = -12;
+shellX = 25;
+flashX = 50;
+Name = "LOSER SMG";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 4;
+_parent._parent.recoil = 0.2;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 30;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.6;

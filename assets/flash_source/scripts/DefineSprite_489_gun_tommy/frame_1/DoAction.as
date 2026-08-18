@@ -1,0 +1,16 @@
+shootx = 10;
+shooty = 1;
+handx = 42;
+handy = -11;
+shellX = 20;
+flashX = 60;
+Name = "MAFIA SMG";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 20;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 7;
+_parent._parent.bullets = 25;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 8;
+_parent._parent.weight = 0.8;

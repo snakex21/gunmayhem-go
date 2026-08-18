@@ -1,0 +1,120 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 164" itemID="6a368e80-00000096" lastModified="1781960263" linkageIdentifier="fx_combo" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 164">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#aae09e">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>level = 1;
+_rotation = random(15) + 5;
+if(random(2) == 0)
+{
+   _rotation = _rotation * -1;
+}
+scaletarget = 190;
+if(asdf == 1)
+{
+   displaytext.displaytext.text = "HIT";
+}
+else if(asdf &gt; 1)
+{
+   displaytext.displaytext.text = asdf + " HITS";
+}
+else if(asdf == -1)
+{
+   displaytext.gotoAndStop(2);
+   displaytext.displaytext.text = "SNIPED";
+   scaletarget = 199.9;
+}
+else if(asdf == -2)
+{
+   displaytext.gotoAndStop(3);
+   displaytext.displaytext.text = "BOOM";
+   scaletarget = 199;
+}
+else if(asdf == -3)
+{
+   displaytext.gotoAndStop(3);
+   displaytext.displaytext.text = "QUACK";
+   scaletarget = 199;
+}
+else if(asdf == -4)
+{
+   displaytext.gotoAndStop(2);
+   displaytext.displaytext.text = "PWND";
+   scaletarget = 199;
+}
+else if(asdf == -5)
+{
+   displaytext.gotoAndStop(2);
+   displaytext.displaytext.text = "SPLAT";
+   scaletarget = 199;
+}
+else if(asdf == -6)
+{
+   displaytext.gotoAndStop(2);
+   displaytext.displaytext.text = "SMACKED";
+   scaletarget = 199;
+}
+else if(asdf == -7)
+{
+   displaytext.gotoAndStop(3);
+   displaytext.displaytext.text = "POW";
+   scaletarget = 195;
+}
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      if(level == 1)
+      {
+         _xscale = _xscale + (200 - _xscale) / 3;
+         _yscale = _xscale;
+         if(_xscale &gt;= scaletarget)
+         {
+            level = 2;
+         }
+      }
+      if(level == 2)
+      {
+         _xscale = _xscale - 3;
+         _yscale = _xscale;
+         _alpha = _alpha - 10;
+      }
+      if(_alpha &lt;= 1 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#90bbc7" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 163" name="displaytext" centerPoint3DX="90.0" centerPoint3DY="24.25">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

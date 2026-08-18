@@ -1,0 +1,17 @@
+shootx = 12;
+shooty = -4;
+handx = 52;
+handy = -14;
+shellX = 20;
+flashX = 63;
+Name = "HUNTING SHOTGUN";
+_parent._parent.rof = 12;
+_parent._parent.firepower = 6;
+_parent._parent.recoil = 2;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 7;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 20;
+_parent._parent.weight = 0.75;
+shotgun = 7;

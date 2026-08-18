@@ -1,0 +1,16 @@
+shootx = 12;
+shooty = -1;
+handx = 48;
+handy = -14;
+shellX = 20;
+flashX = 72;
+Name = "MILITARY SNIPER";
+_parent._parent.rof = 13;
+_parent._parent.firepower = 58;
+_parent._parent.recoil = 1.5;
+_parent._parent.blowback = 8;
+_parent._parent.bullets = 8;
+_parent._parent.idlerotate = -70;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 15;
+_parent._parent.weight = 0.7;

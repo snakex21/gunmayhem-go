@@ -1,0 +1,73 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 349" itemID="6a368e80-000000f5" lastModified="1781960264" linkageIdentifier="fx_flash2" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 349">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#25b8e4">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>if(random(2) == 0)
+{
+   _yscale = _yscale * -1;
+}
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      _alpha = _alpha - 51;
+      if(_alpha &lt;= 1 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#65bea8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 347" centerPoint3DX="45.65" centerPoint3DY="18.85">
+                                             <matrix>
+                                                  <Matrix tx="12.4" ty="0.0" a="1.3737030029296875" d="1.72998046875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <color>
+                                                  <Color redMultiplier="0.5078125" greenMultiplier="0.5078125" blueMultiplier="0.5078125" redOffset="125" greenOffset="125" blueOffset="125"/>
+                                             </color>
+                                             <filters>
+                                                  <BlurFilter blurX="2" blurY="2" quality="1"/>
+                                                  <GlowFilter blurX="20" blurY="20" color="#ffffff" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#10e1b6" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 344" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

@@ -1,0 +1,33 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1430" itemID="6a368e80-00000256" lastModified="1781960269">
+     <timeline>
+          <DOMTimeline name="Symbol 1430">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#45a8f8" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#000000"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 17000 2259| 11000 2259| 11000 1779| 17000 1779| 17000 2259"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 16000 480| 1000 480| 1000 0| 16000 0| 16000 480"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 16000 7840| 1000 7840| 1000 7199| 16000 7199| 16000 7840"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 17000 5879| 11000 5879| 11000 5399| 17000 5399| 17000 5879"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 12236 4080| 4796 4080| 4796 3600| 12236 3600| 12236 4080"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 6000 2259| 0 2259| 0 1779| 6000 1779| 6000 2259"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 0 5399| 6000 5399| 6000 5879| 0 5879| 0 5399"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

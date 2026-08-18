@@ -1,0 +1,17 @@
+shootx = 23;
+shooty = 3;
+handx = 52;
+handy = -12;
+shellX = -1;
+flashX = 62;
+Name = "PROTOTYPE SHOTGUN";
+_parent._parent.rof = 6;
+_parent._parent.firepower = 8;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 8;
+_parent._parent.bullets = 10;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 15;
+_parent._parent.weight = 0.7;
+shotgun = 7;

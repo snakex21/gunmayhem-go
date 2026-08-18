@@ -1,0 +1,301 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 159" itemID="6a368e80-00000094" lastModified="1781960263" linkageIdentifier="fx_bling" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 159">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#8d7bfa">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_X = asdf._x;
+_Y = asdf._y;
+_alpha = 0;
+time = 0;
+_xscale = 700;
+_yscale = _xscale;
+yoffset = 30;
+if(_X == 0 &amp;&amp; _Y == 0)
+{
+   removeMovieClip(this);
+   delete this.onEnterFrame;
+}
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      _X = asdf._x;
+      _Y = asdf._y - yoffset;
+      time += 1;
+      if(time &lt;= 20)
+      {
+         if(_alpha &lt; 100)
+         {
+            _alpha = _alpha + 50;
+         }
+         if(_xscale &gt; 100)
+         {
+            _xscale = _xscale + (90 - _xscale) / 5;
+         }
+         _yscale = _xscale;
+      }
+      else if(time &gt;= 40)
+      {
+         _alpha = _alpha - 10;
+         if(_alpha &lt;= 1)
+         {
+            removeMovieClip(this);
+            delete this.onEnterFrame;
+         }
+      }
+      yoffset += (110 - yoffset) / 5;
+      if(_root.deleteeverything || _root.gamewin)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+gotoAndStop(mod + 1);
+if(_root.gamemode == 4)
+{
+   levelnumber.text = leveldisplay;
+}
+score = 0;
+switch(mod)
+{
+   case 1:
+      score = 100;
+      break;
+   case 2:
+      score = 200;
+      break;
+   case 3:
+      score = 300;
+      break;
+   case 4:
+      score = 50;
+}
+_root.pgsdata[asdf.PLAYERNUMBER - 1][7] += score;
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#be74d7">
+                         <frames>
+                              <DOMFrame index="0" duration="2" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2110" height="674" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-98.0" ty="-55.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>CHEAPSHOT</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="-0.05" indent="0" leftMargin="10" lineSpacing="0" rightMargin="0" fillColor="#ffff00" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2224" height="673" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-98.0" ty="-55.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>GREEDY KILL</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="-0.1" indent="0" leftMargin="4" lineSpacing="0" rightMargin="0" fillColor="#009900" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="2362" height="674" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-103.0" ty="-55.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>XPLOSIV KILL</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="-0.05" indent="0" leftMargin="3" lineSpacing="0" rightMargin="0" fillColor="#ff0000" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMDynamicText name="levelnumber" antiAliasSharpness="0" antiAliasThickness="0" width="73.0" height="43.3" renderAsHTML="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="34.0" ty="-22.25"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>1</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs alignment="left" rotation="true" indent="0.0" leftMargin="0.0" autoKern="true" lineSpacing="2.0" rightMargin="0.0" size="38" bitmapSize="760" face="Tw Cen MT Condensed Extra Bold" fillColor="#990000"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMDynamicText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#22fd76" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" duration="2" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1190" height="674" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-110.0" ty="-21.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>+100</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="0" indent="0" leftMargin="55" lineSpacing="0" rightMargin="0" fillColor="#ffcc00" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="2" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1190" height="674" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-110.0" ty="-21.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>+200</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="0" indent="0" leftMargin="55" lineSpacing="0" rightMargin="0" fillColor="#ffff00" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1190" height="674" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-110.0" ty="-21.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>+300</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="0" indent="0" leftMargin="55" lineSpacing="0" rightMargin="0" fillColor="#009900" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="4" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="994" height="674" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-110.0" ty="-21.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>+50</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="0" indent="0" leftMargin="65" lineSpacing="0" rightMargin="0" fillColor="#ff0000" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1178" height="660" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-103.0" ty="-21.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>LEVEL</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="-0.05" indent="0" leftMargin="43" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="6" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="1066" height="674" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="-101.0" ty="-21.65"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>1-UP</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="37.6" bitmapSize="752" letterSpacing="-0.05" indent="0" leftMargin="61" lineSpacing="0" rightMargin="0" fillColor="#009900" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

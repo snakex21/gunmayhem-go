@@ -1,0 +1,17 @@
+shootx = 2;
+shooty = 2;
+handx = 55;
+handy = -10;
+shellX = 20;
+flashX = 53;
+Name = "FUTURISTIC SHOTGUN";
+_parent._parent.rof = 25;
+_parent._parent.firepower = 9;
+_parent._parent.recoil = 5;
+_parent._parent.blowback = 20;
+_parent._parent.bullets = 6;
+_parent._parent.idlerotate = -80;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 40;
+_parent._parent.weight = 0.7;
+shotgun = 7;

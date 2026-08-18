@@ -1,0 +1,312 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1197" itemID="6a368e80-00000201" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 1197">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#5e7fa5">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>statdisplay.gotoAndStop(7);
+dropgun.gotoAndStop(7);
+testbtn.onRelease = function()
+{
+   if(statdisplay._currentframe != 7)
+   {
+      newmc = _root.attachMovie("fadeaway","fadeaway",_root.fadedepth);
+      newmc.targetframe = 10;
+      _root.campaignmode = false;
+      _root.mapnumber = 13;
+      _root.gototest = true;
+      _root.gototestnumber = dropgun._currentframe;
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#ddabbd">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="414" height="302" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.0" ty="90.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Recoil</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="14.15" bitmapSize="283" letterSpacing="0" indent="0" leftMargin="49" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#f2fede">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="468" height="358" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.0" ty="73.5"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Weight</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="14.15" bitmapSize="283" letterSpacing="0" indent="0" leftMargin="44" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#fac10f">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="875" height="360" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.0" ty="55.5"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Ammo Capacity</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="14.15" bitmapSize="283" letterSpacing="0" indent="0" leftMargin="3" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#bdf024">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="693" height="302" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.0" ty="39.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Rate of Fire</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="14.15" bitmapSize="283" letterSpacing="0" indent="0" leftMargin="21" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 6" color="#de0b9c">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="0" antiAliasSharpness="0" antiAliasThickness="0" width="523" height="358" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="6.0" ty="22.5"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>Damage</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="14.15" bitmapSize="283" letterSpacing="0" indent="0" leftMargin="38" lineSpacing="0" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 7" color="#eb52ac">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills/>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="1.0" scaleMode="normal" caps="square" joints="miter">
+                                                            <fill>
+                                                                 <SolidColor color="#333333"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                                  <StrokeStyle index="2">
+                                                       <SolidStroke weight="1.0" scaleMode="normal" joints="miter">
+                                                            <fill>
+                                                                 <SolidColor color="#333333"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                                  <StrokeStyle index="3">
+                                                       <SolidStroke weight="1.0" scaleMode="normal" joints="miter">
+                                                            <fill>
+                                                                 <SolidColor color="#333333"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                                  <StrokeStyle index="4">
+                                                       <SolidStroke weight="1.0" scaleMode="normal" caps="square" joints="miter">
+                                                            <fill>
+                                                                 <SolidColor color="#333333"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="1" edges="! 1824 581| 1824 691| 6212 691| 6212 579"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="2" edges="! 6212 1236| 6212 1348"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="3" edges="! 6212 1348| 6212 1350| 1824 1350| 1824 1348"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="4" edges="! 1824 1348| 1824 1238"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="3" edges="! 6212 1680| 1824 1680"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="3" edges="! 1824 1680| 1824 1682| 6212 1682| 6212 1680"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="4" edges="! 6212 1680| 6212 1568"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="3" edges="! 6212 1019| 1824 1019"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="3" edges="! 1824 1019| 1824 1021| 6212 1021| 6212 1019"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="4" edges="! 6212 1019| 6212 907"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="1" edges="! 1824 1902| 1824 2012| 6212 2012| 6212 1900"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="2" edges="! 1824 1570| 1824 1680"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="2" edges="! 1824 909| 1824 1019"/>
+                                                  <Edge fillStyle0="0" fillStyle1="0" strokeStyle="3" edges="! 1824 1348| 6212 1348"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 8" color="#2fe5a3">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 595" name="dropgun" centerPoint3DX="433.65" centerPoint3DY="119.75">
+                                             <matrix>
+                                                  <Matrix tx="355.2" ty="31.95" a="0.751739501953125" d="0.751739501953125" b="-0.2736358642578125" c="0.2736358642578125"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="3" quality="1" strength="0.5"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 9" color="#67e099">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1190" name="statdisplay" centerPoint3DX="152.7" centerPoint3DY="48.3">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 10" color="#eddf06">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMStaticText left="-13.25" antiAliasSharpness="0" antiAliasThickness="0" width="776" height="657" autoExpand="true" isSelectable="false">
+                                             <matrix>
+                                                  <Matrix tx="335.15" ty="67.0"/>
+                                             </matrix>
+                                             <textRuns>
+                                                  <DOMTextRun>
+                                                       <characters>TEST </characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="16.9" bitmapSize="338" letterSpacing="0" indent="0" leftMargin="22" lineSpacing="-2" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                                  <DOMTextRun>
+                                                       <characters>&#13;WEAPON</characters>
+                                                       <textAttrs>
+                                                            <DOMTextAttrs aliasText="false" rotation="true" size="16.9" bitmapSize="338" letterSpacing="0" indent="0" leftMargin="6" lineSpacing="-2" rightMargin="0" fillColor="#ffffff" face="Tw Cen MT Condensed Extra Bold"/>
+                                                       </textAttrs>
+                                                  </DOMTextRun>
+                                             </textRuns>
+                                             <filters>
+                                                  <GlowFilter blurX="5" blurY="5" color="#000000" quality="1" strength="1"/>
+                                             </filters>
+                                        </DOMStaticText>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 11" color="#d47541">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1061" name="testbtn" centerPoint3DX="358.3" centerPoint3DY="106.75">
+                                             <matrix>
+                                                  <Matrix tx="320.05" ty="65.55" a="1.0" d="0.484222412109375"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <DropShadowFilter angle="44.999253346524966" blurX="2" blurY="2" color="#000000" distance="4" quality="1" strength="0.6"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 12" color="#21cace" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#797979"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 8122 2280| 0 2280| 0 0| 8122 0| 8122 2280"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

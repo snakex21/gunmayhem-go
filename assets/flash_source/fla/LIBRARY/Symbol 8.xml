@@ -1,0 +1,70 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 8" itemID="6a368e80-00000059" lastModified="1781960262">
+     <timeline>
+          <DOMTimeline name="Symbol 8">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#7f42fb">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>_alpha = 0;
+switch(_name)
+{
+   case "btn1":
+      btnNumber = 1;
+      break;
+   case "btn2":
+      btnNumber = 2;
+      break;
+   case "btn3":
+      btnNumber = 3;
+      break;
+   case "btn4":
+      btnNumber = 4;
+      break;
+   case "btn5":
+      btnNumber = 5;
+      break;
+   case "btn6":
+      btnNumber = 6;
+}
+this.onRollOver = function()
+{
+   _parent.targety = _Y;
+   if(_parent.slide._alpha &lt; 20)
+   {
+      _parent.slide._y = _Y;
+   }
+   if(_parent.slide._currentframe != btnNumber)
+   {
+      _parent.slide.gotoAndStop(btnNumber);
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#1cafd9" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#0066cc" alpha="0.8"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 6000 900| 0 900| 0 0| 6000 0| 6000 900"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

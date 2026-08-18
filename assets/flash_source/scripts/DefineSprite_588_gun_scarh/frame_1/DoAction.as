@@ -1,0 +1,16 @@
+shootx = 9;
+shooty = 1;
+handx = 48;
+handy = -15;
+shellX = 17;
+flashX = 65;
+Name = "HI-POWER RIFLE";
+_parent._parent.rof = 7;
+_parent._parent.firepower = 34;
+_parent._parent.recoil = 2;
+_parent._parent.blowback = 7;
+_parent._parent.bullets = 20;
+_parent._parent.idlerotate = -60;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.75;

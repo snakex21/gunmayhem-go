@@ -1,0 +1,16 @@
+shootx = 25;
+shooty = 2;
+handx = 30;
+handy = -5;
+shellX = 20;
+flashX = 47;
+Name = "SAND HAWK";
+_parent._parent.rof = 13;
+_parent._parent.firepower = 24;
+_parent._parent.recoil = 2;
+_parent._parent.blowback = 30;
+_parent._parent.bullets = 7;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 0;
+_parent._parent.weight = 0.95;

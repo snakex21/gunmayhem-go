@@ -1,0 +1,62 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 596" itemID="6a368e80-0000016b" lastModified="1781960264" linkageIdentifier="fx_dropgun" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 596">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#b688fa">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>if(_rotation &lt; 0)
+{
+   _xscale = -100;
+}
+vx = 5 * _rotation;
+vy = -5;
+vy = Math.random() * 5 - 10;
+dropgun.gotoAndStop(asdf);
+rotationspeed = Math.random() * 2 + 5;
+if(random(2) == 0)
+{
+   rotationspeed *= -1;
+}
+this.onEnterFrame = function()
+{
+   if(!_root.GAMEPAUSED)
+   {
+      _X = _X + vx;
+      _Y = _Y + vy;
+      _rotation = _rotation + rotationspeed;
+      vy += _root.gravity * 1.3;
+      if(_Y &gt;= 900 || _root.deleteeverything)
+      {
+         removeMovieClip(this);
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#3dd3ac" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 595" name="dropgun" centerPoint3DX="78.45" centerPoint3DY="87.8">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0" a="0.79998779296875" d="0.79998779296875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

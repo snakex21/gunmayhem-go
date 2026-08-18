@@ -1,0 +1,16 @@
+shootx = 23;
+shooty = -1;
+handx = 51;
+handy = -11;
+shellX = -3;
+flashX = 58;
+Name = "BULLPUP ASSAULT RIFLE";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 22;
+_parent._parent.recoil = 0.5;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 30;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 10;
+_parent._parent.weight = 0.8;

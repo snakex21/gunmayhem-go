@@ -1,0 +1,98 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 833" itemID="6a368e80-000001c8" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 833">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#ed6430">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>if(_X &lt; 140)
+{
+   xx = 3;
+}
+if(_X &lt; 80)
+{
+   xx = 2;
+}
+if(_X &lt; 15)
+{
+   xx = 1;
+}
+if(_Y &lt; 660)
+{
+   yy = 4;
+}
+if(_Y &lt; 600)
+{
+   yy = 3;
+}
+if(_Y &lt; 540)
+{
+   yy = 2;
+}
+if(_Y &lt; 480)
+{
+   yy = 1;
+}
+if(_Y &lt; 420)
+{
+   yy = 0;
+}
+NUMBER = yy * 3 + xx;
+NUMBER += 12;
+hat.gotoAndStop(NUMBER);
+asdf = _parent._parent;
+this.onRelease = function()
+{
+   asdf.player.hat.gotoAndStop(NUMBER);
+   asdf.player.eyes.gotoAndStop(NUMBER);
+   updatetime = 1;
+   asdf.slideback();
+   asdf.slide = 1;
+};
+this.onRollOver = function()
+{
+   asdf.displaytext.text = hat.id;
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#7954bc">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 269" name="hat" centerPoint3DX="69.9" centerPoint3DY="57.5">
+                                             <matrix>
+                                                  <Matrix tx="32.0" ty="23.6"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#692bff">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 812" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

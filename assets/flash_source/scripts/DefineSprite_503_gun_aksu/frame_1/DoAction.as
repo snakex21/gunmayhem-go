@@ -1,0 +1,16 @@
+shootx = 18;
+shooty = -2;
+handx = 52;
+handy = -14;
+shellX = 25;
+flashX = 60;
+Name = "COMPACT ASSAULT RIFLE";
+_parent._parent.rof = 4;
+_parent._parent.firepower = 22;
+_parent._parent.recoil = 1;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 25;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 5;
+_parent._parent.weight = 0.85;

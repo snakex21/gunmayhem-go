@@ -1,0 +1,234 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 382" itemID="6a368e80-00000104" lastModified="1781960264" linkageIdentifier="bullet5_grenade" linkageExportInFirstFrame="false" linkageExportForAS="true">
+     <timeline>
+          <DOMTimeline name="Symbol 382">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#afc06b">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>function blowup()
+{
+   switch(Math.floor(asdf / 1000))
+   {
+      case 1:
+         immunity = 1;
+         break;
+      case 2:
+         immunity = 2;
+         break;
+      case 3:
+         immunity = 3;
+         break;
+      case 4:
+         immunity = 4;
+   }
+   i = 0;
+   while(i &lt; _root.activeplayers.length)
+   {
+      distance = Math.round(Math.sqrt(Math.pow(_root.activeplayers[i]._x - _X,2) + Math.pow(_root.activeplayers[i]._y - 30 - _Y,2)));
+      if(distance &lt;= 200)
+      {
+         radians = Math.atan2(_root.activeplayers[i]._y - 30 - _Y,_root.activeplayers[i]._x - _X);
+         degrees = radians * 180 / 3.141592653589793;
+         pushx = Math.cos(degrees * 3.141592653589793 / 180) * (350 - distance) / 5;
+         pushy = Math.sin(degrees * 3.141592653589793 / 180) * (350 - distance) / 10;
+         if(_root.activeplayers[i].PLAYERNUMBER == immunity)
+         {
+            pushx *= 0.5;
+            pushy *= 0.5;
+         }
+         _root.activeplayers[i].vx += pushx;
+         _root.activeplayers[i].vy += pushy;
+         switch(Math.floor(asdf / 1000))
+         {
+            case 1:
+               _root.activeplayers[i].gothitby = _root.p1name;
+               break;
+            case 2:
+               _root.activeplayers[i].gothitby = _root.p2name;
+               break;
+            case 3:
+               _root.activeplayers[i].gothitby = _root.p3name;
+               break;
+            case 4:
+               _root.activeplayers[i].gothitby = _root.p4name;
+         }
+         _root.activeplayers[i].hitbynade = true;
+      }
+      i++;
+   }
+   shake = random(30) + 20;
+   if(random(2) == 0)
+   {
+      shake *= -1;
+   }
+   _root._x += shake;
+   _root.CP("fx_ex6",_X,_Y - 20,0);
+   _root.CP("fx_ex2",_X,_Y - 20,0);
+   _root.CP("fx_ex",_X,_Y - 20,0);
+   _root.CP("fx_ex4",_X,_Y - 20,0);
+   i = 0;
+   while(i &lt; 5)
+   {
+      _root.CP("fx_ex5",_X,_Y - 20,0);
+      i++;
+   }
+   i = 0;
+   while(i &lt; 5)
+   {
+      _root.CP("fx_ex3",_X,_Y - 20,0);
+      i++;
+   }
+   _root.CP("fx_combo",_X,_Y - 50,0,-2);
+   removeMovieClip(this);
+   delete this.onEnterFrame;
+}
+stop();
+firepower = Math.abs(asdf % 1000);
+firepower = 20;
+vx = _rotation * firepower;
+vy = -8;
+if(firepower &lt; 0)
+{
+   vy += firepower;
+}
+fusetime = 0;
+_rotation = random(360);
+rotationspeed = Math.random() * 10 + 5;
+if(random(2) == 0)
+{
+   rotationspeed *= -1;
+}
+freepass = false;
+hitground = false;
+_xscale = 80;
+_yscale = 80;
+this.onEnterFrame = function()
+{
+   _rotation = _rotation + rotationspeed;
+   if(vy &lt; 24)
+   {
+      vy += _root.gravity + 0.12;
+   }
+   _X = _X + vx;
+   _Y = _Y + vy;
+   if(!freepass)
+   {
+      if(_root.ground.hitTest(_X,_Y + 8,true) &amp;&amp; vy &gt; 0)
+      {
+         _Y = _Y - vy;
+         i = 1;
+         while(i &lt;= 5)
+         {
+            if(_root.ground.hitTest(_X,_Y + 8 + i * (vy / 5),true))
+            {
+               _Y = _Y + vy / 5 * (i - 1);
+               vx *= 0.8;
+               vy *= -0.8;
+               break;
+            }
+            i++;
+         }
+      }
+   }
+   i = 0;
+   while(i &lt; _root.activeplayers.length)
+   {
+      distance = Math.round(Math.sqrt(Math.pow(_root.activeplayers[i]._x - _X,2) + Math.pow(_root.activeplayers[i]._y - 30 - _Y,2)));
+      if(distance &lt; 40)
+      {
+         blowup();
+      }
+      i++;
+   }
+   if(!_root.ground.hitTest(_X,_Y,true) &amp;&amp; !_root.ground.hitTest(_X,_Y + 10,true))
+   {
+      freepass = false;
+   }
+   if(_root.ground.hitTest(_X,_Y,true) &amp;&amp; !freepass)
+   {
+      freepass = true;
+   }
+   fusetime += 1;
+   if(fusetime &gt; 40)
+   {
+      blowup();
+   }
+   if(_Y &gt;= 900 || _X &lt; -500 || _X &gt; 1400 || _root.deleteeverything)
+   {
+      removeMovieClip(this);
+      delete this.onEnterFrame;
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" duration="4" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="5" keyMode="9728">
+                                   <Actionscript>
+                                        <script>gotoAndPlay(2);
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#868a8e">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                              <DOMFrame index="1" duration="2" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#ff0000"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 118 -118[ 169 -67 169 2[ 169 71 118 119[ 70 170 1 170[ -68 170 -119 119[ -167 71 -167 2[ -167 -67 -119 -118[ -68 -166 1 -166[ 70 -166 118 -118"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                              <DOMFrame index="3" duration="3" keyMode="9728">
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#a3fd22" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" duration="6" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#333333" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="2.0" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#000000"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! 141 -142[ 200 -83 200 0[ 200 83 141 141[ 83 200 0 200[ -82 200 -141 141[ -200 83 -200 0[ -200 -83 -141 -142[ -82 -200 0 -200[ 83 -200 141 -142"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

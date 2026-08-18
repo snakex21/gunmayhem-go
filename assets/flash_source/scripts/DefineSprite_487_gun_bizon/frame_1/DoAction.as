@@ -1,0 +1,16 @@
+shootx = 10;
+shooty = 3;
+handx = 42;
+handy = -11;
+shellX = 20;
+flashX = 50;
+Name = "COMPACT SMG";
+_parent._parent.rof = 3;
+_parent._parent.firepower = 14;
+_parent._parent.recoil = 0.8;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 48;
+_parent._parent.idlerotate = 30;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.9;

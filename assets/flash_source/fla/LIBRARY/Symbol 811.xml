@@ -1,0 +1,123 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 811" itemID="6a368e80-000001bf" lastModified="1781960266">
+     <timeline>
+          <DOMTimeline name="Symbol 811">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#f528d4">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>if(_X &lt; 140)
+{
+   xx = 3;
+}
+if(_X &lt; 80)
+{
+   xx = 2;
+}
+if(_X &lt; 15)
+{
+   xx = 1;
+}
+if(_Y &lt; 660)
+{
+   yy = 4;
+}
+if(_Y &lt; 600)
+{
+   yy = 3;
+}
+if(_Y &lt; 540)
+{
+   yy = 2;
+}
+if(_Y &lt; 480)
+{
+   yy = 1;
+}
+if(_Y &lt; 420)
+{
+   yy = 0;
+}
+NUMBER = yy * 3 + xx;
+shirt.gotoAndStop(NUMBER);
+asdf = _parent._parent;
+this.onRelease = function()
+{
+   asdf.player.shirt.gotoAndStop(NUMBER);
+   updatetime = 1;
+   asdf.slideback();
+   asdf.slide = 1;
+};
+this.onRollOver = function()
+{
+   asdf.displaytext.text = shirt.id;
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#4186f8">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#999999" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="1.5" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#000000"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="1" edges="! 426 613[ 467 613 496 642[ 526 672 526 713[ 526 755 496 784[ 467 813 426 813[ 383 813 355 784[ 326 755 326 713[ 326 672 355 642[ 383 613 426 613"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#ce9afe">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 224" name="shirt" centerPoint3DX="51.35" centerPoint3DY="61.4">
+                                             <matrix>
+                                                  <Matrix tx="26.6" ty="29.9" a="0.8113250732421875" d="0.8113250732421875"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#9de731">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 809" symbolType="graphic" loop="loop">
+                                             <matrix>
+                                                  <Matrix tx="0.0" ty="0.0"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

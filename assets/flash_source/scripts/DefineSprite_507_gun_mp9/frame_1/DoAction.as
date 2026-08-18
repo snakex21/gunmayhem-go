@@ -1,0 +1,16 @@
+shootx = 20;
+shooty = 3;
+handx = 43;
+handy = -10;
+shellX = 17;
+flashX = 45;
+Name = "MICRO SMG";
+_parent._parent.rof = 3;
+_parent._parent.firepower = 15;
+_parent._parent.recoil = 0.5;
+_parent._parent.blowback = 10;
+_parent._parent.bullets = 30;
+_parent._parent.idlerotate = 40;
+_parent._parent.adjustrof();
+_parent._parent.pushback = 3;
+_parent._parent.weight = 0.95;
