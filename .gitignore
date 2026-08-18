@@ -11,12 +11,8 @@ build.exe
 .DS_Store
 Thumbs.db
 
-# Local original-source/reference archive. The Go runtime never reads this tree.
-source/
-
-# FFDec/XFL duplicate WAV exports. Runtime audio uses compact sounds/*.mp3,
-# with only five 11.025 kHz raw XFL fallbacks kept in fla/bin.
-assets/fla/LIBRARY/*.wav
+# source/ is intentionally tracked: it contains the original/reference export
+# used to verify and continue the source-faithful port. Runtime code never reads it.
 
 # Temporary / profiling output
 *.log

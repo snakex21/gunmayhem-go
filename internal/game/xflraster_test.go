@@ -12,10 +12,10 @@ func TestSourceRasterRegistrationMatchesFrameSource(t *testing.T) {
 		frame   int
 		parts   []string
 	}{
-		{"body", "Symbol 240", 0, []string{"sprites", "DefineSprite_240", "1.png"}},
+		// Body/leg source PNGs are reference-only now: those parts are rendered
+		// from XFL vectors at runtime. Keep this test focused on raster paths the
+		// Go runtime actually loads from assets/.
 		{"hand", "Symbol 111", 0, []string{"sprites", "DefineSprite_111", "1", "1.png"}},
-		{"leg1", "Symbol 282", 0, []string{"sprites", "DefineSprite_282", "1", "1.png"}},
-		{"leg2", "Symbol 189", 0, []string{"sprites", "DefineSprite_189", "1", "1.png"}},
 		{"scene1", "Symbol 1352", 0, []string{"sprites", "DefineSprite_1352", "1", "1.png"}},
 		{"m1911", "Symbol 416", 1, []string{"sprites", "DefineSprite_416_gun_m1911", "1", "2.png"}},
 	}

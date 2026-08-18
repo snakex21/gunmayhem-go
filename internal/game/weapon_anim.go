@@ -1,57 +1,82 @@
 package game
 
-import (
-	"os"
-	"regexp"
-	"strconv"
-	"sync"
-)
-
 type WeaponAnimSource struct {
 	Blowback   float64
 	Pushback   float64
 	IdleRotate float64
 }
 
-var (
-	weaponAnimMu    sync.Mutex
-	weaponAnimCache = map[int]WeaponAnimSource{}
-)
-
-func sourceWeaponAnim(number int) WeaponAnimSource {
-	weaponAnimMu.Lock()
-	defer weaponAnimMu.Unlock()
-	if v, ok := weaponAnimCache[number]; ok {
-		return v
-	}
-	def, ok := WeaponByNumber(number)
-	if !ok {
-		return WeaponAnimSource{}
-	}
-	path, err := findOriginalPath("scripts", def.SpriteDir, "frame_1", "DoAction.as")
-	if err != nil {
-		return WeaponAnimSource{}
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return WeaponAnimSource{}
-	}
-	s := string(data)
-	v := WeaponAnimSource{
-		Blowback:   sourceNumericAssignment(s, `_parent\._parent\.blowback\s*=\s*(-?[0-9.]+);`),
-		Pushback:   sourceNumericAssignment(s, `_parent\._parent\.pushback\s*=\s*(-?[0-9.]+);`),
-		IdleRotate: sourceNumericAssignment(s, `_parent\._parent\.idlerotate\s*=\s*(-?[0-9.]+);`),
-	}
-	weaponAnimCache[number] = v
-	return v
+// Source frame-1 weapon animation values, transcribed from the original
+// ActionScript. Keeping these as Go data means the runtime no longer needs the
+// decompiled scripts tree; source/ remains the reference used to verify them.
+var weaponAnimCatalog = map[int]WeaponAnimSource{
+	1:  {Blowback: 30, Pushback: 0, IdleRotate: 40},
+	2:  {Blowback: 30, Pushback: 0, IdleRotate: 40},
+	3:  {Blowback: 20, Pushback: 0, IdleRotate: 40},
+	4:  {Blowback: 30, Pushback: 10, IdleRotate: 40},
+	5:  {Blowback: 30, Pushback: 0, IdleRotate: 40},
+	6:  {Blowback: 40, Pushback: 20, IdleRotate: -60},
+	8:  {Blowback: 30, Pushback: 0, IdleRotate: 40},
+	9:  {Blowback: 20, Pushback: 40, IdleRotate: -80},
+	10: {Blowback: 7, Pushback: 10, IdleRotate: -60},
+	11: {Blowback: 10, Pushback: 30, IdleRotate: -60},
+	12: {Blowback: 10, Pushback: 3, IdleRotate: 40},
+	13: {Blowback: 20, Pushback: 30, IdleRotate: -80},
+	14: {Blowback: 8, Pushback: 15, IdleRotate: -70},
+	15: {Blowback: 10, Pushback: 20, IdleRotate: -60},
+	16: {Blowback: 10, Pushback: 30, IdleRotate: -70},
+	17: {Blowback: 8, Pushback: 12, IdleRotate: -60},
+	18: {Blowback: 10, Pushback: 20, IdleRotate: -80},
+	19: {Blowback: 5, Pushback: 3, IdleRotate: 40},
+	20: {Blowback: 10, Pushback: 10, IdleRotate: 30},
+	21: {Blowback: 10, Pushback: 3, IdleRotate: 30},
+	22: {Blowback: 7, Pushback: 8, IdleRotate: -70},
+	23: {Blowback: 10, Pushback: 3, IdleRotate: 30},
+	24: {Blowback: 10, Pushback: 3, IdleRotate: 40},
+	25: {Blowback: 10, Pushback: 3, IdleRotate: 30},
+	26: {Blowback: 10, Pushback: 3, IdleRotate: 40},
+	27: {Blowback: 10, Pushback: 3, IdleRotate: -60},
+	28: {Blowback: 10, Pushback: 3, IdleRotate: 40},
+	29: {Blowback: 10, Pushback: 5, IdleRotate: 30},
+	30: {Blowback: 5, Pushback: 3, IdleRotate: 20},
+	31: {Blowback: 10, Pushback: 3, IdleRotate: 40},
+	32: {Blowback: 10, Pushback: 3, IdleRotate: 30},
+	33: {Blowback: 10, Pushback: 30, IdleRotate: -70},
+	34: {Blowback: 10, Pushback: 30, IdleRotate: -60},
+	35: {Blowback: 10, Pushback: 30, IdleRotate: 25},
+	36: {Blowback: 10, Pushback: 30, IdleRotate: 30},
+	37: {Blowback: 10, Pushback: 30, IdleRotate: -70},
+	38: {Blowback: 10, Pushback: 30, IdleRotate: -70},
+	39: {Blowback: 8, Pushback: 15, IdleRotate: -70},
+	40: {Blowback: 8, Pushback: 15, IdleRotate: 30},
+	41: {Blowback: 8, Pushback: 15, IdleRotate: -70},
+	42: {Blowback: 8, Pushback: 15, IdleRotate: -60},
+	43: {Blowback: 10, Pushback: 20, IdleRotate: -80},
+	44: {Blowback: 4, Pushback: 30, IdleRotate: -80},
+	45: {Blowback: 20, Pushback: 30, IdleRotate: 30},
+	46: {Blowback: 8, Pushback: 15, IdleRotate: -60},
+	47: {Blowback: 8, Pushback: 15, IdleRotate: 30},
+	48: {Blowback: 20, Pushback: 30, IdleRotate: -80},
+	49: {Blowback: 20, Pushback: 30, IdleRotate: -80},
+	50: {Blowback: 20, Pushback: 40, IdleRotate: -80},
+	51: {Blowback: 10, Pushback: 20, IdleRotate: -70},
+	52: {Blowback: 10, Pushback: 20, IdleRotate: -70},
+	53: {Blowback: 20, Pushback: 40, IdleRotate: -80},
+	54: {Blowback: 20, Pushback: 20, IdleRotate: -70},
+	55: {Blowback: 0, Pushback: 10, IdleRotate: 30},
+	56: {Blowback: 7, Pushback: 10, IdleRotate: -70},
+	57: {Blowback: 7, Pushback: 10, IdleRotate: -60},
+	58: {Blowback: 7, Pushback: 10, IdleRotate: -70},
+	59: {Blowback: 7, Pushback: 10, IdleRotate: -60},
+	60: {Blowback: 7, Pushback: 10, IdleRotate: -70},
+	61: {Blowback: 7, Pushback: 10, IdleRotate: -60},
+	62: {Blowback: 3, Pushback: 10, IdleRotate: 30},
+	63: {Blowback: 7, Pushback: 10, IdleRotate: -60},
+	64: {Blowback: 7, Pushback: 10, IdleRotate: -60},
+	65: {Blowback: 7, Pushback: 10, IdleRotate: -70},
+	66: {Blowback: 7, Pushback: 10, IdleRotate: -60},
 }
 
-func sourceNumericAssignment(source, pattern string) float64 {
-	re := regexp.MustCompile(pattern)
-	m := re.FindStringSubmatch(source)
-	if len(m) != 2 {
-		return 0
-	}
-	v, _ := strconv.ParseFloat(m[1], 64)
-	return v
+func sourceWeaponAnim(number int) WeaponAnimSource {
+	return weaponAnimCatalog[number]
 }

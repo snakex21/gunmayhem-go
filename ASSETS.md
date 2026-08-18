@@ -1,37 +1,32 @@
 # Asset layout
 
-This project is a source-faithful Go reimplementation of Gun Mayhem. During development, the original Flash/XFL export is used as a behavioral and visual reference.
+This project is a source-faithful Go reimplementation of Gun Mayhem. The repository intentionally keeps the runnable Go port separate from the original/reference Flash export.
 
-## Runtime assets
+## `assets/` — runtime only
 
-The Go version currently reads these paths at runtime:
+The Go game reads only from `assets/`. Files that are useful only for reverse-engineering belong in `source/`, not here.
 
-- `assets/fla/DOMDocument.xml` — media/linkage metadata needed by the Go runtime, including the five 11.025 kHz fallback sounds.
-- `assets/fla/bin/` — only five tiny raw PCM fallbacks (`drop1`, `drop2`, `drop3`, `explosion1`, `explosion2`) that the Go MP3 decoder cannot reliably decode from the original MPEG-2.5 exports.
-- `assets/fla/LIBRARY/` — XFL symbol definitions actually used by the port for maps, transforms, timelines, hit geometry and vector reconstruction.
-- `assets/fonts/` — the font files used by the HUD/menu reconstruction. They are tracked with the project so a fresh clone has the same runtime assets as the development build.
-- `assets/scripts/` — selected ActionScript files still consumed as runtime data for weapon timeline/animation behavior.
-- `assets/sounds/` — compact FFDec MP3 exports used by the runtime audio engine for music and normal sound effects.
-- `assets/sprites/` — FFDec raster exports used where a symbol is rendered as a raster or as a fallback.
+Current runtime groups:
 
-`assets/fla/LIBRARY/*.wav` is intentionally ignored by Git because those files duplicate the audio exports above.
+- `assets/fla/DOMDocument.xml` — media/linkage metadata required by the audio loader.
+- `assets/fla/bin/` — five tiny 11.025 kHz raw PCM fallbacks (`drop1`, `drop2`, `drop3`, `explosion1`, `explosion2`) that the Go MP3 decoder cannot reliably decode from the original MPEG-2.5 exports.
+- `assets/fla/LIBRARY/` — XFL symbol definitions and bitmap data still consumed by the Go render/timeline/map code.
+- `assets/fonts/` — only the bundled fonts actually requested by the current HUD/menu loaders.
+- `assets/sounds/` — compact audio files actually addressable by the current runtime.
+- `assets/sprites/` — raster exports used by the Go renderer or as source-faithful fallbacks.
 
-## Reference-only archive
+The runtime no longer reads decompiled ActionScript files for weapon animation constants; those values are transcribed into Go data and the original scripts live under `source/scripts/`.
 
-`source/` is the separate local reference tree for material from the original Flash export that is useful while checking the 1:1 port but is not required by the current Go runtime:
+The large XFL `LIBRARY/*.wav` exports live under `source/fla/LIBRARY/`, not `assets/`; runtime audio uses the compact files in `assets/sounds/` plus the five raw PCM fallbacks in `assets/fla/bin/`.
 
-- `buttons/`
-- `frames/`
-- `images/`
-- `shapes/`
-- `texts/`
-- the full unused portion of the original `fla/bin/` raw-audio archive
-- `gunmayhem.swf`
-- `gunmayhem_meta.sqlite`
-- XFL publishing metadata such as `PublishSettings.xml` and `fla.xfl`
+## `source/` — original/reference material
 
-The `source/` tree is deliberately excluded from Git because it is reference material, not a runtime/build dependency. A fresh clone contains everything required by the Go port under `assets/`; runtime code resolves files only from `assets/` and does not fall back to `source/`.
+`source/` is tracked in Git on purpose. It contains the original/reference Flash/FFDec material used to verify behavior and continue the 1:1 port, including the SWF, decompiled scripts, authoring/export data, raw reference audio and other exported material.
+
+The Go runtime never falls back to `source/`. A clean clone can build and run from the Go code plus `assets/`, while `source/` remains available beside it for comparison and future porting work.
+
+Some material may intentionally exist in both `source/` and `assets/`: one copy is reference/source material, the other is the runtime representation used by the Go port.
 
 ## Philosophy
 
-The goal is **behavioral fidelity, not architectural fidelity**. The original ActionScript and XFL are treated as the specification for gameplay timing, transforms and edge cases, while the Go implementation is free to use a cleaner and more efficient architecture.
+The goal is **behavioral fidelity, not architectural fidelity**. The original ActionScript/XFL is the specification for gameplay timing, transforms and edge cases, while the Go implementation uses a cleaner and more efficient architecture.

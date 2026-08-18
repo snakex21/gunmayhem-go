@@ -1,0 +1,3 @@
+Free for all. Last player alive wins the game. Weapons are 
+--- RECORDSEPARATOR ---
+picked up in crates.

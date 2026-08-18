@@ -1,0 +1,17 @@
+asdf (Aa, Bb, Cc)
+--- RECORDSEPARATOR ---
+{
+--- RECORDSEPARATOR ---
+     qwer(zxcv);//qazqazqaz
+--- RECORDSEPARATOR ---
+     tyui+=JKL
+--- RECORDSEPARATOR ---
+     fdsa(12345)
+--- RECORDSEPARATOR ---
+     {
+--- RECORDSEPARATOR ---
+          asdfasdf
+--- RECORDSEPARATOR ---
+     }
+--- RECORDSEPARATOR ---
+}

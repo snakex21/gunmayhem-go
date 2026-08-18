@@ -76,7 +76,7 @@ go test ./...
 │   ├── scripts/
 │   ├── sounds/
 │   └── sprites/
-├── source/                    # local original/reference material, not tracked
+├── source/                    # tracked original/reference Flash/FFDec material
 ├── cmd/
 ├── internal/game/             # gameplay, source parsers and rendering
 ├── ASSETS.md                  # asset separation and runtime dependencies

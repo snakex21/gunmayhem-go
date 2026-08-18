@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -66,7 +67,7 @@ func TestGunLibraryDetectsBrokenStatExportAndDistinctDropExport(t *testing.T) {
 		for _, frame := range frames {
 			path, err := findOriginalPath("sprites", dir, "1", fmt.Sprintf("%d.png", frame))
 			if err != nil {
-				t.Fatalf("%s frame%d: %v", dir, frame, err)
+				path = filepath.Join("..", "..", "source", "sprites", dir, "1", fmt.Sprintf("%d.png", frame))
 			}
 			data, err := os.ReadFile(path)
 			if err != nil {

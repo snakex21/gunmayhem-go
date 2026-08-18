@@ -1,0 +1,3 @@
+"I can finish drawing 20 maps in one week"
+--- RECORDSEPARATOR ---
+(actual speed: 7 days per map on average)

@@ -1,0 +1,3 @@
+At least 2 players 
+--- RECORDSEPARATOR ---
+must be active

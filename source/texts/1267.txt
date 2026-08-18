@@ -1,0 +1,5 @@
+Given the most powerful gun in the game, eliminate your 
+--- RECORDSEPARATOR ---
+opponents. Be mindful of ammo consumption, as you are only 
+--- RECORDSEPARATOR ---
+given 5 shots per life.

@@ -3,6 +3,7 @@ package game
 import (
 	"math"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"testing"
@@ -12,10 +13,7 @@ func TestWeaponCatalogMatchesOriginalActionScript(t *testing.T) {
 	for number, def := range weaponCatalog {
 		def := def
 		t.Run(strconv.Itoa(number)+"_"+def.Name, func(t *testing.T) {
-			path, err := findOriginalPath("scripts", def.SpriteDir, "frame_1", "DoAction.as")
-			if err != nil {
-				t.Fatal(err)
-			}
+			path := filepath.Join("..", "..", "source", "scripts", def.SpriteDir, "frame_1", "DoAction.as")
 			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
