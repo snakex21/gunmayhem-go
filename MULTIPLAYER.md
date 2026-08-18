@@ -15,29 +15,26 @@ This architecture is intentional: random crates/powerups and Flash-derived edge 
 
 ## Host
 
-Start the game with:
+The normal UI now has a **MULTIPLAYER** button on the main menu. Choose **HOST GAME** to listen on TCP port `7777`, then use the normal Custom Game setup to choose mode, map, lives and players. Player 1 is local and Player 2 is reserved for the remote client.
+
+The command line remains available for development or a custom port:
 
 ```text
 GunMayhem.exe --host
-```
-
-The default TCP port is `7777`. A different port can be selected with:
-
-```text
 GunMayhem.exe --host --port 9000
 ```
 
-Then use the normal game UI on the host and start a Custom Game (or a co-op Campaign setup) with Player 2 enabled. Until a client connects, the network-controlled Player 2 receives no input.
-
 ## Join
 
-On the second computer:
+On the second computer, open **MULTIPLAYER**, enter the host as `IP:port` (for example `192.168.1.20:7777`) and press **JOIN GAME**. The client shows a waiting screen until the host starts gameplay.
+
+The command-line equivalent is:
 
 ```text
 GunMayhem.exe --join 192.168.1.20:7777
 ```
 
-Replace `192.168.1.20` with the host's IP address. If only a hostname/IP is supplied by the internal API, port `7777` is assumed.
+If only a hostname/IP is supplied by the internal API, port `7777` is assumed.
 
 The client uses its local **Player 1** key bindings to control the host's **Player 2**. This lets each computer use a normal single-player keyboard layout instead of requiring Player 2's local-host key layout.
 
@@ -49,4 +46,4 @@ The current transport is direct TCP. For play outside the same LAN, the host mus
 
 ## Current scope
 
-This is the first working network layer, intended to stabilize simulation and synchronization before Gun Mayhem 2/custom mission content is added. The next UI step is exposing Host/Join directly in the game menus instead of requiring command-line flags.
+This is the first working network layer, intended to stabilize simulation and synchronization before Gun Mayhem 2/custom mission content is added. Host/Join is available directly from the game menu; command-line flags remain as a development convenience.

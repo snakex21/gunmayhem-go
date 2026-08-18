@@ -139,6 +139,10 @@ type Game struct {
 	windowedY           int
 	windowPositionSaved bool
 
+	multiplayerAddress string
+	multiplayerFocus   bool
+	multiplayerMessage string
+
 	netplay *netplaySession
 }
 
@@ -160,32 +164,33 @@ func New() *Game {
 	p2.configureSourceGameMode(mode, totalLives, arena)
 
 	g := &Game{
-		players:          []*Player{p1, p2},
-		maps:             maps,
-		arena:            arena,
-		assets:           LoadAssets(),
-		crateTimer:       0,
-		crateWeapons:     DefaultCrateWeapons(),
-		powerupTimer:     0,
-		seenDeaths:       map[int]int{1: 0, 2: 0},
-		nextEntityID:     3,
-		nextPickupSerial: 1,
-		GameMode:         mode,
-		TotalLives:       totalLives,
-		TeamGame:         false,
-		CrateON:          true,
-		PowerON:          true,
-		screen:           screenMainMenu,
-		customPage:       customPageGame,
-		customMenuX:      1800,
-		customMode:       SourceGameModeNormal,
-		customMap:        0,
-		customLives:      10,
-		campaignPhase:    1,
-		musicOn:          true,
-		soundOn:          true,
-		quality:          2,
-		audio:            newSourceAudioEngine(),
+		players:            []*Player{p1, p2},
+		maps:               maps,
+		arena:              arena,
+		assets:             LoadAssets(),
+		crateTimer:         0,
+		crateWeapons:       DefaultCrateWeapons(),
+		powerupTimer:       0,
+		seenDeaths:         map[int]int{1: 0, 2: 0},
+		nextEntityID:       3,
+		nextPickupSerial:   1,
+		GameMode:           mode,
+		TotalLives:         totalLives,
+		TeamGame:           false,
+		CrateON:            true,
+		PowerON:            true,
+		screen:             screenMainMenu,
+		customPage:         customPageGame,
+		customMenuX:        1800,
+		customMode:         SourceGameModeNormal,
+		customMap:          0,
+		customLives:        10,
+		campaignPhase:      1,
+		musicOn:            true,
+		soundOn:            true,
+		quality:            2,
+		audio:              newSourceAudioEngine(),
+		multiplayerAddress: "127.0.0.1:7777",
 	}
 	// arenagamedata3 defaults from root frame2: levels 1 and 2 available,
 	// levels 3..10 locked. All 57 guns start unlocked except the twenty

@@ -23,6 +23,7 @@ const (
 	screenCredits
 	screenPostGame
 	screenGameplay
+	screenMultiplayer
 )
 
 // Symbol1309 is one 2700px-wide menu strip. The source script moves the whole
@@ -68,6 +69,8 @@ func (g *Game) updateMenu() error {
 		g.updateGunLibraryMenu()
 	case screenCredits:
 		g.updateCreditsMenu()
+	case screenMultiplayer:
+		g.updateMultiplayerMenu()
 	}
 	return nil
 }
@@ -80,6 +83,7 @@ const (
 	menuHitMainOptions
 	menuHitMainCredits
 	menuHitMainMore
+	menuHitMainMultiplayer
 	menuHitGameBack
 	menuHitGameContinue
 	menuHitMapBack
@@ -126,6 +130,7 @@ func mainMenuHitAt(x, y float64) int {
 		hit    int
 		tx, ty float64
 	}{
+		{menuHitMainMultiplayer, 572.05, 205.0},
 		{menuHitMainCampaign, 572.05, 253.05},
 		{menuHitMainCustom, 572.05, 298.85},
 		{menuHitMainLibrary, 572.05, 365.75},
@@ -154,6 +159,10 @@ func (g *Game) updateMainMenu() {
 		g.playSourceSFX("menu.wav", false)
 	}
 	switch activated {
+	case menuHitMainMultiplayer:
+		g.multiplayerFocus = false
+		g.multiplayerMessage = ""
+		g.beginFade(screenMultiplayer, fadePurposeScreen)
 	case menuHitMainCampaign:
 		g.beginFade(screenCampaign, fadePurposeScreen)
 	case menuHitMainCustom:
@@ -463,6 +472,7 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 	switch g.screen {
 	case screenMainMenu:
 		drawSourceRaster(screen, g.assets.MainMenu, 0, 0, 1, 1, 1)
+		g.drawMainMultiplayerButton(screen)
 	case screenCustomGame:
 		drawSourceRaster(screen, g.assets.CustomMenu, g.customMenuX, 0, 1, 1, 1)
 		g.drawCustomGameInteractions(screen)
@@ -489,6 +499,8 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 		} else {
 			g.drawSecondaryMenuFallback(screen, "CREDITS")
 		}
+	case screenMultiplayer:
+		g.drawMultiplayerMenu(screen)
 	case screenPostGame:
 		if !g.drawPostGameScreen(screen) {
 			// Flattened Symbol1019 is fallback-only because it contains baked

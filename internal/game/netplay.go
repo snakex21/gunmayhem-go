@@ -9,6 +9,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const netplayProtocolVersion = 1
@@ -616,6 +619,12 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 
 func (g *Game) updateNetClient() error {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayClient {
+		return nil
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) { // Leave the remote session locally.
+		_ = g.CloseNetplay()
+		g.screen = screenMultiplayer
+		g.multiplayerMessage = "DISCONNECTED"
 		return nil
 	}
 	g.netplay.queueInput(capturePlayerInput(g.controlConfigs[0]))
