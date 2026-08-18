@@ -179,12 +179,11 @@ func (a *sourceAudioEngine) decodedPCM(name string) []byte {
 	}
 	var pcm []byte
 	if asset.RawPCM {
-		expected := asset.SampleCount * int64(asset.Channels) * 2
-		if expected <= 0 || expected > int64(len(raw)) {
-			a.pcm[key] = nil
-			return nil
-		}
-		raw = raw[int64(len(raw))-expected:]
+		// The XFL .dat files used by these five 11.025 kHz sounds are already
+		// raw PCM16 payloads. DOMDocument.xml's sampleCount is not the byte
+		// length of those payloads (for example drop1.wav contains 5250 PCM
+		// samples while sampleCount reports 3767), so trimming to sampleCount
+		// corrupts the beginning of the sound. Use the complete .dat payload.
 		pcm = stereoPCM16(raw, asset.Channels)
 		if len(pcm) == 0 {
 			a.pcm[key] = nil

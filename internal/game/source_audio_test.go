@@ -1,6 +1,7 @@
 package game
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -17,7 +18,18 @@ func TestSourceAudioFilesAndGunMapping(t *testing.T) {
 		t.Fatalf("music111 compact source path=%q want MP3 export", got)
 	}
 	if pcm := a.decodedPCM("drop1.wav"); len(pcm) == 0 {
-		t.Fatal("drop1 compact MP3 did not decode to source audio PCM")
+		t.Fatal("drop1 source audio did not decode to PCM")
+	}
+	asset := a.assets["drop1.wav"]
+	raw, err := os.ReadFile(asset.Path)
+	if err != nil {
+		t.Fatalf("read drop1 raw PCM: %v", err)
+	}
+	// drop1 is mono 11.025 kHz and the engine runs at 22.05 kHz. After stereo
+	// expansion + resampling, a full payload must be at least ~4x the raw byte
+	// count. The old sampleCount trimming produced a much shorter buffer.
+	if pcm := a.decodedPCM("drop1.wav"); len(pcm) < len(raw)*4 {
+		t.Fatalf("drop1 decoded PCM length=%d too short for full raw payload %d", len(pcm), len(raw))
 	}
 	checks := map[int]string{1: "pistol3.wav", 3: "pistol1.wav", 12: "smg1.wav", 33: "snipe4.wav", 44: "shotgun3.wav", 65: "lmg.wav"}
 	for gun, want := range checks {
