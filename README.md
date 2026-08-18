@@ -66,6 +66,16 @@ Run tests with:
 go test ./...
 ```
 
+## Developer / cheat mode
+
+The normal executable starts with all porting/debug shortcuts disabled. To deliberately enable the built-in developer tools, launch the same executable with:
+
+```text
+GunMayhem.exe --dev
+```
+
+`--debug` is accepted as an alias. In this mode the porting shortcuts are available again: F1 debug overlays, F2/F3 map switching, F4 AI toggle, R arena reset, and F10 campaign unlock. This keeps one executable useful both as the clean Original build and as a debugging/verification build without exposing developer behavior during normal play.
+
 ## Project structure
 
 ```text
@@ -73,7 +83,6 @@ go test ./...
 ├── assets/                    # all runtime assets used by the Go port
 │   ├── fla/
 │   ├── fonts/
-│   ├── scripts/
 │   ├── sounds/
 │   └── sprites/
 ├── source/                    # tracked original/reference Flash/FFDec material

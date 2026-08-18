@@ -50,7 +50,7 @@ func (g *Game) updateMenu() error {
 		g.updateFade()
 		return nil
 	}
-	if developerToolsEnabled && inpututil.IsKeyJustPressed(ebiten.KeyF1) {
+	if g.developerToolsEnabled && inpututil.IsKeyJustPressed(ebiten.KeyF1) {
 		g.menuDebug = !g.menuDebug
 	}
 	switch g.screen {
@@ -500,7 +500,7 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 			}
 		}
 	}
-	if developerToolsEnabled && g.menuDebug {
+	if g.developerToolsEnabled && g.menuDebug {
 		g.drawMenuDebug(screen)
 	}
 }

@@ -10,10 +10,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-// The original branch/release must behave like the shipped game, not like our
-// porting workspace. Keep all developer-only shortcuts and overlays disabled.
-const developerToolsEnabled = false
-
 type Game struct {
 	players          []*Player
 	maps             map[int]Map
@@ -53,7 +49,8 @@ type Game struct {
 	PowerON    bool
 	GameWin    bool
 
-	showCollisions bool
+	showCollisions       bool
+	developerToolsEnabled bool
 
 	// Source menu flow: main menu -> custom GAME SETUP -> MAP SELECTION ->
 	// PLAYER SETUP -> gameplay.
@@ -138,6 +135,10 @@ type Game struct {
 }
 
 func New() *Game {
+	return NewWithDeveloperTools(false)
+}
+
+func NewWithDeveloperTools(enabled bool) *Game {
 	arena, err := LoadOriginalMap(1)
 	if err != nil {
 		arena = OriginalMap1()
@@ -180,7 +181,8 @@ func New() *Game {
 		musicOn:          true,
 		soundOn:          true,
 		quality:          2,
-		audio:            newSourceAudioEngine(),
+		audio:                 newSourceAudioEngine(),
+		developerToolsEnabled: enabled,
 	}
 	// arenagamedata3 defaults from root frame2: levels 1 and 2 available,
 	// levels 3..10 locked. All 57 guns start unlocked except the twenty
@@ -214,7 +216,7 @@ func (g *Game) Update() error {
 	if g.updateGameplayInteractionInput() {
 		return nil
 	}
-	if developerToolsEnabled {
+	if g.developerToolsEnabled {
 		if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
 			g.showCollisions = !g.showCollisions
 		}
@@ -1274,7 +1276,7 @@ func geoMFromXFL(m xflMatrix) ebiten.GeoM {
 func (g *Game) drawHUD(screen *ebiten.Image) {
 	g.drawSourceHUDCards(screen)
 	g.drawKillFeeds(screen)
-	if developerToolsEnabled && g.showCollisions {
+	if g.developerToolsEnabled && g.showCollisions {
 		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("DEV | mapa %d/13 | gamemode %d | bron: %s | F2/F3 mapa | R reset", g.arena.Number, g.GameMode, g.players[0].Weapon.Def.Name), 10, 30)
 		ebitenutil.DebugPrintAt(screen, "P1 strzalki + [ ] | P2 WASD + T Y | F4 AI P2 | F1 wylacz debug", 10, 46)
 	}
