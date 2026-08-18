@@ -14,8 +14,8 @@ func TestSourceAudioFilesAndGunMapping(t *testing.T) {
 			t.Fatalf("source sound %q was not resolved", name)
 		}
 	}
-	if got := a.soundPath("music111"); got == "" || !strings.HasSuffix(strings.ToLower(got), ".mp3") {
-		t.Fatalf("music111 compact source path=%q want MP3 export", got)
+	if got := a.soundPath("music111"); got == "" || !strings.HasSuffix(strings.ToLower(got), ".wav") {
+		t.Fatalf("music111 source path=%q want original WAV", got)
 	}
 	if pcm := a.decodedPCM("drop1.wav"); len(pcm) == 0 {
 		t.Fatal("drop1 source audio did not decode to PCM")

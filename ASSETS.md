@@ -12,12 +12,12 @@ Current runtime groups:
 - `assets/fla/bin/` — five tiny 11.025 kHz raw PCM fallbacks (`drop1`, `drop2`, `drop3`, `explosion1`, `explosion2`) that the Go MP3 decoder cannot reliably decode from the original MPEG-2.5 exports.
 - `assets/fla/LIBRARY/` — XFL symbol definitions and bitmap data still consumed by the Go render/timeline/map code.
 - `assets/fonts/` — only the bundled fonts actually requested by the current HUD/menu loaders.
-- `assets/sounds/` — compact audio files actually addressable by the current runtime.
+- `assets/sounds/` — audio files actually addressable by the current runtime. **The four music tracks (`music111.wav`, `music333.wav`, `music444.wav`, `music555.wav`) must remain the original 22.05 kHz / 16-bit / stereo WAV exports. Do not replace them with the smaller FFDec MP3 exports: those MP3s produce audible metallic/"microwave" distortion in the Go/Ebitengine runtime.** Other sounds may use the compact MP3 exports where they decode correctly.
 - `assets/sprites/` — raster exports used by the Go renderer or as source-faithful fallbacks.
 
 The runtime no longer reads decompiled ActionScript files for weapon animation constants; those values are transcribed into Go data and the original scripts live under `source/scripts/`.
 
-The large XFL `LIBRARY/*.wav` exports live under `source/fla/LIBRARY/`, not `assets/`; runtime audio uses the compact files in `assets/sounds/` plus the five raw PCM fallbacks in `assets/fla/bin/`.
+Most large XFL `LIBRARY/*.wav` exports live under `source/fla/LIBRARY/`, not `assets/`. The deliberate exception is the four music tracks: their original WAV audio is duplicated into `assets/sounds/` because the FFDec MP3 versions do not reproduce correctly in the Go runtime. Runtime SFX otherwise use the compact files in `assets/sounds/` plus the five raw PCM fallbacks in `assets/fla/bin/`.
 
 ## `source/` — original/reference material
 

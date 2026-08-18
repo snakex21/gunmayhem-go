@@ -12,6 +12,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
+	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 )
 
 // The published Gun Mayhem music and the majority of weapon SFX are 22.05 kHz.
@@ -82,6 +83,16 @@ func (a *sourceAudioEngine) ensureAssets() {
 				linkage := strings.ToLower(base[underscore+1:])
 				a.assets[linkage] = sourceSoundAsset{Path: filepath.Join(soundsDir, name)}
 			}
+		}
+	}
+
+	// Keep the original uncompressed 22.05 kHz stereo music in runtime assets.
+	// The FFDec MP3 exports introduce audible metallic artifacts in this game,
+	// so music111/333/444/555 deliberately override their compact MP3 entries.
+	for _, music := range []string{"music111", "music333", "music444", "music555"} {
+		wavPath := filepath.Join(soundsDir, music+".wav")
+		if _, statErr := os.Stat(wavPath); statErr == nil {
+			a.assets[music] = sourceSoundAsset{Path: wavPath}
 		}
 	}
 
@@ -196,6 +207,21 @@ func (a *sourceAudioEngine) decodedPCM(name string) []byte {
 				a.pcm[key] = nil
 				return nil
 			}
+		}
+	} else if strings.HasSuffix(strings.ToLower(asset.Path), ".wav") {
+		stream, decodeErr := wav.DecodeWithoutResampling(bytes.NewReader(raw))
+		if decodeErr != nil {
+			a.pcm[key] = nil
+			return nil
+		}
+		var decoded io.Reader = stream
+		if stream.SampleRate() != ctx.SampleRate() {
+			decoded = audio.Resample(stream, stream.Length(), stream.SampleRate(), ctx.SampleRate())
+		}
+		pcm, err = io.ReadAll(decoded)
+		if err != nil || len(pcm) == 0 {
+			a.pcm[key] = nil
+			return nil
 		}
 	} else {
 		stream, decodeErr := mp3.DecodeWithoutResampling(bytes.NewReader(raw))
