@@ -112,6 +112,11 @@ type Game struct {
 	campaignNameFocus    int
 	campaignDynamiteTime int
 
+	// GM2 arena2gamedata progress is independent from the GM1 campaign above.
+	// GM2 has 16 missions and 7 timed challenges.
+	gm2CampaignLevels [16]int
+	gm2Challenges     [7]GM2ChallengeProgress
+
 	// arenagamedata2 defaults used by the source Options screen.
 	musicOn                 bool
 	soundOn                 bool
@@ -200,6 +205,7 @@ func New() *Game {
 	// levels 3..10 locked. All 57 guns start unlocked except the twenty
 	// campaign rewards, which are enabled by returntomenu() after a win.
 	g.campaignLevels, g.campaignGuns = defaultCampaignState()
+	g.gm2CampaignLevels = defaultGM2CampaignState()
 	g.initCustomPlayerSetup()
 	g.initCampaignPlayerSetup()
 	for i := 0; i < 4; i++ {

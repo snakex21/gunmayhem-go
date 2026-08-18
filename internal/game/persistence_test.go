@@ -69,6 +69,9 @@ func TestSaveRoundTrip(t *testing.T) {
 	save.CampaignLevels[2] = 1
 	save.CampaignGuns[40] = true
 	save.CampaignGuns[52] = true
+	save.GM2CampaignLevels[1] = 2
+	save.GM2CampaignLevels[2] = 1
+	save.GM2Challenges[3] = GM2ChallengeProgress{Medal: 2, BestTimeMS: 27890}
 	if err := SaveGameData(save); err != nil {
 		t.Fatal(err)
 	}
@@ -95,6 +98,8 @@ func TestNewPersistentAppliesSettingsAndProgress(t *testing.T) {
 	save := DefaultSaveData()
 	save.CampaignLevels[3] = 2
 	save.CampaignGuns[41] = true
+	save.GM2CampaignLevels[4] = 2
+	save.GM2Challenges[1] = GM2ChallengeProgress{Medal: 3, BestTimeMS: 19876}
 
 	g := NewPersistent(cfg, save)
 	if !g.persistent || g.musicOn || g.soundOn || g.quality != 3 {
@@ -104,6 +109,35 @@ func TestNewPersistentAppliesSettingsAndProgress(t *testing.T) {
 		t.Fatalf("controls not applied: config=%d player=%d", g.controlConfigs[1].Shoot, g.players[1].Controls.Shoot)
 	}
 	if g.campaignLevels[3] != 2 || !g.campaignGuns[41] {
-		t.Fatalf("progress not applied: level4=%d gun41=%v", g.campaignLevels[3], g.campaignGuns[41])
+		t.Fatalf("GM1 progress not applied: level4=%d gun41=%v", g.campaignLevels[3], g.campaignGuns[41])
+	}
+	if g.gm2CampaignLevels[4] != 2 || g.gm2Challenges[1].Medal != 3 || g.gm2Challenges[1].BestTimeMS != 19876 {
+		t.Fatalf("GM2 progress not applied: levels=%v challenge=%+v", g.gm2CampaignLevels, g.gm2Challenges[1])
+	}
+}
+
+func TestLoadV1SaveMigratesGM2Defaults(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
+	legacy := `{
+  "version": 1,
+  "campaign_levels": [1,2,1,0,0,0,0,0,0,0],
+  "campaign_guns": [true]
+}`
+	if err := os.WriteFile(filepath.Join(dir, "save.json"), []byte(legacy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadSaveData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Version != persistenceVersion {
+		t.Fatalf("version=%d want %d", got.Version, persistenceVersion)
+	}
+	if got.CampaignLevels[1] != 2 || got.CampaignLevels[2] != 1 {
+		t.Fatalf("GM1 progress was lost during migration: %v", got.CampaignLevels)
+	}
+	if got.GM2CampaignLevels[0] != 1 || got.GM2CampaignLevels[1] != 1 {
+		t.Fatalf("GM2 fresh defaults not initialized: %v", got.GM2CampaignLevels)
 	}
 }

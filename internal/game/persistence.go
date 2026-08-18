@@ -10,7 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const persistenceVersion = 1
+const persistenceVersion = 2
 
 // AppConfig contains machine/user preferences. It is deliberately separate
 // from campaign progress so settings can evolve without touching save data.
@@ -28,12 +28,22 @@ type AppConfig struct {
 	Controls            [4]Controls `json:"controls"`
 }
 
-// SaveData contains game progress only. Future GM2/custom campaign data can be
-// added here without mixing it with machine-specific settings.
+// GM2ChallengeProgress mirrors arena2gamedata.challenge[i]: medal is 0..3 and
+// BestTimeMS stores Flash getTimer() elapsed milliseconds (0 means no result).
+type GM2ChallengeProgress struct {
+	Medal      int `json:"medal"`
+	BestTimeMS int `json:"best_time_ms"`
+}
+
+// SaveData contains game progress only. GM1 and GM2 are deliberately kept as
+// separate campaigns: GM2's sixteen missions are a different campaign, not an
+// append-only continuation of the ten GM1 missions.
 type SaveData struct {
-	Version        int      `json:"version"`
-	CampaignLevels [10]int  `json:"campaign_levels"`
-	CampaignGuns   [57]bool `json:"campaign_guns"`
+	Version           int                     `json:"version"`
+	CampaignLevels    [10]int                 `json:"campaign_levels"`
+	CampaignGuns      [57]bool                `json:"campaign_guns"`
+	GM2CampaignLevels [16]int                 `json:"gm2_campaign_levels"`
+	GM2Challenges     [7]GM2ChallengeProgress `json:"gm2_challenges"`
 }
 
 func DefaultAppConfig() AppConfig {
@@ -65,12 +75,21 @@ func defaultCampaignState() ([10]int, [57]bool) {
 	return levels, guns
 }
 
+func defaultGM2CampaignState() [16]int {
+	var levels [16]int
+	// arena2gamedata defaults: missions 1 and 2 are available, 3..16 locked.
+	levels[0] = 1
+	levels[1] = 1
+	return levels
+}
+
 func DefaultSaveData() SaveData {
 	levels, guns := defaultCampaignState()
 	return SaveData{
-		Version:        persistenceVersion,
-		CampaignLevels: levels,
-		CampaignGuns:   guns,
+		Version:           persistenceVersion,
+		CampaignLevels:    levels,
+		CampaignGuns:      guns,
+		GM2CampaignLevels: defaultGM2CampaignState(),
 	}
 }
 
@@ -159,13 +178,34 @@ func normalizeSave(save SaveData) SaveData {
 			save.CampaignLevels[i] = defaults.CampaignLevels[i]
 		}
 	}
-	// Level 1 and 2 are available from a fresh game and should never become
-	// inaccessible due to a damaged/old save file.
+	// GM1 levels 1 and 2 are available from a fresh game and should never
+	// become inaccessible due to a damaged/old save file.
 	if save.CampaignLevels[0] == 0 {
 		save.CampaignLevels[0] = 1
 	}
 	if save.CampaignLevels[1] == 0 {
 		save.CampaignLevels[1] = 1
+	}
+
+	for i, state := range save.GM2CampaignLevels {
+		if state < 0 || state > 2 {
+			save.GM2CampaignLevels[i] = defaults.GM2CampaignLevels[i]
+		}
+	}
+	// Exact GM2 SharedObject defaults from frame_2/DoAction.as.
+	if save.GM2CampaignLevels[0] == 0 {
+		save.GM2CampaignLevels[0] = 1
+	}
+	if save.GM2CampaignLevels[1] == 0 {
+		save.GM2CampaignLevels[1] = 1
+	}
+	for i, challenge := range save.GM2Challenges {
+		if challenge.Medal < 0 || challenge.Medal > 3 {
+			save.GM2Challenges[i].Medal = 0
+		}
+		if challenge.BestTimeMS < 0 {
+			save.GM2Challenges[i].BestTimeMS = 0
+		}
 	}
 	return save
 }
@@ -239,6 +279,8 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.players[1].Controls = g.controlConfigs[1]
 	g.campaignLevels = save.CampaignLevels
 	g.campaignGuns = save.CampaignGuns
+	g.gm2CampaignLevels = save.GM2CampaignLevels
+	g.gm2Challenges = save.GM2Challenges
 	setSourceRenderQuality(g.quality)
 	ebiten.SetScreenFilterEnabled(g.quality != 1)
 	return g
@@ -279,9 +321,11 @@ func (g *Game) currentAppConfig() AppConfig {
 
 func (g *Game) currentSaveData() SaveData {
 	return SaveData{
-		Version:        persistenceVersion,
-		CampaignLevels: g.campaignLevels,
-		CampaignGuns:   g.campaignGuns,
+		Version:           persistenceVersion,
+		CampaignLevels:    g.campaignLevels,
+		CampaignGuns:      g.campaignGuns,
+		GM2CampaignLevels: g.gm2CampaignLevels,
+		GM2Challenges:     g.gm2Challenges,
 	}
 }
 
