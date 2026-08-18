@@ -69,7 +69,7 @@ func (g *Game) unlockAllCampaignLevelsCheat() {
 }
 
 func (g *Game) updateCampaignMenu() {
-	if inpututil.IsKeyJustPressed(ebiten.KeyF10) {
+	if developerToolsEnabled && inpututil.IsKeyJustPressed(ebiten.KeyF10) {
 		g.unlockAllCampaignLevelsCheat()
 		g.playSourceSFX("menu.wav", false)
 	}

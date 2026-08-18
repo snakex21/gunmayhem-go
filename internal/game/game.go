@@ -10,6 +10,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+// The original branch/release must behave like the shipped game, not like our
+// porting workspace. Keep all developer-only shortcuts and overlays disabled.
+const developerToolsEnabled = false
+
 type Game struct {
 	players          []*Player
 	maps             map[int]Map
@@ -210,22 +214,24 @@ func (g *Game) Update() error {
 	if g.updateGameplayInteractionInput() {
 		return nil
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
-		g.showCollisions = !g.showCollisions
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF2) {
-		g.switchMap(1)
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
-		g.switchMap(-1)
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
-		g.resetArenaState()
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF4) && len(g.players) > 1 {
-		g.players[1].AI = !g.players[1].AI
-		g.players[1].clearAIInput()
-		g.players[1].AITargetTimer = 40
+	if developerToolsEnabled {
+		if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
+			g.showCollisions = !g.showCollisions
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyF2) {
+			g.switchMap(1)
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
+			g.switchMap(-1)
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyR) {
+			g.resetArenaState()
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyF4) && len(g.players) > 1 {
+			g.players[1].AI = !g.players[1].AI
+			g.players[1].clearAIInput()
+			g.players[1].AITargetTimer = 40
+		}
 	}
 
 	for _, p := range g.players {
@@ -1268,7 +1274,7 @@ func geoMFromXFL(m xflMatrix) ebiten.GeoM {
 func (g *Game) drawHUD(screen *ebiten.Image) {
 	g.drawSourceHUDCards(screen)
 	g.drawKillFeeds(screen)
-	if g.showCollisions {
+	if developerToolsEnabled && g.showCollisions {
 		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("DEV | mapa %d/13 | gamemode %d | bron: %s | F2/F3 mapa | R reset", g.arena.Number, g.GameMode, g.players[0].Weapon.Def.Name), 10, 30)
 		ebitenutil.DebugPrintAt(screen, "P1 strzalki + [ ] | P2 WASD + T Y | F4 AI P2 | F1 wylacz debug", 10, 46)
 	}
