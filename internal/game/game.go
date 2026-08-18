@@ -143,7 +143,11 @@ type Game struct {
 	multiplayerFocus   bool
 	multiplayerMessage string
 
-	netplay *netplaySession
+	netplay             *netplaySession
+	netSFXSeq           uint64
+	netSFXPending       []netSFXEvent
+	netClientSFXPending []netSFXEvent
+	netLastSFXSeq       uint64
 }
 
 func New() *Game {
@@ -219,9 +223,7 @@ func (g *Game) Update() error {
 	}
 	if g.netplay != nil && g.netplay.mode == netplayHost {
 		g.applyHostRemoteInput()
-		defer func() {
-			g.netplay.queueState(g.makeNetSnapshot())
-		}()
+		defer g.queueNetHostSnapshot()
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyF11) {
 		if !ebiten.IsFullscreen() {
@@ -696,6 +698,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.audioStarted = true
 		g.syncSourceMusic()
 	}
+	g.flushNetClientSFX()
 	screen.Fill(color.RGBA{R: 30, G: 35, B: 41, A: 255})
 	if g.netplay != nil && g.netplay.mode == netplayClient && (!g.netplay.hasState.Load() || g.screen != screenGameplay && g.screen != screenPostGame) {
 		ebitenutil.DebugPrintAt(screen, "MULTIPLAYER", 20, 20)

@@ -54,6 +54,19 @@ func TestNetplayLoopbackInputAndSnapshot(t *testing.T) {
 	})
 }
 
+func TestNetSnapshotQueuesEachSFXEventOnlyOnce(t *testing.T) {
+	g := New()
+	state := netSnapshot{SFXEvents: []netSFXEvent{{Seq: 1, Name: "hit1.wav"}, {Seq: 2, Name: "explosion1.wav", Loud: true}}}
+	g.applyNetSnapshot(state)
+	g.applyNetSnapshot(state)
+	if got := len(g.netClientSFXPending); got != 2 {
+		t.Fatalf("queued network SFX=%d want 2 unique events", got)
+	}
+	if g.netLastSFXSeq != 2 {
+		t.Fatalf("last network SFX sequence=%d want 2", g.netLastSFXSeq)
+	}
+}
+
 func TestRemoteControlledPlayerUsesNetworkInput(t *testing.T) {
 	p := NewPlayer(2, OriginalMap1())
 	p.AI = true

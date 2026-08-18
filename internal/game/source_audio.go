@@ -319,6 +319,10 @@ func (g *Game) playSourceSFX(name string, loud bool) {
 		volume = 1 // frame2.playsound2()
 	}
 	g.audio.playSFX(name, volume)
+	if g.netplay != nil && g.netplay.mode == netplayHost {
+		g.netSFXSeq++
+		g.netSFXPending = append(g.netSFXPending, netSFXEvent{Seq: g.netSFXSeq, Name: name, Loud: loud})
+	}
 }
 
 func (g *Game) playSourceGunSound(number int) {

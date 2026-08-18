@@ -30,6 +30,12 @@ const (
 	netMessageState = 3
 )
 
+type netSFXEvent struct {
+	Seq  uint64
+	Name string
+	Loud bool
+}
+
 type netWireMessage struct {
 	Type     int
 	Protocol int
@@ -61,6 +67,7 @@ type netSnapshot struct {
 	Powerups       []Powerup
 	PowerupNameFX  []PowerupNameEffect
 	LifeBlingFX    []LifeBlingEffect
+	SFXEvents      []netSFXEvent
 
 	MapFXFrame int
 	CameraX    float64
@@ -508,6 +515,7 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		Powerups:           append([]Powerup(nil), g.powerups...),
 		PowerupNameFX:      append([]PowerupNameEffect(nil), g.powerupNameFX...),
 		LifeBlingFX:        append([]LifeBlingEffect(nil), g.lifeBlingFX...),
+		SFXEvents:          append([]netSFXEvent(nil), g.netSFXPending...),
 		MapFXFrame:         g.mapFXFrame,
 		CameraX:            g.cameraX,
 		CameraY:            g.cameraY,
@@ -550,6 +558,14 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		}
 	}
 	return state
+}
+
+func (g *Game) queueNetHostSnapshot() {
+	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost || !g.netplay.connected() {
+		return
+	}
+	g.netplay.queueState(g.makeNetSnapshot())
+	g.netSFXPending = g.netSFXPending[:0]
 }
 
 func (g *Game) applyNetSnapshot(state netSnapshot) {
@@ -612,9 +628,32 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 	g.testGunDisabled = state.TestGunDisabled
 	g.testGunRespawn = state.TestGunRespawn
 	g.testGunFrame = state.TestGunFrame
+	for _, event := range state.SFXEvents {
+		if event.Seq <= g.netLastSFXSeq {
+			continue
+		}
+		g.netLastSFXSeq = event.Seq
+		g.netClientSFXPending = append(g.netClientSFXPending, event)
+	}
 	if oldScreen != g.screen && g.audioStarted {
 		g.syncSourceMusic()
 	}
+}
+
+func (g *Game) flushNetClientSFX() {
+	if g == nil || len(g.netClientSFXPending) == 0 || !g.audioStarted {
+		return
+	}
+	if g.soundOn && g.audio != nil {
+		for _, event := range g.netClientSFXPending {
+			volume := 0.5
+			if event.Loud {
+				volume = 1
+			}
+			g.audio.playSFX(event.Name, volume)
+		}
+	}
+	g.netClientSFXPending = g.netClientSFXPending[:0]
 }
 
 func (g *Game) updateNetClient() error {
