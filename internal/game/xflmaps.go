@@ -355,10 +355,9 @@ func findOriginalPath(parts ...string) (string, error) {
 		dir := filepath.Clean(start)
 		for depth := 0; depth < 8; depth++ {
 			candidates := [][]string{
-				append([]string{dir, "assets", "flash_source"}, parts...),
-				append([]string{dir, "Gunmayhem"}, parts...),
+				append([]string{dir, "assets"}, parts...),
 			}
-			if strings.EqualFold(filepath.Base(dir), "flash_source") || strings.EqualFold(filepath.Base(dir), "Gunmayhem") {
+			if strings.EqualFold(filepath.Base(dir), "assets") {
 				candidates = append(candidates, append([]string{dir}, parts...))
 			}
 			for _, c := range candidates {
@@ -378,7 +377,7 @@ func findOriginalPath(parts ...string) (string, error) {
 			dir = parent
 		}
 	}
-	return "", errors.New("original Gunmayhem path not found: " + strings.Join(parts, "/"))
+	return "", errors.New("game asset path not found: " + strings.Join(parts, "/"))
 }
 
 func stringAttr(attrs []xml.Attr, name, fallback string) string {

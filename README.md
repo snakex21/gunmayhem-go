@@ -50,7 +50,7 @@ For example, the original `playerAI_double` spawns a normal `playerAI` instance 
 
 - Go **1.26.2** or newer compatible with the current module configuration
 - Windows, Linux or macOS supported by Ebitengine
-- runtime source assets in `assets/flash_source/`
+- runtime assets in `assets/`
 
 ## Build
 
@@ -69,9 +69,13 @@ go test ./...
 
 ```text
 .
-├── assets/
-│   ├── flash_source/          # runtime XFL/raster/font/audio source assets
-│   └── source_reference_only/ # local reverse-engineering archive, not tracked
+├── assets/                    # all runtime assets used by the Go port
+│   ├── fla/
+│   ├── fonts/
+│   ├── scripts/
+│   ├── sounds/
+│   └── sprites/
+├── source/                    # local original/reference material, not tracked
 ├── cmd/
 ├── internal/game/             # gameplay, source parsers and rendering
 ├── ASSETS.md                  # asset separation and runtime dependencies
@@ -80,7 +84,7 @@ go test ./...
 └── main.go
 ```
 
-See [ASSETS.md](ASSETS.md) for details about which parts of the Flash export are required by the Go runtime and which are kept only as local reference material.
+See [ASSETS.md](ASSETS.md) for the runtime/reference split. The Go runtime reads only `assets/`; `source/` is kept separate for 1:1 reverse-engineering work.
 
 ## Development rule
 
@@ -92,4 +96,4 @@ A fix should normally be based on the full source path involved in the mechanic 
 
 This is an independent technical reimplementation and is not affiliated with the original Gun Mayhem developers or publishers.
 
-Gun Mayhem, its name, artwork, audio and other original game assets belong to their respective rights holders. If this project is distributed publicly, verify that you have the appropriate rights to redistribute any bundled original assets. A code-only/public asset-extraction workflow is preferable for a public release.
+Gun Mayhem, its name, artwork, audio and other original game assets belong to their respective rights holders.
