@@ -25,6 +25,13 @@ var (
 	gotoAndPlayRE       = regexp.MustCompile(`gotoAndPlay\((\d+)\)\s*;`)
 )
 
+func weaponAssetNamespace(number int) string {
+	if number >= 67 {
+		return "gm2"
+	}
+	return ""
+}
+
 func weaponTimeline(number int) WeaponTimelineDef {
 	weaponTimelineMu.Lock()
 	defer weaponTimelineMu.Unlock()
@@ -36,7 +43,13 @@ func weaponTimeline(number int) WeaponTimelineDef {
 		return WeaponTimelineDef{TotalFrames: 2, RestFrame: 1, Scripts: map[int]string{}}
 	}
 	library := sourceLibraryNameFromSpriteDir(w.SpriteDir)
-	def, err := loadWeaponTimeline(library)
+	libraryDir, err := findOriginalPathIn(weaponAssetNamespace(number), "fla", "LIBRARY")
+	if err != nil {
+		def := WeaponTimelineDef{TotalFrames: 2, RestFrame: 1, Scripts: map[int]string{}}
+		weaponTimelineCache[number] = def
+		return def
+	}
+	def, err := loadWeaponTimelineFromDir(libraryDir, library)
 	if err != nil {
 		def = WeaponTimelineDef{TotalFrames: 2, RestFrame: 1, Scripts: map[int]string{}}
 	}
@@ -49,6 +62,10 @@ func loadWeaponTimeline(libraryName string) (WeaponTimelineDef, error) {
 	if err != nil {
 		return WeaponTimelineDef{}, err
 	}
+	return loadWeaponTimelineFromDir(libraryDir, libraryName)
+}
+
+func loadWeaponTimelineFromDir(libraryDir, libraryName string) (WeaponTimelineDef, error) {
 	f, err := os.Open(filepath.Join(libraryDir, libraryName+".xml"))
 	if err != nil {
 		return WeaponTimelineDef{}, err

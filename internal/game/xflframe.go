@@ -83,11 +83,15 @@ func sourceFrameVisualBounds(libraryName string, frame int) (Rect, error) {
 	if err != nil {
 		return Rect{}, err
 	}
+	return sourceFrameVisualBoundsInDir(libraryDir, libraryName, frame)
+}
+
+func sourceFrameVisualBoundsInDir(libraryDir, libraryName string, frame int) (Rect, error) {
 	return sourceFrameBoundsRecursive(libraryDir, libraryName, frame, map[string]bool{})
 }
 
 func sourceFrameBoundsRecursive(libraryDir, libraryName string, frame int, visiting map[string]bool) (Rect, error) {
-	key := libraryName + "#" + itoaFast(frame)
+	key := filepath.Clean(libraryDir) + "|" + libraryName + "#" + itoaFast(frame)
 	if frameBoundsHave[key] {
 		return frameBoundsCache[key], nil
 	}

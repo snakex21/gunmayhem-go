@@ -54,8 +54,16 @@ func applySourceRenderQuality(op *ebiten.DrawImageOptions) {
 }
 
 func loadSourceRaster(libraryName string, frame int, parts ...string) *SourceRaster {
-	img := decodeOriginalPNG(parts...)
+	return loadSourceRasterIn("", libraryName, frame, parts...)
+}
+
+func loadSourceRasterIn(namespace, libraryName string, frame int, parts ...string) *SourceRaster {
+	img := decodeOriginalPNGIn(namespace, parts...)
 	if img == nil {
+		return nil
+	}
+	libraryDir, err := findOriginalPathIn(namespace, "fla", "LIBRARY")
+	if err != nil {
 		return nil
 	}
 
@@ -63,7 +71,7 @@ func loadSourceRaster(libraryName string, frame int, parts ...string) *SourceRas
 	// 1) the visible bounds of this exact XFL frame in symbol coordinates,
 	// 2) the non-transparent bbox of FFDec's untouched raster of that frame.
 	// Their difference is where symbol coordinate (0,0) lies in the PNG.
-	if visible, err := sourceFrameVisualBounds(libraryName, frame); err == nil && rectFinite(visible) {
+	if visible, err := sourceFrameVisualBoundsInDir(libraryDir, libraryName, frame); err == nil && rectFinite(visible) {
 		if alpha, ok := alphaBounds(img); ok {
 			originX1 := visible.X - float64(alpha.Min.X)
 			originY1 := visible.Y - float64(alpha.Min.Y)
@@ -80,7 +88,7 @@ func loadSourceRaster(libraryName string, frame int, parts ...string) *SourceRas
 	}
 
 	// Fallback for a symbol whose visual frame cannot be reduced from XFL.
-	bounds, err := sourceSymbolCanvasBounds(libraryName)
+	bounds, err := sourceSymbolCanvasBoundsInDir(libraryDir, libraryName)
 	if err != nil {
 		return nil
 	}
@@ -118,12 +126,17 @@ func alphaBounds(src image.Image) (image.Rectangle, bool) {
 }
 
 func sourceSymbolCanvasBounds(libraryName string) (Rect, error) {
-	if r, ok := symbolBoundsCache[libraryName]; ok {
-		return r, nil
-	}
 	libraryDir, err := findOriginalPath("fla", "LIBRARY")
 	if err != nil {
 		return Rect{}, err
+	}
+	return sourceSymbolCanvasBoundsInDir(libraryDir, libraryName)
+}
+
+func sourceSymbolCanvasBoundsInDir(libraryDir, libraryName string) (Rect, error) {
+	key := filepath.Clean(libraryDir) + "|" + libraryName
+	if r, ok := symbolBoundsCache[key]; ok {
+		return r, nil
 	}
 	visiting := map[string]bool{}
 	r, err := sourceSymbolBoundsRecursive(libraryDir, libraryName, visiting)
@@ -140,19 +153,20 @@ func sourceSymbolCanvasBounds(libraryName string) (Rect, error) {
 	maxY := math.Ceil(r.Y + r.H)
 	r.W = maxX - r.X
 	r.H = maxY - r.Y
-	symbolBoundsCache[libraryName] = r
+	symbolBoundsCache[key] = r
 	return r, nil
 }
 
 func sourceSymbolBoundsRecursive(libraryDir, libraryName string, visiting map[string]bool) (Rect, error) {
-	if r, ok := symbolBoundsCache[libraryName]; ok {
+	key := filepath.Clean(libraryDir) + "|" + libraryName
+	if r, ok := symbolBoundsCache[key]; ok {
 		return r, nil
 	}
-	if visiting[libraryName] {
+	if visiting[key] {
 		return Rect{}, errors.New("XFL symbol cycle at " + libraryName)
 	}
-	visiting[libraryName] = true
-	defer delete(visiting, libraryName)
+	visiting[key] = true
+	defer delete(visiting, key)
 
 	path := filepath.Join(libraryDir, libraryName+".xml")
 	f, err := os.Open(path)
@@ -298,7 +312,7 @@ func sourceSymbolBoundsRecursive(libraryDir, libraryName string, visiting map[st
 		return Rect{X: 0, Y: 0, W: 0, H: 0}, nil
 	}
 	result = unionRectPoint(result, 0, 0)
-	symbolBoundsCache[libraryName] = result
+	symbolBoundsCache[key] = result
 	return result, nil
 }
 

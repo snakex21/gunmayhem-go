@@ -342,6 +342,13 @@ func transformRect(r Rect, m xflMatrix) Rect {
 }
 
 func findOriginalPath(parts ...string) (string, error) {
+	return findOriginalPathIn("", parts...)
+}
+
+// findOriginalPathIn keeps Flash asset namespaces separate. GM1 remains the
+// historical `assets/...` root; GM2 content lives under `assets/gm2/...` so
+// identical XFL names such as `Symbol 573.xml` can coexist safely.
+func findOriginalPathIn(namespace string, parts ...string) (string, error) {
 	var starts []string
 	if exe, err := os.Executable(); err == nil {
 		starts = append(starts, filepath.Dir(exe))
@@ -350,14 +357,18 @@ func findOriginalPath(parts ...string) (string, error) {
 		starts = append(starts, cwd)
 	}
 
+	assetParts := []string{"assets"}
+	if namespace != "" {
+		assetParts = append(assetParts, namespace)
+	}
+	assetParts = append(assetParts, parts...)
+
 	seen := map[string]bool{}
 	for _, start := range starts {
 		dir := filepath.Clean(start)
 		for depth := 0; depth < 8; depth++ {
-			candidates := [][]string{
-				append([]string{dir, "assets"}, parts...),
-			}
-			if strings.EqualFold(filepath.Base(dir), "assets") {
+			candidates := [][]string{append([]string{dir}, assetParts...)}
+			if strings.EqualFold(filepath.Base(dir), "assets") && namespace == "" {
 				candidates = append(candidates, append([]string{dir}, parts...))
 			}
 			for _, c := range candidates {
@@ -377,7 +388,11 @@ func findOriginalPath(parts ...string) (string, error) {
 			dir = parent
 		}
 	}
-	return "", errors.New("game asset path not found: " + strings.Join(parts, "/"))
+	label := strings.Join(parts, "/")
+	if namespace != "" {
+		label = namespace + "/" + label
+	}
+	return "", errors.New("game asset path not found: " + label)
 }
 
 func stringAttr(attrs []xml.Attr, name, fallback string) string {

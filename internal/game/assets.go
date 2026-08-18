@@ -607,7 +607,7 @@ func (a *Assets) WeaponFrame(number, frame int) *SourceRaster {
 		return nil
 	}
 	pngFrame := strconv.Itoa(frame+1) + ".png"
-	r := loadSourceRaster(libraryName, frame, "sprites", def.SpriteDir, "1", pngFrame)
+	r := loadSourceRasterIn(weaponAssetNamespace(number), libraryName, frame, "sprites", def.SpriteDir, "1", pngFrame)
 	frames[frame] = r
 	return r
 }
@@ -718,7 +718,11 @@ func recoverJetpackBackingPixel(composite, foreground color.NRGBA) color.NRGBA {
 }
 
 func decodeOriginalPNG(parts ...string) image.Image {
-	path, err := findOriginalPath(parts...)
+	return decodeOriginalPNGIn("", parts...)
+}
+
+func decodeOriginalPNGIn(namespace string, parts ...string) image.Image {
+	path, err := findOriginalPathIn(namespace, parts...)
 	if err != nil {
 		return nil
 	}
