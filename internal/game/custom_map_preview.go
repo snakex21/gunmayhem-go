@@ -23,6 +23,11 @@ var sourceMapDisplayNames = map[int]string{
 }
 
 func (g *Game) drawCustomMapButtons(screen *ebiten.Image) {
+	g.drawMapSetButtons(screen)
+	if g.customMapSetGM2 {
+		g.drawGM2CustomMapButtons(screen)
+		return
+	}
 	rows := [...]struct {
 		mapNumber int
 		ty        float64
@@ -63,6 +68,10 @@ func (g *Game) drawCustomMapButtons(screen *ebiten.Image) {
 // identical PNGs for all 13 frames, while XFL switches the 600x350 source
 // bitmap on every map selection.
 func (g *Game) drawCustomMapPreview(screen *ebiten.Image) {
+	if g.customMapSetGM2 {
+		g.drawGM2MapPreview(screen)
+		return
+	}
 	x := g.customMenuX - 640
 	y := 120.0
 

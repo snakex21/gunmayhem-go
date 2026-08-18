@@ -262,6 +262,11 @@ func (g *Game) updateCustomGameMenu() {
 	lx := float64(mx) - g.customMenuX
 	ly := float64(my)
 	hit := customMenuHitAt(g.customPage, lx, ly)
+	if g.customPage == customPageMaps {
+		if overlayHit, handled := g.gm2MapMenuHitAt(lx, ly); handled {
+			hit = overlayHit
+		}
+	}
 	if g.customPage == customPageGame {
 		if optionHit := g.customModeOptionsHitAt(lx, ly); optionHit != menuHitNone {
 			hit = optionHit
@@ -359,7 +364,29 @@ func (g *Game) activateCustomMenuHit(hit int) {
 	case hit >= menuHitModeBase+SourceGameModeNormal && hit <= menuHitModeBase+SourceGameModeSurvival:
 		g.customMode = hit - menuHitModeBase
 	case hit >= menuHitMapBase && hit <= menuHitMapBase+12:
+		g.customMapSetGM2 = false
 		g.customMap = hit - menuHitMapBase
+	case hit == menuHitMapSetGM1:
+		g.customMapSetGM2 = false
+		if isGM2MapID(g.customMap) || g.customMap == customGM2RandomNew || g.customMap == customGM2RandomAll {
+			g.customMap = 1
+		}
+	case hit == menuHitMapSetGM2:
+		if gm2MapAssetsAvailable() {
+			g.customMapSetGM2 = true
+			if !isGM2MapID(g.customMap) && g.customMap != customGM2RandomNew && g.customMap != customGM2RandomAll {
+				g.customMap = gm2MapID(1)
+			}
+		}
+	case hit >= menuHitGM2MapBase+1 && hit <= menuHitGM2MapBase+21:
+		g.customMapSetGM2 = true
+		g.customMap = gm2MapID(hit - menuHitGM2MapBase)
+	case hit == menuHitGM2RandomNew:
+		g.customMapSetGM2 = true
+		g.customMap = customGM2RandomNew
+	case hit == menuHitGM2RandomAll:
+		g.customMapSetGM2 = true
+		g.customMap = customGM2RandomAll
 	case hit == menuHitGameBack:
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 	case hit == menuHitGameContinue:
@@ -382,10 +409,16 @@ func (g *Game) activateCustomMenuHit(hit int) {
 
 func (g *Game) startCustomGame() {
 	mapNumber := g.customMap
-	if mapNumber == 0 {
-		// Source RANDOM chooses one of the twelve Custom Game maps. Geometry is
-		// loaded only after the number is chosen, not all twelve at startup.
+	switch mapNumber {
+	case 0:
+		// GM1 source RANDOM chooses one of its twelve Custom Game maps.
 		mapNumber = rand.Intn(12) + 1
+	case customGM2RandomNew:
+		// GM2 source selector 22: random(9)+1.
+		mapNumber = gm2MapID(rand.Intn(9) + 1)
+	case customGM2RandomAll:
+		// GM2 source selector 23: random(21)+1.
+		mapNumber = gm2MapID(rand.Intn(21) + 1)
 	}
 	arena, ok := g.ensureMap(mapNumber)
 	if !ok {
@@ -528,6 +561,9 @@ func (g *Game) drawCustomMenuChosen(screen *ebiten.Image) {
 	}
 	switch g.customPage {
 	case customPageMaps:
+		if g.customMapSetGM2 {
+			return
+		}
 		rows := map[int]float64{
 			0:  99.3,
 			12: 138.9, 11: 167.95, 10: 197.0, 9: 226.0,

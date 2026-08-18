@@ -565,7 +565,22 @@ func (a *Assets) EnsureInteractions() {
 }
 
 func (a *Assets) EnsureScene(n int) {
-	if n < 1 || n > 13 || a.sceneLoaded[n] {
+	if a.sceneLoaded[n] {
+		return
+	}
+	if isGM2MapID(n) {
+		source := gm2SourceMapNumber(n)
+		if source < 1 || source > 21 {
+			return
+		}
+		frame := strconv.Itoa(source) + ".png"
+		a.SceneBack[n] = loadSourceRasterIn("gm2", "Symbol 1642", source-1, "sprites", "DefineSprite_1642", frame)
+		a.SceneMid[n] = loadSourceRasterIn("gm2", "Symbol 1690", source-1, "sprites", "DefineSprite_1690", frame)
+		a.SceneFront[n] = loadSourceRasterIn("gm2", "Symbol 1835", source-1, "sprites", "DefineSprite_1835", frame)
+		a.sceneLoaded[n] = true
+		return
+	}
+	if n < 1 || n > 13 {
 		return
 	}
 	frame := strconv.Itoa(n) + ".png"

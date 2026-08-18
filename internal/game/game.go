@@ -58,6 +58,7 @@ type Game struct {
 	customMenuX        float64
 	customMode         int
 	customMap          int
+	customMapSetGM2    bool
 	customLives        int
 	customPlayers      [4]CustomPlayerConfig
 	customCardY        [4]float64
@@ -611,7 +612,15 @@ func (g *Game) ensureMap(number int) (Map, bool) {
 	if m, ok := g.maps[number]; ok {
 		return m, true
 	}
-	m, err := LoadOriginalMap(number)
+	var (
+		m   Map
+		err error
+	)
+	if isGM2MapID(number) {
+		m, err = LoadGM2Map(gm2SourceMapNumber(number))
+	} else {
+		m, err = LoadOriginalMap(number)
+	}
 	if err != nil {
 		return Map{}, false
 	}
@@ -623,12 +632,24 @@ func (g *Game) switchMap(delta int) {
 	if delta == 0 {
 		return
 	}
-	n := g.arena.Number + delta
-	for n < 1 {
-		n += 13
-	}
-	for n > 13 {
-		n -= 13
+	n := g.arena.Number
+	if isGM2MapID(n) {
+		source := gm2SourceMapNumber(n) + delta
+		for source < 1 {
+			source += 21
+		}
+		for source > 21 {
+			source -= 21
+		}
+		n = gm2MapID(source)
+	} else {
+		n += delta
+		for n < 1 {
+			n += 13
+		}
+		for n > 13 {
+			n -= 13
+		}
 	}
 	if arena, ok := g.ensureMap(n); ok {
 		g.arena = arena
