@@ -9,7 +9,7 @@ The Go version currently reads these paths at runtime:
 - `assets/fla/DOMDocument.xml` — media/linkage metadata needed by the Go runtime, including the five 11.025 kHz fallback sounds.
 - `assets/fla/bin/` — only five tiny raw PCM fallbacks (`drop1`, `drop2`, `drop3`, `explosion1`, `explosion2`) that the Go MP3 decoder cannot reliably decode from the original MPEG-2.5 exports.
 - `assets/fla/LIBRARY/` — XFL symbol definitions actually used by the port for maps, transforms, timelines, hit geometry and vector reconstruction.
-- `assets/fonts/` — optional locally supplied fonts used by HUD/menu reconstruction; `.ttf` binaries are not redistributed through Git and the runtime uses supported system-font fallbacks where available.
+- `assets/fonts/` — the font files used by the HUD/menu reconstruction. They are tracked with the project so a fresh clone has the same runtime assets as the development build.
 - `assets/scripts/` — selected ActionScript files still consumed as runtime data for weapon timeline/animation behavior.
 - `assets/sounds/` — compact FFDec MP3 exports used by the runtime audio engine for music and normal sound effects.
 - `assets/sprites/` — FFDec raster exports used where a symbol is rendered as a raster or as a fallback.
@@ -30,7 +30,7 @@ The Go version currently reads these paths at runtime:
 - `gunmayhem_meta.sqlite`
 - XFL publishing metadata such as `PublishSettings.xml` and `fla.xfl`
 
-The `source/` tree is deliberately excluded from Git. Nothing was deleted when the asset tree was reorganized; the files remain available locally for reverse-engineering. Runtime code resolves files only from `assets/` and does not fall back to `source/`.
+The `source/` tree is deliberately excluded from Git because it is reference material, not a runtime/build dependency. A fresh clone contains everything required by the Go port under `assets/`; runtime code resolves files only from `assets/` and does not fall back to `source/`.
 
 ## Philosophy
 

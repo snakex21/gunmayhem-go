@@ -1,5 +1,5 @@
 # Fonts
 
-Original font binaries are intentionally not redistributed in this repository.
+This directory contains the font assets used by the Go port for source-faithful HUD and menu rendering.
 
-The runtime first looks for locally supplied source fonts in this directory and then uses supported system-font fallbacks where available. For the closest visual match to the Flash original, place your own legally obtained copies of the required fonts here using the filenames expected by the source loaders.
+These files are part of the repository so a fresh clone can build and run with the same font assets used during development. The runtime may still contain defensive fallback logic, but no additional locally supplied font files are required.

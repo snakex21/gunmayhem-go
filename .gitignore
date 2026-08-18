@@ -18,9 +18,6 @@ source/
 # with only five 11.025 kHz raw XFL fallbacks kept in fla/bin.
 assets/fla/LIBRARY/*.wav
 
-# Source font binaries stay local and are not redistributed through Git.
-assets/fonts/*.ttf
-
 # Temporary / profiling output
 *.log
 *.pprof

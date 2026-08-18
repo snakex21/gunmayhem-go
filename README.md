@@ -50,7 +50,8 @@ For example, the original `playerAI_double` spawns a normal `playerAI` instance 
 
 - Go **1.26.2** or newer compatible with the current module configuration
 - Windows, Linux or macOS supported by Ebitengine
-- runtime assets in `assets/`
+
+A fresh clone contains the runtime assets required by the Go port in `assets/`, including the font files used by the source-faithful HUD/menu rendering. No separate local asset pack is required.
 
 ## Build
 
