@@ -14,6 +14,13 @@ func TestWeaponCatalogMatchesOriginalActionScript(t *testing.T) {
 		def := def
 		t.Run(strconv.Itoa(number)+"_"+def.Name, func(t *testing.T) {
 			path := filepath.Join("..", "..", "source", "scripts", def.SpriteDir, "frame_1", "DoAction.as")
+			if number >= 67 {
+				var err error
+				path, err = findOriginalPathIn("gm2", "scripts", def.SpriteDir, "frame_1", "DoAction.as")
+				if err != nil {
+					t.Skip("local unpacked GM2 source not available")
+				}
+			}
 			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)

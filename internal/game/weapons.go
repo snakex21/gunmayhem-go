@@ -80,6 +80,30 @@ var weaponCatalog = map[int]WeaponDef{
 	64: {64, "TOP-LOAD MACHINE GUN", 3, 20, .8, 50, 0, .7, 19, 70, "DefineSprite_590_gun_stoner"},
 	65: {65, "MILITARY MACHINE GUN", 3, 20, .8, 60, 0, .7, 19, 68, "DefineSprite_592_gun_m249"},
 	66: {66, "BULLPUP MACHINE GUN", 3, 18, .8, 42, 0, .8, 0, 70, "DefineSprite_594_gun_hbar"},
+
+	// Gun Mayhem 2 additions. GM2 deliberately keeps the original 1..66
+	// numbering and appends these twenty weapons as 67..86, so they can share
+	// the same gameplay catalog without remapping any GM1 save/runtime state.
+	67: {67, "GREY SMG", 3, 15, .4, 30, 0, .9, 20, 55, "DefineSprite_573_gun_A1"},
+	68: {68, "CHEAP SMG", 2, 12, .3, 32, 0, .9, 20, 55, "DefineSprite_575_gun_A2"},
+	69: {69, "MINI SMG", 3, 16, .5, 30, 0, .95, 17, 45, "DefineSprite_577_gun_A3"},
+	70: {70, "CHROME SMG", 4, 20, .6, 30, 0, .8, 21, 64, "DefineSprite_579_gun_A4"},
+	71: {71, "FANCY SMG", 4, 21, .6, 30, 0, .9, 25, 50, "DefineSprite_581_gun_A5"},
+	72: {72, "RELIABLE RIFLE", 5, 28, 1, 20, 0, .75, 17, 65, "DefineSprite_583_gun_B1"},
+	73: {73, "ANTIQUE RIFLE", 5, 28, 1, 30, 0, .8, 20, 72, "DefineSprite_585_gun_B2"},
+	74: {74, "BULLPUP STEALTH RIFLE", 4, 24, .4, 30, 0, .8, -3, 58, "DefineSprite_587_gun_B3"},
+	75: {75, "PRECISION CARBINE", 5, 26, .4, 20, 0, .85, 21, 62, "DefineSprite_589_gun_B4"},
+	76: {76, "OLD ASSAULT RIFLE", 3, 19, .6, 40, 0, .8, 21, 64, "DefineSprite_591_gun_B5"},
+	77: {77, ".50 SNIPER", 18, 62, 1.5, 5, 0, .7, 20, 79, "DefineSprite_593_gun_C1"},
+	78: {78, "STEADY SNIPER", 12, 48, 1.2, 10, 0, .8, -10, 77, "DefineSprite_595_gun_C2"},
+	79: {79, "SINGLE SHOT SNIPER", 31, 70, 10, 1, 0, .7, 25, 75, "DefineSprite_597_gun_C3"},
+	80: {80, "TACTICAL STEALTH SNIPER", 25, 55, 5, 5, 0, .75, -5, 75, "DefineSprite_599_gun_C4"},
+	81: {81, "LIGHT SNIPER", 31, 50, 7, 5, 0, .8, 20, 70, "DefineSprite_601_gun_C5"},
+	82: {82, "AUTOMATIC SHOTGUN", 6, 7, .8, 10, 7, .8, 20, 60, "DefineSprite_603_gun_D1"},
+	83: {83, "HI-CAP SHOTGUN", 12, 7, .6, 12, 7, .75, 20, 60, "DefineSprite_605_gun_D2"},
+	84: {84, "STANDARD SHOTGUN", 25, 8, 5, 5, 7, .8, 20, 58, "DefineSprite_609_gun_D3"},
+	85: {85, "STREET SWEEPER", 10, 7, .5, 12, 7, .85, 20, 60, "DefineSprite_611_gun_D4"},
+	86: {86, "4 ROUND SHOTGUN", 12, 8, 2, 4, 7, .85, 20, 63, "DefineSprite_613_gun_D5"},
 }
 
 func WeaponByNumber(number int) (WeaponDef, bool) {
@@ -111,6 +135,19 @@ func DefaultCrateWeapons() []int {
 		if !locked[n] {
 			out = append(out, n)
 		}
+	}
+	return out
+}
+
+// GM2CrateWeapons mirrors DefineSprite_784_crate: random(77)+10, i.e. every
+// normal crate weapon from 10 through 86 inclusive. Keep this separate from
+// DefaultCrateWeapons so the preserved GM1 campaign can retain its original
+// unlock-driven crate pool while developed Custom Game uses the combined GM2
+// arsenal.
+func GM2CrateWeapons() []int {
+	out := make([]int, 0, 77)
+	for n := 10; n <= 86; n++ {
+		out = append(out, n)
 	}
 	return out
 }

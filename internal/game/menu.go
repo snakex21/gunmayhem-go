@@ -440,6 +440,11 @@ func (g *Game) startCustomGame() {
 	}
 
 	g.players = players
+	// Developed Custom Game uses the complete GM2 crate pool (10..86) when
+	// the GM2 runtime assets are actually available. Fresh clones that do not
+	// yet contain assets/gm2 safely retain the GM1 pool instead of spawning an
+	// invisible appended weapon. GM1 campaign always resets to its legacy pool.
+	g.crateWeapons = developedCrateWeapons()
 	g.GameMode = mode
 	g.TotalLives = lives
 	g.TeamGame = mode == SourceGameModeTeams

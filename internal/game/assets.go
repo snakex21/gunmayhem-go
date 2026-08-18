@@ -607,7 +607,16 @@ func (a *Assets) WeaponFrame(number, frame int) *SourceRaster {
 		return nil
 	}
 	pngFrame := strconv.Itoa(frame+1) + ".png"
-	r := loadSourceRasterIn(weaponAssetNamespace(number), libraryName, frame, "sprites", def.SpriteDir, "1", pngFrame)
+	namespace := weaponAssetNamespace(number)
+	var r *SourceRaster
+	if namespace == "gm2" {
+		// The unpacked GM2 FFDec export stores weapon frames directly in the
+		// sprite directory, while the curated GM1 runtime tree uses an extra
+		// `1/` level. Keep both layouts source-faithful instead of renaming files.
+		r = loadSourceRasterIn(namespace, libraryName, frame, "sprites", def.SpriteDir, pngFrame)
+	} else {
+		r = loadSourceRasterIn(namespace, libraryName, frame, "sprites", def.SpriteDir, "1", pngFrame)
+	}
 	frames[frame] = r
 	return r
 }

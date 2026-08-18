@@ -127,12 +127,23 @@ The export also contains mode buttons 6, 12 and 13. Mode 6's exported display te
 - GM2 crate timer starts at 200 and uses a 350 threshold in root frame 10; do not assume GM1's runtime crate cadence for GM2 modes.
 - GM2 powerup timer threshold is 550 in root frame 10.
 
+## Current implementation status
+
+Completed on `main`:
+
+- GM1 remains isolated by the existing source-parity tests and `original`/legacy branch.
+- Save format v2 has separate GM2 campaign (16 slots) and seven challenge records.
+- GM2 XFL/raster lookup has its own namespace and cache keys, so equal `Symbol N` names cannot collide with GM1.
+- Weapons 67..86 are in the shared Go weapon catalog with source-exact ROF, firepower, recoil, ammo, shotgun count, weight, shell/flash positions, hand/shoot pose, blowback/pushback/idle rotation and GM2 `gunsound()` mappings.
+- Local source tests verify all twenty definitions against the separately unpacked GM2 ActionScript and verify their first-frame PNG, XFL bounds and timeline.
+- During import development `assets/gm2` is preferred, with the separately unpacked sibling `gun mayhem 2` tree accepted as a read-only fallback. Custom Game only enables the 10..86 GM2 crate pool when those render assets are available; otherwise it safely falls back to the GM1 pool.
+
 ## Integration order
 
-1. Keep GM1 behavior frozen/covered by existing source tests.
-2. Add GM2 save state (16 campaign missions + seven challenge records) without changing GM1 progress.
-3. Add versioned GM2 asset resolver; never flatten GM1 and GM2 XFL symbol namespaces.
-4. Import weapons 67..86 with their exact GM2 timelines, sounds and assets.
+1. ~~Keep GM1 behavior frozen/covered by existing source tests.~~
+2. ~~Add GM2 save state (16 campaign missions + seven challenge records) without changing GM1 progress.~~
+3. ~~Add versioned GM2 asset resolver; never flatten GM1 and GM2 XFL symbol namespaces.~~
+4. **In progress:** weapons 67..86 are behaviorally integrated; curate/package their runtime files under `assets/gm2` so a fresh clone no longer needs the local unpacked-source fallback.
 5. Add GM2 map namespace and maps 1..21; preserve GM1 numeric map IDs inside the GM1 namespace.
 6. Add GM2-only modes, starting with Gun Game Reversed and Jetpacks after full source tracing.
 7. Port the GM2 campaign as a separate campaign selector/set.

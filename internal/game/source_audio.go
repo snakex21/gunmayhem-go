@@ -306,6 +306,10 @@ func sourceGunSound(number int) string {
 		50: "shotgun1.wav", 51: "shotgun3.wav", 52: "shotgun3.wav", 53: "shotgun2.wav", 54: "shotgun3.wav",
 		55: "rifle3.wav", 56: "rifle6.wav", 57: "rifle1.wav", 58: "silenced2.wav", 59: "rifle3.wav", 60: "rifle4.wav",
 		61: "rifle5.wav", 62: "rifle1.wav", 63: "rifle2.wav", 64: "rifle3.wav", 65: "lmg.wav", 66: "rifle5.wav",
+		67: "smg3.wav", 68: "smg4.wav", 69: "smg1.wav", 70: "silenced2.wav", 71: "smg3.wav",
+		72: "rifle4.wav", 73: "rifle5.wav", 74: "silenced2.wav", 75: "rifle2.wav", 76: "rifle3.wav",
+		77: "snipe6.wav", 78: "snipe1.wav", 79: "snipe2.wav", 80: "silenced1.wav", 81: "snipe4.wav",
+		82: "shotgun3.wav", 83: "shotgun3.wav", 84: "shotgun1.wav", 85: "shotgun3.wav", 86: "shotgun3.wav",
 	}
 	return sounds[number]
 }

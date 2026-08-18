@@ -383,6 +383,9 @@ func (g *Game) startCampaignMission() {
 	}
 
 	g.players = players
+	// Legacy GM1 campaign keeps the original unlock-driven crate pool even
+	// though developed Custom Game can use the appended GM2 arsenal.
+	g.crateWeapons = DefaultCrateWeapons()
 	g.GameMode = spec.mode
 	g.TotalLives = spec.lives
 	p2Human := g.campaignPlayers[1].Type == 1

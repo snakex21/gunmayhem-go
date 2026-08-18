@@ -27,7 +27,11 @@ func loadLibraryBitmapSource(filename string) *SourceRaster {
 // Flash registration canvas, while a menu thumbnail should fit the visible
 // artwork, not the transparent registration padding around it.
 func loadTightOriginalPNG(parts ...string) *SourceRaster {
-	img := decodeOriginalPNG(parts...)
+	return loadTightOriginalPNGIn("", parts...)
+}
+
+func loadTightOriginalPNGIn(namespace string, parts ...string) *SourceRaster {
+	img := decodeOriginalPNGIn(namespace, parts...)
 	if img == nil {
 		return nil
 	}
@@ -233,15 +237,21 @@ func (a *Assets) EnsureGunLibrary() {
 		}
 	}
 	gunLibraryFrames := append([]int{7}, integerRange(1, 6)...)
-	gunLibraryFrames = append(gunLibraryFrames, integerRange(10, 66)...)
+	gunLibraryFrames = append(gunLibraryFrames, integerRange(10, 86)...)
 	for _, frame := range gunLibraryFrames {
-		if stat, err := renderSolidXFLFrame("Symbol 1190", frame-1); err == nil {
-			a.GunLibraryStats[frame] = stat
-		} else {
-			a.GunLibraryStats[frame] = loadSourceRaster("Symbol 1190", frame-1, "sprites", "DefineSprite_1190", "1", strconv.Itoa(frame)+".png")
+		if frame <= 66 {
+			if stat, err := renderSolidXFLFrame("Symbol 1190", frame-1); err == nil {
+				a.GunLibraryStats[frame] = stat
+			} else {
+				a.GunLibraryStats[frame] = loadSourceRaster("Symbol 1190", frame-1, "sprites", "DefineSprite_1190", "1", strconv.Itoa(frame)+".png")
+			}
 		}
 		if def, ok := WeaponByNumber(frame); ok {
-			a.GunLibraryThumbs[frame] = loadTightOriginalPNG("sprites", def.SpriteDir, "1", "1.png")
+			if frame >= 67 {
+				a.GunLibraryThumbs[frame] = loadTightOriginalPNGIn("gm2", "sprites", def.SpriteDir, "1.png")
+			} else {
+				a.GunLibraryThumbs[frame] = loadTightOriginalPNG("sprites", def.SpriteDir, "1", "1.png")
+			}
 		}
 	}
 	a.gunLibraryLoaded = true

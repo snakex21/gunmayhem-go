@@ -74,6 +74,31 @@ var realWeaponNames = map[int]string{
 	64: "Stoner 63A",
 	65: "FN M249 SAW",
 	66: "Steyr AUG HBAR",
+
+	// GM2 additions. The game itself uses descriptive labels (GREY SMG,
+	// STREET SWEEPER, ...); these are the real-world designs represented by
+	// the artwork. Where the reference identifies only a family/model class,
+	// keep that conservative name instead of inventing a more specific variant.
+	67: "CZ Scorpion EVO 3 A1",
+	68: "MAC-10",
+	69: "ST Kinetics CPW",
+	70: "Daewoo K7",
+	71: "B&T APC",
+	72: "CETME Rifle",
+	73: "StG 44",
+	74: "OTs-14 Groza",
+	75: "AR-15",
+	76: "Stoner 63",
+	77: "Serbu BFG-50A",
+	78: "Gepard Anti-Materiel Rifle",
+	79: "ArmaLite AR-50",
+	80: "VSSK Vykhlop",
+	81: "AMR-2",
+	82: "Origin-12",
+	83: "SRM Arms Model 1216",
+	84: "Benelli M3 Super 90",
+	85: "Armsel Striker",
+	86: "Browning Auto-5",
 }
 
 func (w WeaponDef) DisplayName() string {
