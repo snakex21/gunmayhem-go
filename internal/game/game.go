@@ -131,6 +131,13 @@ type Game struct {
 	testGunDisabled bool
 	testGunRespawn  int
 	testGunFrame    int
+
+	persistent          bool
+	windowedWidth       int
+	windowedHeight      int
+	windowedX           int
+	windowedY           int
+	windowPositionSaved bool
 }
 
 func New() *Game {
@@ -181,14 +188,7 @@ func New() *Game {
 	// arenagamedata3 defaults from root frame2: levels 1 and 2 available,
 	// levels 3..10 locked. All 57 guns start unlocked except the twenty
 	// campaign rewards, which are enabled by returntomenu() after a win.
-	g.campaignLevels[0] = 1
-	g.campaignLevels[1] = 1
-	for i := range g.campaignGuns {
-		g.campaignGuns[i] = true
-	}
-	for _, i := range []int{18, 19, 20, 21, 22, 29, 30, 31, 32, 33, 40, 41, 42, 43, 44, 52, 53, 54, 55, 56} {
-		g.campaignGuns[i] = false
-	}
+	g.campaignLevels, g.campaignGuns = defaultCampaignState()
 	g.initCustomPlayerSetup()
 	g.initCampaignPlayerSetup()
 	for i := 0; i < 4; i++ {
@@ -201,7 +201,11 @@ func New() *Game {
 
 func (g *Game) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyF11) {
+		if !ebiten.IsFullscreen() {
+			g.captureWindowedState()
+		}
 		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+		_ = g.saveConfig()
 	}
 	if g.screen != screenGameplay {
 		return g.updateMenu()

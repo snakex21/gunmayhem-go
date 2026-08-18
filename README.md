@@ -66,6 +66,17 @@ Run tests with:
 go test ./...
 ```
 
+## Persistent settings and saves
+
+The developed `main` branch keeps machine settings separate from campaign progress.
+
+- `config.json` stores window size/position, fullscreen state, music, sound, render quality and all four players' control bindings.
+- `save.json` stores campaign completion/unlocks.
+- F11 toggles fullscreen and the selected fullscreen state is remembered.
+- Resizing/moving the desktop window is remembered on normal exit. If the game exits while fullscreen, the last windowed size/position is preserved rather than being replaced by the monitor resolution.
+
+Files are stored in the operating system user config directory under `GunMayhemRE` (for example the user's AppData config area on Windows). For development/tests, `GUNMAYHEM_DATA_DIR` can override the directory.
+
 ## Project structure
 
 ```text

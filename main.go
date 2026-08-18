@@ -8,12 +8,26 @@ import (
 )
 
 func main() {
-	ebiten.SetWindowSize(game.ScreenWidth, game.ScreenHeight)
+	cfg, err := game.LoadAppConfig()
+	if err != nil {
+		log.Printf("config: %v", err)
+	}
+	save, err := game.LoadSaveData()
+	if err != nil {
+		log.Printf("save: %v", err)
+	}
+
+	game.ApplyWindowConfig(cfg)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Gun Mayhem RE - Go port")
 	ebiten.SetTPS(30)
 
-	if err := ebiten.RunGame(game.New()); err != nil {
-		log.Fatal(err)
+	g := game.NewPersistent(cfg, save)
+	runErr := ebiten.RunGame(g)
+	if err := g.SavePersistentState(); err != nil {
+		log.Printf("save persistent state: %v", err)
+	}
+	if runErr != nil {
+		log.Fatal(runErr)
 	}
 }

@@ -125,6 +125,7 @@ func (g *Game) completeCampaignLevel(level int) {
 			g.campaignGuns[idx] = true
 		}
 	}
+	_ = g.saveProgress()
 }
 
 func (g *Game) openPause() {

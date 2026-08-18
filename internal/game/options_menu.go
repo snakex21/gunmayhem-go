@@ -58,6 +58,7 @@ func (g *Game) updateOptionsMenu() {
 			player := g.optionsKeyCapturePlayer - 1
 			index := g.optionsKeyCaptureIndex
 			setControlByIndex(&g.controlConfigs[player], index, vk)
+			_ = g.saveConfig()
 			g.optionsKeyCapturePlayer = 0
 			g.optionsKeyCaptureIndex = 0
 			break
@@ -98,30 +99,37 @@ func (g *Game) updateOptionsMenu() {
 		if g.audioStarted {
 			g.syncSourceMusic()
 		}
+		_ = g.saveConfig()
 	case optionHitMusicOff:
 		g.musicOn = false
 		if g.audioStarted {
 			g.syncSourceMusic()
 		}
+		_ = g.saveConfig()
 	case optionHitSoundOn:
 		g.soundOn = true
+		_ = g.saveConfig()
 	case optionHitSoundOff:
 		g.soundOn = false
+		_ = g.saveConfig()
 	case optionHitQualityLow:
 		g.quality = 1
 		setSourceRenderQuality(1)
 		g.assets.invalidateQualityDependentPlayerRasters()
 		ebiten.SetScreenFilterEnabled(false)
+		_ = g.saveConfig()
 	case optionHitQualityMedium:
 		g.quality = 2
 		setSourceRenderQuality(2)
 		g.assets.invalidateQualityDependentPlayerRasters()
 		ebiten.SetScreenFilterEnabled(true)
+		_ = g.saveConfig()
 	case optionHitQualityHigh:
 		g.quality = 3
 		setSourceRenderQuality(3)
 		g.assets.invalidateQualityDependentPlayerRasters()
 		ebiten.SetScreenFilterEnabled(true)
+		_ = g.saveConfig()
 	case optionHitBack:
 		// DefineSprite_991.btn_back is the only Options control that plays menu.wav.
 		g.playSourceSFX("menu.wav", false)
