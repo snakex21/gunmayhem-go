@@ -1273,7 +1273,7 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 	g.drawSourceHUDCards(screen)
 	g.drawKillFeeds(screen)
 	if g.showCollisions {
-		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("DEV | mapa %d/13 | gamemode %d | bron: %s | F2/F3 mapa | R reset", g.arena.Number, g.GameMode, g.players[0].Weapon.Def.Name), 10, 30)
+		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("DEV | mapa %d/13 | gamemode %d | bron: %s | F2/F3 mapa | R reset", g.arena.Number, g.GameMode, g.players[0].Weapon.Def.DisplayName()), 10, 30)
 		ebitenutil.DebugPrintAt(screen, "P1 strzalki + [ ] | P2 WASD + T Y | F4 AI P2 | F1 wylacz debug", 10, 46)
 	}
 }

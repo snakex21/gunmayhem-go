@@ -228,7 +228,11 @@ func (g *Game) drawGunLibraryStatCard(screen *ebiten.Image, frame int) {
 	drawSourceRaster(screen, g.assets.GunLibraryStats[frame], x, y, 1, 1, 1)
 
 	white := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-	drawSourceMenuText(screen, sourceGunLibraryName(frame), menuFontTwCen, 14.2, white, x+4.5, y+4.5)
+	name := sourceGunLibraryName(frame)
+	if _, ok := WeaponByNumber(frame); ok {
+		name = weaponDisplayName(frame)
+	}
+	drawSourceMenuText(screen, name, menuFontTwCen, 14.2, white, x+4.5, y+4.5)
 	drawSourceMenuText(screen, "Damage", menuFontCondensed, 14.15, white, x+44, y+22.5)
 	drawSourceMenuText(screen, "Rate of Fire", menuFontCondensed, 14.15, white, x+27, y+39)
 	drawSourceMenuText(screen, "Ammo Capacity", menuFontCondensed, 14.15, white, x+9, y+55.5)

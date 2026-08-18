@@ -300,7 +300,7 @@ func (g *Game) drawSourceHUDCard(screen *ebiten.Image, p *Player, x, y float64) 
 	}
 	drawSourceHUDText(screen, ammo, 21,
 		color.NRGBA{R: 0xff, G: 0x99, A: 255}, x+13.4, y-8.55)
-	drawSourceHUDText(screen, p.Weapon.Def.Name, 11,
+	drawSourceHUDText(screen, p.Weapon.Def.DisplayName(), 11,
 		color.NRGBA{A: 255}, x+13.5, y+13.6)
 }
 
