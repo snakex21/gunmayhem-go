@@ -6,8 +6,10 @@ const (
 	sourceAISpecialNone          = iota
 	sourceAISpecialDoubleSpawner // playerAI_double, campaign level 4
 	sourceAISpecialJetpack       // playerAI3, campaign level 7
-	sourceAISpecialInvisible     // playerAI4, campaign level 9
-	sourceAISpecialBoss          // playerAIboss, campaign level 10
+	sourceAISpecialInvisible     // playerAI4, GM1 campaign level 9
+	sourceAISpecialBoss          // playerAIboss, GM1 campaign level 10
+	sourceAISpecialGM2Invisible  // GM2 mission 6: always invisible, briefly revealed by bullets
+	sourceAISpecialGM2Mini       // GM2 mission 11: permanent mini AI
 )
 
 func campaignAISpecialForLevel(level int) int {
@@ -28,7 +30,27 @@ func campaignAISpecialForLevel(level int) int {
 // prepareCampaignAISpecial mirrors the class-specific blocks that run at the
 // start of playerAI_double/playerAI3/playerAI4/playerAIboss.onEnterFrame.
 func (g *Game) prepareCampaignAISpecial(p *Player) {
-	if !g.campaignMode || g.campaignSetGM2 || !p.AI || !p.Active {
+	if !g.campaignMode || !p.AI || !p.Active {
+		return
+	}
+
+	// Gun Mayhem 2 keeps two mission-specific effects directly in playerAI's
+	// onEnterFrame. They are not ordinary timed powerups: mission 6 repeatedly
+	// re-enters invisibility after a short reveal window, while mission 11 keeps
+	// resetting minitime to 500 so the Tiny Guy stays permanently mini.
+	if g.campaignSetGM2 && !g.campaignSetExtra {
+		switch p.AISpecial {
+		case sourceAISpecialGM2Invisible:
+			if p.InvisibleTime <= 0 {
+				p.InvisibleTime++
+			}
+		case sourceAISpecialGM2Mini:
+			p.MiniTime = 500
+		}
+		return
+	}
+
+	if !g.campaignUsesOriginalGM1Rules() {
 		return
 	}
 
@@ -78,7 +100,7 @@ func (g *Game) prepareCampaignAISpecial(p *Player) {
 // every 80 unpaused ticks a neutral grenade is attached at y=-200 over the
 // current map's crate area with asdf=-1000 (firepower/owner both resolve to 0).
 func (g *Game) updateCampaignDynamiteRain() {
-	if !g.campaignMode || g.campaignSetGM2 || g.campaignLevel != 5 || g.paused {
+	if !g.campaignMode || !g.campaignUsesOriginalGM1Rules() || g.campaignLevel != 5 || g.paused {
 		return
 	}
 	g.campaignDynamiteTime++
@@ -99,7 +121,7 @@ func (g *Game) updateCampaignDynamiteRain() {
 }
 
 func (g *Game) killCampaignDouble() {
-	if !g.campaignMode || g.campaignSetGM2 || g.campaignLevel != 4 {
+	if !g.campaignMode || !g.campaignUsesOriginalGM1Rules() || g.campaignLevel != 4 {
 		return
 	}
 	for _, p := range g.players {

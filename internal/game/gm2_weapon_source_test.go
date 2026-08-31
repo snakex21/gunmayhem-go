@@ -62,8 +62,13 @@ func TestGM2CratePoolMatchesSource(t *testing.T) {
 		t.Fatal("local unpacked GM2 source was found but runtime asset availability check rejected it")
 	}
 	developed := developedCrateWeapons()
-	if len(developed) != 77 || developed[0] != 10 || developed[len(developed)-1] != 86 {
-		t.Fatalf("developed crate pool did not enable GM2: first=%d last=%d len=%d", developed[0], developed[len(developed)-1], len(developed))
+	custom := availableCustomWeaponNumbers()
+	wantLast := 86
+	if len(custom) > 0 {
+		wantLast = custom[len(custom)-1]
+	}
+	if len(developed) != 77+len(custom) || developed[0] != 10 || developed[len(developed)-1] != wantLast {
+		t.Fatalf("developed crate pool did not enable GM2+custom: first=%d last=%d len=%d custom=%d", developed[0], developed[len(developed)-1], len(developed), len(custom))
 	}
 }
 

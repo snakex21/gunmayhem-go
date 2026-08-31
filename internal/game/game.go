@@ -21,6 +21,8 @@ type Game struct {
 	shells           []Shell
 	flashes          []MuzzleFlash
 	grenades         []Grenade
+	firePatches      []FirePatch
+	portals          []Portal
 	dynamiteFX       []DynamiteEffect
 	blastFX          []BlastEffect
 	jetThrustFX      []JetThrustEffect
@@ -53,23 +55,55 @@ type Game struct {
 
 	// Source menu flow: main menu -> custom GAME SETUP -> MAP SELECTION ->
 	// PLAYER SETUP -> gameplay.
-	screen             gameScreen
-	customPage         int
-	customMenuX        float64
-	customMode         int
-	customMap          int
-	customMapSetGM2    bool
-	customLives        int
-	customPlayers      [4]CustomPlayerConfig
-	customCardY        [4]float64
-	customEditor       [4]int
-	customColorMask    [4]float64
-	customNameFocus    int
-	customLivesFocus   bool
-	customWarning      int
-	customWarningFrame int
-	menuPressed        int
-	menuDebug          bool
+	screen                         gameScreen
+	customPage                     int
+	customMenuX                    float64
+	customMode                     int
+	customMap                      int
+	customMapSetGM2                bool
+	customLives                    int
+	customSeriesRounds             int
+	customSeriesRound              int
+	customSeriesRecordedRound      int
+	customSeriesStartingNext       bool
+	customSeriesStats              [4]customSeriesPlayerStats
+	customSeriesMaps               [customSeriesMaxRounds]int
+	customSeriesPlaylistConfigured bool
+	customPlaylistSelectedRound    int
+	customPlaylistScroll           int
+	customPlaylistGM2              bool
+	customMapThumbCache            map[int]*ebiten.Image
+	customMapThumbPreloadCursor    int
+	customPlayers                  [4]CustomPlayerConfig
+	customCardY                    [4]float64
+	customEditor                   [4]int
+	customColorMask                [4]float64
+	customNameFocus                int
+	customLivesFocus               bool
+	customWarning                  int
+	customWarningFrame             int
+	customRulesOpen                bool
+	customRuleEnabled              map[int]bool
+	customRandomRules              bool
+	customRandomCount              int
+	customPerRoundRules            bool
+	customRuleEditRound            int
+	customRoundRuleEnabled         [customSeriesMaxRounds][customModifierJetpacks + 1]bool
+	customRoundRandomRules         [customSeriesMaxRounds]bool
+	customRoundRandomCount         [customSeriesMaxRounds]int
+	customChaosOpen                bool
+	customChaosEnabled             bool
+	customChaosInterval            int
+	customChaosSelected            [chaosEffectCount]bool
+	chaosCurrentEffect             int
+	chaosLastEffect                int
+	chaosFrame                     int
+	chaosHazardFrame               int
+	chaosBannerFrame               int
+	matchModifiers                 map[int]bool
+	customMatchActive              bool
+	menuPressed                    int
+	menuDebug                      bool
 
 	// Root interaction state reconstructed from frame10/menu ActionScript.
 	paused            bool
@@ -115,47 +149,106 @@ type Game struct {
 
 	// GM2 arena2gamedata progress is independent from the GM1 campaign above.
 	// GM2 has 16 missions and 7 timed challenges.
-	gm2CampaignLevels [16]int
-	gm2Challenges     [7]GM2ChallengeProgress
-	campaignSetGM2    bool
+	gm2CampaignLevels   [16]int
+	gm2Challenges       [7]GM2ChallengeProgress
+	campaignSetGM2      bool
+	extraCampaignLevels [extraCampaignMissionCount]int
+	campaignSetExtra    bool
+	extraCampaignPage   int
+	extraHazardFrame    int
 
 	// arenagamedata2 defaults used by the source Options screen.
 	musicOn                 bool
 	soundOn                 bool
+	musicVolume             float64
+	soundVolume             float64
+	loudnessEQ              bool
+	allowCheats             bool
 	quality                 int
 	optionsPressed          int
+	optionsDraggingSlider   int
 	audio                   *sourceAudioEngine
 	audioStarted            bool
 	controlConfigs          [4]Controls
 	optionsKeyCapturePlayer int
 	optionsKeyCaptureIndex  int
 
-	gunLibrarySelected int
-	gunLibraryPressed  int
-	gunLibraryGM2      bool
+	gunLibrarySelected          int
+	gunLibraryPressed           int
+	gunLibraryGM2               bool
+	gunLibraryPage              int
+	gunLibraryCategory          int
+	gunLibraryThrowableSelected int
 
-	gototest        bool
-	testGunNumber   int
-	testGunDisabled bool
-	testGunRespawn  int
-	testGunFrame    int
+	gototest          bool
+	testGunNumber     int
+	testGunDisabled   bool
+	testGunRespawn    int
+	testGunFrame      int
+	testThrowableMode bool
 
-	persistent          bool
-	windowedWidth       int
-	windowedHeight      int
-	windowedX           int
-	windowedY           int
-	windowPositionSaved bool
+	persistent             bool
+	windowedWidth          int
+	windowedHeight         int
+	windowedX              int
+	windowedY              int
+	windowPositionSaved    bool
+	windowPersistCountdown int
 
-	multiplayerAddress string
-	multiplayerFocus   bool
-	multiplayerMessage string
+	multiplayerAddress        string
+	multiplayerFocus          bool
+	multiplayerSessionName    string
+	multiplayerNameFocus      bool
+	multiplayerMessage        string
+	customOnlineMode          bool
+	customNetworkOpen         bool
+	customHostSetupOpen       bool
+	customHostScope           int
+	customHostAccess          int
+	multiplayerServers        []multiplayerServerInfo
+	multiplayerServerScroll   int
+	multiplayerSelectedServer int
+	multiplayerDiscoveryCh    chan masterServerDiscoveryResult
+	multiplayerDiscoveryDone  bool
+	serverAdvertiser          *masterServerAdvertiser
+	localServerAdvertiser     *localServerAdvertiser
+	lanDiscoveryResponder     *lanDiscoveryResponder
+	globalDHTAdvertiser       *globalDHTAdvertiser
+	p2pHost                   *p2pQUICHost
+	cloudflareTunnel          *cloudflareQuickTunnel
+	natPortMapper             *natPortMapper
+	onlineSessionVisibility   int // OPEN vs INVITE CODE
+	onlineSessionScope        int // LAN vs INTERNET+LAN
+	onlineSessionKey          string
+	onlineMatchSetup          bool
+	onlinePlayerCount         int
+	onlinePlayerSlots         [4]bool
+	onlineLobbyCustomize      bool
+	onlineRulesOpen           bool
+	onlineBlocklistOpen       bool
+	onlinePerkBlocklistOpen   bool
+	onlineBlocklistPage       int
+	onlineVisualPicker        int
+	onlineVisualPage          int
+	onlineLastSentConfig      CustomPlayerConfig
+	onlineHasSentConfig       bool
+	onlineMapRotation         int
+	onlineWeaponMode          int
+	onlineOnlyWeapon          int
+	onlinePerksEnabled        bool
+	onlinePowerupsEnabled     bool
+	onlineBlockedWeapons      [developedWeaponSlotCount]bool
+	onlineBlockedPerks        [10]bool
+	postGameReady             [4]bool
+	postGameReadyCountdown    int
 
 	netplay             *netplaySession
 	netSFXSeq           uint64
 	netSFXPending       []netSFXEvent
 	netClientSFXPending []netSFXEvent
 	netLastSFXSeq       uint64
+
+	updateRuntime updateRuntimeState
 }
 
 func New() *Game {
@@ -176,39 +269,56 @@ func New() *Game {
 	p2.configureSourceGameMode(mode, totalLives, arena)
 
 	g := &Game{
-		players:            []*Player{p1, p2},
-		maps:               maps,
-		arena:              arena,
-		assets:             LoadAssets(),
-		crateTimer:         0,
-		crateWeapons:       DefaultCrateWeapons(),
-		powerupTimer:       0,
-		seenDeaths:         map[int]int{1: 0, 2: 0},
-		nextEntityID:       3,
-		nextPickupSerial:   1,
-		GameMode:           mode,
-		TotalLives:         totalLives,
-		TeamGame:           false,
-		CrateON:            true,
-		PowerON:            true,
-		screen:             screenMainMenu,
-		customPage:         customPageGame,
-		customMenuX:        1800,
-		customMode:         SourceGameModeNormal,
-		customMap:          0,
-		customLives:        10,
-		campaignPhase:      1,
-		musicOn:            true,
-		soundOn:            true,
-		quality:            2,
-		audio:              newSourceAudioEngine(),
-		multiplayerAddress: "127.0.0.1:7777",
+		players:                   []*Player{p1, p2},
+		maps:                      maps,
+		arena:                     arena,
+		assets:                    LoadAssets(),
+		crateTimer:                0,
+		crateWeapons:              DefaultCrateWeapons(),
+		powerupTimer:              0,
+		seenDeaths:                map[int]int{1: 0, 2: 0},
+		nextEntityID:              3,
+		nextPickupSerial:          1,
+		GameMode:                  mode,
+		TotalLives:                totalLives,
+		TeamGame:                  false,
+		CrateON:                   true,
+		PowerON:                   true,
+		screen:                    screenMainMenu,
+		customPage:                customPageGame,
+		customMenuX:               1800,
+		customMode:                SourceGameModeNormal,
+		customMap:                 0,
+		customLives:               10,
+		customSeriesRounds:        3,
+		customMapThumbCache:       make(map[int]*ebiten.Image),
+		customRuleEnabled:         make(map[int]bool),
+		customRandomCount:         1,
+		customChaosInterval:       30,
+		matchModifiers:            make(map[int]bool),
+		campaignPhase:             1,
+		musicOn:                   true,
+		soundOn:                   true,
+		musicVolume:               1,
+		soundVolume:               1,
+		quality:                   2,
+		audio:                     newSourceAudioEngine(),
+		multiplayerAddress:        "127.0.0.1:7777",
+		multiplayerSessionName:    "My Gun Mayhem Game",
+		multiplayerSelectedServer: -1,
+		customHostScope:           onlineSessionScopeLAN,
+		customHostAccess:          onlineSessionOpen,
+		onlineOnlyWeapon:          10,
+		onlinePerksEnabled:        true,
+		onlinePowerupsEnabled:     true,
 	}
 	// arenagamedata3 defaults from root frame2: levels 1 and 2 available,
 	// levels 3..10 locked. All 57 guns start unlocked except the twenty
 	// campaign rewards, which are enabled by returntomenu() after a win.
 	g.campaignLevels, g.campaignGuns = defaultCampaignState()
 	g.gm2CampaignLevels = defaultGM2CampaignState()
+	g.extraCampaignLevels = defaultExtraCampaignState()
+	g.initCustomChaosDefaults()
 	g.initCustomPlayerSetup()
 	g.initCampaignPlayerSetup()
 	for i := 0; i < 4; i++ {
@@ -220,6 +330,10 @@ func New() *Game {
 }
 
 func (g *Game) Update() error {
+	if g.updateUpdaterRuntime() {
+		return ebiten.Termination
+	}
+	g.trackWindowPersistence()
 	if g.netplay != nil && g.netplay.mode == netplayClient {
 		if inpututil.IsKeyJustPressed(ebiten.KeyF11) {
 			if !ebiten.IsFullscreen() {
@@ -231,8 +345,12 @@ func (g *Game) Update() error {
 		return g.updateNetClient()
 	}
 	if g.netplay != nil && g.netplay.mode == netplayHost {
-		g.applyHostRemoteInput()
+		g.syncOnlineHostState()
 		defer g.queueNetHostSnapshot()
+		if g.returnOnlineHostToLobbyIfAlone() {
+			return nil
+		}
+		g.applyHostRemoteInput()
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyF11) {
 		if !ebiten.IsFullscreen() {
@@ -248,24 +366,29 @@ func (g *Game) Update() error {
 	if g.updateGameplayInteractionInput() {
 		return nil
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
-		g.showCollisions = !g.showCollisions
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF2) {
-		g.switchMap(1)
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
-		g.switchMap(-1)
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
-		g.resetArenaState()
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF4) && len(g.players) > 1 {
-		g.players[1].AI = !g.players[1].AI
-		g.players[1].clearAIInput()
-		g.players[1].AITargetTimer = 40
+	if g.allowCheats {
+		if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
+			g.showCollisions = !g.showCollisions
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyF2) {
+			g.switchMap(1)
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
+			g.switchMap(-1)
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyR) {
+			g.resetArenaState()
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyF4) && len(g.players) > 1 {
+			g.players[1].AI = !g.players[1].AI
+			g.players[1].clearAIInput()
+			g.players[1].AITargetTimer = 40
+		}
 	}
 
+	g.updateChaosMode()
+	g.syncRuntimePlayerRuleModifiers()
+	runtimeArena := g.customRuntimeArena()
 	for _, p := range g.players {
 		speedBefore := p.SpeedTime
 		miniForTrail := p.MiniTime > 0
@@ -283,7 +406,7 @@ func (g *Game) Update() error {
 				}
 				afterPhysics = func() { decideAIController(p, g) }
 			}
-			p.Update(g.arena, beforeMove, afterPhysics)
+			p.Update(runtimeArena, beforeMove, afterPhysics)
 		}
 		if p.HardLanded {
 			g.playRandomDropSound()
@@ -299,9 +422,20 @@ func (g *Game) Update() error {
 			g.jetThrustFX = append(g.jetThrustFX, newJetThrustEffect(
 				p.X-22*float64(p.Facing), p.Y-18,
 			))
-			// DefineSprite_176_fx_jetpack plays jetpack.wav when each thrust
-			// particle is attached.
-			g.playSourceSFX("jetpack.wav", false)
+			// The original finite jetpack can retrigger its short SFX on every
+			// thrust particle. With the developed infinite-jetpack modifier that
+			// would stack a new copy every frame, so play it only when a continuous
+			// thrust starts and allow another copy after the player releases jump.
+			if p.RuleInfiniteJetpack {
+				if !p.RuleJetpackSoundLive {
+					g.playSourceSFX("jetpack.wav", false)
+				}
+				p.RuleJetpackSoundLive = true
+			} else {
+				g.playSourceSFX("jetpack.wav", false)
+			}
+		} else if p.RuleInfiniteJetpack {
+			p.RuleJetpackSoundLive = false
 		}
 		if p.JetDropped {
 			g.dropPackFX = append(g.dropPackFX, newDropPackEffect(
@@ -311,12 +445,13 @@ func (g *Game) Update() error {
 		if p.DeathSerial != g.seenDeaths[p.ID] {
 			g.seenDeaths[p.ID] = p.DeathSerial
 			g.playRandomDeathSound()
-			if g.campaignMode && !g.campaignSetGM2 && g.campaignLevel == 4 && !p.AI && !p.IsDouble {
+			if g.campaignMode && g.campaignUsesOriginalGM1Rules() && g.campaignLevel == 4 && !p.AI && !p.IsDouble {
 				// DefineSprite_697.gotkilled(): a human death in level 4 destroys
 				// Pylon Man's currently spawned helper named `double`.
 				g.killCampaignDouble()
 			}
 			g.appendSourceKillFeed(p)
+			g.applyCustomRespawnWeapon(p)
 			if p.LastDeathBy > 0 && p.LastDeathBy != p.ID {
 				for _, killer := range g.players {
 					if killer.ID == p.LastDeathBy {
@@ -344,9 +479,36 @@ func (g *Game) Update() error {
 	for _, p := range g.players {
 		if !g.GameWin {
 			ammoBefore := p.Weapon.Bullets
-			updateWeapon(p, &g.bullets, &g.shells, &g.flashes)
-			if p.Weapon.Bullets < ammoBefore {
-				g.playSourceGunSound(p.Weapon.Def.Number)
+			weaponBefore := p.Weapon.Def.Number
+			shotsBefore := p.ShotsFired
+			bulletsBefore := len(g.bullets)
+			if g.customModifierActive(customModifierExplosivesOnly) {
+				p.Grenades = 9999
+			} else {
+				if g.customModifierActive(customModifierInfiniteAmmo) {
+					p.Weapon.Bullets = 9999
+					ammoBefore = p.Weapon.Bullets
+				}
+				updateWeapon(p, &g.bullets, &g.shells, &g.flashes)
+				if g.customModifierActive(customModifierNoReload) && p.ShotsFired > shotsBefore && ammoBefore <= 1 {
+					p.EquipWeapon(weaponBefore)
+				}
+				if g.customModifierActive(customModifierDoubleKnockback) {
+					for i := bulletsBefore; i < len(g.bullets); i++ {
+						g.bullets[i].Firepower *= 2
+					}
+				}
+			}
+			if p.Weapon.Bullets < ammoBefore || p.ShotsFired > shotsBefore {
+				playSound := true
+				if spec, ok := developedWeaponSpec(weaponBefore); ok && spec.Projectile == DevelopedProjectileFlame {
+					// The flame loop is built from overlapping short bursts. Starting a
+					// new PCM clip every 60 Hz tick would stack six copies and clip.
+					playSound = p.ShotsFired%6 == 1
+				}
+				if playSound {
+					g.playSourceGunSound(weaponBefore)
+				}
 			}
 			for _, sound := range p.PendingSounds {
 				g.playSourceSFX(sound, false)
@@ -368,7 +530,11 @@ func (g *Game) Update() error {
 	for _, p := range g.players {
 		hitsBefore += p.HitNumber
 	}
-	updateBullets(g.arena, g.bullets, g.players, &g.instagibTrails)
+	projectileBlastBefore := len(g.blastFX)
+	updateBullets(runtimeArena, g.bullets, g.players, &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
+	if len(g.blastFX) > projectileBlastBefore {
+		g.playRandomExplosionSound()
+	}
 	hitsAfter := 0
 	for _, p := range g.players {
 		hitsAfter += p.HitNumber
@@ -378,23 +544,41 @@ func (g *Game) Update() error {
 	}
 	updateInstagibTrails(g.instagibTrails)
 	updatePlayerTrailEffects(g.playerTrails, len(g.assets.Leg1Timeline), len(g.assets.Leg2Timeline))
-	updateShells(g.arena, g.shells, g.players)
+	updateShells(runtimeArena, g.shells, g.players)
 	updateFlashes(g.flashes)
 	blastBefore := len(g.blastFX)
-	updateGrenades(g.arena, g.grenades, g.players, &g.explosions, &g.dynamiteFX, &g.blastFX)
+	var grenadeVX, grenadeVY []float64
+	if g.customModifierActive(customModifierDoubleKnockback) {
+		grenadeVX = make([]float64, len(g.players))
+		grenadeVY = make([]float64, len(g.players))
+		for i, p := range g.players {
+			grenadeVX[i] = p.VX
+			grenadeVY[i] = p.VY
+		}
+	}
+	updateGrenades(runtimeArena, g.grenades, g.players, &g.explosions, &g.dynamiteFX, &g.blastFX, &g.firePatches)
+	updateFirePatches(g.firePatches, g.players)
+	updatePortalTravel(g.portals, g.players, g.grenades)
+	if grenadeVX != nil {
+		for i, p := range g.players {
+			p.VX += p.VX - grenadeVX[i]
+			p.VY += p.VY - grenadeVY[i]
+		}
+	}
 	if len(g.blastFX) > blastBefore {
 		g.playRandomExplosionSound()
 	}
 	// Root frame10 attaches the campaign-level-5 falling grenade after the
 	// ordinary player/grenade updates; it begins moving on the following tick.
 	g.updateCampaignDynamiteRain()
+	g.updateExtraCampaignHazards()
 	updateDynamiteEffects(g.dynamiteFX)
-	updateBlastEffects(g.arena, g.blastFX)
+	updateBlastEffects(runtimeArena, g.blastFX)
 	updateJetThrustEffects(g.jetThrustFX)
-	updateDropPackEffects(g.arena, g.dropPackFX)
+	updateDropPackEffects(runtimeArena, g.dropPackFX)
 	g.crateTimer++
-	if g.crateTimer >= 400 && g.GameMode != SourceGameModeGunGame && g.CrateON {
-		c := spawnCrate(g.arena)
+	if g.crateTimer >= g.customCrateInterval() && g.GameMode != SourceGameModeGunGame && g.customCratesEnabled() {
+		c := spawnCrate(runtimeArena)
 		c.Serial = g.nextPickupSerial
 		g.nextPickupSerial++
 		g.crates = append(g.crates, c)
@@ -404,7 +588,7 @@ func (g *Game) Update() error {
 	for _, p := range g.players {
 		cratePickupsBefore += p.CratesCollected
 	}
-	updateCrates(g.arena, g.crates, g.players, g.crateWeapons, g.assets.CrateHit)
+	updateCrates(runtimeArena, g.crates, g.players, g.crateWeapons, g.assets.CrateHit)
 	cratePickupsAfter := 0
 	for _, p := range g.players {
 		cratePickupsAfter += p.CratesCollected
@@ -417,7 +601,7 @@ func (g *Game) Update() error {
 	if g.powerupTimer >= 600 && g.GameMode != SourceGameModeGunGame && g.GameMode != SourceGameModeSurvival && g.PowerON {
 		// DefineSprite_734 replaces the Double powerup with shield whenever a
 		// helper already exists OR campaignmode is active.
-		pu := spawnPowerup(g.arena, g.hasActiveDouble() || g.campaignMode)
+		pu := spawnPowerup(runtimeArena, g.hasActiveDouble() || g.campaignMode)
 		pu.Serial = g.nextPickupSerial
 		g.nextPickupSerial++
 		g.powerups = append(g.powerups, pu)
@@ -453,6 +637,7 @@ func (g *Game) Update() error {
 	g.shells = compactShells(g.shells)
 	g.flashes = compactFlashes(g.flashes)
 	g.grenades = compactGrenades(g.grenades)
+	g.firePatches = compactFirePatches(g.firePatches)
 	g.dynamiteFX = compactDynamiteEffects(g.dynamiteFX)
 	g.blastFX = compactBlastEffects(g.blastFX)
 	g.jetThrustFX = compactJetThrustEffects(g.jetThrustFX)
@@ -491,6 +676,8 @@ func (g *Game) resetArenaState() {
 	g.shells = g.shells[:0]
 	g.flashes = g.flashes[:0]
 	g.grenades = g.grenades[:0]
+	g.firePatches = g.firePatches[:0]
+	g.portals = g.portals[:0]
 	g.dynamiteFX = g.dynamiteFX[:0]
 	g.blastFX = g.blastFX[:0]
 	g.jetThrustFX = g.jetThrustFX[:0]
@@ -547,7 +734,7 @@ func (g *Game) spawnRequestedDoubles() {
 
 		d := NewPlayer(g.nextEntityID, g.arena)
 		g.nextEntityID++
-		campaignDouble := g.campaignMode && !g.campaignSetGM2 && g.campaignLevel == 4 && owner.AISpecial == sourceAISpecialDoubleSpawner
+		campaignDouble := g.campaignMode && g.campaignUsesOriginalGM1Rules() && g.campaignLevel == 4 && owner.AISpecial == sourceAISpecialDoubleSpawner
 		spawnX, spawnY := owner.X, owner.Y
 		if campaignDouble && owner.DoubleSpawnPositionSet {
 			spawnX, spawnY = owner.DoubleSpawnX, owner.DoubleSpawnY
@@ -729,7 +916,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	g.flushNetClientSFX()
 	screen.Fill(color.RGBA{R: 30, G: 35, B: 41, A: 255})
-	if g.netplay != nil && g.netplay.mode == netplayClient && (!g.netplay.hasState.Load() || g.screen != screenGameplay && g.screen != screenPostGame) {
+	if g.netClientNeedsWaitingScreen() {
 		ebitenutil.DebugPrintAt(screen, "MULTIPLAYER", 20, 20)
 		ebitenutil.DebugPrintAt(screen, g.NetplayStatus(), 20, 42)
 		ebitenutil.DebugPrintAt(screen, "Waiting for the host to start a game...", 20, 64)
@@ -769,6 +956,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	g.drawPlayerTrails(screen)
 	g.drawCombat(screen)
+	g.drawPortals(screen)
+	g.drawFirePatches(screen)
 	g.drawCrates(screen)
 	g.drawPowerups(screen)
 	g.drawTestGunPickup(screen)
@@ -777,6 +966,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			drawP := *p
 			drawP.X = g.worldX(p.X)
 			drawP.Y = g.worldY(p.Y)
+			if g.shouldDrawInvisibleGhost(p) && drawP.Alpha < .24 {
+				drawP.Alpha = .24
+			}
 			g.drawPlayer(screen, &drawP)
 		}
 	}
@@ -789,9 +981,42 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawPlayerArrows(screen)
 	if !g.GameWin {
 		g.drawHUD(screen)
+		g.drawExtraCampaignHazardHUD(screen)
+		g.drawChaosHUD(screen)
 	}
 	g.drawGameplayInteractions(screen)
 	g.drawGlobalFade(screen)
+}
+
+// Lobby and online setup are real interactive client screens. The old generic
+// net-client guard treated every non-gameplay screen as a passive wait state,
+// hiding MY CHARACTER and the client's own slot editor behind three debug
+// lines. Only unknown screens, or a match screen before its first snapshot,
+// should use the fallback waiting view.
+func (g *Game) netClientNeedsWaitingScreen() bool {
+	if g == nil || g.netplay == nil || g.netplay.mode != netplayClient {
+		return false
+	}
+	switch g.screen {
+	case screenMultiplayerLobby, screenCustomGame:
+		return false
+	case screenGameplay, screenPostGame, screenSeriesSummary:
+		return !g.netplay.hasState.Load()
+	default:
+		return true
+	}
+}
+
+func (g *Game) shouldDrawInvisibleGhost(p *Player) bool {
+	if g == nil || p == nil || !p.Active || p.InvisibleTime <= 0 {
+		return false
+	}
+	if g.netplay != nil {
+		return p.ID == g.onlineLocalPlayerID()
+	}
+	// A shared local screen cannot present a different image to each keyboard
+	// player. Show the guide only for locally controlled humans, never AI.
+	return !p.AI && !p.RemoteControlled
 }
 
 func (g *Game) advanceSourceMapFX() {
@@ -859,6 +1084,14 @@ func (g *Game) drawCombat(screen *ebiten.Image) {
 	}
 
 	for _, f := range g.flashes {
+		if f.Smoke {
+			x, y := float32(g.worldX(f.X)), float32(g.worldY(f.Y))
+			s := float32(f.Scale)
+			alpha := uint8(math.Max(0, math.Min(180, f.Alpha*180)))
+			filledCircle(screen, x, y, 5*s, color.NRGBA{R: 0xc7, G: 0xc7, B: 0xc2, A: alpha})
+			filledCircle(screen, x-5*s*float32(f.Facing), y-3*s, 3.8*s, color.NRGBA{R: 0x96, G: 0x96, B: 0x92, A: alpha / 2})
+			continue
+		}
 		if f.Alpha <= 0.01 || g.assets.MuzzleFlash == nil {
 			continue
 		}
@@ -874,9 +1107,8 @@ func (g *Game) drawCombat(screen *ebiten.Image) {
 	}
 
 	for _, gr := range g.grenades {
-		if !gr.Dead && g.assets.Grenade != nil {
-			// DefineSprite_665_wep_grenade initializes _xscale/_yscale to 80.
-			drawSourceRasterRot(screen, g.assets.Grenade, g.worldX(gr.X), g.worldY(gr.Y), 0.8, 0.8, gr.Rotation, 1)
+		if !gr.Dead {
+			g.drawThrowable(screen, gr)
 		}
 	}
 	for _, fx := range g.dynamiteFX {
@@ -916,6 +1148,9 @@ func (g *Game) drawCombat(screen *ebiten.Image) {
 
 func (g *Game) drawBullet(screen *ebiten.Image, b *Bullet) {
 	if b == nil || b.Dead {
+		return
+	}
+	if g.drawDevelopedProjectile(screen, b) {
 		return
 	}
 	if b.Kind == BulletInstagib {
@@ -1016,14 +1251,28 @@ func drawPowerupChild(screen *ebiten.Image, raster *SourceRaster, child xflMatri
 }
 
 func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
-	g.assets.EnsurePlayerColor(p.PlayerColor)
+	colorIndex, useGM2Color := resolvedPlayerColor(p.PlayerColor, p.UseGM2Cosmetics)
+	if useGM2Color {
+		g.assets.EnsureGM2PlayerColor(colorIndex)
+	} else {
+		g.assets.EnsurePlayerColor(colorIndex)
+	}
 	// Flash layer order, from back to front: off-hand, back leg, body,
 	// eyes/head details, front leg, gun, front hand. The old flattened player
 	// bitmap is no longer used, so changing weapons no longer leaves an M1911
 	// baked into the character.
-	hand := g.assets.HandColors[p.PlayerColor]
-	if hand == nil {
-		hand = g.assets.HandColors[0]
+	var hand *SourceRaster
+	if useGM2Color {
+		hand = g.assets.GM2HandColors[colorIndex]
+		if hand == nil {
+			g.assets.EnsureGM2PlayerColor(1)
+			hand = g.assets.GM2HandColors[1]
+		}
+	} else {
+		hand = g.assets.HandColors[colorIndex]
+		if hand == nil {
+			hand = g.assets.HandColors[0]
+		}
 	}
 	drawPlayerPartAlpha(screen, hand, p,
 		p.VisualHand2X+p.VisualHand2ChildX,
@@ -1031,9 +1280,18 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 		p.VisualHand2Alpha,
 	)
 
-	leg := g.assets.LegColors[p.PlayerColor]
-	if leg == nil {
-		leg = g.assets.LegColors[0]
+	var leg *SourceRaster
+	if useGM2Color {
+		leg = g.assets.GM2LegColors[colorIndex]
+		if leg == nil {
+			g.assets.EnsureGM2PlayerColor(1)
+			leg = g.assets.GM2LegColors[1]
+		}
+	} else {
+		leg = g.assets.LegColors[colorIndex]
+		if leg == nil {
+			leg = g.assets.LegColors[0]
+		}
 	}
 	if len(g.assets.Leg2Timeline) > 0 {
 		frame := p.LegFrame2 % len(g.assets.Leg2Timeline)
@@ -1050,7 +1308,18 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 	if p.HatNumber == 8 || p.HatNumber == 22 {
 		g.drawPlayerHat(screen, p)
 	}
-	drawPlayerPart(screen, g.assets.Eyes, p, 0, p.VisualEyesY)
+	eyes := g.assets.Eyes
+	eyeIndex, useGM2Eyes := resolvedPlayerEyes(p.EyeNumber, p.UseGM2Cosmetics)
+	if gm2CosmeticsAvailable() && useGM2Eyes {
+		frame := eyeIndex - 1
+		if frame < 0 {
+			frame = 0
+		}
+		if r := g.assets.EyeFrame(frame); r != nil {
+			eyes = r
+		}
+	}
+	drawPlayerPart(screen, eyes, p, 0, p.VisualEyesY)
 	if p.HatNumber != 8 && p.HatNumber != 22 {
 		g.drawPlayerHat(screen, p)
 	}
@@ -1071,6 +1340,7 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 		p.VisualHand1Alpha,
 	)
 
+	g.drawPlayerBurn(screen, p)
 	g.drawPlayerShield(screen, p)
 	if g.showCollisions {
 		h := p.Hitbox()
@@ -1079,6 +1349,21 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 
 	// Source nametag (Symbol685 + embedded font + GlowFilter) is ported as its
 	// own renderer. Do not substitute ebitenutil.DebugPrint here.
+}
+
+func (g *Game) drawPlayerBurn(screen *ebiten.Image, p *Player) {
+	if p == nil || p.BurnTime <= 0 || !p.Active {
+		return
+	}
+	scale := playerRenderScale(p)
+	pulse := float32((p.BurnTick/3)%3) * .65
+	for i := 0; i < 4; i++ {
+		x := float32(p.X + float64(i)*9*scale - 13.5*scale)
+		y := float32(p.Y - (20+float64((i*7+p.BurnTick)%15))*scale)
+		radius := float32(6.0*scale) + pulse
+		filledCircle(screen, x, y, radius+2, color.NRGBA{R: 0xff, G: 0x3d, B: 0x08, A: 0x70})
+		filledCircle(screen, x, y+1, radius*.62, color.NRGBA{R: 0xff, G: 0xd6, B: 0x34, A: 0xd8})
+	}
 }
 
 func (g *Game) drawPlayerInstagib(screen *ebiten.Image, p *Player) {
@@ -1142,21 +1427,35 @@ func (g *Game) drawPlayerShield(screen *ebiten.Image, p *Player) {
 }
 
 func (g *Game) drawPlayerBody(screen *ebiten.Image, p *Player) {
-	// Symbol 240 hierarchy, bottom to top:
-	// Symbol225 at (0,53.2): torso color (205) at y=-27.9, shirt (224) at y=-27.1;
-	// Symbol239 head at (9.4,4), with its current Symbol238 transform.
-	torso := g.assets.TorsoColors[p.PlayerColor]
-	if torso == nil {
-		torso = g.assets.TorsoColors[0]
+	// Body colour and clothing are resolved independently in the developed
+	// editor. This lets a player combine a GM1 hat with a GM2 shirt/colour while
+	// GM2 campaign enemies can still force their raw source IDs as one set.
+	var torso, head, shirt *SourceRaster
+	colorIndex, useGM2Color := resolvedPlayerColor(p.PlayerColor, p.UseGM2Cosmetics)
+	shirtIndex, useGM2Shirt := resolvedPlayerShirt(p.ShirtNumber, p.UseGM2Cosmetics)
+	if useGM2Color {
+		g.assets.EnsureGM2PlayerColor(colorIndex)
+		torso = g.assets.GM2TorsoColors[colorIndex]
+		head = g.assets.GM2HeadColors[colorIndex]
+	} else {
+		g.assets.EnsurePlayerColor(colorIndex)
+		torso = g.assets.TorsoColors[colorIndex]
+		if torso == nil {
+			torso = g.assets.TorsoColors[0]
+		}
+		head = g.assets.HeadColors[colorIndex]
+		if head == nil {
+			head = g.assets.HeadColors[0]
+		}
 	}
-	shirtFrame := p.ShirtNumber - 1
+	shirtFrame := shirtIndex - 1
 	if shirtFrame < 0 {
 		shirtFrame = 0
 	}
-	shirt := g.assets.ShirtFrame(shirtFrame)
-	head := g.assets.HeadColors[p.PlayerColor]
-	if head == nil {
-		head = g.assets.HeadColors[0]
+	if useGM2Shirt {
+		shirt = g.assets.GM2ShirtFrame(shirtFrame)
+	} else {
+		shirt = g.assets.ShirtFrame(shirtFrame)
 	}
 
 	drawPlayerPart(screen, torso, p, 0, p.VisualBodyY+25.3)
@@ -1188,11 +1487,17 @@ func (g *Game) drawPlayerBody(screen *ebiten.Image, p *Player) {
 }
 
 func (g *Game) drawPlayerHat(screen *ebiten.Image, p *Player) {
-	frame := p.HatNumber - 1
+	hatIndex, useGM2Hat := resolvedPlayerHat(p.HatNumber, p.UseGM2Cosmetics)
+	frame := hatIndex - 1
 	if frame < 0 {
 		frame = 0
 	}
-	hat := g.assets.HatFrame(frame)
+	var hat *SourceRaster
+	if useGM2Hat {
+		hat = g.assets.GM2HatFrame(frame)
+	} else {
+		hat = g.assets.HatFrame(frame)
+	}
 	if hat == nil {
 		return
 	}
@@ -1247,7 +1552,11 @@ func (g *Game) drawPlayerJetpack(screen *ebiten.Image, p *Player) {
 }
 
 func (g *Game) drawGun(screen *ebiten.Image, p *Player) {
-	gun := g.assets.WeaponFrame(p.Weapon.Def.Number, p.Weapon.Frame)
+	weaponColor := p.PlayerColor
+	if source, useGM2 := resolvedPlayerColor(p.PlayerColor, p.UseGM2Cosmetics); useGM2 {
+		weaponColor = -source
+	}
+	gun := g.assets.WeaponFrameForPlayer(p.Weapon.Def.Number, p.Weapon.Frame, weaponColor)
 	if gun == nil {
 		return
 	}

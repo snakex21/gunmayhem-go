@@ -51,7 +51,7 @@ func (g *Game) drawCustomMapButtons(screen *ebiten.Image) {
 	lx := float64(mx) - g.customMenuX
 	ly := float64(my)
 	for _, row := range rows {
-		r := sourceMenuHitRect(mapButtonLocal, -883, row.ty, 1, 1.3199920654296875)
+		r := Rect{X: -883, Y: row.ty, W: 200, H: 29.0}
 		clr := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
 		if row.mapNumber == g.customMap {
 			clr = color.NRGBA{R: 0xff, G: 0x66, A: 0xff}

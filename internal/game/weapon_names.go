@@ -11,7 +11,7 @@ package game
 var realWeaponNames = map[int]string{
 	1:  "Colt M1911A1",
 	2:  "Desert Eagle",
-	3:  "Glock 18C",
+	3:  "Glock 17",
 	4:  "Taurus Raging Bull M444",
 	5:  "FN Forty-Nine",
 	6:  "Colt Python",

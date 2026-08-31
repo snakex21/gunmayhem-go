@@ -10,7 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const persistenceVersion = 2
+const persistenceVersion = 6
 
 // AppConfig contains machine/user preferences. It is deliberately separate
 // from campaign progress so settings can evolve without touching save data.
@@ -24,6 +24,10 @@ type AppConfig struct {
 	Fullscreen          bool        `json:"fullscreen"`
 	MusicOn             bool        `json:"music_on"`
 	SoundOn             bool        `json:"sound_on"`
+	MusicVolume         float64     `json:"music_volume"`
+	SoundVolume         float64     `json:"sound_volume"`
+	LoudnessEQ          bool        `json:"loudness_eq"`
+	AllowCheats         bool        `json:"allow_cheats"`
 	Quality             int         `json:"quality"`
 	Controls            [4]Controls `json:"controls"`
 }
@@ -39,11 +43,12 @@ type GM2ChallengeProgress struct {
 // separate campaigns: GM2's sixteen missions are a different campaign, not an
 // append-only continuation of the ten GM1 missions.
 type SaveData struct {
-	Version           int                     `json:"version"`
-	CampaignLevels    [10]int                 `json:"campaign_levels"`
-	CampaignGuns      [57]bool                `json:"campaign_guns"`
-	GM2CampaignLevels [16]int                 `json:"gm2_campaign_levels"`
-	GM2Challenges     [7]GM2ChallengeProgress `json:"gm2_challenges"`
+	Version             int                            `json:"version"`
+	CampaignLevels      [10]int                        `json:"campaign_levels"`
+	CampaignGuns        [57]bool                       `json:"campaign_guns"`
+	GM2CampaignLevels   [16]int                        `json:"gm2_campaign_levels"`
+	GM2Challenges       [7]GM2ChallengeProgress        `json:"gm2_challenges"`
+	ExtraCampaignLevels [extraCampaignMissionCount]int `json:"extra_campaign_levels"`
 }
 
 func DefaultAppConfig() AppConfig {
@@ -53,6 +58,10 @@ func DefaultAppConfig() AppConfig {
 		WindowHeight: ScreenHeight,
 		MusicOn:      true,
 		SoundOn:      true,
+		MusicVolume:  1,
+		SoundVolume:  1,
+		LoudnessEQ:   false,
+		AllowCheats:  false,
 		Quality:      2,
 	}
 	for i := range cfg.Controls {
@@ -83,13 +92,20 @@ func defaultGM2CampaignState() [16]int {
 	return levels
 }
 
+func defaultExtraCampaignState() [extraCampaignMissionCount]int {
+	var levels [extraCampaignMissionCount]int
+	levels[0] = 1
+	return levels
+}
+
 func DefaultSaveData() SaveData {
 	levels, guns := defaultCampaignState()
 	return SaveData{
-		Version:           persistenceVersion,
-		CampaignLevels:    levels,
-		CampaignGuns:      guns,
-		GM2CampaignLevels: defaultGM2CampaignState(),
+		Version:             persistenceVersion,
+		CampaignLevels:      levels,
+		CampaignGuns:        guns,
+		GM2CampaignLevels:   defaultGM2CampaignState(),
+		ExtraCampaignLevels: defaultExtraCampaignState(),
 	}
 }
 
@@ -97,11 +113,11 @@ func persistentDataDir() (string, error) {
 	if dir := os.Getenv("GUNMAYHEM_DATA_DIR"); dir != "" {
 		return dir, nil
 	}
-	base, err := os.UserConfigDir()
+	executable, err := os.Executable()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(base, "GunMayhemRE"), nil
+	return filepath.Join(filepath.Dir(executable), "data"), nil
 }
 
 func persistentPath(name string) (string, error) {
@@ -151,6 +167,19 @@ func writeJSON(path string, value any) error {
 
 func normalizeConfig(cfg AppConfig) AppConfig {
 	defaults := DefaultAppConfig()
+	oldVersion := cfg.Version
+	if oldVersion < 3 {
+		if cfg.MusicOn {
+			cfg.MusicVolume = 1
+		} else {
+			cfg.MusicVolume = 0
+		}
+		if cfg.SoundOn {
+			cfg.SoundVolume = 1
+		} else {
+			cfg.SoundVolume = 0
+		}
+	}
 	cfg.Version = persistenceVersion
 	if cfg.WindowWidth < 480 || cfg.WindowWidth > 7680 {
 		cfg.WindowWidth = defaults.WindowWidth
@@ -158,6 +187,14 @@ func normalizeConfig(cfg AppConfig) AppConfig {
 	if cfg.WindowHeight < 270 || cfg.WindowHeight > 4320 {
 		cfg.WindowHeight = defaults.WindowHeight
 	}
+	if cfg.MusicVolume < 0 || cfg.MusicVolume > 1 {
+		cfg.MusicVolume = defaults.MusicVolume
+	}
+	if cfg.SoundVolume < 0 || cfg.SoundVolume > 1 {
+		cfg.SoundVolume = defaults.SoundVolume
+	}
+	cfg.MusicOn = cfg.MusicVolume > 0
+	cfg.SoundOn = cfg.SoundVolume > 0
 	if cfg.Quality < 1 || cfg.Quality > 3 {
 		cfg.Quality = defaults.Quality
 	}
@@ -198,6 +235,24 @@ func normalizeSave(save SaveData) SaveData {
 	}
 	if save.GM2CampaignLevels[1] == 0 {
 		save.GM2CampaignLevels[1] = 1
+	}
+	for i, state := range save.ExtraCampaignLevels {
+		if state < 0 || state > 2 {
+			save.ExtraCampaignLevels[i] = defaults.ExtraCampaignLevels[i]
+		}
+	}
+	// EXTRA is our own continuation and remains independently playable even
+	// when loading an older save that did not contain this progress array.
+	if save.ExtraCampaignLevels[0] == 0 {
+		save.ExtraCampaignLevels[0] = 1
+	}
+	// Versions 5 and 6 extend EXTRA first from 8 to 12, then to 20 missions.
+	// A completed former final mission must immediately expose the appended
+	// continuation instead of leaving it behind zero-filled array entries.
+	for i := 0; i < len(save.ExtraCampaignLevels)-1; i++ {
+		if save.ExtraCampaignLevels[i] == 2 && save.ExtraCampaignLevels[i+1] == 0 {
+			save.ExtraCampaignLevels[i+1] = 1
+		}
 	}
 	for i, challenge := range save.GM2Challenges {
 		if challenge.Medal < 0 || challenge.Medal > 3 {
@@ -273,6 +328,10 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.windowPositionSaved = cfg.WindowPositionSaved
 	g.musicOn = cfg.MusicOn
 	g.soundOn = cfg.SoundOn
+	g.musicVolume = cfg.MusicVolume
+	g.soundVolume = cfg.SoundVolume
+	g.loudnessEQ = cfg.LoudnessEQ
+	g.allowCheats = cfg.AllowCheats
 	g.quality = cfg.Quality
 	g.controlConfigs = cfg.Controls
 	g.players[0].Controls = g.controlConfigs[0]
@@ -281,8 +340,10 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.campaignGuns = save.CampaignGuns
 	g.gm2CampaignLevels = save.GM2CampaignLevels
 	g.gm2Challenges = save.GM2Challenges
+	g.extraCampaignLevels = save.ExtraCampaignLevels
 	setSourceRenderQuality(g.quality)
 	ebiten.SetScreenFilterEnabled(g.quality != 1)
+	g.startAutomaticUpdateCheck()
 	return g
 }
 
@@ -301,10 +362,42 @@ func (g *Game) captureWindowedState() {
 	g.windowPositionSaved = true
 }
 
+func (g *Game) trackWindowPersistence() {
+	if g == nil || !g.persistent || ebiten.IsFullscreen() {
+		return
+	}
+	w, h := ebiten.WindowSize()
+	x, y := ebiten.WindowPosition()
+	if w < 480 || h < 270 {
+		return
+	}
+	changed := w != g.windowedWidth || h != g.windowedHeight || !g.windowPositionSaved || x != g.windowedX || y != g.windowedY
+	if changed {
+		g.windowedWidth = w
+		g.windowedHeight = h
+		g.windowedX = x
+		g.windowedY = y
+		g.windowPositionSaved = true
+		// Debounce disk writes while the user is actively dragging/resizing.
+		g.windowPersistCountdown = 30
+		return
+	}
+	if g.windowPersistCountdown > 0 {
+		g.windowPersistCountdown--
+		if g.windowPersistCountdown == 0 {
+			_ = g.saveConfig()
+		}
+	}
+}
+
 func (g *Game) currentAppConfig() AppConfig {
 	cfg := DefaultAppConfig()
 	cfg.MusicOn = g.musicOn
 	cfg.SoundOn = g.soundOn
+	cfg.MusicVolume = g.musicVolume
+	cfg.SoundVolume = g.soundVolume
+	cfg.LoudnessEQ = g.loudnessEQ
+	cfg.AllowCheats = g.allowCheats
 	cfg.Quality = g.quality
 	cfg.Controls = g.controlConfigs
 	if g.persistent {
@@ -321,11 +414,12 @@ func (g *Game) currentAppConfig() AppConfig {
 
 func (g *Game) currentSaveData() SaveData {
 	return SaveData{
-		Version:           persistenceVersion,
-		CampaignLevels:    g.campaignLevels,
-		CampaignGuns:      g.campaignGuns,
-		GM2CampaignLevels: g.gm2CampaignLevels,
-		GM2Challenges:     g.gm2Challenges,
+		Version:             persistenceVersion,
+		CampaignLevels:      g.campaignLevels,
+		CampaignGuns:        g.campaignGuns,
+		GM2CampaignLevels:   g.gm2CampaignLevels,
+		GM2Challenges:       g.gm2Challenges,
+		ExtraCampaignLevels: g.extraCampaignLevels,
 	}
 }
 

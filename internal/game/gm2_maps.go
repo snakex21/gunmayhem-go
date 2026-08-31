@@ -24,28 +24,54 @@ func gm2SourceMapNumber(runtimeNumber int) int {
 	return runtimeNumber - gm2MapIDBase
 }
 
+// Exact GM2 Symbol 1236 frame order. Frames/source map numbers 1..9 are
+// the nine maps added by GM2; 10..21 are the returning GM1 arenas in GM2's
+// own numbering. Keeping this order exact is important because source random
+// selector 22 uses random(9)+1.
 var gm2MapDisplayNames = map[int]string{
-	1:  "Safari Showdown",
-	2:  "Polar Pwn4ge",
-	3:  "Midnight Wood",
-	4:  "Hovering Houses",
-	5:  "Desert Destruction",
-	6:  "Great Wall Brawl",
-	7:  "Solar Shootout",
-	8:  "Underwater Slaughter",
-	9:  "Dessert Duel",
+	1:  "Castle",
+	2:  "Highway",
+	3:  "Sub Base",
+	4:  "Alien Planet",
+	5:  "Venice",
+	6:  "Avalon",
+	7:  "Space Station",
+	8:  "Ski Lift",
+	9:  "Jungle",
 	10: "No Name",
-	11: "Grim City",
-	12: "Mushroom Mountain",
-	13: "Jungle",
-	14: "Ski Lift",
-	15: "Space Station",
-	16: "Avalon",
-	17: "Venice",
-	18: "Alien Planet",
-	19: "Sub Base",
-	20: "Highway",
-	21: "Castle",
+	11: "Dessert Duel",
+	12: "Underwater Slaughter",
+	13: "Solar Shootout",
+	14: "Great Wall Brawl",
+	15: "Mushroom Mountain",
+	16: "Desert Destruction",
+	17: "Hovering Houses",
+	18: "Midnight Wood",
+	19: "Polar Pwn4ge",
+	20: "Grim City",
+	21: "Safari Showdown",
+}
+
+// FFDec exports each GM2 scene timeline on one shared canvas, so its symbol
+// registration point is constant across all 21 frames. Per-frame alpha bounds
+// are not reliable for this: Jungle contains off-stage/dynamic artwork that is
+// present in XFL bounds but absent from the raster, which made the old average
+// shift its foreground by about 91 pixels. These origins are the medians of
+// both XFL/alpha edge candidates across the complete source timelines.
+var gm2SceneTimelineOrigins = [3][2]float64{
+	{-457.525000, -292.739911}, // Symbol 1642 / scene1
+	{-596.229869, -280.077259}, // Symbol 1690 / scene2
+	{-792.775000, -449.559501}, // Symbol 1835 / foreground
+}
+
+func applyGM2SceneTimelineOrigins(back, mid, front *SourceRaster) {
+	for i, raster := range []*SourceRaster{back, mid, front} {
+		if raster == nil {
+			continue
+		}
+		raster.Bounds.X = gm2SceneTimelineOrigins[i][0]
+		raster.Bounds.Y = gm2SceneTimelineOrigins[i][1]
+	}
 }
 
 // LoadGM2Map reconstructs one source arena from Symbol 1940. The root places
@@ -74,7 +100,9 @@ func LoadGM2Map(sourceNumber int) (Map, error) {
 	if !ok {
 		return Map{}, errors.New("GM2 XFL: missing platform instance for map frame " + strconv.Itoa(frame))
 	}
-	platformRects, err := symbolRects(library, platformInst.Library)
+	// Flash checks the actual filled vector shape. Several later GM2 maps use
+	// stepped platform paths, so their axis-aligned bounds are not sufficient.
+	platformRects, err := symbolCollisionRects(library, platformInst.Library)
 	if err != nil {
 		return Map{}, err
 	}

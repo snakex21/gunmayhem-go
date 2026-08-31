@@ -37,7 +37,11 @@ func TestCampaignLevel4WinUnlocksLevel5(t *testing.T) {
 	double := NewPlayer(5, arena)
 	double.AI = true
 	double.IsDouble = true
-	double.Active = false
+	double.PersistentDouble = true
+	// The regression occurred only when Pylon Man's disposable helper survived
+	// the final hit. Match-end logic had already ignored it, but campaign-save
+	// logic counted it again and silently discarded the completed level.
+	double.Active = true
 	g := &Game{
 		players:        []*Player{human, ai, double},
 		campaignMode:   true,

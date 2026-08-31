@@ -15,8 +15,9 @@ func (g *Game) drawPlayerTrails(screen *ebiten.Image) {
 			PlayerScale:   fx.Scale,
 			Alpha:         0.20,
 			PlayerColor:   fx.PlayerColor,
-			ShirtNumber:   fx.ShirtNumber,
-			HeadFrame:     0,
+			ShirtNumber:       fx.ShirtNumber,
+			UseGM2Cosmetics:  fx.UseGM2Cosmetics,
+			HeadFrame:         0,
 			VisualBodyY:   -60,
 			VisualEyesY:   -46,
 			LegFrame1:     fx.LegFrame1,
@@ -27,9 +28,17 @@ func (g *Game) drawPlayerTrails(screen *ebiten.Image) {
 		// player_hat, eyes, leg1. The current player renderer does not yet have
 		// the separate Symbol269 hat path, so this ports every already-recovered
 		// source component rather than substituting a synthetic silhouette.
-		leg := g.assets.LegColors[p.PlayerColor]
-		if leg == nil {
-			leg = g.assets.LegColors[0]
+		colorIndex, useGM2Color := resolvedPlayerColor(p.PlayerColor, p.UseGM2Cosmetics)
+		var leg *SourceRaster
+		if useGM2Color {
+			g.assets.EnsureGM2PlayerColor(colorIndex)
+			leg = g.assets.GM2LegColors[colorIndex]
+		} else {
+			g.assets.EnsurePlayerColor(colorIndex)
+			leg = g.assets.LegColors[colorIndex]
+			if leg == nil {
+				leg = g.assets.LegColors[0]
+			}
 		}
 		if len(g.assets.Leg2Timeline) > 0 {
 			frame := p.LegFrame2 % len(g.assets.Leg2Timeline)

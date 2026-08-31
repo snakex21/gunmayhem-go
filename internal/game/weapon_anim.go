@@ -98,5 +98,39 @@ var weaponAnimCatalog = map[int]WeaponAnimSource{
 }
 
 func sourceWeaponAnim(number int) WeaponAnimSource {
-	return weaponAnimCatalog[number]
+	if anim, ok := weaponAnimCatalog[number]; ok {
+		return anim
+	}
+	if spec, ok := developedWeaponSpec(number); ok {
+		// Generated 87+ sprites are authored horizontally around their grip.
+		// Source weapons have different baked-in registration angles, so copying
+		// their large +/-60 degree values would stand these sprites almost upright.
+		// Keep the same idle idea with a small, natural tilt instead.
+		switch spec.Category {
+		case DevelopedCategoryPistol:
+			return WeaponAnimSource{IdleRotate: 12}
+		case DevelopedCategorySMG:
+			return WeaponAnimSource{IdleRotate: 8}
+		case DevelopedCategoryRifle:
+			return WeaponAnimSource{IdleRotate: -8}
+		case DevelopedCategoryLMG:
+			return WeaponAnimSource{IdleRotate: -6}
+		case DevelopedCategorySniper:
+			return WeaponAnimSource{IdleRotate: -7}
+		case DevelopedCategoryShotgun:
+			return WeaponAnimSource{IdleRotate: -8}
+		case DevelopedCategoryLauncher:
+			return WeaponAnimSource{IdleRotate: -4}
+		case DevelopedCategorySpecial:
+			switch number {
+			case 178: // the bow is already vertical in its source sprite
+				return WeaponAnimSource{}
+			case 180, 181: // nail gun and flare gun are held like handguns
+				return WeaponAnimSource{IdleRotate: 10}
+			default:
+				return WeaponAnimSource{IdleRotate: -5}
+			}
+		}
+	}
+	return WeaponAnimSource{}
 }

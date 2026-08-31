@@ -21,8 +21,14 @@ func gm2WeaponAssetsAvailable() bool {
 }
 
 func developedCrateWeapons() []int {
+	var out []int
 	if gm2WeaponAssetsAvailable() {
-		return GM2CrateWeapons()
+		out = append(out, GM2CrateWeapons()...)
+	} else {
+		out = append(out, DefaultCrateWeapons()...)
 	}
-	return DefaultCrateWeapons()
+	// Custom 87+ weapons are intentionally dormant until their first PNG is
+	// present under assets/custom/weapons/<asset-dir>/1.png.
+	out = append(out, availableCustomWeaponNumbers()...)
+	return out
 }

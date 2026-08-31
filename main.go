@@ -1,19 +1,47 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"flag"
 	"fmt"
+	"image"
+	"image/png"
 	"log"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"gunmayhem-go/internal/game"
+	"gunmayhem-go/internal/networksetup"
+	"gunmayhem-go/internal/updater"
 )
 
+//go:embed assets/icon/gunmayhem.png
+var windowIconPNG []byte
+
 func main() {
-	host := flag.Bool("host", false, "host a two-player network game")
+	if handled, err := networksetup.HandleSpecialMode(os.Args[1:]); handled {
+		if err != nil {
+			log.Printf("configure LAN networking: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if handled, err := updater.MaybeRunInternalApply(os.Args[1:]); handled {
+		if err != nil {
+			log.Printf("apply update: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	host := flag.Bool("host", false, "host a network game for up to four players")
 	port := flag.Int("port", 7777, "TCP port used by --host")
 	join := flag.String("join", "", "join a host, for example 192.168.1.20:7777")
 	flag.Parse()
+	if !*host && *join == "" {
+		networksetup.EnsureConfigured()
+	}
 	if *host && *join != "" {
 		log.Fatal("use either --host or --join, not both")
 	}
@@ -29,7 +57,20 @@ func main() {
 
 	game.ApplyWindowConfig(cfg)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetWindowTitle("Gun Mayhem RE - Go port")
+	// A local match must freeze when the player switches to another window.
+	// Ebitengine runs unfocused by default, which previously let timers, AI and
+	// combat continue invisibly in the background.
+	ebiten.SetRunnableOnUnfocused(false)
+	if icon, err := png.Decode(bytes.NewReader(windowIconPNG)); err != nil {
+		log.Printf("window icon: %v", err)
+	} else {
+		ebiten.SetWindowIcon([]image.Image{icon})
+	}
+	title := "Gun Mayhem RE - Go port"
+	if updater.IsReleaseBuild() {
+		title += " " + updater.CurrentVersion
+	}
+	ebiten.SetWindowTitle(title)
 	ebiten.SetTPS(30)
 
 	g := game.NewPersistent(cfg, save)

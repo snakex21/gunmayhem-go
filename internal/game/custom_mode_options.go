@@ -10,9 +10,13 @@ import (
 )
 
 const (
-	menuHitModeCrates  = 8001
-	menuHitModePickups = 8002
-	menuHitModeLives   = 8003
+	menuHitModeCrates      = 8001
+	menuHitModePickups     = 8002
+	menuHitModeLives       = 8003
+	menuHitModeRoundsMinus = 8004
+	menuHitModeRoundsPlus  = 8005
+	menuHitModeLivesMinus  = 8006
+	menuHitModeLivesPlus   = 8007
 )
 
 var modeCheckLocal = Rect{X: -1.5, Y: -7.35, W: 34.85, H: 38.85} // Symbol1265
@@ -30,25 +34,16 @@ func modeHasPickupToggle(mode int) bool {
 }
 
 func (g *Game) customModeOptionsHitAt(x, y float64) int {
-	if modeHasCrateToggle(g.customMode) {
-		if sourceMenuHitRect(modeCheckLocal, -1137.75, 393.5, 1, 1).Contains(x, y) {
-			return menuHitModeCrates
-		}
-	}
-	if modeHasPickupToggle(g.customMode) {
-		if sourceMenuHitRect(modeCheckLocal, -1137.75, 440.55, 1, 1).Contains(x, y) {
-			return menuHitModePickups
-		}
-	}
-	if modeHasLives(g.customMode) {
-		if (Rect{X: -1320.65, Y: 394, W: 59.2, H: 22.35}).Contains(x, y) {
-			return menuHitModeLives
-		}
-	}
-	return menuHitNone
+	// Developed Game Setup uses screen-space cards instead of the cramped XFL
+	// coordinates. x is still the source-local coordinate here, so translate it
+	// back to the 900px page before delegating to the new layout.
+	return g.developedCustomGameOptionHitAt(x+1800, y)
 }
 
 func (g *Game) activateCustomModeOption(hit int) bool {
+	if g.activateCustomModifierHit(hit) {
+		return true
+	}
 	switch hit {
 	case menuHitModeCrates:
 		if modeHasCrateToggle(g.customMode) {
@@ -64,6 +59,26 @@ func (g *Game) activateCustomModeOption(hit int) bool {
 		if modeHasLives(g.customMode) {
 			g.customLivesFocus = true
 		}
+		return true
+	case menuHitModeLivesMinus:
+		if modeHasLives(g.customMode) && g.customLives > 1 {
+			g.customLives--
+		}
+		g.customLivesFocus = false
+		return true
+	case menuHitModeLivesPlus:
+		if modeHasLives(g.customMode) && g.customLives < 99999 {
+			g.customLives++
+		}
+		g.customLivesFocus = false
+		return true
+	case menuHitModeRoundsMinus:
+		g.customSeriesRounds = clampCustomSeriesRounds(g.customSeriesRounds - 1)
+		g.customRuleEditRound = clampCustomRuleEditRound(g.customRuleEditRound, g.customSeriesRounds)
+		return true
+	case menuHitModeRoundsPlus:
+		g.customSeriesRounds = clampCustomSeriesRounds(g.customSeriesRounds + 1)
+		g.customRuleEditRound = clampCustomRuleEditRound(g.customRuleEditRound, g.customSeriesRounds)
 		return true
 	}
 	return false
@@ -81,7 +96,7 @@ func (g *Game) updateCustomLivesInput() {
 	if g.customLives == 0 {
 		value = ""
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && len(value) > 0 {
+	if textEraseRepeated() && len(value) > 0 {
 		value = value[:len(value)-1]
 	}
 	for _, ch := range ebiten.AppendInputChars(nil) {
@@ -223,4 +238,17 @@ func (g *Game) drawCustomModeOptions(screen *ebiten.Image) {
 		}
 		drawSourceRaster(screen, g.assets.ModeCheckFrames[frame], x+262.25, y+340.55, 1, 1, 1)
 	}
+
+	g.customSeriesRounds = clampCustomSeriesRounds(g.customSeriesRounds)
+	drawSourceMenuText(screen, "Rounds:", menuFontCondensed, 24, color.Black, x+9, y+362)
+	minus := Rect{X: x + 132, Y: y + 359, W: 42, H: 30}
+	plus := Rect{X: x + 232, Y: y + 359, W: 42, H: 30}
+	ebitenutil.DrawRect(screen, minus.X, minus.Y, minus.W, minus.H, color.NRGBA{R: 0xdd, G: 0xdd, B: 0xdd, A: 0xff})
+	ebitenutil.DrawRect(screen, plus.X, plus.Y, plus.W, plus.H, color.NRGBA{R: 0xdd, G: 0xdd, B: 0xdd, A: 0xff})
+	drawSourceMenuText(screen, "-", menuFontTwCen, 24, color.Black, minus.X+14, minus.Y+1)
+	drawSourceMenuText(screen, strconv.Itoa(g.customSeriesRounds), menuFontArialBold, 21, color.Black, x+194, y+363)
+	drawSourceMenuText(screen, "+", menuFontTwCen, 24, color.Black, plus.X+13, plus.Y+1)
+	drawSourceMenuText(screen, "maps in series", menuFontCondensed, 15, color.NRGBA{R: 0x66, G: 0x66, B: 0x66, A: 0xff}, x+290, y+367)
+	g.drawCustomModifierButton(screen)
+	g.drawCustomModifiersOverlay(screen)
 }

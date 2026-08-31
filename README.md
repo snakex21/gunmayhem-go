@@ -4,7 +4,7 @@ A source-faithful reimplementation of **Gun Mayhem** in Go using [Ebitengine](ht
 
 The goal is not to reproduce the original Flash code structure. The goal is to reproduce **how the game actually behaves**: movement, weapons, AI, campaign rules, HUD timing, Flash timelines, map geometry, effects and all the small edge cases that made the original game feel the way it did.
 
-> **Status:** work in progress. The game is playable, but this repository is still being compared against the original Flash source and corrected mechanic by mechanic.
+> **Status:** work in progress. The game is playable, but this repository is still being compared against the original Flash source and corrected mechanic by mechanic. Multiplayer in the current public release is **LAN-only**; Internet multiplayer remains experimental and is disabled in the released UI.
 
 ## Goals
 
@@ -31,7 +31,7 @@ The port already includes substantial parts of the original game, including:
 - source menu/HUD fonts,
 - original audio playback,
 - Flash-style visual timelines and transforms,
-- Custom Game and post-game/statistics work in progress.
+- Custom Game uses a rebuilt MATCH / PLAYLIST / PLAYERS interface. A 1-20 round series can assign a different GM1/GM2 map to every round, with per-map post-game statistics, a cumulative Series Summary and a manually configurable Chaos Mode event pool.
 
 ## Why this port is different
 
@@ -55,9 +55,13 @@ A fresh clone contains the runtime assets required by the Go port in `assets/`, 
 
 ## Build
 
+On Windows, use `build.bat`. It runs the tests with project-local Go scratch/cache directories and builds `GunMayhem.exe` as a Windows GUI application, so launching the game does not open a console window.
+
+Manual Windows build:
+
 ```bash
 go mod download
-go build -o GunMayhem.exe .
+go build -ldflags "-H=windowsgui" -o GunMayhem.exe .
 ```
 
 Run tests with:
@@ -75,7 +79,15 @@ The developed `main` branch keeps machine settings separate from campaign progre
 - F11 toggles fullscreen and the selected fullscreen state is remembered.
 - Resizing/moving the desktop window is remembered on normal exit. If the game exits while fullscreen, the last windowed size/position is preserved rather than being replaced by the monitor resolution.
 
-Files are stored in the operating system user config directory under `GunMayhemRE` (for example the user's AppData config area on Windows). For development/tests, `GUNMAYHEM_DATA_DIR` can override the directory.
+Files are stored in the portable `data/` directory beside the executable. Moving the whole game folder therefore moves its settings and saves too. For development/tests, `GUNMAYHEM_DATA_DIR` can explicitly override the directory.
+
+## Automatic updates
+
+Tagged Windows release builds check `snakex21/gunmayhem-go` GitHub Releases asynchronously at startup. When a newer version exists, the main menu shows `UPDATE AVAILABLE ... - DOWNLOAD & UPDATE` with download progress. The update package is downloaded only after the user clicks the notice.
+
+The updater uses the release ZIP `GunMayhem-Windows-x64.zip` (the older `GunMayhem-Multiplayer-Portable.zip` name is also accepted), installs files after the running game exits, preserves the local `data/` directory, restarts the new executable and removes the downloaded ZIP/helper afterward. Update work files stay under the game's own `data/update/` directory; the system TEMP directory is not used.
+
+`build.bat` injects the exact Git tag as the application version when HEAD is on a tag. The current LAN-only release line defaults to `v0.16.0`; `GUNMAYHEM_VERSION=vX.Y.Z` can override it explicitly. For a release: build from the release tag (or set that environment variable), run `go run ./scripts/package_portable.go`, then attach `build/GunMayhem-Windows-x64.zip` to the GitHub Release with the same/newer version tag.
 
 ## Project structure
 
@@ -98,7 +110,7 @@ Files are stored in the operating system user config directory under `GunMayhemR
 
 See [ASSETS.md](ASSETS.md) for the runtime/reference split. The Go runtime reads only `assets/`; `source/` is kept separate for 1:1 reverse-engineering work.
 
-The developed `main` branch also has an experimental host-authoritative two-player network mode. See [MULTIPLAYER.md](MULTIPLAYER.md) for `--host`, `--port` and `--join` usage.
+The developed `main` branch unifies local and LAN network play inside **Custom Game**. The shared player setup supports local humans, LAN human slots, AI bots and empty slots (including mixed matches such as 2 humans vs 2 bots), while LAN play keeps authoritative hosting, synchronized setup/rules, server discovery and join-in-progress. Internet networking experiments remain in the source tree but are disabled in the public release. Custom Game can also run a configurable 1-20 round playlist where every round stores its own map, with per-map READY flow in network play and cumulative per-nickname standings. Chaos Mode can rotate a host-selected pool of weapon, movement, environmental and hazard events during a match, including grenade/dynamite/Molotov rain and crate/powerup storms. See [MULTIPLAYER.md](MULTIPLAYER.md) for details.
 
 ## Development rule
 

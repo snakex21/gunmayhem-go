@@ -8,7 +8,7 @@ import (
 )
 
 func TestPersistenceDefaultsWithoutFiles(t *testing.T) {
-	t.Setenv("GUNMAYHEM_DATA_DIR", t.TempDir())
+	t.Setenv("GUNMAYHEM_DATA_DIR", projectTestDir(t))
 
 	cfg, err := LoadAppConfig()
 	if err != nil {
@@ -30,7 +30,7 @@ func TestPersistenceDefaultsWithoutFiles(t *testing.T) {
 }
 
 func TestConfigRoundTrip(t *testing.T) {
-	dir := t.TempDir()
+	dir := projectTestDir(t)
 	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
 
 	cfg := DefaultAppConfig()
@@ -42,6 +42,9 @@ func TestConfigRoundTrip(t *testing.T) {
 	cfg.Fullscreen = true
 	cfg.MusicOn = false
 	cfg.SoundOn = false
+	cfg.MusicVolume = 0
+	cfg.SoundVolume = 0
+	cfg.LoudnessEQ = true
 	cfg.Quality = 3
 	cfg.Controls[0].Shoot = 90
 	if err := SaveAppConfig(cfg); err != nil {
@@ -61,7 +64,7 @@ func TestConfigRoundTrip(t *testing.T) {
 }
 
 func TestSaveRoundTrip(t *testing.T) {
-	dir := t.TempDir()
+	dir := projectTestDir(t)
 	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
 
 	save := DefaultSaveData()
@@ -72,6 +75,8 @@ func TestSaveRoundTrip(t *testing.T) {
 	save.GM2CampaignLevels[1] = 2
 	save.GM2CampaignLevels[2] = 1
 	save.GM2Challenges[3] = GM2ChallengeProgress{Medal: 2, BestTimeMS: 27890}
+	save.ExtraCampaignLevels[0] = 2
+	save.ExtraCampaignLevels[1] = 1
 	if err := SaveGameData(save); err != nil {
 		t.Fatal(err)
 	}
@@ -92,6 +97,9 @@ func TestNewPersistentAppliesSettingsAndProgress(t *testing.T) {
 	cfg := DefaultAppConfig()
 	cfg.MusicOn = false
 	cfg.SoundOn = false
+	cfg.MusicVolume = 0
+	cfg.SoundVolume = 0
+	cfg.LoudnessEQ = true
 	cfg.Quality = 3
 	cfg.Controls[1].Shoot = 88
 
@@ -100,10 +108,11 @@ func TestNewPersistentAppliesSettingsAndProgress(t *testing.T) {
 	save.CampaignGuns[41] = true
 	save.GM2CampaignLevels[4] = 2
 	save.GM2Challenges[1] = GM2ChallengeProgress{Medal: 3, BestTimeMS: 19876}
+	save.ExtraCampaignLevels[2] = 2
 
 	g := NewPersistent(cfg, save)
-	if !g.persistent || g.musicOn || g.soundOn || g.quality != 3 {
-		t.Fatalf("persistent settings not applied: persistent=%v music=%v sound=%v quality=%d", g.persistent, g.musicOn, g.soundOn, g.quality)
+	if !g.persistent || g.musicOn || g.soundOn || g.musicVolume != 0 || g.soundVolume != 0 || !g.loudnessEQ || g.quality != 3 {
+		t.Fatalf("persistent settings not applied: persistent=%v music=%v/%v sound=%v/%v eq=%v quality=%d", g.persistent, g.musicOn, g.musicVolume, g.soundOn, g.soundVolume, g.loudnessEQ, g.quality)
 	}
 	if g.controlConfigs[1].Shoot != 88 || g.players[1].Controls.Shoot != 88 {
 		t.Fatalf("controls not applied: config=%d player=%d", g.controlConfigs[1].Shoot, g.players[1].Controls.Shoot)
@@ -114,10 +123,36 @@ func TestNewPersistentAppliesSettingsAndProgress(t *testing.T) {
 	if g.gm2CampaignLevels[4] != 2 || g.gm2Challenges[1].Medal != 3 || g.gm2Challenges[1].BestTimeMS != 19876 {
 		t.Fatalf("GM2 progress not applied: levels=%v challenge=%+v", g.gm2CampaignLevels, g.gm2Challenges[1])
 	}
+	if g.extraCampaignLevels[2] != 2 {
+		t.Fatalf("EXTRA progress not applied: %v", g.extraCampaignLevels)
+	}
+}
+
+func TestLoadV2ConfigMigratesAudioTogglesToSliders(t *testing.T) {
+	dir := projectTestDir(t)
+	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
+	legacy := `{
+  "version": 2,
+  "window_width": 900,
+  "window_height": 600,
+  "music_on": false,
+  "sound_on": true,
+  "quality": 2
+}`
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(legacy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadAppConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Version != persistenceVersion || got.MusicVolume != 0 || got.SoundVolume != 1 || got.MusicOn || !got.SoundOn {
+		t.Fatalf("legacy audio migration failed: %+v", got)
+	}
 }
 
 func TestLoadV1SaveMigratesGM2Defaults(t *testing.T) {
-	dir := t.TempDir()
+	dir := projectTestDir(t)
 	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
 	legacy := `{
   "version": 1,
@@ -139,5 +174,46 @@ func TestLoadV1SaveMigratesGM2Defaults(t *testing.T) {
 	}
 	if got.GM2CampaignLevels[0] != 1 || got.GM2CampaignLevels[1] != 1 {
 		t.Fatalf("GM2 fresh defaults not initialized: %v", got.GM2CampaignLevels)
+	}
+	if got.ExtraCampaignLevels[0] != 1 {
+		t.Fatalf("EXTRA fresh defaults not initialized: %v", got.ExtraCampaignLevels)
+	}
+}
+
+func TestLoadV4SaveUnlocksExpandedExtraMissionNine(t *testing.T) {
+	dir := projectTestDir(t)
+	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
+	legacy := `{
+  "version": 4,
+  "extra_campaign_levels": [2,2,2,2,2,2,2,2]
+}`
+	if err := os.WriteFile(filepath.Join(dir, "save.json"), []byte(legacy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadSaveData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Version != persistenceVersion || got.ExtraCampaignLevels[7] != 2 || got.ExtraCampaignLevels[8] != 1 {
+		t.Fatalf("expanded EXTRA migration failed: version=%d levels=%v", got.Version, got.ExtraCampaignLevels)
+	}
+}
+
+func TestLoadV5SaveUnlocksExpandedExtraMissionThirteen(t *testing.T) {
+	dir := projectTestDir(t)
+	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
+	legacy := `{
+  "version": 5,
+  "extra_campaign_levels": [2,2,2,2,2,2,2,2,2,2,2,2]
+}`
+	if err := os.WriteFile(filepath.Join(dir, "save.json"), []byte(legacy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadSaveData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Version != persistenceVersion || got.ExtraCampaignLevels[11] != 2 || got.ExtraCampaignLevels[12] != 1 {
+		t.Fatalf("20-mission EXTRA migration failed: version=%d levels=%v", got.Version, got.ExtraCampaignLevels)
 	}
 }

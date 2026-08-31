@@ -26,6 +26,9 @@ var (
 )
 
 func weaponAssetNamespace(number int) string {
+	if number >= 87 {
+		return "custom"
+	}
 	if number >= 67 {
 		return "gm2"
 	}
@@ -41,6 +44,11 @@ func weaponTimeline(number int) WeaponTimelineDef {
 	w, ok := WeaponByNumber(number)
 	if !ok {
 		return WeaponTimelineDef{TotalFrames: 2, RestFrame: 1, Scripts: map[int]string{}}
+	}
+	if number >= 87 {
+		def := WeaponTimelineDef{TotalFrames: 2, RestFrame: 1, Scripts: map[int]string{}}
+		weaponTimelineCache[number] = def
+		return def
 	}
 	library := sourceLibraryNameFromSpriteDir(w.SpriteDir)
 	libraryDir, err := findOriginalPathIn(weaponAssetNamespace(number), "fla", "LIBRARY")

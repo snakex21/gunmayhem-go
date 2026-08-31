@@ -39,6 +39,20 @@ func TestCustomMapButtonsReverseSourceMapOrder(t *testing.T) {
 	}
 }
 
+func TestMapSelectionUsesWholeVisibleRow(t *testing.T) {
+	g := &Game{customOnlineMode: true, customPage: customPageMaps, customMap: 0}
+	// Map 1's visible row extends to roughly y=487. The old Symbol1200 hit
+	// shape stopped a few pixels early, making clicks near the lower edge fail.
+	hit := customMenuHitAt(customPageMaps, -780, 483)
+	if hit != menuHitMapBase+1 {
+		t.Fatalf("map 1 lower-edge hit=%d want=%d", hit, menuHitMapBase+1)
+	}
+	g.activateCustomMenuHit(hit)
+	if g.customMap != 1 || g.customMapSetGM2 {
+		t.Fatalf("map selection failed: map=%d gm2=%v", g.customMap, g.customMapSetGM2)
+	}
+}
+
 func TestCustomPageSourceXPositions(t *testing.T) {
 	if customPageTargetX(customPageGame) != 1800 || customPageTargetX(customPageMaps) != 900 || customPageTargetX(customPagePlayers) != 0 {
 		t.Fatal("Symbol1309 source page positions changed")

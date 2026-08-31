@@ -103,6 +103,13 @@ func (g *Game) drawPostGameScreen(screen *ebiten.Image) bool {
 	// Static text from Symbol1019. X positions include each DOMStaticText's
 	// leftMargin where present, matching Flash's actual character start.
 	drawSourceMenuText(screen, "Post Game Summary", menuFontCondensed, 53, color.Black, 18, 14)
+	if g.customSeriesRound > 0 {
+		seriesLine := fmt.Sprintf("ROUND %d/%d   MAP %d", g.customSeriesRound, clampCustomSeriesRounds(g.customSeriesRounds), g.arena.Number)
+		if leader := g.customSeriesLeaderText(); leader != "" {
+			seriesLine += "   |   " + leader
+		}
+		drawSourceMenuText(screen, seriesLine, menuFontCondensedExtraBold, 13.5, color.Black, 22, 79)
+	}
 	labels := [...]struct {
 		text string
 		x, y float64
@@ -126,7 +133,18 @@ func (g *Game) drawPostGameScreen(screen *ebiten.Image) bool {
 		drawSourceRaster(screen, g.assets.PostGameButton, 638.15, 532.1,
 			1.86492919921875, 1.0372772216796875, 1)
 	}
-	drawSourceMenuText(screen, "Continue", menuFontCondensed, 26.5, color.Black, 796.25, 545.3)
+	buttonLabel := "Continue"
+	if g.onlineMatchSetup && g.netplay != nil {
+		if g.localPostGameReady() {
+			buttonLabel = "READY!"
+		} else {
+			buttonLabel = "READY"
+		}
+		if status := g.onlinePostGameStatusText(); status != "" {
+			drawSourceMenuText(screen, status, menuFontCondensedExtraBold, 18, color.Black, 500, 505)
+		}
+	}
+	drawSourceMenuText(screen, buttonLabel, menuFontCondensed, 26.5, color.Black, 720.0, 545.3)
 
 	g.drawPostGameStats(screen)
 	return true

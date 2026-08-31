@@ -4,12 +4,16 @@ build.exe
 *.exe
 *.test
 *.out
+/build/
+/data/
 
 # Editors / OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+/agents.MD
+/AGENTS.md
 
 # source/ is intentionally tracked: it contains the original/reference export
 # used to verify and continue the source-faithful port. Runtime code never reads it.
@@ -18,3 +22,6 @@ Thumbs.db
 *.log
 *.pprof
 coverage.out
+build/go-tmp/
+build/go-cache/
+build/test-data/

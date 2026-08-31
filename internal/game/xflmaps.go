@@ -305,6 +305,171 @@ func symbolRects(libraryDir, libraryName string) ([]Rect, error) {
 	return rects, nil
 }
 
+// symbolCollisionRects reconstructs the filled, axis-aligned vector shapes
+// used by Flash's shapeFlag=true hitTest. Most platform edges are ordinary
+// rectangles, but several GM2 maps use stepped polygons. Treating their
+// bounding boxes as collision geometry fills the notches with invisible floor.
+func symbolCollisionRects(libraryDir, libraryName string) ([]Rect, error) {
+	path := filepath.Join(libraryDir, libraryName+".xml")
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	dec := xml.NewDecoder(f)
+	var rects []Rect
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		start, ok := tok.(xml.StartElement)
+		if !ok || start.Name.Local != "Edge" {
+			continue
+		}
+		edges := stringAttr(start.Attr, "edges", "")
+		parts, ok := orthogonalEdgeRects(edges)
+		if !ok {
+			// Keep the old conservative behavior for an unexpected non-orthogonal
+			// source edge. The GM1/GM2 collision symbols currently contain only
+			// straight, axis-aligned paths.
+			parts = edgeBoundsRect(edges)
+		}
+		rects = append(rects, parts...)
+	}
+	if len(rects) == 0 {
+		return nil, errors.New("XFL: no collision shapes in " + libraryName)
+	}
+	return rects, nil
+}
+
+type xflPoint struct {
+	X, Y float64
+}
+
+// orthogonalEdgeRects decomposes one filled XFL path into exact horizontal
+// slabs. Adjacent slabs with equal X bounds are merged again, so a rectangle
+// remains one rectangle while a stepped platform retains its cut-outs.
+func orthogonalEdgeRects(edges string) ([]Rect, bool) {
+	nums := numberRE.FindAllString(edges, -1)
+	if len(nums) < 8 || len(nums)%2 != 0 {
+		return nil, false
+	}
+	points := make([]xflPoint, 0, len(nums)/2+1)
+	for i := 0; i+1 < len(nums); i += 2 {
+		xi, errX := strconv.Atoi(nums[i])
+		yi, errY := strconv.Atoi(nums[i+1])
+		if errX != nil || errY != nil {
+			return nil, false
+		}
+		points = append(points, xflPoint{X: float64(xi) / 20, Y: float64(yi) / 20})
+	}
+	if points[0] != points[len(points)-1] {
+		points = append(points, points[0])
+	}
+
+	ys := make([]float64, 0, len(points))
+	for i := 0; i+1 < len(points); i++ {
+		a, b := points[i], points[i+1]
+		if a.X != b.X && a.Y != b.Y {
+			return nil, false
+		}
+		ys = append(ys, a.Y)
+	}
+	sort.Float64s(ys)
+	ys = uniqueFloat64s(ys)
+	if len(ys) < 2 {
+		return nil, false
+	}
+
+	var rects []Rect
+	for yi := 0; yi+1 < len(ys); yi++ {
+		y0, y1 := ys[yi], ys[yi+1]
+		if y1 <= y0 {
+			continue
+		}
+		midY := (y0 + y1) / 2
+		var xs []float64
+		for i := 0; i+1 < len(points); i++ {
+			a, b := points[i], points[i+1]
+			if a.X != b.X {
+				continue
+			}
+			minY, maxY := math.Min(a.Y, b.Y), math.Max(a.Y, b.Y)
+			if midY >= minY && midY < maxY {
+				xs = append(xs, a.X)
+			}
+		}
+		sort.Float64s(xs)
+		if len(xs)%2 != 0 {
+			return nil, false
+		}
+		for i := 0; i+1 < len(xs); i += 2 {
+			x0, x1 := xs[i], xs[i+1]
+			if x1 <= x0 {
+				continue
+			}
+			merged := false
+			for ri := range rects {
+				r := &rects[ri]
+				if almostEqual(r.X, x0) && almostEqual(r.W, x1-x0) && almostEqual(r.Y+r.H, y0) {
+					r.H = y1 - r.Y
+					merged = true
+					break
+				}
+			}
+			if !merged {
+				rects = append(rects, Rect{X: x0, Y: y0, W: x1 - x0, H: y1 - y0})
+			}
+		}
+	}
+	return rects, len(rects) > 0
+}
+
+func edgeBoundsRect(edges string) []Rect {
+	nums := numberRE.FindAllString(edges, -1)
+	if len(nums) < 8 || len(nums)%2 != 0 {
+		return nil
+	}
+	minX, minY := math.Inf(1), math.Inf(1)
+	maxX, maxY := math.Inf(-1), math.Inf(-1)
+	for i := 0; i+1 < len(nums); i += 2 {
+		xi, errX := strconv.Atoi(nums[i])
+		yi, errY := strconv.Atoi(nums[i+1])
+		if errX != nil || errY != nil {
+			return nil
+		}
+		x, y := float64(xi)/20, float64(yi)/20
+		minX, minY = math.Min(minX, x), math.Min(minY, y)
+		maxX, maxY = math.Max(maxX, x), math.Max(maxY, y)
+	}
+	if maxX <= minX || maxY <= minY {
+		return nil
+	}
+	return []Rect{{X: minX, Y: minY, W: maxX - minX, H: maxY - minY}}
+}
+
+func uniqueFloat64s(values []float64) []float64 {
+	if len(values) == 0 {
+		return values
+	}
+	out := values[:1]
+	for _, value := range values[1:] {
+		if !almostEqual(value, out[len(out)-1]) {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func almostEqual(a, b float64) bool {
+	return math.Abs(a-b) < 1e-9
+}
+
 func instanceXBounds(libraryDir string, inst xflInstance, groundX float64) (float64, float64, error) {
 	if inst.Library == "" {
 		return 0, 0, errors.New("XFL: missing instance used for X bounds")

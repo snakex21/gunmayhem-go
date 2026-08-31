@@ -1,0 +1,58 @@
+Developed weapon sound sources
+==============================
+
+dev_firearm.wav
+- Source: "Basic Sound Effects" by n4
+- URL: https://opengameart.org/content/basic-sound-effects
+- Derived from gunshot.mp3: silence trimmed, shortened to 0.32 seconds,
+  faded and resampled to 22050 Hz stereo PCM16 for rapid arcade fire.
+- License: Creative Commons CC0 1.0
+
+dev_launcher_rpg.wav
+- Source: "rpg launcher three shots.wav" by klangfabrik
+- URL: https://freesound.org/people/klangfabrik/sounds/249298/
+- Derived from the CC0 high-quality preview: first shot selected, silence
+  trimmed, faded, resampled to 22050 Hz stereo PCM16.
+- License: Creative Commons CC0 1.0
+
+dev_javelin.wav
+- Source: "Rocket Launch" by Jarusca
+- URL: https://freesound.org/people/Jarusca/sounds/521377/
+- Derived from the CC0 high-quality preview: silence trimmed, shortened,
+  faded, resampled to 22050 Hz stereo PCM16.
+- License: Creative Commons CC0 1.0
+
+dev_musket.wav
+- Source: "Musket Shot.wav" by mlsulli
+- URL: https://freesound.org/people/mlsulli/sounds/234869/
+- Derived from the CC0 high-quality preview: leading silence trimmed,
+  shortened, normalized, limited, faded and resampled to 22050 Hz stereo PCM16.
+- License: Creative Commons CC0 1.0
+
+dev_historical_pistol.wav
+dev_historical_rifle.wav
+dev_sks.wav
+dev_historical_shotgun.wav
+- Source: "Gunshot Sounds" recording collection by Vincent Sevedge / Tabasco
+- URL: https://opengameart.org/content/gunshot-sounds
+- Derived respectively from cz.wav, mosin.wav, sks.wav and shotty.wav:
+  first clean report selected, high-pass filtered, shortened, normalized, faded
+  and resampled to 22050 Hz stereo PCM16.
+- License: Creative Commons Attribution 3.0 Unported. The OpenGameArt page is
+  marked CC0, but the archive's embedded creativecommons.txt states CC BY 3.0;
+  this game conservatively follows the archive's more restrictive notice.
+- Attribution: Copyright (c) 2009 Vincent Sevedge.
+
+dev_auto_rifle.wav
+- Source: "Random gunfire SFX" by iamoneabe
+- URL: https://opengameart.org/content/random-gunfire-sfx
+- Derived from gunfire_sfx.wav: first report selected, high-pass filtered,
+  shortened, normalized, faded and resampled to 22050 Hz stereo PCM16.
+- License: Creative Commons CC0 1.0
+
+dev_historical_lmg.wav
+- Source: "Light Machine Gun" by KuraiWolf
+- URL: https://opengameart.org/content/light-machine-gun
+- Derived from lmg_fire01.mp3: decoded, high-pass filtered, shortened,
+  normalized, faded and resampled to 22050 Hz stereo PCM16.
+- License: Creative Commons Attribution 4.0 International

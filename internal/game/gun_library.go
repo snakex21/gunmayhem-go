@@ -18,6 +18,7 @@ type gunLibraryButton struct {
 	Gun   int
 	X, Y  float64
 	Scale float64
+	W, H  float64
 }
 
 var (
@@ -128,6 +129,9 @@ func sourceGunLibraryName(frame int) string {
 }
 
 func (b gunLibraryButton) contains(x, y float64) bool {
+	if b.W > 0 && b.H > 0 {
+		return x >= b.X-b.W/2 && x <= b.X+b.W/2 && y >= b.Y-b.H/2 && y <= b.Y+b.H/2
+	}
 	// Constructor forces the clip to _rotation=-20 after extracting gunnumber.
 	// Invert that runtime transform and test the exact Symbol913 frame square.
 	dx := x - b.X
@@ -140,7 +144,11 @@ func (b gunLibraryButton) contains(x, y float64) bool {
 }
 
 func isGunLibraryGunNumber(gun int) bool {
-	return (gun >= 1 && gun <= 6) || (gun >= 10 && gun <= 86)
+	if (gun >= 1 && gun <= 6) || (gun >= 10 && gun <= 86) {
+		return true
+	}
+	_, ok := developedWeaponSpec(gun)
+	return ok
 }
 
 func (g *Game) gunUnlocked(gun int) bool {
@@ -152,6 +160,9 @@ func (g *Game) gunUnlocked(gun int) bool {
 	}
 	if gun >= 67 && gun <= 86 {
 		return gm2WeaponAssetsAvailable()
+	}
+	if _, ok := developedWeaponSpec(gun); ok {
+		return customWeaponAssetAvailable(gun)
 	}
 	idx := gun - 10
 	return idx >= 0 && idx < len(g.campaignGuns) && g.campaignGuns[idx]
@@ -174,24 +185,36 @@ func (g *Game) updateGunLibraryMenu() {
 	}
 	mx, my := ebiten.CursorPosition()
 	x, y := float64(mx), float64(my)
-	backRect := sourceMenuHitRect(wideButtonLocal, 679.75, 20.05, 0.3125, 0.9991607666015625)
-	// Symbol1197 is at (458.1,457.6), testbtn local (320.05,65.55).
-	testRect := sourceMenuHitRect(Rect{X: 0, Y: 0, W: 76.5, H: 82.4}, 778.15, 523.15, 1, 0.484222412109375)
-
-	hit := gunLibrarySetHitAt(x, y)
-	if hit == 0 {
-		if g.gunLibraryGM2 {
-			hit = gm2GunLibraryHitAt(x, y)
-		} else {
-			hit = g.gunLibraryHitAt(x, y)
-		}
+	backRect := Rect{X: 690, Y: 16, W: 174, H: 48}
+	testRect := Rect{X: 756, Y: 514, W: 108, H: 44}
+	if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) || inpututil.IsKeyJustPressed(ebiten.KeyPageUp) || inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+		g.changeGunLibraryPage(-1)
 	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) || inpututil.IsKeyJustPressed(ebiten.KeyPageDown) || inpututil.IsKeyJustPressed(ebiten.KeyE) {
+		g.changeGunLibraryPage(1)
+	}
+
+	hit := g.organizedGunLibraryHitAt(x, y)
 	const hitBack = -1
 	const hitTest = -2
+	const hitPreviousPage = -3
+	const hitNextPage = -4
+	if category, ok := organizedGunLibraryCategoryAt(x, y); ok {
+		hit = -100 - category
+	}
+	if g.organizedGunLibraryThrowableTab() {
+		if kind, ok := organizedGunLibraryThrowableAt(x, y); ok {
+			hit = -200 - kind
+		}
+	}
 	if backRect.Contains(x, y) {
 		hit = hitBack
-	} else if g.gunLibrarySelected != 0 && testRect.Contains(x, y) {
+	} else if (g.gunLibrarySelected != 0 || g.organizedGunLibraryThrowableTab()) && testRect.Contains(x, y) {
 		hit = hitTest
+	} else if gunLibraryPreviousPageRect.Contains(x, y) {
+		hit = hitPreviousPage
+	} else if gunLibraryNextPageRect.Contains(x, y) {
+		hit = hitNextPage
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		g.gunLibraryPressed = hit
@@ -209,19 +232,20 @@ func (g *Game) updateGunLibraryMenu() {
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 	case hitTest:
 		g.startGunLibraryTest()
-	case gunLibraryHitSetGM1:
-		g.gunLibraryGM2 = false
-		if g.gunLibrarySelected > 66 {
-			g.gunLibrarySelected = 0
-		}
-	case gunLibraryHitSetGM2:
-		if gm2WeaponAssetsAvailable() {
-			g.gunLibraryGM2 = true
-			if g.gunLibrarySelected < 67 || g.gunLibrarySelected > 86 {
-				g.gunLibrarySelected = 67
-			}
-		}
+	case hitPreviousPage:
+		g.changeGunLibraryPage(-1)
+	case hitNextPage:
+		g.changeGunLibraryPage(1)
 	default:
+		if pressed <= -200 && pressed > -200-throwableTypeCount {
+			g.gunLibraryThrowableSelected = -200 - pressed
+			return
+		}
+		if pressed <= -100 && pressed > -100-len(organizedGunLibraryTabs) {
+			g.gunLibraryCategory = -100 - pressed
+			g.gunLibraryPage = 0
+			return
+		}
 		if isGunLibraryGunNumber(pressed) && g.gunUnlocked(pressed) {
 			g.gunLibrarySelected = pressed
 		}
@@ -339,31 +363,19 @@ func (g *Game) drawGunLibraryButtons(screen *ebiten.Image) {
 
 func (g *Game) drawGunLibraryInteractions(screen *ebiten.Image) {
 	g.assets.EnsureGunLibrary()
-	g.drawGunLibrarySetTabs(screen)
-	if g.gunLibraryGM2 {
-		g.drawGM2GunLibrary(screen)
-		return
-	}
-	g.drawGunLibraryButtons(screen)
+	g.drawDevelopedGunLibrary(screen)
+}
 
-	frame := g.gunLibrarySelected
-	if frame == 0 {
-		frame = 7 // Symbol1197 constructor: Nothing Selected
+func (g *Game) gunLibraryRaster(number int) *SourceRaster {
+	if number >= 87 {
+		return g.assets.WeaponFrame(number, 0)
 	}
-	g.drawGunLibraryStatCard(screen, frame)
-	// The nested Symbol595 export exposes helper markers; use the clean gameplay
-	// sprite for the selected-weapon preview as well.
-	// The flattened Symbol1198/1197 image still contains its constructor-time
-	// default pistol here. Clear that exact dropgun area before drawing the
-	// runtime-selected weapon, otherwise two guns are visible at once.
-	ebitenutil.DrawRect(screen, 780, 463, 67, 58, color.NRGBA{R: 0x79, G: 0x79, B: 0x79, A: 0xff})
-	if isGunLibraryGunNumber(frame) {
-		drawGunLibraryCleanThumb(screen, g.assets.GunLibraryThumbs[frame], 813.3, 489.55, 58, 42, 1, -20)
-	}
+	return g.assets.GunLibraryThumbs[number]
 }
 
 func (g *Game) startGunLibraryTest() {
-	if !isGunLibraryGunNumber(g.gunLibrarySelected) || g.fadeActive {
+	throwableTest := g.organizedGunLibraryThrowableTab()
+	if (!throwableTest && !isGunLibraryGunNumber(g.gunLibrarySelected)) || g.fadeActive {
 		return
 	}
 	arena, ok := g.ensureMap(13)
@@ -376,13 +388,16 @@ func (g *Game) startGunLibraryTest() {
 	p1.PlayerColor = 2
 	p1.ShirtNumber = 1
 	p1.DefaultWeapon = 2
-	if g.gunLibrarySelected >= 1 && g.gunLibrarySelected <= 6 {
+	if !throwableTest && g.gunLibrarySelected >= 1 && g.gunLibrarySelected <= 6 {
 		// frame_10: starter handguns are equipped immediately in test mode;
 		// Symbol1443 removes the pickup entirely for gototestnumber <= 6.
 		p1.DefaultWeapon = g.gunLibrarySelected
 	}
 	p1.PerkNumber = 0
 	p1.configureSourceGameMode(SourceGameModeNormal, 1000, arena)
+	if throwableTest {
+		p1.ThrowableType = normalizedThrowableType(g.gunLibraryThrowableSelected)
+	}
 	p2 := NewPlayer(2, arena)
 	p2.Controls = g.controlConfigs[1]
 	p2.Name = "Dummy"
@@ -404,11 +419,19 @@ func (g *Game) startGunLibraryTest() {
 	g.teamGameWin = false
 	g.campaignMode = false
 	g.gototest = true
+	g.testThrowableMode = throwableTest
 	g.testGunNumber = g.gunLibrarySelected
+	if throwableTest {
+		g.testGunNumber = 0
+	}
 	g.testGunDisabled = false
 	g.testGunRespawn = 0
 	g.testGunFrame = 2 // Symbol1443 frame1 immediately proceeds into visual frame2
 	g.resetArenaState()
+	if throwableTest {
+		p1.ThrowableType = normalizedThrowableType(g.gunLibraryThrowableSelected)
+		p1.Grenades = 30
+	}
 	g.beginFade(screenGameplay, fadePurposeScreen)
 }
 
@@ -451,11 +474,15 @@ func (g *Game) updateTestGunPickup() {
 }
 
 func (g *Game) drawTestGunPickup(screen *ebiten.Image) {
-	if !g.gototest || g.testGunDisabled || g.testGunNumber < 10 || g.testGunNumber > 86 {
+	if !g.gototest || g.testGunDisabled || g.testGunNumber <= 6 || !isGunLibraryGunNumber(g.testGunNumber) {
 		return
 	}
 	// Source Symbol1443 frame2: persistent pedestal/base plus dropgun at
 	// ~80% scale and -10 degrees. The selected weapon frame is runtime-driven.
 	drawSourceRaster(screen, g.assets.TestPickupBase, g.worldX(testGunPickupX), g.worldY(testGunPickupY), 1, 1, 1)
-	drawGunLibraryCleanThumb(screen, g.assets.GunLibraryThumbs[g.testGunNumber], g.worldX(testGunPickupX-1.75), g.worldY(testGunPickupY-1.8), 58, 42, 1, -10)
+	rotation := -10.0
+	if g.testGunNumber >= 87 {
+		rotation = 0
+	}
+	drawGunLibraryCleanThumb(screen, g.gunLibraryRaster(g.testGunNumber), g.worldX(testGunPickupX-1.75), g.worldY(testGunPickupY-1.8), 62, 44, 1, rotation)
 }

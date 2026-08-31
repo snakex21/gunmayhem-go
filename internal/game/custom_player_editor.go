@@ -9,11 +9,14 @@ import (
 )
 
 const (
-	customEditShirt = 1
-	customEditHat1  = 2
-	customEditGun   = 3
-	customEditPerk  = 4
-	customEditHat2  = 5
+	customEditShirt     = 1
+	customEditHat1      = 2
+	customEditGun       = 3
+	customEditPerk      = 4
+	customEditHat2      = 5
+	customEditEyes      = 6
+	customEditThrowable = 7
+	customEditColor     = 8
 )
 
 const (
@@ -23,6 +26,8 @@ const (
 	menuHitPlayerHatPageBase    = 7000
 	menuHitPlayerTeamBase       = 7100
 	menuHitPlayerColorBase      = 7200
+	menuHitPlayerCustomGunBase  = 8000
+	menuHitPlayerThrowableBase  = 16000
 )
 
 type customSelectionItem struct {
@@ -44,6 +49,26 @@ func customSelectHit(slot, editor, number int) int {
 func customHatPageHit(slot int) int       { return menuHitPlayerHatPageBase + slot }
 func customTeamHit(slot, team int) int    { return menuHitPlayerTeamBase + slot*10 + team }
 func customColorHit(slot, number int) int { return menuHitPlayerColorBase + slot*100 + number }
+func customThrowableChoiceHit(slot, kind int) int {
+	if kind < 0 || kind >= throwableTypeCount {
+		return menuHitNone
+	}
+	return menuHitPlayerThrowableBase + slot*10 + kind + 1
+}
+
+func customDevelopedGunHit(slot, number int) int {
+	return menuHitPlayerCustomGunBase + slot*developedWeaponSlotCount + number - 98
+}
+
+func decodeCustomDevelopedGunHit(hit int) (slot, number int, ok bool) {
+	v := hit - menuHitPlayerCustomGunBase
+	if v < 0 || v >= 4*developedWeaponSlotCount {
+		return 0, 0, false
+	}
+	slot, number = v/developedWeaponSlotCount, 98+v%developedWeaponSlotCount
+	spec, exists := developedWeaponSpec(number)
+	return slot, number, slot >= 0 && slot < 4 && exists && spec.Category == DevelopedCategoryPistol
+}
 
 func decodeCustomSelectHit(hit int) (slot, editor, number int, ok bool) {
 	v := hit - menuHitPlayerSelectBase
@@ -54,7 +79,7 @@ func decodeCustomSelectHit(hit int) (slot, editor, number int, ok bool) {
 	v %= 1000
 	editor = v / 100
 	number = v % 100
-	if slot < 0 || slot >= 4 || editor < 1 || editor > 5 || number <= 0 {
+	if slot < 0 || slot >= 4 || editor < 1 || editor > customEditColor || number <= 0 {
 		return 0, 0, 0, false
 	}
 	return slot, editor, number, true
@@ -169,6 +194,8 @@ func (g *Game) customPlayerEditorHitAt(x, y float64) int {
 		cardY := g.customCardY[slot]
 		editor := g.customEditor[slot]
 		if editor == 0 {
+			// Developed throwable selection is a real editor page like HANDGUN,
+			// not a row of tiny cycle icons on the player card.
 			// Four exact Symbol806 EDIT hit areas from Symbol1302 frame3.
 			edits := [...]struct {
 				editor   int
@@ -178,11 +205,18 @@ func (g *Game) customPlayerEditorHitAt(x, y float64) int {
 				{customEditHat1, 17.5, 93.0, 0.538726806640625},
 				{customEditGun, 17.5, 161.7, 0.5387115478515625},
 				{customEditPerk, 17.5, 220.75, 0.53875732421875},
+				{customEditThrowable, 17.5, 248.0, 0.53875732421875},
 			}
 			for _, e := range edits {
 				if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+e.x, cardY+e.y, e.sx, 1).Contains(x, y) {
 					return customEditHit(slot, e.editor)
 				}
+			}
+			// Developed main exposes GM2's separate eyes selection without
+			// altering the frozen GM1/original branch.
+			if gm2CosmeticsAvailable() &&
+				sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+17.5, cardY+196.2, 0.538726806640625, 1).Contains(x, y) {
+				return customEditHit(slot, customEditEyes)
 			}
 
 			// Name field is a real DOMInputText. Give focus on mouse press/release
@@ -191,8 +225,11 @@ func (g *Game) customPlayerEditorHitAt(x, y float64) int {
 				return menuHitPlayerColorBase + 500 + slot // name focus marker
 			}
 
-			if number, ok := sourceColorNumberAt(cardX, cardY, x, y); ok {
-				return customColorHit(slot, number)
+			// In the developed build the source COLOR strip opens a proper palette
+			// page. That keeps the original card geometry while making room for all
+			// ten GM1 plus twenty GM2 colours without overlapping NAME/team controls.
+			if sourceColorSelectorRect(cardX, cardY).Contains(x, y) {
+				return customEditHit(slot, customEditColor)
 			}
 
 			if g.customMode == SourceGameModeTeams {
@@ -211,11 +248,14 @@ func (g *Game) customPlayerEditorHitAt(x, y float64) int {
 
 		// During slide=2 the entire Symbol1302 card sits at originY-400, while
 		// Symbol835 itself stays at local (0,0). Use parsed source child bounds.
-		for _, item := range sourceCustomSelectionItems()[editor] {
+		for _, item := range developedCustomSelectionItems(editor) {
 			r := item.Rect
 			r.X += cardX
 			r.Y += cardY
 			if r.Contains(x, y) && g.customSelectionUnlocked(editor, item.Number) {
+				if editor == customEditGun && item.Number >= 98 {
+					return customDevelopedGunHit(slot, item.Number)
+				}
 				return customSelectHit(slot, editor, item.Number)
 			}
 		}
@@ -255,27 +295,46 @@ func (g *Game) customSelectionUnlocked(editor, number int) bool {
 	if editor != customEditPerk {
 		return true
 	}
-	// Symbol831: perk3 requires level2 completed, perk6 level5, perk9 level6.
-	switch number {
-	case 3:
-		return g.campaignLevels[1] == 2
-	case 6:
-		return g.campaignLevels[4] == 2
-	case 9:
-		return g.campaignLevels[5] == 2
-	}
-	return number != 10
+	// Developed build: all real perks are available immediately. The Flash
+	// source locked perks 3/6/9 behind GM1 campaign progress, but that made
+	// visible choices such as GUN SPAWN appear broken until those missions had
+	// been completed. Keep only the real 1..9 perk range; frame 10 is not a
+	// selectable perk.
+	return number >= 1 && number <= 9
 }
 
 func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
+	if hit >= menuHitPlayerThrowableBase && hit < menuHitPlayerThrowableBase+40 {
+		v := hit - menuHitPlayerThrowableBase
+		slot, action := v/10, v%10
+		kind := action - 1
+		if slot >= 0 && slot < 4 && kind >= 0 && kind < throwableTypeCount {
+			if !g.onlineMayEditCustomCharacterSlot(slot) {
+				return true
+			}
+			g.customPlayers[slot].Throwable = kind
+			return true
+		}
+	}
+	if slot, number, ok := decodeCustomDevelopedGunHit(hit); ok {
+		if !g.onlineMayEditCustomCharacterSlot(slot) {
+			return true
+		}
+		g.customPlayers[slot].Gun = number
+		g.customEditor[slot] = 0
+		return true
+	}
 	if hit >= menuHitPlayerEditBase && hit < menuHitPlayerEditBase+40 {
 		v := hit - menuHitPlayerEditBase
 		slot, editor := v/10, v%10
-		if slot >= 0 && slot < 4 && editor >= 1 && editor <= 4 {
+		if slot >= 0 && slot < 4 && ((editor >= 1 && editor <= 4) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor) {
+			if !g.onlineMayEditCustomCharacterSlot(slot) {
+				return true
+			}
 			for i := range g.customEditor {
 				g.customEditor[i] = 0
 			}
-			if editor == customEditHat1 && g.customPlayers[slot].Hat > 12 {
+			if editor == customEditHat1 && g.customPlayers[slot].Hat > 36 {
 				editor = customEditHat2
 			}
 			g.customEditor[slot] = editor
@@ -289,6 +348,9 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 		return true
 	}
 	if slot, editor, number, ok := decodeCustomSelectHit(hit); ok {
+		if !g.onlineMayEditCustomCharacterSlot(slot) {
+			return true
+		}
 		cfg := &g.customPlayers[slot]
 		switch editor {
 		case customEditShirt:
@@ -299,12 +361,26 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 			cfg.Gun = number
 		case customEditPerk:
 			cfg.Perk = number
+		case customEditEyes:
+			cfg.Eyes = number
+		case customEditColor:
+			if number >= 1 && number <= maxDevelopedColorValue() {
+				cfg.Color = number
+			}
+		case customEditThrowable:
+			kind := number - 1
+			if kind >= 0 && kind < throwableTypeCount {
+				cfg.Throwable = kind
+			}
 		}
 		g.customEditor[slot] = 0
 		return true
 	}
 	if hit >= menuHitPlayerHatPageBase && hit < menuHitPlayerHatPageBase+4 {
 		slot := hit - menuHitPlayerHatPageBase
+		if !g.onlineMayEditCustomCharacterSlot(slot) {
+			return true
+		}
 		if g.customEditor[slot] == customEditHat1 {
 			g.customEditor[slot] = customEditHat2
 		} else {
@@ -316,6 +392,9 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 		v := hit - menuHitPlayerTeamBase
 		slot, team := v/10, v%10
 		if slot >= 0 && slot < 4 && (team == 1 || team == 2) {
+			if !g.onlineMayEditCustomCharacterSlot(slot) {
+				return true
+			}
 			g.customPlayers[slot].Team = team
 			return true
 		}
@@ -323,14 +402,22 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 	if hit >= menuHitPlayerColorBase && hit < menuHitPlayerColorBase+400 {
 		v := hit - menuHitPlayerColorBase
 		slot, number := v/100, v%100
-		if slot >= 0 && slot < 4 && number >= 1 && number <= 10 {
+		if slot >= 0 && slot < 4 && number >= 1 && number <= maxDevelopedColorValue() {
+			if !g.onlineMayEditCustomCharacterSlot(slot) {
+				return true
+			}
 			g.customPlayers[slot].Color = number
 			return true
 		}
 	}
 	// Dedicated name focus ids are base+500+slot.
 	if hit >= menuHitPlayerColorBase+500 && hit < menuHitPlayerColorBase+504 {
-		g.customNameFocus = hit - (menuHitPlayerColorBase + 500) + 1
+		slot := hit - (menuHitPlayerColorBase + 500)
+		if !g.onlineMayEditCustomCharacterSlot(slot) {
+			g.customNameFocus = 0
+			return true
+		}
+		g.customNameFocus = slot + 1
 		return true
 	}
 	return false
@@ -341,11 +428,15 @@ func (g *Game) updateCustomNameInput() {
 		return
 	}
 	slot := g.customNameFocus - 1
+	if !g.onlineMayEditCustomCharacterSlot(slot) {
+		g.customNameFocus = 0
+		return
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.customNameFocus = 0
 		return
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+	if textEraseRepeated() {
 		r := []rune(g.customPlayers[slot].Name)
 		if len(r) > 0 {
 			g.customPlayers[slot].Name = string(r[:len(r)-1])

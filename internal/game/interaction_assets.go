@@ -3,7 +3,12 @@ package game
 import (
 	"image"
 	"image/draw"
+	"image/jpeg"
+	"image/png"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -14,6 +19,40 @@ import (
 func loadLibraryBitmapSource(filename string) *SourceRaster {
 	img := decodeOriginalPNG("fla", "LIBRARY", filename)
 	if img == nil {
+		return nil
+	}
+	b := img.Bounds()
+	return &SourceRaster{
+		Image:  ebiten.NewImageFromImage(img),
+		Bounds: Rect{X: 0, Y: 0, W: float64(b.Dx()), H: float64(b.Dy())},
+	}
+}
+
+// GM2 stores its map-preview media as JPEGs under images/, unlike GM1's PNG
+// library bitmaps. Decode the original media directly so the developed map
+// picker can use the exact source previews instead of reconstructing whole
+// scenes just to make a thumbnail.
+func loadOriginalImageSourceIn(namespace string, parts ...string) *SourceRaster {
+	path, err := findOriginalPathIn(namespace, parts...)
+	if err != nil {
+		return nil
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+
+	var img image.Image
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".jpg", ".jpeg":
+		img, err = jpeg.Decode(f)
+	case ".png":
+		img, err = png.Decode(f)
+	default:
+		return nil
+	}
+	if err != nil || img == nil {
 		return nil
 	}
 	b := img.Bounds()
@@ -198,6 +237,25 @@ func loadInteractionAssets(a *Assets) {
 	for n, filename := range mapBitmaps {
 		a.MapPreviewImages[n] = loadLibraryBitmapSource(filename)
 	}
+
+	// GM2 Symbol 1236 frames 1..9 use these exact bitmap fills for the nine
+	// new arenas. Store them under the runtime GM2 map IDs in the same preview
+	// table as GM1, so every menu path can treat both games identically.
+	gm2PreviewFiles := []string{
+		"1170.jpg", // Castle
+		"1174.jpg", // Highway
+		"1177.jpg", // Sub Base
+		"1180.jpg", // Alien Planet
+		"1183.jpg", // Venice
+		"1186.jpg", // Avalon
+		"1189.jpg", // Space Station
+		"1192.jpg", // Ski Lift
+		"1195.jpg", // Jungle
+	}
+	for sourceNumber, filename := range gm2PreviewFiles {
+		a.MapPreviewImages[gm2MapID(sourceNumber+1)] = loadOriginalImageSourceIn("gm2", "images", filename)
+	}
+
 	campaignBitmaps := []string{
 		"Bitmap 51.png", "Bitmap 55.png", "Bitmap 59.png", "Bitmap 63.png", "Bitmap 67.png",
 		"Bitmap 71.png", "Bitmap 75.png", "Bitmap 79.png", "Bitmap 83.png", "Bitmap 87.png",

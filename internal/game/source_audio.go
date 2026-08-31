@@ -2,11 +2,13 @@ package game
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/xml"
 	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -33,12 +35,13 @@ type sourceAudioEngine struct {
 	ctx       *audio.Context
 	assets    map[string]sourceSoundAsset
 	pcm       map[string][]byte
+	amplified map[string][]byte
 	music     *audio.Player
 	musicName string
 }
 
 func newSourceAudioEngine() *sourceAudioEngine {
-	return &sourceAudioEngine{pcm: make(map[string][]byte)}
+	return &sourceAudioEngine{pcm: make(map[string][]byte), amplified: make(map[string][]byte)}
 }
 
 func (a *sourceAudioEngine) context() *audio.Context {
@@ -82,6 +85,25 @@ func (a *sourceAudioEngine) ensureAssets() {
 				}
 				linkage := strings.ToLower(base[underscore+1:])
 				a.assets[linkage] = sourceSoundAsset{Path: filepath.Join(soundsDir, name)}
+			}
+		}
+	}
+
+	// Developed CC0 sounds live with the portable custom assets. Scan both WAV
+	// and MP3 files by filename so moving the whole game folder keeps them.
+	if customSoundsDir, customErr := findOriginalPathIn("custom", "sounds"); customErr == nil {
+		if entries, readErr := os.ReadDir(customSoundsDir); readErr == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					continue
+				}
+				name := entry.Name()
+				ext := strings.ToLower(filepath.Ext(name))
+				if ext != ".wav" && ext != ".mp3" {
+					continue
+				}
+				key := strings.ToLower(name)
+				a.assets[key] = sourceSoundAsset{Path: filepath.Join(customSoundsDir, name)}
 			}
 		}
 	}
@@ -173,6 +195,10 @@ func (a *sourceAudioEngine) decodedPCM(name string) []byte {
 	if pcm, ok := a.pcm[key]; ok {
 		return pcm
 	}
+	if pcm := developedSoundPCM(key); len(pcm) > 0 {
+		a.pcm[key] = pcm
+		return pcm
+	}
 	a.ensureAssets()
 	asset, ok := a.assets[key]
 	if !ok || asset.Path == "" {
@@ -244,10 +270,14 @@ func (a *sourceAudioEngine) decodedPCM(name string) []byte {
 }
 
 func (a *sourceAudioEngine) playSFX(name string, volume float64) {
+	a.playSFXGain(name, volume, 1)
+}
+
+func (a *sourceAudioEngine) playSFXGain(name string, volume, gain float64) {
 	if a == nil || name == "" {
 		return
 	}
-	pcm := a.decodedPCM(name)
+	pcm := a.amplifiedSoundPCM(name, gain)
 	if len(pcm) == 0 {
 		return
 	}
@@ -258,6 +288,55 @@ func (a *sourceAudioEngine) playSFX(name string, volume float64) {
 	player := audio.NewPlayerFromBytes(ctx, pcm)
 	player.SetVolume(volume)
 	player.Play()
+}
+
+func (a *sourceAudioEngine) amplifiedSoundPCM(name string, gain float64) []byte {
+	pcm := a.decodedPCM(name)
+	if len(pcm) == 0 || gain <= 1 {
+		return pcm
+	}
+	key := strings.ToLower(name) + "@" + strconv.FormatFloat(gain, 'f', 2, 64)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.amplified == nil {
+		a.amplified = make(map[string][]byte)
+	}
+	if cached, ok := a.amplified[key]; ok {
+		return cached
+	}
+	boosted := amplifyPCM16(pcm, gain)
+	a.amplified[key] = boosted
+	return boosted
+}
+
+func amplifyPCM16(pcm []byte, gain float64) []byte {
+	if len(pcm) == 0 || gain <= 1 {
+		return pcm
+	}
+	out := append([]byte(nil), pcm...)
+	for offset := 0; offset+1 < len(out); offset += 2 {
+		value := float64(int16(binary.LittleEndian.Uint16(out[offset:]))) * gain
+		if value > 32767 {
+			value = 32767
+		} else if value < -32768 {
+			value = -32768
+		}
+		binary.LittleEndian.PutUint16(out[offset:], uint16(int16(value)))
+	}
+	return out
+}
+
+func (a *sourceAudioEngine) setMusicVolume(volume float64) {
+	if a == nil || a.music == nil {
+		return
+	}
+	if volume < 0 {
+		volume = 0
+	}
+	if volume > 1 {
+		volume = 1
+	}
+	a.music.SetVolume(volume)
 }
 
 func (a *sourceAudioEngine) stopMusic() {
@@ -294,6 +373,28 @@ func (a *sourceAudioEngine) playMusic(name string) {
 }
 
 func sourceGunSound(number int) string {
+	if number == 139 {
+		// AS Val uses the source VSS Vintorez suppressed shot.
+		return "silenced1.wav"
+	}
+	switch number {
+	case 190, 206, 207, 216, 219, 231:
+		return "dev_historical_pistol.wav"
+	case 191, 205, 215, 227, 228:
+		return "dev_historical_rifle.wav"
+	case 192: // the 13.2 mm Tankgewehr needs the heaviest source rifle report
+		return "snipe6.wav"
+	case 193: // Martini-Henry black-powder crack and boom
+		return "dev_musket.wav"
+	case 194, 195, 196, 197, 202, 211, 212, 213, 214, 217, 222, 223, 230:
+		return "dev_auto_rifle.wav"
+	case 198, 199, 200, 201, 203, 220, 221:
+		return "dev_historical_lmg.wav"
+	case 204, 229:
+		return "dev_historical_shotgun.wav"
+	case 208, 209, 210, 218, 224, 225, 226:
+		return "dev_sks.wav"
+	}
 	sounds := map[int]string{
 		1: "pistol3.wav", 2: "pistol3.wav", 3: "pistol1.wav", 4: "pistol3.wav", 5: "pistol2.wav", 6: "pistol0.wav",
 		8: "pistol3.wav", 9: "pistol0.wav", 10: "rifle6.wav", 11: "snipe1.wav", 12: "smg1.wav", 13: "shotgun1.wav",
@@ -311,28 +412,142 @@ func sourceGunSound(number int) string {
 		77: "snipe6.wav", 78: "snipe1.wav", 79: "snipe2.wav", 80: "silenced1.wav", 81: "snipe4.wav",
 		82: "shotgun3.wav", 83: "shotgun3.wav", 84: "shotgun1.wav", 85: "shotgun3.wav", 86: "shotgun3.wav",
 	}
-	return sounds[number]
+	if sound := sounds[number]; sound != "" {
+		return sound
+	}
+	// Custom weapons reuse the original game's sound palette so every packaged
+	// 87+ weapon has immediate audio without introducing mismatched samples.
+	spec, ok := developedWeaponSpec(number)
+	if !ok {
+		return ""
+	}
+	switch spec.Category {
+	case DevelopedCategoryPistol:
+		return "dev_firearm.wav"
+	case DevelopedCategorySMG:
+		return "smg3.wav"
+	case DevelopedCategoryRifle:
+		return "dev_firearm.wav"
+	case DevelopedCategoryLMG:
+		return "lmg.wav"
+	case DevelopedCategorySniper:
+		return "snipe4.wav"
+	case DevelopedCategoryShotgun:
+		return "shotgun1.wav"
+	case DevelopedCategoryLauncher:
+		if spec.Projectile == DevelopedProjectileGrenade {
+			return "dev_grenade.wav"
+		}
+		if spec.Projectile == DevelopedProjectileTopAttack {
+			return "dev_javelin.wav"
+		}
+		return "dev_launcher_rpg.wav"
+	case DevelopedCategorySpecial:
+		if spec.Projectile == DevelopedProjectileFlame {
+			return "dev_flame.wav"
+		}
+		if spec.Projectile == DevelopedProjectilePortal {
+			return "dev_portal.wav"
+		}
+		switch number {
+		case 177:
+			return "dev_crossbow.wav"
+		case 178:
+			return "dev_bow.wav"
+		case 179:
+			return "dev_harpoon.wav"
+		case 180:
+			return "dev_nail.wav"
+		case 182:
+			return "dev_musket.wav"
+		}
+		switch spec.Projectile {
+		case DevelopedProjectileFlare:
+			return "dev_flare.wav"
+		case DevelopedProjectileEnergy:
+			return "dev_energy.wav"
+		default:
+			return "snipe1.wav"
+		}
+	}
+	return "rifle1.wav"
+}
+
+func (g *Game) sourceSFXVolume(loud bool) float64 {
+	if g == nil || !g.soundOn || g.soundVolume <= 0 {
+		return 0
+	}
+	base := 0.5 // frame2.playsound()
+	if loud {
+		base = 1 // frame2.playsound2()
+	}
+	if g.loudnessEQ {
+		// Developed loudness equalizer narrows the original 0.5/1.0 dynamic
+		// range so explosions/deaths do not jump to twice the perceived level.
+		if loud {
+			base = 0.78
+		} else {
+			base = 0.62
+		}
+	}
+	return base * g.soundVolume
 }
 
 func (g *Game) playSourceSFX(name string, loud bool) {
-	if g == nil || !g.soundOn || g.audio == nil {
+	g.playSourceSFXGain(name, loud, 1)
+}
+
+func (g *Game) playSourceSFXGain(name string, loud bool, gain float64) {
+	if g == nil || g.audio == nil {
 		return
 	}
-	volume := 0.5 // frame2.playsound()
-	if loud {
-		volume = 1 // frame2.playsound2()
+	volume := g.sourceSFXVolume(loud)
+	if volume <= 0 {
+		return
 	}
-	g.audio.playSFX(name, volume)
+	g.audio.playSFXGain(name, volume, gain)
 	if g.netplay != nil && g.netplay.mode == netplayHost {
 		g.netSFXSeq++
-		g.netSFXPending = append(g.netSFXPending, netSFXEvent{Seq: g.netSFXSeq, Name: name, Loud: loud})
+		g.netSFXPending = append(g.netSFXPending, netSFXEvent{Seq: g.netSFXSeq, Name: name, Loud: loud, Gain: gain})
 	}
 }
 
 func (g *Game) playSourceGunSound(number int) {
 	if name := sourceGunSound(number); name != "" {
-		g.playSourceSFX(name, false)
+		g.playSourceSFXGain(name, sourceGunSoundLoud(number), developedGunSoundGain(number))
 	}
+}
+
+func developedGunSoundGain(number int) float64 {
+	if number < 87 {
+		return 1
+	}
+	if developedGunReusesOriginalSound(number) {
+		// Exact original-bank mix: same decoded PCM and no extra amplification.
+		return 1
+	}
+	if number == 182 {
+		// The real black-powder recording is already normalized during packaging.
+		return 1.28
+	}
+	// Small final lift after matching the developed bank against the original
+	// rifles/shotguns in an actual match rather than against raw PCM peaks.
+	return 1.85
+}
+
+func developedGunReusesOriginalSound(number int) bool {
+	if number < 87 {
+		return false
+	}
+	name := strings.ToLower(sourceGunSound(number))
+	return name != "" && !strings.HasPrefix(name, "dev_")
+}
+
+func sourceGunSoundLoud(number int) bool {
+	// Keep the original game's 1..86 mix untouched. The developed sounds were
+	// previously sent through the half-volume playsound() path and were hard to
+	// hear beside impacts and explosions.
+	return number >= 87 && !developedGunReusesOriginalSound(number)
 }
 
 func (g *Game) playRandomDeathSound() {
@@ -357,7 +572,7 @@ func (g *Game) syncSourceMusic() {
 	if g == nil || g.audio == nil {
 		return
 	}
-	if !g.musicOn {
+	if !g.musicOn || g.musicVolume <= 0 {
 		g.audio.stopMusic()
 		return
 	}
@@ -366,9 +581,11 @@ func (g *Game) syncSourceMusic() {
 			tracks := []string{"music333", "music444", "music555"}
 			g.audio.playMusic(tracks[rand.Intn(len(tracks))])
 		}
+		g.audio.setMusicVolume(g.musicVolume)
 		return
 	}
 	// Main/menu screens use the source menu loop. End-game transitions use
 	// music222 in Flash, but the ordinary menu/demo loop is music111.
 	g.audio.playMusic("music111")
+	g.audio.setMusicVolume(g.musicVolume)
 }

@@ -23,6 +23,10 @@ var (
 	campaignContinueLocal = Rect{X: 0, Y: 0, W: 148.5, H: 24}                                         // Symbol806
 )
 
+func (g *Game) campaignUsesOriginalGM1Rules() bool {
+	return !g.campaignSetGM2 && !g.campaignSetExtra
+}
+
 func (g *Game) enterCampaignMenu() {
 	g.campaignMode = false
 	g.campaignPhase = 1
@@ -30,7 +34,13 @@ func (g *Game) enterCampaignMenu() {
 	g.campaignPressed = campaignHitNone
 	// Both Flash campaigns expose missions 1 and 2 from a fresh save and then
 	// propagate completion forward. Keep the two progress arrays independent.
-	if g.campaignSetGM2 {
+	if g.campaignSetExtra {
+		for i := 0; i < len(g.extraCampaignLevels)-1; i++ {
+			if g.extraCampaignLevels[i] == 2 && g.extraCampaignLevels[i+1] == 0 {
+				g.extraCampaignLevels[i+1] = 1
+			}
+		}
+	} else if g.campaignSetGM2 {
 		for i := 1; i < 15; i++ {
 			if g.gm2CampaignLevels[i] == 2 && g.gm2CampaignLevels[i+1] == 0 {
 				g.gm2CampaignLevels[i+1] = 1
@@ -79,6 +89,10 @@ func (g *Game) unlockAllCampaignLevelsCheat() {
 }
 
 func (g *Game) updateCampaignMenu() {
+	if g.campaignSetExtra {
+		g.updateExtraCampaignMenu()
+		return
+	}
 	if g.campaignSetGM2 {
 		g.updateGM2CampaignMenu()
 		return
@@ -100,7 +114,16 @@ func (g *Game) updateCampaignMenu() {
 				g.campaignPressed = campaignHitNone
 				if pressed == campaignHitSetGM2 && tabHit == campaignHitSetGM2 {
 					g.campaignSetGM2 = true
+					g.campaignSetExtra = false
 					g.campaignLevel = 0
+					g.campaignSliderVX = 0
+					g.playSourceSFX("menu.wav", false)
+				}
+				if pressed == campaignHitSetExtra && tabHit == campaignHitSetExtra {
+					g.campaignSetGM2 = false
+					g.campaignSetExtra = true
+					g.campaignLevel = 0
+					g.extraCampaignPage = 0
 					g.campaignSliderVX = 0
 					g.playSourceSFX("menu.wav", false)
 				}
@@ -109,7 +132,7 @@ func (g *Game) updateCampaignMenu() {
 		}
 	}
 
-	if inpututil.IsKeyJustPressed(ebiten.KeyF10) {
+	if g.allowCheats && inpututil.IsKeyJustPressed(ebiten.KeyF10) {
 		g.unlockAllCampaignLevelsCheat()
 		g.playSourceSFX("menu.wav", false)
 	}
@@ -253,6 +276,10 @@ func (g *Game) updateCampaignUnlockPopup() {
 }
 
 func (g *Game) drawCampaignMenu(screen *ebiten.Image) {
+	if g.campaignSetExtra {
+		g.drawExtraCampaignMenu(screen)
+		return
+	}
 	if g.campaignSetGM2 {
 		g.drawGM2CampaignMenu(screen)
 		return
@@ -262,7 +289,12 @@ func (g *Game) drawCampaignMenu(screen *ebiten.Image) {
 	// that movie clip whenever root.showunlocks==0.
 	drawSourceRaster(screen, g.assets.CampaignBase, 0, 0, 1, 1, 1)
 	drawSourceMenuText(screen, "CAMPAIGN", menuFontCondensed, 42.4, color.Black, 34, 27.75)
-	g.drawCampaignSetTabs(screen)
+	// GM1/GM2/EXTRA is a campaign-set selector, not a level-detail control.
+	// Once a GM1 mission has been opened for player setup/info, keep the header
+	// clean and let Back return to the campaign list before changing sets.
+	if g.campaignPhase == 1 {
+		g.drawCampaignSetTabs(screen)
+	}
 	drawSourceRaster(screen, g.assets.CampaignBack, 27, 525.15, 1, 1, 1)
 	drawSourceMenuText(screen, "Back", menuFontCondensed, 26.5, color.Black, 74.05, 536.35)
 
@@ -313,6 +345,7 @@ func (g *Game) drawCampaignSlider(screen *ebiten.Image, alpha float64) {
 
 func (g *Game) startCampaignMission() {
 	g.campaignSetGM2 = false
+	g.campaignSetExtra = false
 	level := g.campaignLevel
 	if level < 1 || level > 10 || g.fadeActive {
 		return
@@ -368,12 +401,14 @@ func (g *Game) startCampaignMission() {
 		p.PlayerColor = cfg.Color
 		p.ShirtNumber = cfg.Shirt
 		p.HatNumber = cfg.Hat
+		p.EyeNumber = cfg.Eyes
 		p.DefaultWeapon = cfg.Gun
 		p.PerkNumber = cfg.Perk
 		// frame10 campaign block always assigns p1team=p2team=1. When P2 is
 		// enabled, normal/instagib campaign matches become a team game.
 		p.Team = 1
 		p.configureSourceGameMode(spec.mode, spec.lives, arena)
+		p.ThrowableType = normalizedThrowableType(cfg.Throwable)
 		players = append(players, p)
 	}
 
@@ -439,6 +474,8 @@ func (g *Game) startCampaignMission() {
 		(p2Human && (spec.mode == SourceGameModeNormal || spec.mode == SourceGameModeInstagib))
 	g.CrateON = spec.crate
 	g.PowerON = spec.power
+	g.customMatchActive = false
+	g.matchModifiers = make(map[int]bool)
 	g.campaignMode = true
 	g.campaignLevel = level
 	g.campaignDynamiteTime = 0

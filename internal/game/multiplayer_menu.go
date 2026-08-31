@@ -2,6 +2,7 @@ package game
 
 import (
 	"image/color"
+	"strconv"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -10,25 +11,40 @@ import (
 )
 
 const (
-	menuHitMultiplayerHost = 6000 + iota
-	menuHitMultiplayerJoin
+	menuHitMultiplayerLocal = 6000 + iota
+	menuHitMultiplayerHost
+	menuHitMultiplayerRefresh
+	menuHitMultiplayerDirectJoin
 	menuHitMultiplayerBack
 )
 
+const (
+	menuHitMultiplayerServerBase = 6100
+	multiplayerServerVisibleRows = 5
+	multiplayerServerRowH        = 30.0
+)
+
 var (
-	multiplayerAddressRect = Rect{X: 225, Y: 188, W: 450, H: 46}
-	multiplayerHostRect    = Rect{X: 225, Y: 264, W: 215, H: 55}
-	multiplayerJoinRect    = Rect{X: 460, Y: 264, W: 215, H: 55}
-	multiplayerBackRect    = Rect{X: 225, Y: 356, W: 450, H: 55}
-	mainMultiplayerRect    = Rect{X: 572.05, Y: 205, W: 300, H: 40}
+	multiplayerLocalRect      = Rect{X: 180, Y: 132, W: 250, H: 52}
+	multiplayerHostRect       = Rect{X: 470, Y: 132, W: 250, H: 52}
+	multiplayerRefreshRect    = Rect{X: 550, Y: 180, W: 170, H: 44}
+	multiplayerServerListRect = Rect{X: 180, Y: 230, W: 540, H: multiplayerServerRowH * multiplayerServerVisibleRows}
+	multiplayerAddressRect    = Rect{X: 180, Y: 414, W: 355, H: 44}
+	multiplayerDirectJoinRect = Rect{X: 550, Y: 414, W: 170, H: 44}
+	multiplayerBackRect       = Rect{X: 180, Y: 492, W: 540, H: 50}
+	mainMultiplayerRect       = Rect{X: 572.05, Y: 205, W: 300, H: 40}
 )
 
 func multiplayerMenuHitAt(x, y float64) int {
 	switch {
+	case multiplayerLocalRect.Contains(x, y):
+		return menuHitMultiplayerLocal
 	case multiplayerHostRect.Contains(x, y):
 		return menuHitMultiplayerHost
-	case multiplayerJoinRect.Contains(x, y):
-		return menuHitMultiplayerJoin
+	case multiplayerRefreshRect.Contains(x, y):
+		return menuHitMultiplayerRefresh
+	case multiplayerDirectJoinRect.Contains(x, y):
+		return menuHitMultiplayerDirectJoin
 	case multiplayerBackRect.Contains(x, y):
 		return menuHitMultiplayerBack
 	default:
@@ -40,11 +56,29 @@ func validNetAddressRune(r rune) bool {
 	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune(".:-_[]", r)
 }
 
+func (g *Game) updateMultiplayerSessionNameInput() {
+	if !g.multiplayerNameFocus || g.netplay != nil {
+		return
+	}
+	if textEraseRepeated() {
+		r := []rune(g.multiplayerSessionName)
+		if len(r) > 0 {
+			g.multiplayerSessionName = string(r[:len(r)-1])
+		}
+	}
+	for _, ch := range ebiten.AppendInputChars(nil) {
+		if len([]rune(g.multiplayerSessionName)) >= 24 || ch < 32 || ch == 127 {
+			continue
+		}
+		g.multiplayerSessionName += string(ch)
+	}
+}
+
 func (g *Game) updateMultiplayerAddressInput() {
 	if !g.multiplayerFocus {
 		return
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+	if textEraseRepeated() {
 		r := []rune(g.multiplayerAddress)
 		if len(r) > 0 {
 			g.multiplayerAddress = string(r[:len(r)-1])
@@ -58,7 +92,56 @@ func (g *Game) updateMultiplayerAddressInput() {
 	}
 }
 
+func (g *Game) maxMultiplayerServerScroll() int {
+	max := len(g.multiplayerServers) - multiplayerServerVisibleRows
+	if max < 0 {
+		return 0
+	}
+	return max
+}
+
+func (g *Game) multiplayerServerHitAtRect(listRect Rect, x, y float64) int {
+	if !listRect.Contains(x, y) {
+		return menuHitNone
+	}
+	row := int((y - listRect.Y) / multiplayerServerRowH)
+	if row < 0 || row >= multiplayerServerVisibleRows {
+		return menuHitNone
+	}
+	index := g.multiplayerServerScroll + row
+	if index < 0 || index >= len(g.multiplayerServers) {
+		return menuHitNone
+	}
+	return menuHitMultiplayerServerBase + index
+}
+
+func (g *Game) multiplayerServerHitAt(x, y float64) int {
+	return g.multiplayerServerHitAtRect(multiplayerServerListRect, x, y)
+}
+
+func (g *Game) updateMultiplayerServerScroll(x, y float64) {
+	if !multiplayerServerListRect.Contains(x, y) {
+		return
+	}
+	_, wheelY := ebiten.Wheel()
+	if wheelY == 0 {
+		return
+	}
+	if wheelY > 0 {
+		g.multiplayerServerScroll--
+	} else {
+		g.multiplayerServerScroll++
+	}
+	if g.multiplayerServerScroll < 0 {
+		g.multiplayerServerScroll = 0
+	}
+	if max := g.maxMultiplayerServerScroll(); g.multiplayerServerScroll > max {
+		g.multiplayerServerScroll = max
+	}
+}
+
 func (g *Game) updateMultiplayerMenu() {
+	g.pollMultiplayerServerBrowser()
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		_ = g.CloseNetplay()
 		g.multiplayerFocus = false
@@ -69,12 +152,16 @@ func (g *Game) updateMultiplayerMenu() {
 
 	mx, my := ebiten.CursorPosition()
 	x, y := float64(mx), float64(my)
+	g.updateMultiplayerServerScroll(x, y)
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		g.multiplayerFocus = multiplayerAddressRect.Contains(x, y)
 	}
 	g.updateMultiplayerAddressInput()
 
 	hit := multiplayerMenuHitAt(x, y)
+	if hit == menuHitNone {
+		hit = g.multiplayerServerHitAt(x, y)
+	}
 	activated, ok := g.resolveMenuRelease(hit)
 	if !ok {
 		if g.multiplayerFocus && inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
@@ -83,41 +170,73 @@ func (g *Game) updateMultiplayerMenu() {
 		return
 	}
 
-	switch activated {
-	case menuHitMultiplayerHost:
+	switch {
+	case activated == menuHitMultiplayerLocal:
 		_ = g.CloseNetplay()
+		g.multiplayerFocus = false
+		g.multiplayerMessage = "LOCAL GAME"
+		g.customPage = customPageGame
+		g.customMenuX = 1800
+		g.beginFade(screenCustomGame, fadePurposeScreen)
+	case activated == menuHitMultiplayerHost:
 		if err := g.StartNetHost(":7777"); err != nil {
 			g.multiplayerMessage = "HOST ERROR: " + err.Error()
 			return
 		}
-		// Network mode reserves Player 2 for the remote client. The host keeps
-		// the normal Custom Game setup flow for map/mode/lives selection.
-		g.customPlayers[1].Type = 1
-		g.multiplayerMessage = "HOSTING ON TCP PORT 7777"
-		g.customPage = customPageGame
-		g.customMenuX = 1800
-		g.beginFade(screenCustomGame, fadePurposeScreen)
-	case menuHitMultiplayerJoin:
+		g.multiplayerFocus = false
+		g.clearDisconnectedOnlineHumanSlots()
+		g.openOnlineCustomSlots("HOSTING - WAITING FOR PLAYER / ADD AI")
+	case activated == menuHitMultiplayerRefresh:
+		g.refreshMultiplayerServers()
+	case activated == menuHitMultiplayerDirectJoin:
 		g.joinFromMultiplayerMenu()
-	case menuHitMultiplayerBack:
+	case activated == menuHitMultiplayerBack:
 		_ = g.CloseNetplay()
 		g.multiplayerFocus = false
 		g.beginFade(screenMainMenu, fadePurposeScreen)
+	case activated >= menuHitMultiplayerServerBase:
+		index := activated - menuHitMultiplayerServerBase
+		if index < 0 || index >= len(g.multiplayerServers) {
+			return
+		}
+		server := g.multiplayerServers[index]
+		if server.Full() {
+			g.multiplayerMessage = "SERVER FULL: " + server.Name
+			return
+		}
+		g.multiplayerAddress = server.Address
+		if err := g.StartNetClientServer(server); err != nil {
+			g.multiplayerMessage = "JOIN ERROR: " + err.Error()
+			return
+		}
+		g.multiplayerFocus = false
+		g.openOnlineCustomSlots("CONNECTED - CHOOSE YOUR CHARACTER")
 	}
 }
 
 func (g *Game) joinFromMultiplayerMenu() {
-	_ = g.CloseNetplay()
 	address := strings.TrimSpace(g.multiplayerAddress)
 	if address == "" {
-		address = "127.0.0.1:7777"
-		g.multiplayerAddress = address
+		g.multiplayerMessage = "ENTER A JOIN CODE OR IP:PORT"
+		return
 	}
-	if err := g.StartNetClient(address); err != nil {
+	var err error
+	upperAddress := strings.ToUpper(address)
+	if strings.HasPrefix(upperAddress, cloudflareInviteCodePrefix) {
+		err = g.StartNetClientCloudflareInvite(address)
+	} else if strings.HasPrefix(upperAddress, inviteCodePrefix) {
+		err = g.StartNetClientInvite(address)
+	} else if strings.HasPrefix(upperAddress, shortOpenCodePrefix) {
+		err = g.StartNetClientShortOpenCode(address)
+	} else {
+		err = g.StartNetClient(address)
+	}
+	if err != nil {
 		g.multiplayerMessage = "JOIN ERROR: " + err.Error()
 		return
 	}
-	g.multiplayerMessage = "CONNECTED - WAITING FOR HOST"
+	g.multiplayerFocus = false
+	g.openOnlineCustomSlots("CONNECTED - CHOOSE YOUR CHARACTER")
 }
 
 func drawDevelopedMenuButton(screen *ebiten.Image, r Rect, label string) {
@@ -127,14 +246,64 @@ func drawDevelopedMenuButton(screen *ebiten.Image, r Rect, label string) {
 }
 
 func (g *Game) drawMainMultiplayerButton(screen *ebiten.Image) {
-	drawDevelopedMenuButton(screen, mainMultiplayerRect, "MULTIPLAYER")
+	r := mainMultiplayerRect
+	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x24, G: 0x27, B: 0x2d, A: 0xee})
+	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, color.NRGBA{R: 0x00, G: 0x66, B: 0xff, A: 0xff})
+	drawSourceMenuText(screen, "MULTIPLAYER", menuFontTwCen, 22, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, r.X+14, r.Y+10)
+}
+
+func (g *Game) drawMultiplayerServerList(screen *ebiten.Image) {
+	ebitenutil.DrawRect(screen, multiplayerServerListRect.X, multiplayerServerListRect.Y, multiplayerServerListRect.W, multiplayerServerListRect.H,
+		color.NRGBA{R: 0x24, G: 0x27, B: 0x2d, A: 0xff})
+	if len(g.multiplayerServers) == 0 {
+		label := "SEARCHING..."
+		if g.multiplayerDiscoveryDone && g.multiplayerDiscoveryCh == nil {
+			label = "NO OPEN SERVERS - USE JOIN CODE"
+		}
+		drawSourceMenuText(screen, label, menuFontTwCen, 18, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff},
+			multiplayerServerListRect.X+15, multiplayerServerListRect.Y+58)
+		return
+	}
+
+	for row := 0; row < multiplayerServerVisibleRows; row++ {
+		index := g.multiplayerServerScroll + row
+		if index >= len(g.multiplayerServers) {
+			break
+		}
+		server := g.multiplayerServers[index]
+		y := multiplayerServerListRect.Y + float64(row)*multiplayerServerRowH
+		c := color.NRGBA{R: 0x36, G: 0x3b, B: 0x44, A: 0xff}
+		if server.Full() {
+			c = color.NRGBA{R: 0x45, G: 0x2f, B: 0x2f, A: 0xff}
+		}
+		ebitenutil.DrawRect(screen, multiplayerServerListRect.X+2, y+1, multiplayerServerListRect.W-4, multiplayerServerRowH-2, c)
+		drawSourceMenuText(screen, server.Name, menuFontTwCen, 16, color.NRGBA{A: 0xff}, multiplayerServerListRect.X+10, y+6)
+		source := strings.TrimSpace(server.Sources)
+		if source == "" {
+			source = "NETWORK"
+		}
+		drawSourceMenuText(screen, source, menuFontCondensedExtraBold, 12.5, color.NRGBA{R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff}, multiplayerServerListRect.X+300, y+8)
+		players := "?/" + strconv.Itoa(server.MaxPlayers)
+		if server.Players >= 0 {
+			players = strconv.Itoa(server.Players) + "/" + strconv.Itoa(server.MaxPlayers)
+		}
+		drawSourceMenuText(screen, players, menuFontCondensedExtraBold, 14, color.NRGBA{A: 0xff}, multiplayerServerListRect.X+490, y+7)
+	}
 }
 
 func (g *Game) drawMultiplayerMenu(screen *ebiten.Image) {
-	ebitenutil.DrawRect(screen, 175, 100, 550, 360, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xee})
-	drawSourceMenuText(screen, "MULTIPLAYER", menuFontTwCen, 38, color.NRGBA{A: 0xff}, 225, 120)
-	drawSourceMenuText(screen, "HOST: TCP PORT 7777   /   JOIN: IP:PORT", menuFontCondensed, 16, color.NRGBA{A: 0xff}, 225, 166)
+	ebitenutil.DrawRect(screen, 140, 55, 620, 510, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf2})
+	drawSourceMenuText(screen, "MULTIPLAYER", menuFontTwCen, 38, color.NRGBA{A: 0xff}, 180, 72)
+	drawSourceMenuText(screen, "LOCAL OR PLAYER-HOSTED NETWORK GAME", menuFontCondensed, 15, color.NRGBA{A: 0xff}, 180, 112)
 
+	drawDevelopedMenuButton(screen, multiplayerLocalRect, "LOCAL GAME")
+	drawDevelopedMenuButton(screen, multiplayerHostRect, "HOST GAME")
+
+	drawSourceMenuText(screen, "SERVER LIST", menuFontCondensedExtraBold, 17, color.NRGBA{A: 0xff}, 180, 199)
+	drawDevelopedMenuButton(screen, multiplayerRefreshRect, "REFRESH")
+	g.drawMultiplayerServerList(screen)
+
+	drawSourceMenuText(screen, "DIRECT JOIN - IP:PORT", menuFontCondensedExtraBold, 16, color.NRGBA{A: 0xff}, 180, 389)
 	fieldColor := color.NRGBA{R: 0x38, G: 0x3e, B: 0x48, A: 0xff}
 	if g.multiplayerFocus {
 		fieldColor = color.NRGBA{R: 0x4b, G: 0x54, B: 0x61, A: 0xff}
@@ -144,10 +313,8 @@ func (g *Game) drawMultiplayerMenu(screen *ebiten.Image) {
 	if g.multiplayerFocus {
 		address += "_"
 	}
-	drawSourceMenuText(screen, address, menuFontTwCen, 19, color.NRGBA{A: 0xff}, multiplayerAddressRect.X+12, multiplayerAddressRect.Y+12)
-
-	drawDevelopedMenuButton(screen, multiplayerHostRect, "HOST GAME")
-	drawDevelopedMenuButton(screen, multiplayerJoinRect, "JOIN GAME")
+	drawSourceMenuText(screen, address, menuFontTwCen, 17, color.NRGBA{A: 0xff}, multiplayerAddressRect.X+10, multiplayerAddressRect.Y+11)
+	drawDevelopedMenuButton(screen, multiplayerDirectJoinRect, "JOIN")
 	drawDevelopedMenuButton(screen, multiplayerBackRect, "BACK")
 
 	status := g.multiplayerMessage
@@ -155,6 +322,6 @@ func (g *Game) drawMultiplayerMenu(screen *ebiten.Image) {
 		status = g.NetplayStatus()
 	}
 	if status != "" {
-		drawSourceMenuText(screen, status, menuFontCondensed, 15, color.NRGBA{A: 0xff}, 225, 427)
+		drawSourceMenuText(screen, status, menuFontCondensed, 13.5, color.NRGBA{A: 0xff}, 180, 548)
 	}
 }

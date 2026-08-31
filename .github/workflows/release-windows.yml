@@ -1,0 +1,46 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        shell: pwsh
+        run: go test ./...
+
+      - name: Build tagged Windows game
+        shell: pwsh
+        run: |
+          go build -ldflags "-H=windowsgui -X gunmayhem-go/internal/updater.CurrentVersion=$env:GITHUB_REF_NAME" -o GunMayhem.exe .
+
+      - name: Build portable update package
+        shell: pwsh
+        run: go run ./scripts/package_portable.go
+
+      - name: Create or update GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$env:GITHUB_REF_NAME" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "$env:GITHUB_REF_NAME" --generate-notes --title "$env:GITHUB_REF_NAME"
+          }
+          gh release upload "$env:GITHUB_REF_NAME" "build/GunMayhem-Windows-x64.zip" --clobber

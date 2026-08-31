@@ -10,7 +10,10 @@ const (
 	aiTargetPlayer
 	aiTargetCrate
 	aiTargetPowerup
+	aiTargetSearch
 )
+
+const aiInvisibleSearchDuration = 210
 
 type aiPickupRef struct {
 	Serial int
@@ -31,6 +34,16 @@ func prepareAITarget(p *Player, g *Game) {
 		return
 	}
 
+	searching := p.AISearchTime > 0 && p.AITargetKind == aiTargetSearch
+	// Preserve the last genuinely visible player position before a full
+	// retarget. If that player turns invisible on exactly this 40-frame
+	// boundary, clearing the target first used to lose the search origin and
+	// the bot would never enter its blind-fire/search behaviour.
+	previousTargetID := 0
+	previousTargetX, previousTargetY := p.AITargetX, p.AITargetY
+	if p.AITargetValid && p.AITargetKind == aiTargetPlayer {
+		previousTargetID = p.AITargetPlayerID
+	}
 	low := 5000.0
 	p.AITargetValid = false
 	p.AITargetKind = aiTargetNone
@@ -45,6 +58,9 @@ func prepareAITarget(p *Player, g *Game) {
 		if !other.Active || other.Team == p.Team || other.scoreOwnerID() == p.scoreOwnerID() {
 			continue
 		}
+		if !aiCanDetectPlayer(p, other) {
+			continue
+		}
 		distance := math.Round(math.Sqrt(
 			math.Pow(other.X-p.X, 2) + math.Pow(other.Y-30-p.Y, 2),
 		))
@@ -56,6 +72,27 @@ func prepareAITarget(p *Player, g *Game) {
 			p.AITargetPlayerID = other.ID
 			p.AITargetX = other.X
 			p.AITargetY = other.Y
+		}
+	}
+	if p.AITargetValid && p.AITargetKind == aiTargetPlayer {
+		p.AISearchTime = 0
+		p.AISearchPlayerID = 0
+	} else if searching {
+		setAISearchTarget(p)
+		p.AITargetTimer = 0
+		return
+	} else if previousTargetID != 0 {
+		// Full retarget happened on the same frame the current enemy became
+		// invisible. Keep searching from the last visible coordinates instead of
+		// silently forgetting the opponent (and therefore never blind-firing).
+		for _, other := range g.players {
+			if other.ID != previousTargetID || !other.Active || other.InvisibleTime <= 0 || aiCanDetectPlayer(p, other) {
+				continue
+			}
+			p.AITargetX, p.AITargetY = previousTargetX, previousTargetY
+			beginAISearch(p, previousTargetID)
+			p.AITargetTimer = 0
+			return
 		}
 	}
 
@@ -123,8 +160,15 @@ func refreshSourceAITarget(p *Player, g *Game) bool {
 	switch p.AITargetKind {
 	case aiTargetPlayer:
 		for _, other := range g.players {
-			if other.ID == p.AITargetPlayerID && other.Active {
+			if other.ID != p.AITargetPlayerID || !other.Active {
+				continue
+			}
+			if aiCanDetectPlayer(p, other) {
 				p.AITargetX, p.AITargetY = other.X, other.Y
+				return true
+			}
+			if other.InvisibleTime > 0 {
+				beginAISearch(p, other.ID)
 				return true
 			}
 		}
@@ -144,6 +188,11 @@ func refreshSourceAITarget(p *Player, g *Game) bool {
 				return true
 			}
 		}
+	case aiTargetSearch:
+		if p.AISearchTime > 0 {
+			setAISearchTarget(p)
+			return true
+		}
 	}
 	p.AITargetValid = false
 	return false
@@ -157,6 +206,7 @@ func decideAIController(p *Player, g *Game) {
 		return
 	}
 	refreshSourceAITarget(p, g)
+	updateAISearchTarget(p)
 
 	groundLeft, _, groundRight, _, ok := platformBounds(g.arena.Platforms)
 	if !ok {
@@ -198,20 +248,30 @@ func decideAIController(p *Player, g *Game) {
 		tx, ty := p.AITargetX, p.AITargetY
 		if ty <= p.Y+10 && ty >= p.Y-80 && p.JumpNum == 2 {
 			optimalX := tx
+			approachMargin := 40.0
+			leftLimit := groundLeft + 200
+			rightLimit := groundRight - 200
 			if targetPlayer != nil {
 				dir := -1.0
 				if tx >= groundMiddle {
 					dir = 1
 				}
 				optimalX = tx - 150*dir
+			} else if p.AITargetKind == aiTargetPowerup {
+				// Powerup pickup frame is only 10x10. The old generic ±40 stop
+				// distance let AI stand visibly beside MINI/INVISIBILITY forever
+				// without ever overlapping it. Walk almost to the centre instead.
+				approachMargin = 10
+				leftLimit = groundLeft + 20
+				rightLimit = groundRight - 20
 			}
-			if p.X > groundLeft+200 && optimalX < p.X-40 {
+			if p.X > leftLimit && optimalX < p.X-approachMargin {
 				p.AILeft = true
 			}
-			if p.X < groundRight-200 && optimalX > p.X+40 {
+			if p.X < rightLimit && optimalX > p.X+approachMargin {
 				p.AIRight = true
 			}
-			if p.X > optimalX-40 && p.X < optimalX+40 {
+			if p.X > optimalX-approachMargin && p.X < optimalX+approachMargin {
 				if tx > p.X && p.Facing == -1 {
 					p.AIRight = true
 				}
@@ -228,7 +288,11 @@ func decideAIController(p *Player, g *Game) {
 				(targetPlayer == nil && p.X < groundRight+10)) && tx > p.X+30 {
 				p.AIRight = true
 			}
-			within := p.X > tx-30 && p.X < tx+30
+			withinMargin := 30.0
+			if p.AITargetKind == aiTargetPowerup {
+				withinMargin = 10
+			}
+			within := p.X > tx-withinMargin && p.X < tx+withinMargin
 			if (targetPlayer != nil && within && math.Round(targetPlayer.VY) == 1 && targetPlayer.JumpNum == 2) ||
 				(targetPlayer == nil && within) {
 				p.AIDown = true
@@ -361,7 +425,108 @@ func decideAIController(p *Player, g *Game) {
 			}
 		}
 	}
+	if p.AITargetValid && p.AITargetKind == aiTargetSearch && p.AITargetY < p.Y+35 && p.AITargetY > p.Y-105 {
+		facingSearch := (p.AITargetX > p.X && p.Facing == 1) || (p.AITargetX < p.X && p.Facing == -1)
+		if facingSearch {
+			elapsed := aiInvisibleSearchDuration - p.AISearchTime
+			// Deterministic but irregular bursts: this stays network-safe while
+			// looking much less robotic than firing at a fixed interval.
+			cycle := 23 + (p.ID*7+(elapsed/31)*5)%17
+			if elapsed%cycle < 3 {
+				p.AIShoot = true
+			}
+		}
+	}
+	applyExtraCampaignAIFireCadence(p, g)
 	// Original playerAI never sets KEYNADE=true.
+}
+
+func applyExtraCampaignAIFireCadence(p *Player, g *Game) {
+	if p == nil || g == nil || !p.AIShoot {
+		if p != nil {
+			p.AIFireCadence = 0
+		}
+		return
+	}
+	if !g.campaignMode || !g.campaignSetExtra || !p.AI {
+		p.AIFireCadence = 0
+		return
+	}
+
+	delay := 0
+	switch {
+	case g.campaignLevel == 6 && p.Weapon.Def.Number == 181:
+		delay = 90
+	case g.campaignLevel == 9 && p.Weapon.Def.Number == 90:
+		// The airstrike boss announces roughly one strike every 2.25 seconds.
+		delay = 135
+	case g.campaignLevel == 11 && p.Weapon.Def.Number == 179:
+		// A harpoon hit is extremely strong, so the duel is built around dodging
+		// deliberate shots instead of enduring automatic one-shot reloads.
+		delay = 75
+	}
+	if delay == 0 {
+		p.AIFireCadence = 0
+		return
+	}
+	p.AIFireCadence++
+	// These single-shot campaign weapons get a visible manual-reload-like pause
+	// instead of instantly re-equipping their default weapon every source ROF.
+	p.AIShoot = (p.AIFireCadence-1)%delay == 0
+}
+
+func beginAISearch(p *Player, lostPlayerID int) {
+	if p == nil {
+		return
+	}
+	// AITargetX/Y still contain the last genuinely visible coordinates. Do not
+	// read the invisible player's new coordinates here.
+	p.AISearchX = p.AITargetX
+	p.AISearchY = p.AITargetY
+	p.AISearchTime = aiInvisibleSearchDuration
+	p.AISearchPlayerID = lostPlayerID
+	setAISearchTarget(p)
+}
+
+func setAISearchTarget(p *Player) {
+	if p == nil {
+		return
+	}
+	p.AITargetValid = p.AISearchTime > 0
+	if !p.AITargetValid {
+		return
+	}
+	p.AITargetKind = aiTargetSearch
+	p.AITargetPlayer = false
+	p.AITargetPlayerID = 0
+	p.AITargetSerial = 0
+	p.AITargetX = p.AISearchX
+	p.AITargetY = p.AISearchY
+}
+
+func updateAISearchTarget(p *Player) {
+	if p == nil || p.AITargetKind != aiTargetSearch || p.AISearchTime <= 0 {
+		return
+	}
+	p.AISearchTime--
+	if p.AISearchTime <= 0 {
+		p.AITargetValid = false
+		p.AITargetKind = aiTargetNone
+		p.AISearchPlayerID = 0
+		return
+	}
+
+	elapsed := aiInvisibleSearchDuration - p.AISearchTime
+	step := elapsed / 28
+	seed := uint32(step*1103515245 + p.ID*12345 + p.AISearchPlayerID*265443576)
+	spread := 55.0 + float64(step)*9
+	if spread > 145 {
+		spread = 145
+	}
+	xUnit := float64(int(seed%2001)-1000) / 1000
+	yUnit := float64(int((seed/2001)%2001)-1000) / 1000
+	p.AITargetX = p.AISearchX + xUnit*spread
+	p.AITargetY = p.AISearchY + yUnit*42
 }
 
 func sourceAITargetPlayer(p *Player, g *Game) *Player {
@@ -369,9 +534,19 @@ func sourceAITargetPlayer(p *Player, g *Game) *Player {
 		return nil
 	}
 	for _, other := range g.players {
-		if other.ID == p.AITargetPlayerID && other.Active {
+		if other.ID == p.AITargetPlayerID && other.Active && aiCanDetectPlayer(p, other) {
 			return other
 		}
 	}
 	return nil
+}
+
+// Invisibility is camouflage, not invulnerability: AI loses distant targets
+// and only reacquires an invisible player at close range. Human opponents still
+// use their own eyes, while the network renderer handles the local-only ghost.
+func aiCanDetectPlayer(observer, target *Player) bool {
+	if observer == nil || target == nil || target.InvisibleTime <= 0 {
+		return true
+	}
+	return math.Hypot(target.X-observer.X, target.Y-observer.Y) <= 135
 }

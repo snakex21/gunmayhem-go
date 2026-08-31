@@ -29,8 +29,9 @@ func writeNamespaceTestSymbol(t *testing.T, dir string, edgeMax int) {
 }
 
 func TestXFLBoundsCacheIsNamespacedByLibraryDirectory(t *testing.T) {
-	gm1 := filepath.Join(t.TempDir(), "gm1")
-	gm2 := filepath.Join(t.TempDir(), "gm2")
+	root := projectTestDir(t)
+	gm1 := filepath.Join(root, "gm1")
+	gm2 := filepath.Join(root, "gm2")
 	writeNamespaceTestSymbol(t, gm1, 20) // 1 px in XFL coordinates
 	writeNamespaceTestSymbol(t, gm2, 80) // 4 px in XFL coordinates
 

@@ -12,6 +12,14 @@ import (
 	"golang.org/x/image/font/opentype"
 )
 
+// Flash stores the LEVEL UP text with a large authoring font size and then
+// scales its symbol down on the HUD timeline. Runtime text is drawn directly,
+// so use the resulting visual size instead of the unscaled authoring value.
+const (
+	hudLevelUpTextSize  = 46.0
+	hudGameOverTextSize = 44.0
+)
+
 var (
 	hudFontOnce sync.Once
 	hudTTF      *opentype.Font
@@ -246,11 +254,11 @@ func (g *Game) drawSourceHUDCard(screen *ebiten.Image, p *Player, x, y float64) 
 			switch {
 			case frame >= 90 && frame < 180:
 				// Symbol1453 DOMStaticText: tx=-95.3, ty=-39.2, leftMargin=19.
-				g.drawSourceHUDWarningText(screen, frame, "GAME OVER", 79.35,
+				g.drawSourceHUDWarningText(screen, frame, "GAME OVER", hudGameOverTextSize,
 					-95.3+19, -82.2, x+1.85, y+3.9)
 			case frame >= 180:
 				// Symbol1455 DOMStaticText: tx=-95.3, ty=-39.2, leftMargin=34.
-				g.drawSourceHUDWarningText(screen, frame, "LEVEL UP", 79.35,
+				g.drawSourceHUDWarningText(screen, frame, "LEVEL UP", hudLevelUpTextSize,
 					-95.3+34, -39.2, x+1.85, y+3.9)
 			default:
 				drawSourceRaster(screen, g.assets.HUDLastLifeFrame(frame), x+1.85, y+3.9, 1, 1, 1)

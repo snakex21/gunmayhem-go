@@ -1,49 +1,73 @@
-# Multiplayer (main branch)
+# Multiplayer / Custom Game
 
-The developed `main` branch includes an experimental host-authoritative two-player network mode.
+Gun Mayhem Go uses the host player's PC as the authoritative game server. In the current public release, multiplayer is supported **only inside a local network (LAN)**.
 
-## How it works
+Internet multiplayer experiments using DHT, QUIC, relay/master-server and Cloudflare Quick Tunnels remain in the source tree for future work, but they are not exposed as a supported gameplay path in this release because they are not reliable enough yet.
 
-- The host runs the real game simulation at 30 TPS.
-- Player 1 is controlled locally on the host.
-- The remote client controls Player 2.
-- The client sends only its current movement/shoot/grenade input.
-- The host decides movement, bullets, hits, crates, powerups, deaths and win state, then streams authoritative snapshots back to the client.
-- The client renders those snapshots instead of running a second competing combat simulation.
+## Supported multiplayer modes
 
-This architecture is intentional: random crates/powerups and Flash-derived edge cases stay authoritative on one machine rather than requiring two machines to produce exactly the same random simulation.
+Open **CUSTOM GAME -> LAN -> CREATE SESSION**.
 
-## Host
+The supported network reach is:
 
-The normal UI now has a **MULTIPLAYER** button on the main menu. Choose **HOST GAME** to listen on TCP port `7777`, then use the normal Custom Game setup to choose mode, map, lives and players. Player 1 is local and Player 2 is reserved for the remote client.
+- **LAN ONLY** - players connected to the same local network.
 
-The command line remains available for development or a custom port:
+Internet hosting is shown as disabled in the session setup screen.
 
-```text
-GunMayhem.exe --host
-GunMayhem.exe --host --port 9000
-```
+LAN sessions can use either access policy:
 
-## Join
+- **OPEN** - the session appears automatically in the LAN server browser.
+- **INVITE CODE** - the session stays hidden and a joining player must enter the generated `GM-XXXXXX` code.
 
-On the second computer, open **MULTIPLAYER**, enter the host as `IP:port` (for example `192.168.1.20:7777`) and press **JOIN GAME**. The client shows a waiting screen until the host starts gameplay.
+Returning from the hosted lobby or match setup to the server browser closes the host session immediately while keeping the Custom Game configuration in memory until the game is closed.
 
-The command-line equivalent is:
+## Joining a LAN session
 
-```text
-GunMayhem.exe --join 192.168.1.20:7777
-```
+A player can:
 
-If only a hostname/IP is supplied by the internal API, port `7777` is assumed.
+1. open the **LAN SERVER BROWSER**, press **REFRESH**, choose an OPEN session and join it,
+2. enter the host's `GM-XXXXXX` invite code for an INVITE CODE session,
+3. enter a direct LAN `IP:PORT` address as an advanced fallback.
 
-The client uses its local **Player 1** key bindings to control the host's **Player 2**. This lets each computer use a normal single-player keyboard layout instead of requiring Player 2's local-host key layout.
+LAN discovery uses UDP port `7778`. The gameplay listener uses TCP port `7777` by default.
 
-While the host is in menus, the client shows a waiting screen. Once the host enters gameplay, the client switches to the authoritative game view automatically.
+If Windows Firewall asks for permission, allow `GunMayhem.exe` on private networks.
 
-## Internet play
+## OPEN LAN sessions
 
-The current transport is direct TCP. For play outside the same LAN, the host must currently be reachable on the selected TCP port (for example by router port forwarding or a VPN/overlay network). A relay/lobby service can be added later without changing the host-authoritative game model.
+OPEN sessions advertise themselves locally and are shown in the LAN browser together with player count and available match preview information.
 
-## Current scope
+No join code is required. The host remains authoritative for gameplay and connected clients send only their input and character configuration.
 
-This is the first working network layer, intended to stabilize simulation and synchronization before Gun Mayhem 2/custom mission content is added. Host/Join is available directly from the game menu; command-line flags remain as a development convenience.
+## INVITE CODE LAN sessions
+
+INVITE CODE sessions do not appear in the normal open LAN list. The host displays a short `GM-XXXXXX` code.
+
+The code is used for private LAN discovery and authentication. The client proves knowledge of the session key before receiving a player slot.
+
+## Custom Game series
+
+Custom Game can run a configurable multi-map series in local and LAN multiplayer. Each map gets its own Post Game Summary and the series keeps cumulative statistics. In network play, connected human players can mark themselves ready between maps before the host continues.
+
+## Security model
+
+The host is authoritative for gameplay. Remote clients do not run authoritative combat simulation.
+
+Network hardening includes:
+
+- bounded CBOR frames,
+- strict message-type validation,
+- protocol-version checks,
+- player/configuration range validation,
+- handshake timeout before assigning a player slot,
+- per-client message-rate limits,
+- pending-handshake limits,
+- bounded host snapshots,
+- no multiplayer messages for files, filesystem paths, shell commands or executable code,
+- HMAC challenge-response for INVITE CODE sessions before a remote player receives a slot.
+
+## Internet multiplayer status
+
+Internet multiplayer is **not supported in this release**.
+
+The repository still contains experimental work for direct P2P, DHT discovery, QUIC, optional master/relay infrastructure and Cloudflare WebSocket tunnels. These implementations are kept for continued development and for a future attempt with a stronger networking design, but the released game intentionally exposes only the working LAN path.

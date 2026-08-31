@@ -22,8 +22,10 @@ const (
 	screenOptions
 	screenCredits
 	screenPostGame
+	screenSeriesSummary
 	screenGameplay
 	screenMultiplayer
+	screenMultiplayerLobby
 )
 
 // Symbol1309 is one 2700px-wide menu strip. The source script moves the whole
@@ -51,7 +53,7 @@ func (g *Game) updateMenu() error {
 		g.updateFade()
 		return nil
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
+	if g.allowCheats && inpututil.IsKeyJustPressed(ebiten.KeyF1) {
 		g.menuDebug = !g.menuDebug
 	}
 	switch g.screen {
@@ -63,6 +65,8 @@ func (g *Game) updateMenu() error {
 		g.updateCampaignMenu()
 	case screenPostGame:
 		g.updatePostGameMenu()
+	case screenSeriesSummary:
+		g.updateSeriesSummaryMenu()
 	case screenOptions:
 		g.updateOptionsMenu()
 	case screenGunLibrary:
@@ -71,6 +75,9 @@ func (g *Game) updateMenu() error {
 		g.updateCreditsMenu()
 	case screenMultiplayer:
 		g.updateMultiplayerMenu()
+	case screenMultiplayerLobby:
+		// Retired UI compatibility: never show the standalone lobby again.
+		g.openOnlineCustomSlots("SESSION ACTIVE - WAITING FOR PLAYER / ADD AI")
 	}
 	return nil
 }
@@ -84,6 +91,7 @@ const (
 	menuHitMainCredits
 	menuHitMainMore
 	menuHitMainMultiplayer
+	menuHitMainUpdate
 	menuHitGameBack
 	menuHitGameContinue
 	menuHitMapBack
@@ -130,7 +138,6 @@ func mainMenuHitAt(x, y float64) int {
 		hit    int
 		tx, ty float64
 	}{
-		{menuHitMainMultiplayer, 572.05, 205.0},
 		{menuHitMainCampaign, 572.05, 253.05},
 		{menuHitMainCustom, 572.05, 298.85},
 		{menuHitMainLibrary, 572.05, 365.75},
@@ -149,6 +156,9 @@ func mainMenuHitAt(x, y float64) int {
 func (g *Game) updateMainMenu() {
 	mx, my := ebiten.CursorPosition()
 	hit := mainMenuHitAt(float64(mx), float64(my))
+	if g.updateNoticeVisible() && g.updateRuntime.phase != updatePhaseDownloading && mainUpdateNoticeRect.Contains(float64(mx), float64(my)) {
+		hit = menuHitMainUpdate
+	}
 	activated, ok := g.resolveMenuRelease(hit)
 	if !ok {
 		return
@@ -159,13 +169,12 @@ func (g *Game) updateMainMenu() {
 		g.playSourceSFX("menu.wav", false)
 	}
 	switch activated {
-	case menuHitMainMultiplayer:
-		g.multiplayerFocus = false
-		g.multiplayerMessage = ""
-		g.beginFade(screenMultiplayer, fadePurposeScreen)
 	case menuHitMainCampaign:
 		g.beginFade(screenCampaign, fadePurposeScreen)
 	case menuHitMainCustom:
+		g.customOnlineMode = false
+		g.customNetworkOpen = false
+		g.onlineMatchSetup = false
 		g.customPage = customPageGame
 		g.customMenuX = 1800
 		g.beginFade(screenCustomGame, fadePurposeScreen)
@@ -178,6 +187,8 @@ func (g *Game) updateMainMenu() {
 	case menuHitMainMore:
 		// Exact source action: getURL("http://armorgames.com", _blank).
 		_ = exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", "http://armorgames.com").Start()
+	case menuHitMainUpdate:
+		g.beginUpdateDownload()
 	}
 }
 
@@ -210,6 +221,11 @@ func (g *Game) updateSecondaryMenu() {
 }
 
 func (g *Game) updatePostGameMenu() {
+	if g.onlineMatchSetup && g.netplay != nil && g.netplay.mode == netplayHost {
+		g.updateOnlineHostPostGame()
+		return
+	}
+
 	mx, my := ebiten.CursorPosition()
 	r := sourceMenuHitRect(campaignBackLocal, 638.15, 532.1, 1.86492919921875, 1.0372772216796875)
 	hit := menuHitNone
@@ -222,6 +238,14 @@ func (g *Game) updatePostGameMenu() {
 		g.playSourceSFX("menu.wav", false)
 	}
 	if (inpututil.IsKeyJustPressed(ebiten.KeyEscape)) || (ok && activated == menuHitGameContinue) {
+		if g.customSeriesRound > 0 {
+			if !g.customSeriesIsFinalRound() {
+				g.startNextCustomSeriesRound()
+				return
+			}
+			g.finishCustomSeriesToSummary()
+			return
+		}
 		g.customPage = customPageGame
 		g.customMenuX = 1800
 		g.beginFade(screenCustomGame, fadePurposeScreen)
@@ -229,7 +253,29 @@ func (g *Game) updatePostGameMenu() {
 }
 
 func (g *Game) updateCustomGameMenu() {
+	g.updateCustomGameV2()
+	return
+
+	// Legacy Custom Game page flow is intentionally unreachable. The developed
+	// Custom Game UI owns all input now; the old Flash-strip code remains below
+	// only as reference for source-faithful mechanics that other tests use.
 	g.updateCustomWarning()
+	if g.customOnlineRulesOverlayActive() {
+		g.updateMultiplayerLobby()
+		return
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) && g.customNetworkOpen {
+		if g.customHostSetupOpen {
+			g.customHostSetupOpen = false
+			g.multiplayerNameFocus = false
+			g.menuPressed = menuHitNone
+			g.multiplayerMessage = "CHOOSE A SESSION OR CREATE ONE"
+			return
+		}
+		g.leaveCustomNetworkPanel()
+		g.menuPressed = menuHitNone
+		return
+	}
 	if g.customPage == customPageGame {
 		g.updateCustomLivesInput()
 	}
@@ -248,7 +294,21 @@ func (g *Game) updateCustomGameMenu() {
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.menuPressed = menuHitNone
+		if g.customPage == customPageGame && g.customChaosOpen {
+			g.customChaosOpen = false
+			return
+		}
+		if g.customPage == customPageGame && g.customRulesOpen {
+			g.customRulesOpen = false
+			return
+		}
 		if g.customPage == customPageGame {
+			if g.customOnlineMode {
+				_ = g.CloseNetplay()
+				g.onlineMatchSetup = false
+				g.customOnlineMode = false
+				g.customNetworkOpen = false
+			}
 			g.beginFade(screenMainMenu, fadePurposeScreen)
 		} else {
 			g.customPage++
@@ -257,6 +317,9 @@ func (g *Game) updateCustomGameMenu() {
 	}
 
 	mx, my := ebiten.CursorPosition()
+	if g.updateCustomSessionInput(float64(mx), float64(my)) {
+		return
+	}
 	// Symbol1309's local origin is translated by _X. The SourceRaster padding
 	// does not enter this calculation: drawSourceRaster preserves that origin.
 	lx := float64(mx) - g.customMenuX
@@ -274,9 +337,13 @@ func (g *Game) updateCustomGameMenu() {
 	}
 	if g.customPage == customPagePlayers {
 		if editorHit := g.customPlayerEditorHitAt(lx, ly); editorHit != menuHitNone {
-			hit = editorHit
+			if slot, ok := customPlayerEditorHitSlot(editorHit); !g.customOnlineMode || !ok || g.onlineHostMayEditCustomSlot(slot) {
+				hit = editorHit
+			}
 		} else if playerHit := g.customPlayerSetupHitAt(lx, ly); playerHit != menuHitNone {
-			hit = playerHit
+			if slot, _, ok := decodePlayerSlotHit(playerHit); !g.customOnlineMode || !ok || slot != 0 {
+				hit = playerHit
+			}
 		}
 	}
 	activated, ok := g.resolveMenuRelease(hit)
@@ -295,27 +362,7 @@ func (g *Game) updateCustomGameMenu() {
 func customMenuHitAt(page int, x, y float64) int {
 	switch page {
 	case customPageGame:
-		rows := [...]struct {
-			mode   int
-			tx, ty float64
-		}{
-			{SourceGameModeNormal, -1770, 160.0},
-			{SourceGameModeTeams, -1770, 225.7},
-			{SourceGameModeSurvival, -1770, 291.5},
-			{SourceGameModeGunGame, -1770, 357.25},
-			{SourceGameModeInstagib, -1770, 423.1},
-		}
-		for _, row := range rows {
-			if sourceMenuHitRect(modeButtonLocal, row.tx, row.ty, 1.6749725341796875, 2.99078369140625).Contains(x, y) {
-				return menuHitModeBase + row.mode
-			}
-		}
-		if sourceMenuHitRect(wideButtonLocal, -1780, 520.05, 0.3125, 0.9991607666015625).Contains(x, y) {
-			return menuHitGameBack
-		}
-		if sourceMenuHitRect(wideButtonLocal, -1560, 520.05, 1, 0.9991607666015625).Contains(x, y) {
-			return menuHitGameContinue
-		}
+		return developedCustomGameHitAt(x+1800, y)
 
 	case customPageMaps:
 		mapRows := [...]struct {
@@ -328,7 +375,11 @@ func customMenuHitAt(page int, x, y float64) int {
 			{4, 371.2}, {3, 400.25}, {2, 429.3}, {1, 458.35},
 		}
 		for _, row := range mapRows {
-			if sourceMenuHitRect(mapButtonLocal, -883, row.ty, 1, 1.3199920654296875).Contains(x, y) {
+			// Use the full visible row, not only Symbol1200's narrower source
+			// shape. The flattened map selector renders roughly 29 px high rows;
+			// clicking the lower edge previously missed, especially online.
+			r := Rect{X: -883, Y: row.ty, W: 200, H: 29.0}
+			if r.Contains(x, y) {
 				return menuHitMapBase + row.mapNumber
 			}
 		}
@@ -388,6 +439,12 @@ func (g *Game) activateCustomMenuHit(hit int) {
 		g.customMapSetGM2 = true
 		g.customMap = customGM2RandomAll
 	case hit == menuHitGameBack:
+		if g.customOnlineMode {
+			_ = g.CloseNetplay()
+			g.onlineMatchSetup = false
+			g.customOnlineMode = false
+			g.customNetworkOpen = false
+		}
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 	case hit == menuHitGameContinue:
 		if modeHasLives(g.customMode) && g.customLives <= 0 {
@@ -396,8 +453,13 @@ func (g *Game) activateCustomMenuHit(hit int) {
 		}
 		g.customLivesFocus = false
 		g.customPage = customPageMaps
+		// The developed Game Setup is a standalone page rather than one third
+		// of Symbol1309, so jump directly to the source map page instead of
+		// briefly exposing the obsolete flattened Game Setup during the slide.
+		g.customMenuX = customPageTargetX(customPageMaps)
 	case hit == menuHitMapBack:
 		g.customPage = customPageGame
+		g.customMenuX = customPageTargetX(customPageGame)
 	case hit == menuHitMapContinue:
 		g.customPage = customPagePlayers
 	case hit == menuHitPlayerBack:
@@ -408,18 +470,50 @@ func (g *Game) activateCustomMenuHit(hit int) {
 }
 
 func (g *Game) startCustomGame() {
-	mapNumber := g.customMap
-	switch mapNumber {
-	case 0:
-		// GM1 source RANDOM chooses one of its twelve Custom Game maps.
-		mapNumber = rand.Intn(12) + 1
-	case customGM2RandomNew:
-		// GM2 source selector 22: random(9)+1.
-		mapNumber = gm2MapID(rand.Intn(9) + 1)
-	case customGM2RandomAll:
-		// GM2 source selector 23: random(21)+1.
-		mapNumber = gm2MapID(rand.Intn(21) + 1)
+	if !g.customSeriesStartingNext {
+		g.beginCustomSeries()
 	}
+	if g.onlineMatchSetup {
+		if g.netplay == nil || g.netplay.mode != netplayHost {
+			g.multiplayerMessage = "ONLY THE HOST CAN START"
+			return
+		}
+		g.syncOnlineHostState()
+		if g.onlineActiveParticipantCount() < 2 {
+			g.multiplayerMessage = "ADD AN ONLINE PLAYER OR AI BOT"
+			g.playCustomWarning(2)
+			return
+		}
+	}
+
+	// The host is authoritative in online Custom Game, so modifier physics and
+	// weapon rules are applied there as well. Clients render the host snapshot
+	// instead of simulating a second copy of the match.
+	g.prepareCustomMatchModifiers()
+	g.resetChaosRuntime()
+
+	mapSelection := g.customSeriesMapForRound(g.customSeriesRound)
+	// Preserve the older online rotation setting only for sessions that have
+	// never configured the new playlist. Once PLAYLIST is used, its per-round
+	// map choices are authoritative both offline and online.
+	if g.onlineMatchSetup && !g.customSeriesPlaylistConfigured {
+		switch g.onlineMapRotation {
+		case onlineMapRandomGM1:
+			mapSelection = 0
+		case onlineMapRandomGM2:
+			mapSelection = customGM2RandomNew
+		case onlineMapRandomAll:
+			pick := rand.Intn(21)
+			if pick < 12 {
+				mapSelection = pick + 1
+			} else {
+				mapSelection = gm2MapID(pick - 11)
+			}
+		}
+	}
+	g.customMap = mapSelection
+	g.customMapSetGM2 = isGM2MapID(mapSelection) || mapSelection == customGM2RandomNew || mapSelection == customGM2RandomAll
+	mapNumber := resolveCustomSeriesMapValue(mapSelection)
 	arena, ok := g.ensureMap(mapNumber)
 	if !ok {
 		arena, _ = g.ensureMap(1)
@@ -438,9 +532,10 @@ func (g *Game) startCustomGame() {
 		lives = 10
 	}
 
-	// Source btn_start refuses to launch unless at least two ptype slots are
-	// active and plays warning2 instead.
-	if g.activeCustomPlayerCount() < 2 {
+	// Source btn_start refuses to launch unless at least two participant slots
+	// are active. Online counts connected humans plus AI bots; waiting ONLINE
+	// slots do not count until somebody actually joins them.
+	if !g.onlineMatchSetup && g.activeCustomPlayerCount() < 2 {
 		g.playCustomWarning(2)
 		return
 	}
@@ -450,6 +545,10 @@ func (g *Game) startCustomGame() {
 		if cfg.Type == 0 {
 			continue
 		}
+		if g.onlineMatchSetup && slot > 0 && cfg.Type == 1 && !g.onlinePlayerSlots[slot] {
+			// ONLINE slot is open for join-in-progress, but no human occupies it yet.
+			continue
+		}
 		id := slot + 1 // preserve PLAYERNUMBER/control slot exactly
 		p := NewPlayer(id, arena)
 		p.Controls = g.controlConfigs[id-1]
@@ -457,9 +556,18 @@ func (g *Game) startCustomGame() {
 		p.PlayerColor = cfg.Color
 		p.ShirtNumber = cfg.Shirt
 		p.HatNumber = cfg.Hat
-		p.DefaultWeapon = cfg.Gun
-		p.PerkNumber = cfg.Perk
-		p.AI = cfg.Type == 2
+		p.EyeNumber = cfg.Eyes
+		p.ThrowableType = normalizedThrowableType(cfg.Throwable)
+		if g.onlineMatchSetup {
+			p.DefaultWeapon = g.onlineStartingWeapon(cfg.Gun)
+			p.PerkNumber = g.onlineAllowedPerk(cfg.Perk)
+			p.AI = cfg.Type == 2
+			p.RemoteControlled = cfg.Type == 1 && id != 1
+		} else {
+			p.DefaultWeapon = cfg.Gun
+			p.PerkNumber = cfg.Perk
+			p.AI = cfg.Type == 2
+		}
 		if mode == SourceGameModeTeams {
 			p.Team = cfg.Team
 		} else {
@@ -477,10 +585,18 @@ func (g *Game) startCustomGame() {
 	// the GM2 runtime assets are actually available. Fresh clones that do not
 	// yet contain assets/gm2 safely retain the GM1 pool instead of spawning an
 	// invisible appended weapon. GM1 campaign always resets to its legacy pool.
-	g.crateWeapons = developedCrateWeapons()
+	if g.onlineMatchSetup {
+		g.crateWeapons = g.onlineCrateWeaponPool()
+	} else {
+		g.crateWeapons = developedCrateWeapons()
+	}
+	g.applyCustomModifierSetup()
 	g.GameMode = mode
 	g.TotalLives = lives
 	g.TeamGame = mode == SourceGameModeTeams
+	if g.onlineMatchSetup {
+		g.PowerON = g.onlinePowerupsEnabled
+	}
 	if mode == SourceGameModeSurvival {
 		// frame10 source forces Survival to crates on / pickups off.
 		g.CrateON = true
@@ -510,10 +626,9 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 	switch g.screen {
 	case screenMainMenu:
 		drawSourceRaster(screen, g.assets.MainMenu, 0, 0, 1, 1, 1)
-		g.drawMainMultiplayerButton(screen)
+		g.drawUpdateNotice(screen)
 	case screenCustomGame:
-		drawSourceRaster(screen, g.assets.CustomMenu, g.customMenuX, 0, 1, 1, 1)
-		g.drawCustomGameInteractions(screen)
+		g.drawCustomGameV2(screen)
 	case screenCampaign:
 		g.drawCampaignMenu(screen)
 	case screenGunLibrary:
@@ -539,6 +654,10 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 		}
 	case screenMultiplayer:
 		g.drawMultiplayerMenu(screen)
+	case screenMultiplayerLobby:
+		g.drawCustomGameV2(screen)
+	case screenSeriesSummary:
+		g.drawSeriesSummary(screen)
 	case screenPostGame:
 		if !g.drawPostGameScreen(screen) {
 			// Flattened Symbol1019 is fallback-only because it contains baked

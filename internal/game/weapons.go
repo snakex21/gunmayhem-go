@@ -107,7 +107,10 @@ var weaponCatalog = map[int]WeaponDef{
 }
 
 func WeaponByNumber(number int) (WeaponDef, bool) {
-	w, ok := weaponCatalog[number]
+	if w, ok := weaponCatalog[number]; ok {
+		return w, true
+	}
+	w, ok := developedWeaponCatalog[number]
 	return w, ok
 }
 

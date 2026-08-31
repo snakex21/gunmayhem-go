@@ -7,22 +7,24 @@ import (
 )
 
 type CustomPlayerConfig struct {
-	Name  string
-	Color int
-	Shirt int
-	Hat   int
-	Gun   int
-	Perk  int
-	Type  int // source playertype: 0 empty, 1 human, 2 AI
-	Team  int
+	Name      string
+	Color     int
+	Shirt     int
+	Hat       int
+	Eyes      int
+	Gun       int
+	Perk      int
+	Throwable int
+	Type      int // source playertype: 0 empty, 1 human, 2 AI
+	Team      int
 }
 
 func sourceDefaultCustomPlayers() [4]CustomPlayerConfig {
 	return [4]CustomPlayerConfig{
-		{Name: "Player 1", Color: 2, Shirt: 1, Hat: 1, Gun: 1, Perk: 7, Type: 1, Team: 1},
-		{Name: "Player 2", Color: 5, Shirt: 1, Hat: 1, Gun: 1, Perk: 7, Type: 1, Team: 2},
-		{Name: "Player 3", Color: 8, Shirt: 1, Hat: 1, Gun: 1, Perk: 7, Type: 0, Team: 1},
-		{Name: "Player 4", Color: 10, Shirt: 1, Hat: 1, Gun: 1, Perk: 7, Type: 0, Team: 2},
+		{Name: "Player 1", Color: 2, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: 7, Throwable: ThrowableMk2, Type: 1, Team: 1},
+		{Name: "Player 2", Color: 5, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: 7, Throwable: ThrowableMk2, Type: 1, Team: 2},
+		{Name: "Player 3", Color: 8, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: 7, Throwable: ThrowableMk2, Type: 0, Team: 1},
+		{Name: "Player 4", Color: 10, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: 7, Throwable: ThrowableMk2, Type: 0, Team: 2},
 	}
 }
 
@@ -177,7 +179,9 @@ func (g *Game) drawCustomGameInteractions(screen *ebiten.Image) {
 			cardX := g.customMenuX + 20 + float64(i)*220
 			g.drawPlayerSetupCardMasked(screen, cfg, g.customEditor[i], i, cardX, g.customCardY[i], 1, g.customColorMask[i], false)
 		}
+		g.drawCustomOnlineSlotOverlay(screen)
 	}
+	g.drawCustomSessionControls(screen)
 
 	if g.customWarningFrame <= 0 {
 		return

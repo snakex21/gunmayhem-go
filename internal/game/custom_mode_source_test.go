@@ -10,11 +10,13 @@ func TestCustomModeSourceControlsByMode(t *testing.T) {
 	if modeHasCrateToggle(SourceGameModeSurvival) || modeHasPickupToggle(SourceGameModeSurvival) || modeHasLives(SourceGameModeSurvival) { t.Fatal("survival exposed source-absent options") }
 }
 
-func TestCustomModeCheckboxHitsMatchSymbol1273(t *testing.T) {
-	g := &Game{customMode: SourceGameModeNormal}
-	if got := g.customModeOptionsHitAt(-1125, 405); got != menuHitModeCrates { t.Fatalf("crate hit=%d", got) }
-	if got := g.customModeOptionsHitAt(-1125, 452); got != menuHitModePickups { t.Fatalf("pickup hit=%d", got) }
-	if got := g.customModeOptionsHitAt(-1300, 405); got != menuHitModeLives { t.Fatalf("lives hit=%d", got) }
+func TestDevelopedCustomModeOptionHits(t *testing.T) {
+	g := &Game{customMode: SourceGameModeNormal, customSeriesRounds: 3}
+	if got := g.customModeOptionsHitAt(450-1800, 380); got != menuHitModeCrates { t.Fatalf("crate hit=%d", got) }
+	if got := g.customModeOptionsHitAt(700-1800, 380); got != menuHitModePickups { t.Fatalf("pickup hit=%d", got) }
+	if got := g.customModeOptionsHitAt(450-1800, 315); got != menuHitModeLives { t.Fatalf("lives hit=%d", got) }
+	if got := g.customModeOptionsHitAt(630-1800, 315); got != menuHitModeRoundsMinus { t.Fatalf("rounds minus hit=%d", got) }
+	if got := g.customModeOptionsHitAt(800-1800, 315); got != menuHitModeRoundsPlus { t.Fatalf("rounds plus hit=%d", got) }
 }
 
 func TestCustomContinuePlaysSourceLivesWarning(t *testing.T) {

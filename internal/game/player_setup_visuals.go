@@ -91,10 +91,6 @@ func advanceSourceColorMask(alpha float64, hovered bool) float64 {
 }
 
 func drawSetupColorSelector(dst *ebiten.Image, mask *SourceRaster, localY, cardAlpha, maskAlpha float64) {
-	palette := sourceSetupColorPalette()
-	if palette == nil {
-		return
-	}
 	drawTransformed := func(img *ebiten.Image, bounds Rect, alpha float64) {
 		if img == nil || alpha <= 0 {
 			return
@@ -107,6 +103,21 @@ func drawSetupColorSelector(dst *ebiten.Image, mask *SourceRaster, localY, cardA
 			op.ColorScale.ScaleAlpha(float32(alpha))
 		}
 		dst.DrawImage(img, op)
+	}
+
+	// At rest draw only the gray COLOR mask. Drawing the hidden palette below a
+	// fully opaque mask caused the thin coloured notch at the edge, while
+	// skipping the whole selector made the COLOR field disappear completely.
+	if maskAlpha >= 99.5 {
+		if mask != nil && mask.Image != nil {
+			drawTransformed(mask.Image, mask.Bounds, cardAlpha)
+		}
+		return
+	}
+
+	palette := sourceSetupColorPalette()
+	if palette == nil {
+		return
 	}
 	drawTransformed(palette, Rect{}, cardAlpha)
 	if mask != nil && mask.Image != nil {
@@ -146,13 +157,27 @@ func drawSetupThumbFit(dst *ebiten.Image, raster *SourceRaster, r Rect, alpha fl
 func (g *Game) setupSelectionRaster(editor, number int) *SourceRaster {
 	switch editor {
 	case customEditShirt:
+		if source, ok := gm2ShirtSourceNumber(number); ok {
+			return g.assets.GM2ShirtFrame(source - 1)
+		}
 		return g.assets.ShirtFrame(number - 1)
 	case customEditHat1, customEditHat2:
+		if source, ok := gm2HatSourceNumber(number); ok {
+			return g.assets.GM2HatFrame(source - 1)
+		}
 		return g.assets.HatFrame(number - 1)
 	case customEditGun:
 		// UI-only tight crops of the exact gameplay gun frame. This avoids the
 		// large Flash registration canvas that made the six guns look microscopic.
-		return g.assets.StarterGunFrames[number]
+		if raster := g.assets.StarterGunFrames[number]; raster != nil {
+			return raster
+		}
+		return g.assets.WeaponFrame(number, 0)
+	case customEditEyes:
+		if source, ok := gm2EyeSourceNumber(number); ok {
+			return g.assets.EyeFrame(source - 1)
+		}
+		return g.assets.Eyes
 	}
 	return nil
 }
@@ -190,33 +215,75 @@ func drawSetupPerkThumb(dst *ebiten.Image, number int, r Rect, alpha float64) {
 func setupSelectionVisualRect(editor int, source Rect, localY float64) Rect {
 	r := source
 	r.Y += localY
-	// Symbol817's visual bounds include the rotated handgun display and are
-	// wider than the actual grid cell. The source grid spacing is 61 px, so a
-	// 55x55 tile is the correct visual cell while the parsed source bounds stay
-	// in use for hit-testing.
-	if editor == customEditGun {
-		cx := r.X + r.W/2
-		cy := r.Y + r.H/2
-		r = Rect{X: cx - 27.5, Y: cy - 27.5, W: 55, H: 55}
-	}
+	// The developed handgun picker supplies its own compact 3x7 visual cells.
+	// Other editors continue to use their parsed source bounds unchanged.
 	return r
 }
 
-func (g *Game) drawSetupSelectionContents(dst *ebiten.Image, editor int, localY, alpha float64) {
-	for _, item := range sourceCustomSelectionItems()[editor] {
+func (g *Game) drawSetupSelectionContents(dst *ebiten.Image, editor int, localY, alpha float64, campaign bool, selectedGun int) {
+	for _, item := range developedCustomSelectionItems(editor) {
 		r := setupSelectionVisualRect(editor, item.Rect, localY)
-		ebitenutil.DrawRect(dst, r.X, r.Y, r.W, r.H,
-			color.NRGBA{R: 0x99, G: 0x99, B: 0x99, A: uint8(255 * alpha)})
+		cellColor := color.NRGBA{R: 0x99, G: 0x99, B: 0x99, A: uint8(255 * alpha)}
+		if editor == customEditGun && item.Number == selectedGun {
+			cellColor = color.NRGBA{R: 0xff, G: 0x92, B: 0x00, A: uint8(255 * alpha)}
+		}
+		ebitenutil.DrawRect(dst, r.X, r.Y, r.W, r.H, cellColor)
+		if editor == customEditGun && item.Number == selectedGun {
+			ebitenutil.DrawRect(dst, r.X+2, r.Y+2, r.W-4, r.H-4,
+				color.NRGBA{R: 0x99, G: 0x99, B: 0x99, A: uint8(255 * alpha)})
+		}
 		if editor == customEditPerk {
 			drawSetupPerkThumb(dst, item.Number, r, alpha)
+		} else if editor == customEditColor {
+			swatch := developedPlayerColorSwatch(item.Number)
+			swatch.A = uint8(255 * alpha)
+			ebitenutil.DrawRect(dst, r.X+3, r.Y+3, r.W-6, r.H-6, swatch)
+		} else if editor == customEditThrowable {
+			kind := item.Number - 1
+			g.drawThrowableSetupChoice(dst, kind, r, false)
+			labelBar := Rect{X: r.X + 3, Y: r.Y + r.H - 19, W: r.W - 6, H: 16}
+			ebitenutil.DrawRect(dst, labelBar.X, labelBar.Y, labelBar.W, labelBar.H,
+				color.NRGBA{R: 0xd8, G: 0xd8, B: 0xd8, A: uint8(255 * alpha)})
+			drawSourceMenuText(dst, throwableName(kind), menuFontCondensedExtraBold, 8.1,
+				color.NRGBA{A: uint8(255 * alpha)}, labelBar.X+4, labelBar.Y+3)
 		} else {
 			thumb := g.setupSelectionRaster(editor, item.Number)
 			drawSetupThumbFit(dst, thumb, r, alpha)
 		}
-		if !g.customSelectionUnlocked(editor, item.Number) {
+		unlocked := g.customSelectionUnlocked(editor, item.Number)
+		if campaign {
+			unlocked = g.campaignSelectionUnlocked(editor, item.Number)
+		}
+		if !unlocked {
 			ebitenutil.DrawRect(dst, r.X, r.Y, r.W, r.H,
 				color.NRGBA{R: 0x22, G: 0x22, B: 0x22, A: uint8(150 * alpha)})
 		}
+	}
+	if editor == customEditEyes {
+		drawGM2FaceGridLabel(dst, localY, alpha)
+	} else if editor == customEditColor {
+		drawSourceMenuText(dst, "GM1 + GM2 COLORS", menuFontCondensedExtraBold, 15,
+			color.NRGBA{A: uint8(255 * alpha)}, 38, localY+405)
+	} else if editor == customEditShirt && gm2CosmeticsAvailable() {
+		drawSourceMenuText(dst, "GM1 + GM2 SHIRTS", menuFontCondensedExtraBold, 15,
+			color.NRGBA{A: uint8(255 * alpha)}, 34, localY+401)
+	} else if (editor == customEditHat1 || editor == customEditHat2) && gm2CosmeticsAvailable() {
+		page := "HATS 1 / 2"
+		if editor == customEditHat2 {
+			page = "HATS 2 / 2"
+		}
+		drawSourceMenuText(dst, page, menuFontCondensedExtraBold, 15,
+			color.NRGBA{A: uint8(255 * alpha)}, 62, localY+401)
+	} else if editor == customEditThrowable {
+		drawSourceMenuText(dst, "THROWABLES", menuFontCondensedExtraBold, 15,
+			color.NRGBA{A: uint8(255 * alpha)}, 54, localY+405)
+	} else if editor == customEditGun {
+		name := weaponDisplayName(selectedGun)
+		if name == "" {
+			name = "HANDGUN"
+		}
+		drawSourceMenuText(dst, "SELECTED: "+name, menuFontCondensedExtraBold, 10.5,
+			color.NRGBA{R: 0xff, G: 0x92, B: 0x00, A: uint8(255 * alpha)}, 10, localY+705)
 	}
 
 	// Symbol835 page switch for hats and Symbol1302.btn_back. These controls
@@ -251,6 +318,7 @@ func (g *Game) drawSetupPlayerPreview(dst *ebiten.Image, cfg CustomPlayerConfig,
 	p.PlayerColor = cfg.Color
 	p.ShirtNumber = cfg.Shirt
 	p.HatNumber = cfg.Hat
+	p.EyeNumber = cfg.Eyes
 	p.HeadFrame = 0
 	p.LegFrame1 = 0
 	p.LegFrame2 = 0
@@ -291,8 +359,8 @@ func (g *Game) drawPlayerSetupCardMasked(screen *ebiten.Image, cfg CustomPlayerC
 	if editor == 0 && base != nil {
 		drawSourceRaster(clip, base, 0, localY, 1, 1, alpha)
 	}
-	if editor >= 1 && editor <= 5 {
-		g.drawSetupSelectionContents(clip, editor, localY, alpha)
+	if editor >= 1 && editor <= customEditColor {
+		g.drawSetupSelectionContents(clip, editor, localY, alpha, campaign, cfg.Gun)
 	}
 
 	if cfg.Type == 0 {
@@ -315,7 +383,11 @@ func (g *Game) drawPlayerSetupCardMasked(screen *ebiten.Image, cfg CustomPlayerC
 		drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+93.0, 0.538726806640625, alpha)
 		drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+127.5, 0.538726806640625, alpha)
 		drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+161.7, 0.5387115478515625, alpha)
+		if gm2CosmeticsAvailable() {
+			drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+196.2, 0.538726806640625, alpha)
+		}
 		drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+220.75, 0.53875732421875, alpha)
+		drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+248.0, 0.53875732421875, alpha)
 
 		drawSourceMenuText(clip, "HAT", menuFontTwCen, 15.9,
 			color.NRGBA{A: uint8(255 * alpha)}, 35.75, localY+96.25)
@@ -323,21 +395,49 @@ func (g *Game) drawPlayerSetupCardMasked(screen *ebiten.Image, cfg CustomPlayerC
 			color.NRGBA{A: uint8(255 * alpha)}, 34.25, localY+130.75)
 		drawSourceMenuText(clip, "HANDGUN", menuFontTwCen, 15.9,
 			color.NRGBA{A: uint8(255 * alpha)}, 21.05, localY+164.95)
+		gunName := weaponDisplayName(cfg.Gun)
+		if gunName != "" {
+			if len([]rune(gunName)) > 20 {
+				gunName = string([]rune(gunName)[:20])
+			}
+			drawSourceMenuText(clip, gunName, menuFontCondensedExtraBold, 8.2,
+				color.NRGBA{R: 0x33, G: 0x33, B: 0x33, A: uint8(255 * alpha)}, 20.5, localY+184.0)
+		}
+		if gm2CosmeticsAvailable() {
+			drawSourceMenuText(clip, "FACES", menuFontTwCen, 15.9,
+				color.NRGBA{A: uint8(255 * alpha)}, 30.0, localY+199.45)
+		}
 		drawSourceMenuText(clip, "PERK", menuFontTwCen, 15.9,
 			color.NRGBA{A: uint8(255 * alpha)}, 29.65, localY+224.5)
+		drawSourceMenuText(clip, "GRENADE", menuFontTwCen, 15.0,
+			color.NRGBA{A: uint8(255 * alpha)}, 22.0, localY+251.5)
 		drawSourceMenuText(clip, "NAME:", menuFontTwCen, 15.9,
 			color.NRGBA{A: uint8(255 * alpha)}, 26.65, localY+271.2)
 
 		g.drawSetupPlayerPreview(clip, cfg, alpha)
 		drawSetupColorSelector(clip, g.assets.PlayerColorMask, localY, alpha, colorMaskAlpha)
 
-		// DOMInputText in the source is Arial 16.
-		drawSourceMenuText(clip, cfg.Name, menuFontArial, 16,
+		// DOMInputText in the source is Arial 16. Reuse this real field for Online
+		// too instead of drawing a second nickname box over the color palette.
+		nameText := cfg.Name
+		focused := (!campaign && g.customNameFocus == slot+1) || (campaign && g.campaignNameFocus == slot+1)
+		if focused {
+			nameText += "_"
+		}
+		drawSourceMenuText(clip, nameText, menuFontArial, 16,
 			color.NRGBA{A: uint8(255 * alpha)}, 32.5, localY+294.35)
 		if !campaign || slot == 1 {
 			drawSourceMenuText(clip, "CLEAR SLOT", menuFontCondensed, 15.9,
 				color.NRGBA{A: uint8(255 * alpha)}, 42, localY+11.55)
 		}
+	}
+
+	// Remove the thin source-guide seams baked into the card export. They are
+	// not interactive UI and become especially visible between adjacent cards.
+	if cfg.Type != 0 && editor == 0 {
+		edge := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: uint8(255 * alpha)}
+		ebitenutil.DrawRect(clip, 0, 0, 2, 400, edge)
+		ebitenutil.DrawRect(clip, 198, 0, 2, 400, edge)
 	}
 
 	// Wipe the flattened Symbol1309/Symbol948 card underneath. Those exports

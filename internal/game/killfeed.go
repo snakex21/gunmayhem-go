@@ -27,7 +27,7 @@ func (g *Game) playerNameByID(id int) string {
 }
 
 func (g *Game) appendSourceKillFeed(victim *Player) {
-	if victim == nil || g.GameMode == SourceGameModeSurvival || (g.campaignMode && !g.campaignSetGM2 && g.campaignLevel == 1) {
+	if victim == nil || g.GameMode == SourceGameModeSurvival || (g.campaignMode && g.campaignUsesOriginalGM1Rules() && g.campaignLevel == 1) {
 		return
 	}
 	killer := "none"
@@ -37,10 +37,10 @@ func (g *Game) appendSourceKillFeed(victim *Player) {
 	entry := KillFeedEntry{
 		Victim: victim.Name,
 		Killer: killer,
-		Mod: victim.LastDeathMod,
-		Alpha: 0,
-		Slot: len(g.killfeeds) + 1,
-		Y: float64(len(g.killfeeds)) * 30,
+		Mod:    victim.LastDeathMod,
+		Alpha:  0,
+		Slot:   len(g.killfeeds) + 1,
+		Y:      float64(len(g.killfeeds)) * 30,
 	}
 	g.killfeeds = append(g.killfeeds, entry)
 	// Source killupdate cancels a running non-campaign win countdown.

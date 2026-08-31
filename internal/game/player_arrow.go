@@ -80,14 +80,24 @@ func drawPlayerArrowDistance(screen *ebiten.Image, value int, angle float64) {
 
 func (g *Game) drawPlayerArrows(screen *ebiten.Image) {
 	for _, p := range g.players {
+		if p.InvisibleTime > 0 && !g.shouldDrawInvisibleGhost(p) {
+			continue
+		}
 		visible, angle, distance := g.sourcePlayerArrowState(p)
 		if !visible {
 			continue
 		}
-		arrow := g.assets.PlayerArrowFrames[p.PlayerColor]
+		colorIndex, useGM2Color := resolvedPlayerColor(p.PlayerColor, p.UseGM2Cosmetics)
+		var arrow *SourceRaster
+		if useGM2Color {
+			g.assets.EnsureGM2PlayerColor(colorIndex)
+			arrow = g.assets.GM2PlayerArrowFrames[colorIndex]
+		} else {
+			arrow = g.assets.PlayerArrowFrames[colorIndex]
+		}
 		if arrow == nil {
-			// Source colours are 0..10. Keep a deterministic fallback for malformed
-			// custom data rather than dropping the indicator entirely.
+			// Keep a deterministic fallback for malformed custom data rather
+			// than dropping the indicator entirely.
 			arrow = g.assets.PlayerArrowFrames[0]
 		}
 		drawPlayerArrowRaster(screen, arrow, angle)

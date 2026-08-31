@@ -69,3 +69,20 @@ func TestSourceSurvivalRespawnShield(t *testing.T) {
 		t.Fatalf("survival respawn shieldtime=%d want140", p.ShieldTime)
 	}
 }
+
+func TestGunSpawnPerkEquipsRandomCrateGunOnFirstSpawnAndRespawn(t *testing.T) {
+	arena := OriginalMap1()
+	p := NewPlayer(1, arena)
+	p.DefaultWeapon = 1
+	p.PerkNumber = 9
+	p.configureSourceGameMode(SourceGameModeNormal, 10, arena)
+	if p.Weapon.Def.Number < 10 || p.Weapon.Def.Number > 66 {
+		t.Fatalf("GUN SPAWN first weapon=%d want source random gun 10..66", p.Weapon.Def.Number)
+	}
+	for i := 0; i < 8; i++ {
+		p.Respawn(arena)
+		if p.Weapon.Def.Number < 10 || p.Weapon.Def.Number > 66 {
+			t.Fatalf("GUN SPAWN respawn %d weapon=%d want source random gun 10..66", i+1, p.Weapon.Def.Number)
+		}
+	}
+}

@@ -32,60 +32,79 @@ type Player struct {
 	Grounded   bool
 	HardLanded bool
 
-	Lives             int
-	TotalLives        int
-	GameMode          int
-	CurrentLevel      int
-	CurrentGun        int
-	KillSelf          bool
-	Active            bool
-	LastHitBy         int
-	LastDeathBy       int
-	LastDeathX        float64
-	LastDeathY        float64
-	LastDeathMod      int
-	HitByGrenade      bool
-	HitNumber         int
-	HitTimer          int
-	InstagibFrame     int
-	InstagibPlaying   bool
-	CheapTimer        int
-	Kills             int
-	Deaths            int
-	ShotsFired        int
-	HitsLanded        int
-	CratesCollected   int
-	PowerupsCollected int
-	Score             int
-	DeathSerial       int
-	DefaultWeapon     int
-	PerkNumber        int
-	Weight            float64
-	Weapon            WeaponState
-	Grenades          int
-	GrenadeHeld       bool
-	GrenadePower      float64
-	InvisibleTime     int
-	ShieldTime        int
-	ShieldFrame       int
-	ShieldChildFrame  int
-	ShieldPlaying     bool
-	ShieldChildActive bool
-	ShieldAlpha       float64
-	JetFuel           float64
-	JetpackAlpha      float64
-	JetThrusted       bool
-	JetDropped        bool
-	SpeedTime         int
-	MiniTime          int
-	MiniMulti         float64
-	PlayerScale       float64
-	Alpha             float64
-	PlayerColor       int
-	ShirtNumber       int
-	HatNumber         int
-	HeadFrame         int
-	VisualHeadY       float64
+	Lives               int
+	TotalLives          int
+	GameMode            int
+	CurrentLevel        int
+	CurrentGun          int
+	KillSelf            bool
+	Active              bool
+	LastHitBy           int
+	LastDeathBy         int
+	LastDeathX          float64
+	LastDeathY          float64
+	LastDeathMod        int
+	HitByGrenade        bool
+	HitNumber           int
+	HitTimer            int
+	InstagibFrame       int
+	InstagibPlaying     bool
+	CheapTimer          int
+	Kills               int
+	Deaths              int
+	ShotsFired          int
+	HitsLanded          int
+	CratesCollected     int
+	PowerupsCollected   int
+	Score               int
+	DeathSerial         int
+	DefaultWeapon       int
+	PerkNumber          int
+	Weight              float64
+	Weapon              WeaponState
+	Grenades            int
+	ThrowableType       int
+	GrenadeHeld         bool
+	GrenadePower        float64
+	InvisibleTime       int
+	ShieldTime          int
+	ShieldFrame         int
+	ShieldChildFrame    int
+	ShieldPlaying       bool
+	ShieldChildActive   bool
+	ShieldAlpha         float64
+	JetFuel             float64
+	JetpackAlpha        float64
+	JetThrusted         bool
+	JetDropped          bool
+	SpeedTime           int
+	BurnTime            int
+	BurnOwnerID         int
+	BurnDirection       int
+	BurnTick            int
+	BurnPower           float64
+	FireContactCooldown int
+	PortalNextColor     int
+	PortalCooldown      int
+
+	// Developed Custom Game modifiers. Zero multipliers mean the original 1x
+	// behavior so source/campaign players are unchanged unless a rule enables
+	// them explicitly.
+	RuleMoveMultiplier   float64
+	RuleJumpMultiplier   float64
+	RuleInfiniteJetpack  bool
+	RuleJetpackSoundLive bool
+	MiniTime             int
+	MiniMulti            float64
+	PlayerScale          float64
+	Alpha                float64
+	PlayerColor          int
+	ShirtNumber          int
+	HatNumber            int
+	EyeNumber            int
+	UseGM2Cosmetics      bool
+	HeadFrame            int
+	VisualHeadY          float64
 
 	// Source visual state from DefineSprite_697_player. These are MovieClip
 	// properties in Flash and are eased every onEnterFrame; keeping them as
@@ -135,6 +154,11 @@ type Player struct {
 	AITargetValid    bool
 	AITargetKind     int
 	AITargetSerial   int
+	AISearchTime     int
+	AISearchX        float64
+	AISearchY        float64
+	AISearchPlayerID int
+	AIFireCadence    int
 	AILockLeft       int
 	AILockRight      int
 	AILockUp         int
@@ -177,6 +201,8 @@ func NewPlayer(id int, m Map) *Player {
 		FirepowerMulti:    1,
 		Weapon:            NewWeapon(1),
 		Grenades:          3,
+		ThrowableType:     ThrowableDynamite,
+		PortalNextColor:   PortalBlue,
 		SpeedTime:         -1,
 		MiniTime:          -1,
 		MiniMulti:         1,
@@ -186,6 +212,7 @@ func NewPlayer(id int, m Map) *Player {
 		PlayerColor:       sourceDefaultPlayerColor(id),
 		ShirtNumber:       1,
 		HatNumber:         1,
+		EyeNumber:         1,
 		HeadFrame:         rand.Intn(50) + 1,
 		VisualBodyY:       -60,
 		VisualEyesY:       -46,
@@ -264,6 +291,9 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 	p.HardLanded = false
 	p.JetThrusted = false
 	p.JetDropped = false
+	if p.FireContactCooldown > 0 {
+		p.FireContactCooldown--
+	}
 
 	if p.IsDouble && !p.PersistentDouble && p.DoubleTime >= 0 {
 		p.DoubleTime--
@@ -292,7 +322,16 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 
 	left, right, up, down := p.movementInput()
 	p.WalkRequested = left || right
-	moveSpeed := MoveSpeed
+	moveMultiplier := p.RuleMoveMultiplier
+	if moveMultiplier <= 0 {
+		moveMultiplier = 1
+	}
+	jumpMultiplier := p.RuleJumpMultiplier
+	if jumpMultiplier <= 0 {
+		jumpMultiplier = 1
+	}
+	moveSpeed := MoveSpeed * moveMultiplier
+	jumpPower := JumpPower * jumpMultiplier
 	if p.SpeedTime >= 0 {
 		moveSpeed *= 2
 	}
@@ -312,9 +351,9 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 		p.JumpHeld = true
 		p.JumpNum--
 		if p.JumpNum == 1 {
-			p.VY = -JumpPower
+			p.VY = -jumpPower
 		} else if p.JumpNum == 0 {
-			p.VY = -JumpPower * 0.83
+			p.VY = -jumpPower * 0.83
 			if p.TripleJump {
 				p.JumpNum = 11
 				p.TripleJump = false
@@ -323,15 +362,19 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 		if p.JumpNum == 10 {
 			p.JumpNum = 0
 			if p.VY < -4 {
-				p.VY -= JumpPower * 0.2
+				p.VY -= jumpPower * 0.2
 			} else {
-				p.VY = -JumpPower * 0.55
+				p.VY = -jumpPower * 0.55
 			}
 		}
 		p.Y--
 	}
 	if !up {
 		p.JumpHeld = false
+	}
+	if p.RuleInfiniteJetpack && p.JetFuel < 100 {
+		p.JetFuel = 100
+		p.JetpackAlpha = 1
 	}
 	if up && p.JumpNum <= 0 && p.JetFuel > 0 && !p.JumpHeld {
 		if p.JetpackAlpha != 1 {
@@ -411,6 +454,7 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 		p.CheapTimer++
 	}
 	p.updatePowerupTimers()
+	p.updateBurning()
 	p.advanceInstagibTimeline()
 	if p.KillSelf {
 		// Late source branch: SELFDESTRUCT() clears killself before gotkilled().
@@ -419,9 +463,112 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 	}
 }
 
+func (p *Player) ignite(ownerID, direction, frames int) {
+	p.igniteWithPower(ownerID, direction, frames, 6)
+}
+
+func (p *Player) igniteWithPower(ownerID, direction, frames int, power float64) {
+	if p == nil || !p.Active || p.ShieldTime > 0 || frames <= 0 {
+		return
+	}
+	if power < 4 {
+		power = 4
+	}
+	if power > p.BurnPower {
+		p.BurnPower = power
+	}
+	wasBurning := p.BurnTime > 0
+	if frames > p.BurnTime {
+		p.BurnTime = frames
+	}
+	p.BurnOwnerID = ownerID
+	if direction == 0 {
+		direction = 1
+	}
+	p.BurnDirection = direction
+	if !wasBurning {
+		p.BurnTick = 0
+		// Make ignition immediately readable in a knockback-based game. Further
+		// pulses are applied by updateBurning for the configured duration.
+		initial := math.Max(1.5, math.Min(4, p.BurnPower*.15))
+		p.VX += initial * float64(direction)
+		p.VY -= initial * .45
+		p.HitNumber++
+		p.HitTimer = 0
+		p.LastHitBy = ownerID
+	}
+}
+
+func (p *Player) applyFireContactKnockback(ownerID, direction int, horizontal, vertical float64, cooldown int) bool {
+	if p == nil || !p.Active || p.FireContactCooldown > 0 || horizontal <= 0 || vertical < 0 {
+		return false
+	}
+	if direction == 0 {
+		direction = 1
+	}
+	multi := p.DamageMulti
+	if multi <= 0 {
+		multi = 1
+	}
+	if p.ShieldTime > 0 {
+		multi *= 0.2
+	}
+	p.VX += horizontal * multi * float64(direction)
+	p.VY -= vertical * multi
+	p.LastHitBy = ownerID
+	p.HitByGrenade = false
+	if cooldown < 1 {
+		cooldown = 1
+	}
+	p.FireContactCooldown = cooldown
+	return true
+}
+
+func (p *Player) updateBurning() {
+	if p == nil || p.BurnTime <= 0 || !p.Active {
+		return
+	}
+	if p.ShieldTime > 0 {
+		p.BurnTime -= 3
+		if p.BurnTime <= 0 {
+			p.BurnTime = 0
+			p.BurnPower = 0
+		}
+		return
+	}
+	p.BurnTime--
+	if p.BurnTime <= 0 {
+		p.BurnPower = 0
+		return
+	}
+	p.BurnTick++
+	if p.BurnTick%10 != 0 {
+		return
+	}
+	// Fire damage is knockback in Gun Mayhem. Small deterministic variations
+	// keep the target moving without creating network desync or a stun lock.
+	phase := float64((p.BurnTick/10+p.ID*3)%7-3) * .30
+	direction := p.BurnDirection
+	if direction == 0 {
+		direction = 1
+	}
+	tickPower := math.Max(3.2, math.Min(6, p.BurnPower*.18))
+	if p.DamageMulti > 0 {
+		tickPower *= p.DamageMulti
+	}
+	p.VX += tickPower*float64(direction) + phase
+	p.VY -= tickPower*.38 + math.Abs(phase)*.20
+	p.HitNumber++
+	p.HitTimer = 0
+	p.LastHitBy = p.BurnOwnerID
+	p.HitByGrenade = false
+}
+
 func (p *Player) resolvePlatforms(platforms []Rect) {
 	landed := false
-	if !p.FreePass && p.VY > 0 && pointHitsPlatforms(platforms, p.X, p.Y) {
+	hitNow := pointHitsPlatforms(platforms, p.X, p.Y)
+	crossedTop, crossed := platformTopCrossed(platforms, p.X, p.Y-p.VY, p.Y)
+	if !p.FreePass && p.VY > 0 && (hitNow || crossed) {
 		if math.Abs(p.VX) < 3 {
 			p.LastHitBy = 0
 			p.HitByGrenade = false
@@ -432,23 +579,24 @@ func (p *Player) resolvePlatforms(platforms []Rect) {
 		}
 
 		fallSpeed := p.VY
-		contactY := p.Y
-		p.Y -= fallSpeed * 1.01
-		for i := 1; i <= 5; i++ {
-			if pointHitsPlatforms(platforms, p.X, p.Y+float64(i)*(fallSpeed/5)) {
-				p.Y += fallSpeed / 5 * (float64(i) - 0.5)
-				break
+		if crossed {
+			// Flash begins with a point hitTest at the new foot position. Starting
+			// GM2 at the wrong Y made a player move farther than a 24px platform in
+			// one tick and skip that test completely. Preserve the source contact
+			// point, while also accepting the exact platform top crossed this tick.
+			p.Y = crossedTop
+		} else {
+			contactY := p.Y
+			p.Y -= fallSpeed * 1.01
+			for i := 1; i <= 5; i++ {
+				if pointHitsPlatforms(platforms, p.X, p.Y+float64(i)*(fallSpeed/5)) {
+					p.Y += fallSpeed / 5 * (float64(i) - 0.5)
+					break
+				}
 			}
-		}
-		// Flash resolves the contact against the vector platform shape. With our
-		// exact rectangular reconstruction, keeping the five-step approximation
-		// above leaves the registration point a fraction of a pixel inside the
-		// platform. Gravity then repeats that error every frame and the player
-		// slowly sinks through the floor. Snap to the top edge of the exact
-		// platform that produced this hit so the source registration point stays
-		// on the surface instead of accumulating numerical drift.
-		if top, ok := platformTopAtPoint(platforms, p.X, contactY); ok {
-			p.Y = top
+			if top, ok := platformTopAtPoint(platforms, p.X, contactY); ok {
+				p.Y = top
+			}
 		}
 		if math.Abs(fallSpeed) > 3 {
 			p.HardLanded = true
@@ -475,6 +623,28 @@ func (p *Player) resolvePlatforms(platforms []Rect) {
 	if pointHitsPlatforms(platforms, p.X, p.Y-8) && !p.FreePass {
 		p.FreePass = true
 	}
+}
+
+// platformTopCrossed performs the continuous counterpart of Flash's point
+// hitTest for a downward-moving foot point. It only catches a top surface that
+// lies between the old and new Y, so jumping upward and dropping through with
+// FreePass retain their source behavior.
+func platformTopCrossed(platforms []Rect, x, fromY, toY float64) (float64, bool) {
+	if toY < fromY {
+		return 0, false
+	}
+	var top float64
+	found := false
+	for _, r := range platforms {
+		if !r.ContainsX(x) || r.Y < fromY || r.Y > toY {
+			continue
+		}
+		if !found || r.Y < top {
+			top = r.Y
+			found = true
+		}
+	}
+	return top, found
 }
 
 func platformTopAtPoint(platforms []Rect, x, y float64) (float64, bool) {
@@ -588,6 +758,9 @@ func (p *Player) advanceInstagibTimeline() {
 }
 
 func (p *Player) updatePowerupTimers() {
+	if p.PortalCooldown > 0 {
+		p.PortalCooldown--
+	}
 	if p.InvisibleTime > 0 {
 		p.InvisibleTime--
 		p.Alpha -= 0.1
@@ -668,6 +841,11 @@ func (p *Player) Kill(m Map) {
 		p.KillSelf = false
 		p.InstagibFrame = 0
 		p.InstagibPlaying = false
+		p.BurnTime = 0
+		p.BurnOwnerID = 0
+		p.BurnDirection = 0
+		p.BurnTick = 0
+		p.BurnPower = 0
 		return
 	}
 	p.Respawn(m)
@@ -685,7 +863,13 @@ func (p *Player) Respawn(m Map) {
 		p.EquipWeapon(p.DefaultWeapon)
 	}
 
+	// GM1's player respawn uses -1000. GM2's DefineSprite_823_player source
+	// uses exactly -500; retaining the GM1 value gives GM2 twice the fall and
+	// enough speed to tunnel through its 24/27px platform shapes.
 	p.Y = -1000
+	if isGM2MapID(m.Number) {
+		p.Y = -500
+	}
 	p.X = m.SpawnMinX
 	width := int(m.SpawnMaxX - m.SpawnMinX)
 	if width > 0 {
@@ -705,6 +889,16 @@ func (p *Player) Respawn(m Map) {
 	p.HitTimer = 0
 	p.InstagibFrame = 0
 	p.InstagibPlaying = false
+	p.BurnTime = 0
+	p.BurnOwnerID = 0
+	p.BurnDirection = 0
+	p.BurnTick = 0
+	p.BurnPower = 0
+	p.FireContactCooldown = 0
+	p.PortalCooldown = 0
+	p.AISearchTime = 0
+	p.AISearchPlayerID = 0
+	p.AIFireCadence = 0
 	p.CheapTimer = 0
 
 	p.Grenades = 3
@@ -713,9 +907,16 @@ func (p *Player) Respawn(m Map) {
 	}
 	p.GrenadeHeld = false
 	p.GrenadePower = 0
+	if p.PortalNextColor != PortalBlue && p.PortalNextColor != PortalOrange {
+		p.PortalNextColor = PortalBlue
+	}
+	p.PortalCooldown = 0
 	p.InvisibleTime = 0
 	p.ShieldTime = 0
 	p.JetFuel = 0
+	if p.RuleInfiniteJetpack {
+		p.JetFuel = 100
+	}
 	if p.AISpecial == sourceAISpecialJetpack {
 		// playerAI3.respawn() always restores a full jet pack.
 		p.JetFuel = 100

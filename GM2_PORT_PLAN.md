@@ -44,29 +44,31 @@ GM2 `gunsound()` also contains explicit sound mappings for 67..86.
 
 ## GM2 maps
 
-The GM2 custom-menu text export maps frames 1..21 to:
+GM2 `Symbol 1236` maps frames/source map numbers 1..21 to:
 
-1. Safari Showdown
-2. Polar Pwn4ge
-3. Midnight Wood
-4. Hovering Houses
-5. Desert Destruction
-6. Great Wall Brawl
-7. Solar Shootout
-8. Underwater Slaughter
-9. Dessert Duel
+1. Castle
+2. Highway
+3. Sub Base
+4. Alien Planet
+5. Venice
+6. Avalon
+7. Space Station
+8. Ski Lift
+9. Jungle
 10. No Name
-11. Grim City
-12. Mushroom Mountain
-13. Jungle
-14. Ski Lift
-15. Space Station
-16. Avalon
-17. Venice
-18. Alien Planet
-19. Sub Base
-20. Highway
-21. Castle
+11. Dessert Duel
+12. Underwater Slaughter
+13. Solar Shootout
+14. Great Wall Brawl
+15. Mushroom Mountain
+16. Desert Destruction
+17. Hovering Houses
+18. Midnight Wood
+19. Polar Pwn4ge
+20. Grim City
+21. Safari Showdown
+
+Maps 1..9 are the nine new GM2 arenas. Maps 10..21 are returning GM1 arenas under GM2's own source numbering.
 
 Special selector frames:
 

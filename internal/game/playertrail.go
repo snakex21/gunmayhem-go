@@ -7,8 +7,9 @@ type PlayerTrailEffect struct {
 	X, Y        float64
 	Facing      int
 	Scale       float64
-	PlayerColor int
-	ShirtNumber int
+	PlayerColor      int
+	ShirtNumber      int
+	UseGM2Cosmetics  bool
 	Life        int
 	Fresh       bool
 	LegFrame1   int
@@ -26,8 +27,9 @@ func newPlayerTrailEffect(p *Player, mini bool) PlayerTrailEffect {
 		Y:           p.Y,
 		Facing:      p.Facing,
 		Scale:       scale,
-		PlayerColor: p.PlayerColor,
-		ShirtNumber: p.ShirtNumber,
+		PlayerColor:      p.PlayerColor,
+		ShirtNumber:      p.ShirtNumber,
+		UseGM2Cosmetics:  p.UseGM2Cosmetics,
 		Life:        10,
 		Fresh:       true,
 	}

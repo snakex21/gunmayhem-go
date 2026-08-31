@@ -11,6 +11,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+type weaponPlayerColorFrameKey struct {
+	Number, Frame, Color int
+}
+
 type Assets struct {
 	SceneBack           map[int]*SourceRaster
 	SceneMid            map[int]*SourceRaster
@@ -86,18 +90,31 @@ type Assets struct {
 	playerColorLoaded map[int]bool
 	ShirtFrames       map[int]*SourceRaster
 	HatFrames         map[int]*SourceRaster
-	HeadTimeline      []SourceTransformFrame
-	HeadInnerMatrix   xflMatrix
-	Eyes              *SourceRaster
-	HandColors        map[int]*SourceRaster
-	ShieldFrames      map[int]*SourceRaster
-	ShieldTimeline    []SourceVisualFrame
-	JetpackBase       *SourceRaster
-	JetpackFuel       *SourceRaster
-	JetpackFuelMatrix xflMatrix
-	JetThrustBase     *SourceRaster
-	JetThrustFX       *SourceRaster
-	DropPack          *SourceRaster
+
+	// GM2 uses its own 20-colour body palette and a larger clothing set.
+	// Campaign opponents use source-only colours/hats such as color 20 and
+	// hat 46, so these assets must stay separate from the GM1 0..10 palette.
+	GM2TorsoColors       map[int]*SourceRaster
+	GM2HeadColors        map[int]*SourceRaster
+	GM2HandColors        map[int]*SourceRaster
+	GM2LegColors         map[int]*SourceRaster
+	GM2ShirtFrames       map[int]*SourceRaster
+	GM2HatFrames         map[int]*SourceRaster
+	GM2PlayerArrowFrames map[int]*SourceRaster
+	gm2PlayerColorLoaded map[int]bool
+	HeadTimeline         []SourceTransformFrame
+	HeadInnerMatrix      xflMatrix
+	Eyes                 *SourceRaster
+	EyeFrames            map[int]*SourceRaster
+	HandColors           map[int]*SourceRaster
+	ShieldFrames         map[int]*SourceRaster
+	ShieldTimeline       []SourceVisualFrame
+	JetpackBase          *SourceRaster
+	JetpackFuel          *SourceRaster
+	JetpackFuelMatrix    xflMatrix
+	JetThrustBase        *SourceRaster
+	JetThrustFX          *SourceRaster
+	DropPack             *SourceRaster
 
 	// Symbol 188 owns the leg color frames. Symbol 282 and Symbol 189 own
 	// the walking transforms. Keeping these separate mirrors the Flash source.
@@ -138,6 +155,7 @@ type Assets struct {
 	HUDLastLifeFrames       map[int]*SourceRaster
 	HUDLastLifeTimelines    [3][]SourceTransformFrame
 	WeaponFrames            map[int]map[int]*SourceRaster
+	WeaponPlayerColorFrames map[weaponPlayerColorFrameKey]*SourceRaster
 }
 
 func LoadAssets() *Assets {
@@ -148,51 +166,61 @@ func LoadAssets() *Assets {
 		sceneLoaded: make(map[int]bool),
 		// Only Main Menu is needed before the first frame. Secondary screens are
 		// loaded behind the first source fade by EnsureInteractions/EnsureGunLibrary.
-		MainMenu:              loadSourceRaster("Symbol 28", 0, "sprites", "DefineSprite_28_mainmenu", "1.png"),
-		CampaignUnlock:        make(map[int]*SourceRaster),
-		CampaignInfoFrames:    make(map[int]*SourceRaster),
-		CampaignLevelIcons:    make(map[int]*SourceRaster),
-		CampaignLevelLocks:    make(map[int]*SourceRaster),
-		FadeFrames:            make(map[int]*SourceRaster),
-		WinCountdownFrames:    make(map[int]*SourceRaster),
-		WinCountdownTimelines: make(map[int][]SourceTransformFrame),
-		WinnerFrames:          make(map[int]*SourceRaster),
-		CampaignLoseFrames:    make(map[int]*SourceRaster),
-		TeamWinFrames:         make(map[int]*SourceRaster),
-		ZombieWaveFrames:      make(map[int]*SourceRaster),
-		OptionToggleFrames:    make(map[int]*SourceRaster),
-		OptionKeyFrames:       make(map[int]*SourceRaster),
-		OptionArrowGlyphs:     make(map[int]*SourceRaster),
-		GunLibraryStats:       make(map[int]*SourceRaster),
-		GunLibraryDrops:       make(map[int]*SourceRaster),
-		GunLibraryThumbs:      make(map[int]*SourceRaster),
-		CustomWarningLives:    make(map[int]*SourceRaster),
-		CustomWarningPlayers:  make(map[int]*SourceRaster),
-		CustomSelectionFrames: make(map[int]*SourceRaster),
-		StarterGunFrames:      make(map[int]*SourceRaster),
-		PerkFrames:            make(map[int]*SourceRaster),
-		ModeDisplayFrames:     make(map[int]*SourceRaster),
-		ModeCheckFrames:       make(map[int]*SourceRaster),
-		MapPreviewImages:      make(map[int]*SourceRaster),
-		CampaignThumbs:        make(map[int]*SourceRaster),
-		TorsoColors:           make(map[int]*SourceRaster),
-		HeadColors:            make(map[int]*SourceRaster),
-		playerColorLoaded:     make(map[int]bool),
-		ShirtFrames:           make(map[int]*SourceRaster),
-		HatFrames:             make(map[int]*SourceRaster),
-		HandColors:            make(map[int]*SourceRaster),
-		ShieldFrames:          make(map[int]*SourceRaster),
-		LegColors:             make(map[int]*SourceRaster),
-		ExplosionFX:           make(map[BlastEffectKind]*SourceRaster),
-		Shells:                make(map[int]*SourceRaster),
-		PlayerArrowFrames:     make(map[int]*SourceRaster),
-		BulletTrail:           make(map[int]*SourceRaster),
-		InstagibFX:            make(map[int]*SourceRaster),
-		PowerupIcons:          make(map[int]*SourceRaster),
-		PowerupFlashFrames:    make(map[int]*SourceRaster),
-		PowerupNameFrames:     make(map[int]*SourceRaster),
-		HUDLastLifeFrames:     make(map[int]*SourceRaster),
-		WeaponFrames:          make(map[int]map[int]*SourceRaster),
+		MainMenu:                loadSourceRaster("Symbol 28", 0, "sprites", "DefineSprite_28_mainmenu", "1.png"),
+		CampaignUnlock:          make(map[int]*SourceRaster),
+		CampaignInfoFrames:      make(map[int]*SourceRaster),
+		CampaignLevelIcons:      make(map[int]*SourceRaster),
+		CampaignLevelLocks:      make(map[int]*SourceRaster),
+		FadeFrames:              make(map[int]*SourceRaster),
+		WinCountdownFrames:      make(map[int]*SourceRaster),
+		WinCountdownTimelines:   make(map[int][]SourceTransformFrame),
+		WinnerFrames:            make(map[int]*SourceRaster),
+		CampaignLoseFrames:      make(map[int]*SourceRaster),
+		TeamWinFrames:           make(map[int]*SourceRaster),
+		ZombieWaveFrames:        make(map[int]*SourceRaster),
+		OptionToggleFrames:      make(map[int]*SourceRaster),
+		OptionKeyFrames:         make(map[int]*SourceRaster),
+		OptionArrowGlyphs:       make(map[int]*SourceRaster),
+		GunLibraryStats:         make(map[int]*SourceRaster),
+		GunLibraryDrops:         make(map[int]*SourceRaster),
+		GunLibraryThumbs:        make(map[int]*SourceRaster),
+		CustomWarningLives:      make(map[int]*SourceRaster),
+		CustomWarningPlayers:    make(map[int]*SourceRaster),
+		CustomSelectionFrames:   make(map[int]*SourceRaster),
+		StarterGunFrames:        make(map[int]*SourceRaster),
+		PerkFrames:              make(map[int]*SourceRaster),
+		ModeDisplayFrames:       make(map[int]*SourceRaster),
+		ModeCheckFrames:         make(map[int]*SourceRaster),
+		MapPreviewImages:        make(map[int]*SourceRaster),
+		CampaignThumbs:          make(map[int]*SourceRaster),
+		TorsoColors:             make(map[int]*SourceRaster),
+		HeadColors:              make(map[int]*SourceRaster),
+		playerColorLoaded:       make(map[int]bool),
+		ShirtFrames:             make(map[int]*SourceRaster),
+		HatFrames:               make(map[int]*SourceRaster),
+		GM2TorsoColors:          make(map[int]*SourceRaster),
+		GM2HeadColors:           make(map[int]*SourceRaster),
+		GM2HandColors:           make(map[int]*SourceRaster),
+		GM2LegColors:            make(map[int]*SourceRaster),
+		GM2ShirtFrames:          make(map[int]*SourceRaster),
+		GM2HatFrames:            make(map[int]*SourceRaster),
+		GM2PlayerArrowFrames:    make(map[int]*SourceRaster),
+		gm2PlayerColorLoaded:    make(map[int]bool),
+		EyeFrames:               make(map[int]*SourceRaster),
+		HandColors:              make(map[int]*SourceRaster),
+		ShieldFrames:            make(map[int]*SourceRaster),
+		LegColors:               make(map[int]*SourceRaster),
+		ExplosionFX:             make(map[BlastEffectKind]*SourceRaster),
+		Shells:                  make(map[int]*SourceRaster),
+		PlayerArrowFrames:       make(map[int]*SourceRaster),
+		BulletTrail:             make(map[int]*SourceRaster),
+		InstagibFX:              make(map[int]*SourceRaster),
+		PowerupIcons:            make(map[int]*SourceRaster),
+		PowerupFlashFrames:      make(map[int]*SourceRaster),
+		PowerupNameFrames:       make(map[int]*SourceRaster),
+		HUDLastLifeFrames:       make(map[int]*SourceRaster),
+		WeaponFrames:            make(map[int]map[int]*SourceRaster),
+		WeaponPlayerColorFrames: make(map[weaponPlayerColorFrameKey]*SourceRaster),
 	}
 	// Symbol625 fadeaway is one black 1200x900 rectangle translated through
 	// 21 source positions. drawGlobalFade reconstructs it directly, so startup
@@ -464,6 +492,24 @@ func (a *Assets) HatFrame(frame int) *SourceRaster {
 	return r
 }
 
+func (a *Assets) EyeFrame(frame int) *SourceRaster {
+	if frame < 0 || frame >= 12 {
+		return nil
+	}
+	if r, ok := a.EyeFrames[frame]; ok {
+		return r
+	}
+	var r *SourceRaster
+	if gm2CosmeticsAvailable() {
+		r = loadSourceRasterIn("gm2", "Symbol 291", frame, "sprites", "DefineSprite_291", strconv.Itoa(frame+1)+".png")
+	}
+	if r == nil && frame == 0 {
+		r = a.Eyes
+	}
+	a.EyeFrames[frame] = r
+	return r
+}
+
 var sourcePlayerPalette = [...]color.NRGBA{
 	{R: 0x99, G: 0x99, B: 0x99, A: 0xff}, // source frame1 / non-selectable fallback
 	{R: 0x00, G: 0xcc, B: 0xff, A: 0xff},
@@ -555,6 +601,48 @@ func (a *Assets) EnsurePlayerColor(colorIndex int) {
 	a.playerColorLoaded[colorIndex] = true
 }
 
+func (a *Assets) EnsureGM2PlayerColor(colorIndex int) {
+	if colorIndex < 1 || colorIndex > 20 || a.gm2PlayerColorLoaded[colorIndex] {
+		return
+	}
+	// GM2 color movie clips use gotoAndStop(playernumber), so source colour N
+	// is zero-based frame N-1 in the exported PNG sequence.
+	frame := colorIndex - 1
+	file := strconv.Itoa(frame+1) + ".png"
+	a.GM2LegColors[colorIndex] = loadSourceRasterIn("gm2", "Symbol 148", frame, "sprites", "DefineSprite_148", file)
+	a.GM2TorsoColors[colorIndex] = loadSourceRasterIn("gm2", "Symbol 174", frame, "sprites", "DefineSprite_174", file)
+	a.GM2HeadColors[colorIndex] = loadSourceRasterIn("gm2", "Symbol 223", frame, "sprites", "DefineSprite_223", file)
+	a.GM2HandColors[colorIndex] = loadSourceRasterIn("gm2", "Symbol 368", frame, "sprites", "DefineSprite_368", file)
+	// Symbol760 arrow has a red fallback on frame1; playernumber+1 selects
+	// zero-based frame colorIndex for the actual palette colour.
+	a.GM2PlayerArrowFrames[colorIndex] = loadSourceRasterIn("gm2", "Symbol 760", colorIndex, "sprites", "DefineSprite_760", strconv.Itoa(colorIndex+1)+".png")
+	a.gm2PlayerColorLoaded[colorIndex] = true
+}
+
+func (a *Assets) GM2ShirtFrame(frame int) *SourceRaster {
+	if frame < 0 || frame >= 64 {
+		return nil
+	}
+	if r, ok := a.GM2ShirtFrames[frame]; ok {
+		return r
+	}
+	r := loadSourceRasterIn("gm2", "Symbol 201", frame, "sprites", "DefineSprite_201", strconv.Itoa(frame+1)+".png")
+	a.GM2ShirtFrames[frame] = r
+	return r
+}
+
+func (a *Assets) GM2HatFrame(frame int) *SourceRaster {
+	if frame < 0 || frame >= 64 {
+		return nil
+	}
+	if r, ok := a.GM2HatFrames[frame]; ok {
+		return r
+	}
+	r := loadSourceRasterIn("gm2", "Symbol 279", frame, "sprites", "DefineSprite_279", strconv.Itoa(frame+1)+".png")
+	a.GM2HatFrames[frame] = r
+	return r
+}
+
 func (a *Assets) EnsureInteractions() {
 	if a.interactionLoaded {
 		return
@@ -577,6 +665,7 @@ func (a *Assets) EnsureScene(n int) {
 		a.SceneBack[n] = loadSourceRasterIn("gm2", "Symbol 1642", source-1, "sprites", "DefineSprite_1642", frame)
 		a.SceneMid[n] = loadSourceRasterIn("gm2", "Symbol 1690", source-1, "sprites", "DefineSprite_1690", frame)
 		a.SceneFront[n] = loadSourceRasterIn("gm2", "Symbol 1835", source-1, "sprites", "DefineSprite_1835", frame)
+		applyGM2SceneTimelineOrigins(a.SceneBack[n], a.SceneMid[n], a.SceneFront[n])
 		a.sceneLoaded[n] = true
 		return
 	}
@@ -616,6 +705,11 @@ func (a *Assets) WeaponFrame(number, frame int) *SourceRaster {
 		frames[frame] = nil
 		return nil
 	}
+	if number >= 87 {
+		r := loadCustomWeaponRaster(number, frame)
+		frames[frame] = r
+		return r
+	}
 	libraryName := sourceLibraryNameFromSpriteDir(def.SpriteDir)
 	if libraryName == "" {
 		frames[frame] = nil
@@ -634,6 +728,163 @@ func (a *Assets) WeaponFrame(number, frame int) *SourceRaster {
 	}
 	frames[frame] = r
 	return r
+}
+
+// WeaponFrameForPlayer fixes AMR-2's nested gunhand export. In Flash,
+// Symbol368 immediately gotoAndStop()s on the owning player's color. FFDec's
+// flattened PNG sequence instead advances that color symbol with the gun
+// timeline, baking a different hand color into every bolt-action frame.
+func (a *Assets) WeaponFrameForPlayer(number, frame, colorIndex int) *SourceRaster {
+	base := a.WeaponFrame(number, frame)
+	if number != 81 || base == nil {
+		return base
+	}
+	// Positive values are GM1 palette indexes. Negative values encode a GM2
+	// source colour (-1..-20), used by the combined editor and GM2 campaign.
+	tint := sourcePlayerPalette[0]
+	if colorIndex < 0 {
+		n := -colorIndex
+		if n >= 1 && n < len(gm2PlayerPalette) {
+			tint = gm2PlayerPalette[n]
+		} else {
+			colorIndex = 0
+		}
+	} else if colorIndex >= 0 && colorIndex < len(sourcePlayerPalette) {
+		tint = sourcePlayerPalette[colorIndex]
+	} else {
+		colorIndex = 0
+	}
+	key := weaponPlayerColorFrameKey{Number: number, Frame: frame, Color: colorIndex}
+	if fixed, ok := a.WeaponPlayerColorFrames[key]; ok {
+		return fixed
+	}
+
+	def, ok := WeaponByNumber(number)
+	if !ok {
+		return base
+	}
+	img := decodeOriginalPNGIn("gm2", "sprites", def.SpriteDir, strconv.Itoa(frame+1)+".png")
+	if img == nil {
+		a.WeaponPlayerColorFrames[key] = base
+		return base
+	}
+	fixedImage, changed := recolorAMR2EmbeddedHand(img, frame, tint)
+	if !changed {
+		a.WeaponPlayerColorFrames[key] = base
+		return base
+	}
+	fixed := &SourceRaster{Image: ebiten.NewImageFromImage(fixedImage), Bounds: base.Bounds}
+	a.WeaponPlayerColorFrames[key] = fixed
+	return fixed
+}
+
+var amr2ExportedHandPalette = [...]color.NRGBA{
+	{R: 0xff, G: 0x99, B: 0xcc, A: 0xff}, {R: 0xff, G: 0x00, B: 0xff, A: 0xff},
+	{R: 0x99, G: 0x00, B: 0xcc, A: 0xff}, {R: 0xff, G: 0x5e, B: 0x5e, A: 0xff},
+	{R: 0x99, G: 0x00, B: 0x00, A: 0xff}, {R: 0xff, G: 0x66, B: 0x00, A: 0xff},
+	{R: 0x66, G: 0x33, B: 0x00, A: 0xff}, {R: 0x99, G: 0x66, B: 0x00, A: 0xff},
+	{R: 0xff, G: 0xcc, B: 0x00, A: 0xff}, {R: 0xff, G: 0x99, B: 0x00, A: 0xff},
+	{R: 0x66, G: 0x66, B: 0x66, A: 0xff}, {R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff},
+	{R: 0x66, G: 0xff, B: 0xff, A: 0xff}, {R: 0x00, G: 0xcc, B: 0xcc, A: 0xff},
+	{R: 0x00, G: 0x66, B: 0xff, A: 0xff}, {R: 0x00, G: 0x66, B: 0x66, A: 0xff},
+	{R: 0x00, G: 0x99, B: 0x00, A: 0xff}, {R: 0x33, G: 0xcc, B: 0x66, A: 0xff},
+	{R: 0x00, G: 0xff, B: 0x00, A: 0xff}, {R: 0xcc, G: 0xff, B: 0x00, A: 0xff},
+}
+
+func amr2ExportedHandColor(frame int) (color.NRGBA, bool) {
+	if frame < 2 {
+		return color.NRGBA{}, false
+	}
+	// gunhand starts on AMR-2 frame3. Symbol368 has 21 timeline ticks because
+	// its final (20th color) keyframe lasts two ticks before looping.
+	nested := (frame - 2) % 21
+	if nested < 0 {
+		nested += 21
+	}
+	if nested >= len(amr2ExportedHandPalette) {
+		nested = len(amr2ExportedHandPalette) - 1
+	}
+	return amr2ExportedHandPalette[nested], true
+}
+
+func recolorAMR2EmbeddedHand(src image.Image, _ int, tint color.NRGBA) (image.Image, bool) {
+	b := src.Bounds()
+	if b.Empty() {
+		return src, false
+	}
+	sourceFill, minX, minY, maxX, maxY, ok := findAMR2ExportedHand(src)
+	if !ok {
+		return src, false
+	}
+
+	out := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	denom := float64(sourceFill.R)*float64(sourceFill.R) + float64(sourceFill.G)*float64(sourceFill.G) + float64(sourceFill.B)*float64(sourceFill.B)
+	changed := false
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c := color.NRGBAModel.Convert(src.At(x, y)).(color.NRGBA)
+			insideHand := x >= minX-2 && x <= maxX+2 && y >= minY-2 && y <= maxY+2
+			if insideHand && c.A > 0 && denom > 0 {
+				exactFill := c.R == sourceFill.R && c.G == sourceFill.G && c.B == sourceFill.B
+				scale := (float64(c.R)*float64(sourceFill.R) + float64(c.G)*float64(sourceFill.G) + float64(c.B)*float64(sourceFill.B)) / denom
+				shadedEdge := scale >= .15 && scale <= 1.2 && rgbDistanceFromScale(c, sourceFill, scale) <= 18
+				if exactFill || shadedEdge {
+					c.R = uint8(math.Min(255, float64(tint.R)*scale+0.5))
+					c.G = uint8(math.Min(255, float64(tint.G)*scale+0.5))
+					c.B = uint8(math.Min(255, float64(tint.B)*scale+0.5))
+					changed = true
+				}
+			}
+			out.SetNRGBA(x-b.Min.X, y-b.Min.Y, c)
+		}
+	}
+	return out, changed
+}
+
+// findAMR2ExportedHand detects the compact flat-color bolt hand directly in
+// the rendered frame. The nested Flash color clip loops independently from the
+// gun timeline, so deriving its color solely from the outer frame number can
+// select the wrong palette entry after a goto/loop and let the rainbow through.
+func findAMR2ExportedHand(src image.Image) (fill color.NRGBA, minX, minY, maxX, maxY int, ok bool) {
+	b := src.Bounds()
+	bestPixels := 0
+	for _, candidate := range amr2ExportedHandPalette {
+		candidateMinX, candidateMinY := b.Max.X, b.Max.Y
+		candidateMaxX, candidateMaxY := b.Min.X-1, b.Min.Y-1
+		pixels := 0
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				c := color.NRGBAModel.Convert(src.At(x, y)).(color.NRGBA)
+				if c.A == 0 || c.R != candidate.R || c.G != candidate.G || c.B != candidate.B {
+					continue
+				}
+				pixels++
+				candidateMinX, candidateMinY = min(candidateMinX, x), min(candidateMinY, y)
+				candidateMaxX, candidateMaxY = max(candidateMaxX, x), max(candidateMaxY, y)
+			}
+		}
+		if pixels < 20 || candidateMaxX-candidateMinX > 14 || candidateMaxY-candidateMinY > 14 || pixels <= bestPixels {
+			continue
+		}
+		fill = candidate
+		minX, minY, maxX, maxY = candidateMinX, candidateMinY, candidateMaxX, candidateMaxY
+		bestPixels = pixels
+		ok = true
+	}
+	return
+}
+
+func rgbChroma(c color.NRGBA) uint8 {
+	maxV := max(c.R, max(c.G, c.B))
+	minV := min(c.R, min(c.G, c.B))
+	return maxV - minV
+}
+
+func rgbDistanceFromScale(c, base color.NRGBA, scale float64) float64 {
+	dr := math.Abs(float64(c.R) - float64(base.R)*scale)
+	dg := math.Abs(float64(c.G) - float64(base.G)*scale)
+	db := math.Abs(float64(c.B) - float64(base.B)*scale)
+	return math.Max(dr, math.Max(dg, db))
 }
 
 func loadJetThrustSourceParts() (base, fx *SourceRaster) {

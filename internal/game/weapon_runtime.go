@@ -13,6 +13,10 @@ func advanceWeaponTimeline(p *Player, shells *[]Shell) {
 	if !w.Playing {
 		return
 	}
+	if spec, ok := developedWeaponSpec(w.Def.Number); ok && spec.Category == DevelopedCategoryPistol && w.Bullets <= 0 {
+		advanceDevelopedPistolReload(p, w, shells)
+		return
+	}
 	timeline := weaponTimeline(w.Def.Number)
 	if timeline.TotalFrames <= 0 {
 		return
@@ -22,6 +26,46 @@ func advanceWeaponTimeline(p *Player, shells *[]Shell) {
 		next = 0
 	}
 	enterWeaponTimelineFrame(p, w, next, shells, 0)
+}
+
+func beginDevelopedPistolReload(p *Player, w *WeaponState) {
+	w.Playing = true
+	w.Frame = 2
+	w.WaitTime = 0
+	p.IdleTime = 0
+}
+
+// Developed starter pistols do not have exported Flash timelines of their own.
+// Give them a compact magazine-and-slide sequence instead of silently replacing
+// the empty pistol with a freshly loaded instance.
+func advanceDevelopedPistolReload(p *Player, w *WeaponState, shells *[]Shell) {
+	w.Frame++
+	switch w.Frame {
+	case 6:
+		p.PendingSounds = append(p.PendingSounds, "pistol_mag.wav")
+		spawnReloadParticle(p, 7, shells)
+	case 20:
+		p.PendingSounds = append(p.PendingSounds, "pistol_slide.wav")
+	case 27:
+		w.Bullets = w.Def.Bullets
+		w.Frame = 1
+		w.Playing = false
+		w.WaitTime = 0
+		w.Alpha = 1
+		p.VisualGunRotation = 0
+		p.VisualGunY = 0
+		return
+	}
+
+	// A visible but restrained dip for the magazine, followed by a small upward
+	// tilt while the slide is worked. It applies only during developed reloads.
+	if w.Frame < 13 {
+		p.VisualGunRotation = 18
+		p.VisualGunY = 4
+	} else {
+		p.VisualGunRotation = -10
+		p.VisualGunY = 1
+	}
 }
 
 func enterWeaponTimelineFrame(p *Player, w *WeaponState, frame int, shells *[]Shell, depth int) {

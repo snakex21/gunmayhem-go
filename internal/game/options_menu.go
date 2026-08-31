@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -18,38 +19,92 @@ const (
 	optionHitQualityMedium
 	optionHitQualityHigh
 	optionHitBack
+	optionHitLoudnessEQ
+	optionHitFullscreen
+	optionHitResetSettings
+	optionHitResetControls
+	optionHitAllowCheats
+	optionHitCheckUpdates
+	optionHitUpdateNow
 	optionHitControlBase = 100
 )
 
-var optionToggleLocal = Rect{X: 0, Y: 0, W: 57, H: 31.5} // Symbol982
+const (
+	optionSliderNone = iota
+	optionSliderMusic
+	optionSliderSFX
+)
 
-var optionPlacements = [...]struct {
-	hit  int
-	x, y float64
+var optionQualityButtons = [...]struct {
+	hit   int
+	label string
+	rect  Rect
 }{
-	{optionHitMusicOn, 74.0, 511.85},
-	{optionHitMusicOff, 137.0, 511.85},
-	{optionHitSoundOn, 252.55, 511.85},
-	{optionHitSoundOff, 315.55, 511.85},
-	{optionHitQualityLow, 431.1, 511.85},
-	{optionHitQualityMedium, 494.1, 511.85},
-	{optionHitQualityHigh, 557.1, 512.15},
+	{optionHitQualityLow, "LOW", Rect{X: 445, Y: 486, W: 72, H: 28}},
+	{optionHitQualityMedium, "MEDIUM", Rect{X: 522, Y: 486, W: 72, H: 28}},
+	{optionHitQualityHigh, "HIGH", Rect{X: 599, Y: 486, W: 72, H: 28}},
 }
 
+var (
+	optionMusicSliderRect   = Rect{X: 115, Y: 452, W: 220, H: 12}
+	optionSFXSliderRect     = Rect{X: 115, Y: 485, W: 220, H: 12}
+	optionLoudnessRect      = Rect{X: 385, Y: 451, W: 140, H: 28}
+	optionFullscreenRect    = Rect{X: 535, Y: 451, W: 150, H: 28}
+	optionResetSettingsRect = Rect{X: 705, Y: 451, W: 150, H: 28}
+	optionResetControlsRect = Rect{X: 705, Y: 486, W: 150, H: 28}
+	optionAllowCheatsRect   = Rect{X: 535, Y: 521, W: 150, H: 28}
+	optionBackRect          = Rect{X: 705, Y: 521, W: 150, H: 28}
+	optionCheckUpdatesRect  = Rect{X: 535, Y: 558, W: 150, H: 28}
+	optionUpdateNowRect     = Rect{X: 705, Y: 558, W: 150, H: 28}
+)
+
 func optionsHitAt(x, y float64) int {
-	for _, p := range optionPlacements {
-		if sourceMenuHitRect(optionToggleLocal, p.x, p.y, 1, 1).Contains(x, y) {
-			return p.hit
+	for _, button := range optionQualityButtons {
+		if button.rect.Contains(x, y) {
+			return button.hit
 		}
 	}
-	if sourceMenuHitRect(campaignBackLocal, 714.15, 512.15, 1, 1).Contains(x, y) {
+	switch {
+	case optionLoudnessRect.Contains(x, y):
+		return optionHitLoudnessEQ
+	case optionFullscreenRect.Contains(x, y):
+		return optionHitFullscreen
+	case optionResetSettingsRect.Contains(x, y):
+		return optionHitResetSettings
+	case optionResetControlsRect.Contains(x, y):
+		return optionHitResetControls
+	case optionAllowCheatsRect.Contains(x, y):
+		return optionHitAllowCheats
+	case optionBackRect.Contains(x, y):
 		return optionHitBack
+	case optionCheckUpdatesRect.Contains(x, y):
+		return optionHitCheckUpdates
+	case optionUpdateNowRect.Contains(x, y):
+		return optionHitUpdateNow
 	}
 	return optionHitNone
 }
 
+func optionSliderHitAt(x, y float64) int {
+	if optionMusicSliderRect.Contains(x, y) {
+		return optionSliderMusic
+	}
+	if optionSFXSliderRect.Contains(x, y) {
+		return optionSliderSFX
+	}
+	return optionSliderNone
+}
+
 func (g *Game) updateOptionsMenu() {
 	if g.optionsKeyCapturePlayer > 0 {
+		// Developed UX: ESC cancels key capture instead of becoming a binding or
+		// trapping the user in the original Flash lockup.
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			g.optionsKeyCapturePlayer = 0
+			g.optionsKeyCaptureIndex = 0
+			g.optionsPressed = optionHitNone
+			return
+		}
 		for _, key := range inpututil.AppendJustPressedKeys(nil) {
 			vk, ok := ebitenKeyToSourceVK(key)
 			if !ok || !sourceOptionValidVK(vk) {
@@ -65,14 +120,33 @@ func (g *Game) updateOptionsMenu() {
 		}
 		return
 	}
+
+	mx, my := ebiten.CursorPosition()
+	x, y := float64(mx), float64(my)
+	if g.optionsDraggingSlider != optionSliderNone {
+		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			g.setOptionSliderFromX(g.optionsDraggingSlider, x)
+			return
+		}
+		g.setOptionSliderFromX(g.optionsDraggingSlider, x)
+		g.optionsDraggingSlider = optionSliderNone
+		_ = g.saveConfig()
+		return
+	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.optionsPressed = optionHitNone
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 		return
 	}
-	mx, my := ebiten.CursorPosition()
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		if player, index, ok := optionsControlHitAt(float64(mx), float64(my)); ok {
+		if slider := optionSliderHitAt(x, y); slider != optionSliderNone {
+			g.optionsDraggingSlider = slider
+			g.setOptionSliderFromX(slider, x)
+			g.optionsPressed = optionHitNone
+			return
+		}
+		if player, index, ok := optionsControlHitAt(x, y); ok {
 			// Symbol965 uses onPress and immediately disables every other button
 			// until keyListener receives a valid Key.getCode().
 			g.optionsKeyCapturePlayer = player + 1
@@ -81,7 +155,7 @@ func (g *Game) updateOptionsMenu() {
 			return
 		}
 	}
-	hit := optionsHitAt(float64(mx), float64(my))
+	hit := optionsHitAt(x, y)
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		g.optionsPressed = hit
 	}
@@ -94,24 +168,31 @@ func (g *Game) updateOptionsMenu() {
 		return
 	}
 	switch pressed {
-	case optionHitMusicOn:
-		g.musicOn = true
-		if g.audioStarted {
-			g.syncSourceMusic()
+	case optionHitLoudnessEQ:
+		g.loudnessEQ = !g.loudnessEQ
+		_ = g.saveConfig()
+	case optionHitFullscreen:
+		g.toggleOptionsFullscreen()
+		_ = g.saveConfig()
+	case optionHitResetSettings:
+		g.resetOptionSettings()
+		_ = g.saveConfig()
+	case optionHitResetControls:
+		g.resetOptionControls()
+		_ = g.saveConfig()
+	case optionHitAllowCheats:
+		g.allowCheats = !g.allowCheats
+		if !g.allowCheats {
+			g.showCollisions = false
+			g.menuDebug = false
 		}
 		_ = g.saveConfig()
-	case optionHitMusicOff:
-		g.musicOn = false
-		if g.audioStarted {
-			g.syncSourceMusic()
+	case optionHitCheckUpdates:
+		g.beginManualUpdateCheck()
+	case optionHitUpdateNow:
+		if g.settingsUpdateActionAvailable() {
+			g.beginUpdateDownload()
 		}
-		_ = g.saveConfig()
-	case optionHitSoundOn:
-		g.soundOn = true
-		_ = g.saveConfig()
-	case optionHitSoundOff:
-		g.soundOn = false
-		_ = g.saveConfig()
 	case optionHitQualityLow:
 		g.quality = 1
 		setSourceRenderQuality(1)
@@ -134,6 +215,87 @@ func (g *Game) updateOptionsMenu() {
 		// DefineSprite_991.btn_back is the only Options control that plays menu.wav.
 		g.playSourceSFX("menu.wav", false)
 		g.beginFade(screenMainMenu, fadePurposeScreen)
+	}
+}
+
+func clampOptionVolume(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+func optionSliderValueFromX(r Rect, x float64) float64 {
+	if r.W <= 0 {
+		return 0
+	}
+	return clampOptionVolume((x - r.X) / r.W)
+}
+
+func (g *Game) setOptionSliderFromX(slider int, x float64) {
+	switch slider {
+	case optionSliderMusic:
+		g.musicVolume = optionSliderValueFromX(optionMusicSliderRect, x)
+		g.musicOn = g.musicVolume > 0
+		if g.audioStarted {
+			g.syncSourceMusic()
+		}
+	case optionSliderSFX:
+		g.soundVolume = optionSliderValueFromX(optionSFXSliderRect, x)
+		g.soundOn = g.soundVolume > 0
+	}
+}
+
+func (g *Game) toggleOptionsFullscreen() {
+	if ebiten.IsFullscreen() {
+		ebiten.SetFullscreen(false)
+		if g.windowedWidth >= 480 && g.windowedHeight >= 270 {
+			ebiten.SetWindowSize(g.windowedWidth, g.windowedHeight)
+		}
+		if g.windowPositionSaved {
+			ebiten.SetWindowPosition(g.windowedX, g.windowedY)
+		}
+		return
+	}
+	g.captureWindowedState()
+	ebiten.SetFullscreen(true)
+}
+
+func (g *Game) resetOptionControls() {
+	for i := range g.controlConfigs {
+		g.controlConfigs[i] = OriginalControls(i + 1)
+	}
+	for i, p := range g.players {
+		if p != nil && i < len(g.controlConfigs) {
+			p.Controls = g.controlConfigs[i]
+		}
+	}
+	g.optionsKeyCapturePlayer = 0
+	g.optionsKeyCaptureIndex = 0
+}
+
+func (g *Game) resetOptionSettings() {
+	defaults := DefaultAppConfig()
+	g.musicVolume = defaults.MusicVolume
+	g.soundVolume = defaults.SoundVolume
+	g.musicOn = true
+	g.soundOn = true
+	g.loudnessEQ = defaults.LoudnessEQ
+	g.allowCheats = defaults.AllowCheats
+	g.quality = defaults.Quality
+	setSourceRenderQuality(g.quality)
+	g.assets.invalidateQualityDependentPlayerRasters()
+	ebiten.SetScreenFilterEnabled(true)
+	ebiten.SetFullscreen(false)
+	ebiten.SetWindowSize(defaults.WindowWidth, defaults.WindowHeight)
+	g.windowedWidth = defaults.WindowWidth
+	g.windowedHeight = defaults.WindowHeight
+	g.windowPositionSaved = false
+	if g.audioStarted {
+		g.syncSourceMusic()
 	}
 }
 
@@ -381,6 +543,102 @@ func (g *Game) drawOptionControlPanels(screen *ebiten.Image) {
 	}
 }
 
+func drawOptionSlider(screen *ebiten.Image, r Rect, value float64) {
+	value = clampOptionVolume(value)
+	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x52, G: 0x58, B: 0x63, A: 0xff})
+	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, color.NRGBA{R: 0x20, G: 0x24, B: 0x2b, A: 0xff})
+	fillW := (r.W - 4) * value
+	if fillW > 0 {
+		ebitenutil.DrawRect(screen, r.X+2, r.Y+2, fillW, r.H-4, color.NRGBA{R: 0x00, G: 0x66, B: 0xff, A: 0xff})
+	}
+	knobX := r.X + 2 + (r.W-4)*value
+	ebitenutil.DrawRect(screen, knobX-3, r.Y-4, 6, r.H+8, color.NRGBA{R: 0xf4, G: 0xf4, B: 0xf4, A: 0xff})
+}
+
+func drawOptionActionButton(screen *ebiten.Image, r Rect, label string, active bool) {
+	border := color.NRGBA{R: 0x44, G: 0x49, B: 0x54, A: 0xff}
+	fill := color.NRGBA{R: 0x2d, G: 0x32, B: 0x3a, A: 0xff}
+	if active {
+		fill = color.NRGBA{R: 0xd8, G: 0x5a, B: 0x00, A: 0xff}
+	}
+	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, border)
+	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
+	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 12.5, color.White, r.X+9, r.Y+7)
+}
+
+func drawOptionQualityButton(screen *ebiten.Image, r Rect, label string, active bool) {
+	border := color.NRGBA{R: 0x44, G: 0x49, B: 0x54, A: 0xff}
+	fill := color.NRGBA{R: 0x3a, G: 0x3d, B: 0x43, A: 0xff}
+	textColor := color.White
+	if active {
+		fill = color.NRGBA{R: 0xff, G: 0x7b, B: 0x00, A: 0xff}
+		textColor = color.Black
+	}
+	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, border)
+	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
+	textX := r.X + r.W/2 - float64(len([]rune(label)))*3.3
+	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 12.5, textColor, textX, r.Y+7)
+}
+
+func (g *Game) drawDevelopedOptionSettings(screen *ebiten.Image) {
+	panel := Rect{X: 40, Y: 430, W: 820, H: 164}
+	ebitenutil.DrawRect(screen, panel.X, panel.Y, panel.W, panel.H, color.NRGBA{R: 0x17, G: 0x19, B: 0x1d, A: 0xfa})
+	ebitenutil.DrawRect(screen, panel.X, panel.Y, panel.W, 2, color.NRGBA{R: 0x4d, G: 0x4f, B: 0x54, A: 0xff})
+
+	drawSourceMenuText(screen, "AUDIO", menuFontCondensedExtraBold, 13.5, color.White, 55, 437)
+	drawSourceMenuText(screen, "MUSIC", menuFontCondensedExtraBold, 12.5, color.White, 55, 451)
+	drawOptionSlider(screen, optionMusicSliderRect, g.musicVolume)
+	drawSourceMenuText(screen, fmt.Sprintf("%d%%", int(g.musicVolume*100+0.5)), menuFontCondensedExtraBold, 11.5, color.White, 345, 451)
+	drawSourceMenuText(screen, "SFX", menuFontCondensedExtraBold, 12.5, color.White, 55, 484)
+	drawOptionSlider(screen, optionSFXSliderRect, g.soundVolume)
+	drawSourceMenuText(screen, fmt.Sprintf("%d%%", int(g.soundVolume*100+0.5)), menuFontCondensedExtraBold, 11.5, color.White, 345, 484)
+
+	drawSourceMenuText(screen, "DISPLAY", menuFontCondensedExtraBold, 13.5, color.White, 385, 437)
+	drawOptionActionButton(screen, optionLoudnessRect, "LOUDNESS EQ", g.loudnessEQ)
+	fullscreenLabel := "FULLSCREEN OFF"
+	if ebiten.IsFullscreen() {
+		fullscreenLabel = "FULLSCREEN ON"
+	}
+	drawOptionActionButton(screen, optionFullscreenRect, fullscreenLabel, ebiten.IsFullscreen())
+	drawOptionActionButton(screen, optionResetSettingsRect, "RESET SETTINGS", false)
+
+	drawSourceMenuText(screen, "QUALITY", menuFontCondensedExtraBold, 12.5, color.White, 385, 490)
+	for _, button := range optionQualityButtons {
+		active := (button.hit == optionHitQualityLow && g.quality == 1) ||
+			(button.hit == optionHitQualityMedium && g.quality == 2) ||
+			(button.hit == optionHitQualityHigh && g.quality == 3)
+		drawOptionQualityButton(screen, button.rect, button.label, active)
+	}
+	drawOptionActionButton(screen, optionResetControlsRect, "RESET CONTROLS", false)
+	cheatsLabel := "ALLOW CHEATS OFF"
+	if g.allowCheats {
+		cheatsLabel = "ALLOW CHEATS ON"
+	}
+	drawOptionActionButton(screen, optionAllowCheatsRect, cheatsLabel, g.allowCheats)
+	drawOptionActionButton(screen, optionBackRect, "BACK", false)
+
+	drawSourceMenuText(screen, "UPDATES", menuFontCondensedExtraBold, 13.5, color.White, 55, 558)
+	drawSourceMenuText(screen, "CURRENT: "+currentUpdateVersionLabel(), menuFontCondensedExtraBold, 11.5, color.White, 120, 558)
+	drawSourceMenuText(screen, g.settingsUpdateStatus(), menuFontCondensed, 11.5,
+		color.NRGBA{R: 0xc7, G: 0xcb, B: 0xd1, A: 0xff}, 120, 575)
+	checkLabel := "CHECK FOR UPDATES"
+	if g.updateRuntime.phase == updatePhaseChecking {
+		checkLabel = "CHECKING..."
+	} else if g.updateRuntime.phase == updatePhaseDownloading {
+		checkLabel = "DOWNLOADING..."
+	}
+	drawOptionActionButton(screen, optionCheckUpdatesRect, checkLabel, g.updateRuntime.phase == updatePhaseChecking)
+	actionLabel := "NO UPDATE"
+	if g.settingsUpdateActionAvailable() {
+		actionLabel = "UPDATE NOW"
+	} else if g.updateRuntime.phase == updatePhaseDownloading {
+		actionLabel = "INSTALLING"
+	} else if currentUpdateVersionLabel() == "DEV BUILD" {
+		actionLabel = "DEV BUILD"
+	}
+	drawOptionActionButton(screen, optionUpdateNowRect, actionLabel, g.settingsUpdateActionAvailable())
+}
+
 func (g *Game) drawOptionsInteractions(screen *ebiten.Image) {
 	if g.assets.OptionToggleFrames[3] == nil {
 		return
@@ -390,43 +648,13 @@ func (g *Game) drawOptionsInteractions(screen *ebiten.Image) {
 	// plain black until a key button is actually pressed. Clear the stale copy
 	// before rebuilding the live controls; the real popup is drawn last below.
 	ebitenutil.DrawRect(screen, 300, 218.1, 300, 150, color.Black)
-	selected := map[int]bool{
-		optionHitMusicOn:       g.musicOn,
-		optionHitMusicOff:      !g.musicOn,
-		optionHitSoundOn:       g.soundOn,
-		optionHitSoundOff:      !g.soundOn,
-		optionHitQualityLow:    g.quality == 1,
-		optionHitQualityMedium: g.quality == 2,
-		optionHitQualityHigh:   g.quality == 3,
-	}
-	mx, my := ebiten.CursorPosition()
-	hover := optionsHitAt(float64(mx), float64(my))
-	for _, p := range optionPlacements {
-		frame := 1
-		if selected[p.hit] {
-			frame = 3
-		} else if hover == p.hit {
-			frame = 2
-		}
-		drawSourceRaster(screen, g.assets.OptionToggleFrames[frame], p.x, p.y, 1, 1, 1)
-	}
-	// Symbol991 keeps the button captions on layers ABOVE Symbol982. Since the
-	// runtime state buttons are redrawn here after the flattened base menu, draw
-	// those source captions again on top or they'd be covered by the buttons.
-	for _, item := range []struct {
-		text       string
-		x, y, size float64
-	}{
-		{"ON", 81.35, 514.25, 22.1},
-		{"OFF", 144.90, 514.25, 22.1},
-		{"ON", 260.45, 514.25, 22.1},
-		{"OFF", 324.00, 514.25, 22.1},
-		{"LOW", 439.00, 518.75, 15.9},
-		{"MEDIUM", 498.80, 518.00, 15.9},
-		{"HIGH", 565.00, 518.30, 15.9},
-	} {
-		drawSourceMenuText(screen, item.text, menuFontCondensed, item.size, color.Black, item.x, item.y)
-	}
+	// Wipe the entire original lower Options area, not only the new panel bounds.
+	// The flattened Flash raster still contains the old MUSIC/SOUND/QUALITY/BACK
+	// artwork all the way to the bottom edge, so leaving even a small uncovered
+	// strip makes those remnants visible underneath the redesigned controls.
+	ebitenutil.DrawRect(screen, 0, 425, 900, 175, color.NRGBA{R: 0x12, G: 0x12, B: 0x12, A: 0xff})
+	g.drawDevelopedOptionSettings(screen)
+
 	// Symbol972 is runtime-driven (player number + six dynamic key clips).
 	// The flattened FFDec OptionsMenu bakes Player1/W into all four panels, so
 	// cover those panels with their source base and rebuild the live controls.
@@ -435,7 +663,9 @@ func (g *Game) drawOptionsInteractions(screen *ebiten.Image) {
 		if g.assets.OptionLockupBase != nil {
 			drawSourceRaster(screen, g.assets.OptionLockupBase, 0, 0, 1, 1, 1)
 			drawSourceMenuText(screen, "Press a Valid Key to Assign", menuFontTwCen, 21.25,
-				color.Black, 321.05, 274.65)
+				color.Black, 321.05, 268.65)
+			drawSourceMenuText(screen, "ESC = CANCEL", menuFontCondensedExtraBold, 14,
+				color.NRGBA{R: 0x66, G: 0x66, B: 0x66, A: 0xff}, 401, 302)
 		} else {
 			drawSourceRaster(screen, g.assets.OptionLockup, 0, 0, 1, 1, 1)
 		}

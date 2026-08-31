@@ -58,8 +58,14 @@ func (g *Game) updateFade() {
 		}
 		if g.fadePurpose == fadePurposeEndGame {
 			g.finishSourceGameBeforeScreenChange()
+			if g.fadeTarget == screenPostGame && !g.campaignMode {
+				g.recordCustomSeriesRound()
+			}
 		}
 		g.screen = g.fadeTarget
+		if g.screen == screenPostGame && g.onlineMatchSetup && g.netplay != nil && g.netplay.mode == netplayHost {
+			g.resetOnlinePostGameReady()
+		}
 		if g.screen == screenCampaign {
 			g.enterCampaignMenu()
 		}
@@ -80,13 +86,21 @@ func (g *Game) finishSourceGameBeforeScreenChange() {
 	if g.campaignMode {
 		playerWin := true
 		for _, p := range g.players {
-			if p.Active && p.AI {
+			// Level 4's translucent `double` is a temporary helper and is
+			// deliberately excluded from activeSourcePlayers when deciding the
+			// winner. Ignore it here as well; otherwise the match visibly ends in
+			// a human win but completion is discarded if the helper is still alive.
+			if p.Active && p.AI && !p.IsDouble {
 				playerWin = false
 				break
 			}
 		}
 		if playerWin {
-			if g.campaignSetGM2 {
+			if g.campaignSetExtra {
+				if g.campaignLevel >= 1 && g.campaignLevel <= len(g.extraCampaignLevels) {
+					g.completeExtraCampaignLevel(g.campaignLevel)
+				}
+			} else if g.campaignSetGM2 {
 				if g.campaignLevel >= 1 && g.campaignLevel <= 16 {
 					g.completeGM2CampaignLevel(g.campaignLevel)
 				}
@@ -170,6 +184,10 @@ func (g *Game) updatePause() {
 			g.paused = false
 		case pauseHitExit:
 			g.paused = false
+			if !g.campaignMode && !g.gototest && g.customSeriesRound > 0 {
+				g.abortCustomSeriesToSetup()
+				return
+			}
 			target := screenPostGame
 			if g.gototest {
 				target = screenGunLibrary
@@ -231,6 +249,38 @@ func (g *Game) updateMatchInteractions() {
 	}
 
 	active := activeSourcePlayers(g.players)
+
+	// EXTRA can have two independently respawning enemies while running as a
+	// non-team match for one human. The original single-survivor check cannot
+	// detect a loss while both AI players remain alive, so decide this campaign
+	// explicitly by side instead of waiting for active.size() == 1.
+	if g.campaignMode && g.campaignSetExtra && !g.GameWin && !g.teamGameWin {
+		var survivingHuman *Player
+		humans, enemies := 0, 0
+		for _, p := range active {
+			if p.AI {
+				enemies++
+				continue
+			}
+			humans++
+			if survivingHuman == nil {
+				survivingHuman = p
+			}
+		}
+		switch {
+		case enemies == 0 && humans == 1 && !g.TeamGame:
+			g.setSourceGameWinner(survivingHuman)
+		case enemies == 0 && humans > 0:
+			g.teamGameWin = true
+			g.teamWinner = 1
+			g.teamWinAnimFrame = 1
+			g.matchWinCountdown = 0
+		case humans == 0 && enemies > 0:
+			g.teamGameWin = true
+			g.campaignLoseFrame = 1
+			g.matchWinCountdown = 0
+		}
+	}
 
 	// Root frame10 teamgame test: if all active players have the same team,
 	// teamgamewin is set immediately and fx_teamwin is attached.
