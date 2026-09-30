@@ -19,6 +19,7 @@ import (
 	"golang.org/x/net/websocket"
 
 	"gunmayhem-go/internal/masterapi"
+	"gunmayhem-go/internal/publicrooms"
 )
 
 const (
@@ -449,14 +450,27 @@ func newHandler(reg *serverRegistry) http.Handler {
 }
 
 func main() {
-	listen := flag.String("addr", ":7780", "HTTP listen address")
-	relayListen := flag.String("relay-addr", ":7781", "TCP relay listen address; empty disables relay")
-	publicRelayAddress := flag.String("public-relay-address", "", "public relay host:port advertised to games; defaults to HTTP Host with relay port")
+	listen := flag.String("addr", "127.0.0.1:7780", "HTTP listen address; loopback by default")
+	mode := flag.String("mode", "public-rooms", "service mode: public-rooms (directory only) or legacy (unreviewed v1 master/relay)")
+	relayListen := flag.String("relay-addr", "", "legacy mode only: TCP relay listen address; empty disables relay")
+	publicRelayAddress := flag.String("public-relay-address", "", "legacy mode only: explicit public relay host:port or WSS URL advertised to games")
 	ttl := flag.Duration("ttl", 35*time.Second, "server expiry without heartbeat")
 	trustProxy := flag.Bool("trust-proxy", false, "trust X-Forwarded-For/X-Real-IP from a reverse proxy")
 	tlsCert := flag.String("tls-cert", "", "TLS certificate for serving HTTPS/WSS directly")
 	tlsKey := flag.String("tls-key", "", "TLS private key for serving HTTPS/WSS directly")
 	flag.Parse()
+	if (*tlsCert == "") != (*tlsKey == "") {
+		log.Fatal("both -tls-cert and -tls-key are required")
+	}
+	if *mode != "legacy" {
+		handler, err := publicDirectoryHandler(*mode, *ttl, *trustProxy, *relayListen, *publicRelayAddress)
+		if err != nil {
+			log.Fatal(err)
+		}
+		serveDirectory(*listen, *tlsCert, *tlsKey, handler)
+		return
+	}
+	log.Print("WARNING: legacy v1 directory/relay mode is experimental and is outside the public-room hardening")
 
 	reg := newServerRegistry(*ttl)
 	reg.trustProxy = *trustProxy
@@ -497,6 +511,31 @@ func main() {
 	}
 	if *tlsCert != "" {
 		log.Fatal(server.ListenAndServeTLS(*tlsCert, *tlsKey))
+	}
+	log.Fatal(server.ListenAndServe())
+}
+
+// publicDirectoryHandler is a configuration seam for tests: constructing the
+// default directory never opens a listener, starts a relay or makes requests.
+func publicDirectoryHandler(mode string, ttl time.Duration, trustProxy bool, relayListen, relayAddress string) (http.Handler, error) {
+	if mode != "public-rooms" {
+		return nil, fmt.Errorf("unknown service mode %q", mode)
+	}
+	if strings.TrimSpace(relayListen) != "" || strings.TrimSpace(relayAddress) != "" {
+		return nil, fmt.Errorf("relay flags require explicit -mode legacy")
+	}
+	return publicrooms.New(ttl, trustProxy).Handler(), nil
+}
+
+func serveDirectory(address, cert, key string, handler http.Handler) {
+	server := &http.Server{
+		Addr: address, Handler: handler, ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout: 8 * time.Second, WriteTimeout: 8 * time.Second,
+		IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8 * 1024,
+	}
+	log.Printf("Gun Mayhem public-room directory listening on %s (no gameplay relay)", address)
+	if cert != "" {
+		log.Fatal(server.ListenAndServeTLS(cert, key))
 	}
 	log.Fatal(server.ListenAndServe())
 }
