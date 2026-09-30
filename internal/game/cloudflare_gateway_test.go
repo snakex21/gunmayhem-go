@@ -131,12 +131,13 @@ func TestCloudflareGatewayCloseCancelsUnauthenticatedConnection(t *testing.T) {
 		t.Fatal("upgrade survived gateway shutdown")
 	}
 	waitFor(t, "gateway handshake cleanup", func() bool { return host.pendingHandshakes.Load() == 0 })
-	gateway.connectionsMu.Lock()
-	remaining := len(gateway.connections)
-	gateway.connectionsMu.Unlock()
-	if remaining != 0 {
-		t.Fatalf("gateway retained %d closed connections", remaining)
-	}
+	// Handler cleanup is asynchronous after the socket has closed; the
+	// handshake goroutine finishing does not order the HTTP handler's defer.
+	waitFor(t, "gateway upgraded connection cleanup", func() bool {
+		gateway.connectionsMu.Lock()
+		defer gateway.connectionsMu.Unlock()
+		return len(gateway.connections) == 0
+	})
 }
 
 func TestCloudflareGatewayBoundsWireFrames(t *testing.T) {

@@ -1353,6 +1353,15 @@ func (g *Game) CloseNetplay() error {
 	if g == nil {
 		return nil
 	}
+	// These caches belong to one connection/session, not to the user's saved
+	// character. Rejoining in the same process must resend unchanged config
+	// and accept a new host's sound sequence starting at one.
+	g.onlineHasSentConfig = false
+	g.onlineLastSentConfig = CustomPlayerConfig{}
+	g.netLastSFXSeq = 0
+	g.netSFXSeq = 0
+	g.netClientSFXPending = nil
+	g.netSFXPending = nil
 	if g.serverAdvertiser != nil {
 		_ = g.serverAdvertiser.Close()
 		g.serverAdvertiser = nil

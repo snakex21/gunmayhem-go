@@ -78,3 +78,18 @@ detector. It identified legacy hosting entrypoints bypassing the UI opt-in and
 an 80-character input limit truncating valid long invitations. Both were fixed
 with regressions before the final handoff. This review is scoped to this network
 experiment, not a full security audit or a remote-play certification.
+
+## Same-process rejoin follow-up
+
+Two additional regression tests demonstrated that a Game instance retained its
+“configuration already sent” flag and old sound sequence after disconnecting.
+Both failed before the follow-up change. `CloseNetplay` now clears only these
+session caches, so an unchanged character is resent on the next join and the
+new host's sequence starting at one is accepted. Character/setup preferences are
+preserved. This still does not implement automatic reconnect or identity resume.
+
+Independent focused race regressions passed three times; combined network/perk
+race checks passed (31.319 seconds), and Windows cross-build passed. A subsequent
+10-repeat race selection of rejoin and gateway shutdown passed (11.149 seconds).
+The gateway shutdown assertion now waits for its separate HTTP handler's cleanup
+rather than incorrectly assuming the handshake goroutine orders that defer.
