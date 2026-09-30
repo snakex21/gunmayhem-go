@@ -2,7 +2,6 @@ package game
 
 import (
 	"image/color"
-	"os"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -81,21 +80,7 @@ func sourceMenuFace(kind sourceMenuFontKind, size float64) (font.Face, error) {
 			candidates = append(candidates, `C:\Windows\Fonts\SHOWG.TTF`, `C:\Windows\Fonts\showg.ttf`)
 		}
 
-		for _, p := range candidates {
-			data, err := os.ReadFile(p)
-			if err != nil {
-				cache.err = err
-				continue
-			}
-			parsed, err := opentype.Parse(data)
-			if err != nil {
-				cache.err = err
-				continue
-			}
-			cache.font = parsed
-			cache.err = nil
-			return
-		}
+		cache.font, cache.err = loadSourceFontCandidates(candidates)
 	})
 	if cache.font == nil {
 		return nil, cache.err
@@ -118,7 +103,7 @@ func drawSourceMenuText(dst *ebiten.Image, value string, kind sourceMenuFontKind
 	if value == "" {
 		return
 	}
-	face, err := sourceMenuFace(kind, size)
+	face, err := sourceMenuFaceForText(kind, size, value)
 	if err != nil || face == nil {
 		return
 	}

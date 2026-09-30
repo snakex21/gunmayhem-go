@@ -3,7 +3,6 @@ package game
 import (
 	"fmt"
 	"image/color"
-	"os"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -30,11 +29,9 @@ var (
 
 func sourceHUDFace(size float64) (font.Face, error) {
 	hudFontOnce.Do(func() {
-		// FFDec exported the embedded Tw Cen MT Condensed Extra Bold file with
-		// a malformed `head` table, so x/image/opentype correctly rejects it.
-		// Flash used this exact Windows font family for the HUD. Prefer the
-		// extracted asset when it is valid, then the native Windows TCCEB font,
-		// and finally the bundled condensed face as a portable fallback.
+		// Preserve ordinary candidate priority, including native Windows fonts.
+		// Only if none parse normally, use a private metadata-normalized copy
+		// of an exact known bundled export as the portable fallback.
 		var candidates []string
 		if path, err := findOriginalPath("fonts", "20_Tw Cen MT Condensed Extra Bold.ttf"); err == nil {
 			candidates = append(candidates, path)
@@ -43,21 +40,7 @@ func sourceHUDFace(size float64) (font.Face, error) {
 		if path, err := findOriginalPath("fonts", "49_Tw Cen MT Condensed.ttf"); err == nil {
 			candidates = append(candidates, path)
 		}
-		for _, path := range candidates {
-			data, err := os.ReadFile(path)
-			if err != nil {
-				hudFontErr = err
-				continue
-			}
-			parsed, err := opentype.Parse(data)
-			if err != nil {
-				hudFontErr = err
-				continue
-			}
-			hudTTF = parsed
-			hudFontErr = nil
-			return
-		}
+		hudTTF, hudFontErr = loadSourceFontCandidates(candidates)
 	})
 	if hudFontErr != nil || hudTTF == nil {
 		return nil, hudFontErr
@@ -313,7 +296,7 @@ func (g *Game) drawSourceHUDCard(screen *ebiten.Image, p *Player, x, y float64) 
 }
 
 func makeSourcePowerupDoubleIcon() *SourceRaster {
-	face, err := sourceHUDFace(46.05)
+	face, err := sourceHUDFaceForText(46.05, "X2")
 	if err != nil || face == nil {
 		return nil
 	}
@@ -333,7 +316,7 @@ func drawSourceHUDText(dst *ebiten.Image, value string, size float64, clr color.
 	if value == "" {
 		return
 	}
-	face, err := sourceHUDFace(size)
+	face, err := sourceHUDFaceForText(size, value)
 	if err != nil || face == nil {
 		return
 	}
@@ -342,7 +325,7 @@ func drawSourceHUDText(dst *ebiten.Image, value string, size float64, clr color.
 }
 
 func drawSourceHUDTextCentered(dst *ebiten.Image, value string, size float64, clr color.Color, x, topY, width float64) {
-	face, err := sourceHUDFace(size)
+	face, err := sourceHUDFaceForText(size, value)
 	if err != nil || face == nil || value == "" {
 		return
 	}

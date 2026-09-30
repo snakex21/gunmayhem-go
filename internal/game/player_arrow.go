@@ -52,11 +52,11 @@ func drawPlayerArrowRaster(screen *ebiten.Image, r *SourceRaster, angle float64)
 }
 
 func drawPlayerArrowDistance(screen *ebiten.Image, value int, angle float64) {
-	face, err := sourceMenuFace(menuFontArial, 24)
+	text := fmt.Sprintf("%d", value)
+	face, err := sourceMenuFaceForText(menuFontArial, 24, text)
 	if err != nil || face == nil {
 		return
 	}
-	text := fmt.Sprintf("%d", value)
 	w := font.MeasureString(face, text).Ceil()
 	// Symbol649.dist sits at local y=-214.9 and cancels the parent rotation,
 	// so the number stays upright while orbiting around the center.
