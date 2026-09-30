@@ -77,6 +77,10 @@ For example, the original `playerAI_double` spawns a normal `playerAI` instance 
 - Go **1.26.2** or newer compatible with the current module configuration
 - Windows, Linux or macOS supported by Ebitengine
 
+The current Go toolchain requires Windows 10 / Windows Server 2016 or newer
+([official requirements](https://go.dev/wiki/MinimumRequirements)). The checked
+Windows artifact targets x64; this game build is not a Windows 2000 binary.
+
 A fresh clone contains the runtime assets required by the Go port in `assets/`, including the font files used by the source-faithful HUD/menu rendering. No separate local asset pack is required.
 
 ## Build

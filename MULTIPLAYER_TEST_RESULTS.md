@@ -148,3 +148,47 @@ vet check was disabled. Windows-target vet now reports only the existing
 `menu.go:262` unreachable code, and the Windows cross-build passes. The mock
 clipboard tests still do not execute the native API; Windows runtime verification
 remains pending. API reference: [MoveMemory](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa366788(v=vs.85)).
+
+## Public-room directory and game integration
+
+The directory-only service and opt-in game integration were independently
+reviewed together. No directory endpoint, live tunnel, account, release or
+deployment was created. Public discovery has no configured/shipped default;
+see [PUBLIC_ROOMS.md](PUBLIC_ROOMS.md) for the required approved HTTPS service.
+
+- Combined game network/perk/font/rejoin/clipboard/public-room race selection:
+  passed (34.392 seconds)
+- Directory and master command race suites: passed (1.186 / 1.031 seconds)
+- After review fixes, public-room and clipboard race tests repeated three
+  times: passed (8.982 seconds)
+- Final unfiltered `go test ./...` on reviewed runtime `4bd97be`: same four
+  pre-existing failures, no new failure (game package 45.181 seconds)
+- Windows amd64 cross-build: passed; binary build metadata identifies the
+  reviewed runtime commit and a clean source tree
+- Linux and Windows-target vet: only the existing `menu.go:262` unreachable code
+- Three static production-font UI fixtures (public creation, discovered room
+  with Join Session, and Close Room): passed and visually inspected
+- `git diff --check`: passed; no tracked assets/source file changed
+
+The end-to-end fixture runs the real directory handler and the real gameplay
+WebSocket handler over separately trusted local TLS connections. A test dialer
+maps a validated synthetic Cloudflare route to the local game fixture. It covers
+four-player admission, input/snapshot transfer, full rejection, kick/rejoin,
+private isolation, Close and delayed-registration ordering, redirect rejection,
+dead process/local gateway, expiry and directory outage. No certificate checking
+is disabled and no fixture contacts Cloudflare.
+
+Review identified and fixed a local-listener failure that could otherwise keep
+a dead room registered while cloudflared remained running. A listener-close
+regression now checks terminal admission closure and delisting. A second fix
+clears the OPEN publication warning when access returns to INVITE CODE or LAN.
+
+An initial sparse-checkout aggregate attempt additionally could not compile the
+root package because Go embedding rejects a symlinked assets directory. The
+final result above comes from the original full checkout with real asset paths;
+that fixture setup error is not represented as a product failure or a pass.
+
+Real cross-network Cloudflare play, native Windows gameplay/clipboard execution,
+public-service operating capacity and a full security audit remain unverified.
+The public-room protocol remains 20; discovery is additive and private invite
+authentication is unchanged. No increase beyond four players was implemented.
