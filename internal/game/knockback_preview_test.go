@@ -25,17 +25,17 @@ type perkPreviewGame struct {
 
 func (p *perkPreviewGame) Layout(int, int) (int, int) { return 900, 600 }
 func (p *perkPreviewGame) Update() error {
-	if p.frame >= 3 || p.err != nil {
+	if p.frame >= 4 || p.err != nil {
 		return ebiten.Termination
 	}
 	return nil
 }
 func (p *perkPreviewGame) Draw(screen *ebiten.Image) {
-	if p.frame >= 3 {
+	if p.frame >= 4 {
 		return
 	}
 	screen.Fill(color.NRGBA{R: 24, G: 28, B: 34, A: 255})
-	names := []string{"custom-perk-picker.png", "online-perk-picker.png", "perk-blocklist.png"}
+	names := []string{"custom-perk-picker.png", "online-perk-picker.png", "perk-blocklist.png", "runtime-hud.png"}
 	switch p.frame {
 	case 0:
 		p.game.drawCustomV2Players(screen)
@@ -44,6 +44,9 @@ func (p *perkPreviewGame) Draw(screen *ebiten.Image) {
 		p.game.drawOnlineVisualPicker(screen)
 	case 2:
 		p.game.drawOnlinePerkBlocklist(screen)
+	case 3:
+		screen.Fill(color.NRGBA{R: 0xdd, G: 0xdd, B: 0xdd, A: 255})
+		p.game.drawHUD(screen)
 	}
 	pixels := make([]byte, 900*600*4)
 	screen.ReadPixels(pixels)
@@ -88,11 +91,20 @@ func TestKnockbackPreviewScreenshots(t *testing.T) {
 		}
 	}
 	g := New()
+	g.assets.EnsureGameplay()
+	g.GameMode = SourceGameModeNormal
+	g.players = nil
 	for i := range g.customPlayers {
 		g.customPlayers[i].Type = 1
 		g.customPlayers[i].Perk = perkKnockbackResistance
 		g.customEditor[i] = customEditPerk
 		g.customCardY[i] = -300
+		p := NewPlayer(i+1, OriginalMap1())
+		p.Name = []string{"PLAYER 1", "PLAYER 2", "PLAYER 3", "PLAYER 4"}[i]
+		p.Lives = []int{3, 10, 8, 21}[i]
+		p.Weapon = NewWeapon([]int{1, 2, 10, 67}[i])
+		p.Weapon.Bullets = []int{13, 7, 5, 30}[i]
+		g.players = append(g.players, p)
 	}
 	preview := &perkPreviewGame{game: g, output: output}
 	ebiten.SetWindowSize(900, 600)
@@ -103,7 +115,7 @@ func TestKnockbackPreviewScreenshots(t *testing.T) {
 	if preview.err != nil {
 		t.Fatal(preview.err)
 	}
-	if preview.frame != 3 {
+	if preview.frame != 4 {
 		t.Fatal("preview did not render all screens")
 	}
 }

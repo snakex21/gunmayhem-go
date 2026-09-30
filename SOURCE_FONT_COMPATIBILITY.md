@@ -54,3 +54,16 @@ On Go 1.26.2 / Linux with temporary Xvfb:
 - `go vet ./...`: reports the existing unreachable code at `internal/game/menu.go:262`
 
 Independent code review and focused race tests also passed. The normal full suite was not represented as passing. This branch starts at network milestone `56f9082`; knockback and later network changes are kept separate.
+
+## Cumulative-branch integration
+
+The cumulative experimental branch also includes the later gateway-test
+synchronization correction. Its unfiltered full suite has exactly the four
+baseline/environment failures documented in `MULTIPLAYER_TEST_RESULTS.md`; the
+font-only branch's intermittent fifth assertion is not a font regression.
+
+Four integrated menu/HUD fixtures were rendered with no test font override and
+independently inspected: both perk pickers, the host blocklist, and the runtime
+HUD. New labels and HUD names, lives and ammunition render without new clipping
+in those screens. This does not establish every screen's typography, arbitrary
+Unicode coverage, or actual Windows execution.

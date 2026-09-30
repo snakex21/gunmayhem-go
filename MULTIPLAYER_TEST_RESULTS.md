@@ -93,3 +93,28 @@ race checks passed (31.319 seconds), and Windows cross-build passed. A subsequen
 10-repeat race selection of rejoin and gateway shutdown passed (11.149 seconds).
 The gateway shutdown assertion now waits for its separate HTTP handler's cleanup
 rather than incorrectly assuming the handshake goroutine orders that defer.
+
+## Cumulative experimental branch verification
+
+The combined branch contains the network, perk, same-process rejoin, and bounded
+font compatibility changes. Its exact-asset copy normalization and licensed
+whole-label fallback were independently reviewed before integration.
+
+- Integrated network/perk/font/rejoin race suite: passed (31.950 seconds)
+- Integrated unfiltered `go test ./...`: completed with exactly the same four
+  baseline failures listed above (47.418 seconds); no extra failure was observed
+- Windows amd64 cross-build: passed; Windows execution remains untested
+- `go vet ./...`: same existing unreachable legacy menu code at line 262
+- Four runtime render fixtures (Custom Game perk picker, online perk picker,
+  host perk blocklist, and gameplay HUD) passed with the font override unset.
+  Actual shipped fonts/production fallback rendered the new perk labels and
+  HUD names/lives/ammo legibly, without new clipping in those screens
+- Independent review also checked the production-font previews. Existing
+  dark-on-dark heading contrast is outside these changes
+- No previously tracked `assets/` or `source/` file was modified or removed.
+  The sole asset-tree addition is the verbatim upstream Go Regular license notice
+
+These remain local synthetic, render and cross-build checks. No live Cloudflare
+endpoint, remote-player match, Windows execution, or full security audit was
+performed. The existing GitHub workflow runs on release tags, not this branch;
+local checks are not represented as remote CI results.

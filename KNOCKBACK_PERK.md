@@ -72,3 +72,12 @@ with the same four baseline failures (49.926 seconds). Windows amd64 cross-build
 and diff whitespace checks passed. The fallback-font layout fixture was rerun
 after the final UI label changes. The new numeric perk labels deliberately use
 the existing extra-bold face, whose subset includes all of their characters.
+
+### Integrated production-font check
+
+After the separate font compatibility commit, the three setup screens and a
+runtime HUD fixture were rerendered with `GUNMAYHEM_PREVIEW_FONT` unset. The actual
+source fonts and production whole-label fallback rendered the labels and HUD
+numbers without new clipping in these four screens. The earlier DejaVu images
+remain only historical layout fixtures. This is representative render QA, not
+Windows execution or an Internet gameplay test.
