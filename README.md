@@ -2,23 +2,27 @@
 
 A source-faithful reimplementation of **Gun Mayhem** in Go using [Ebitengine](https://ebitengine.org/).
 
-## Experimental branch: private Internet play
+## Experimental branch: Internet multiplayer
 
 This branch is a reviewable experiment on top of the LAN release. It adds:
 
 - explicit opt-in, private-invite Cloudflare/WSS hosting with authoritative
   simulation, heartbeat/timeouts, input expiry and tested disconnect/rejoin
+- opt-in OPEN Internet rooms through a separately configured HTTPS directory,
+  with code-free discovery/join; **no shared directory has been deployed**
 - a Custom Game-only **KNOCKBACK -30%** perk with host-controlled restrictions
 - narrowly bounded compatibility for the five existing exported font files,
   plus a licensed built-in fallback for labels those font subsets cannot cover
 
 All players must run the same **protocol-20** build. LAN remains the default;
-Internet hosting is invite-only and requires explicit opt-in. There has been no
+Internet hosting requires explicit opt-in and defaults to private invitations.
+OPEN additionally needs the same approved directory URL on every computer. There has been no
 real Cloudflare cross-network playtest or Windows gameplay run, so this is not a
 supported Internet release. The complete test suite still has the documented
 baseline failures. Do not infer automatic reconnection or more than four players.
 
 Start with [the private Internet instructions](EXPERIMENTAL_MULTIPLAYER.md),
+[public room setup and directory limits](PUBLIC_ROOMS.md),
 [perk behavior and tests](KNOCKBACK_PERK.md),
 [font compatibility scope](SOURCE_FONT_COMPATIBILITY.md), and
 [verification limits](MULTIPLAYER_TEST_RESULTS.md). No original art/audio/font

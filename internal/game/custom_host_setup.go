@@ -3,6 +3,7 @@ package game
 import (
 	"image/color"
 	"os"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -92,8 +93,11 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 		g.multiplayerMessage = "INTERNET MULTIPLAYER IS DISABLED IN THIS RELEASE - LAN ONLY"
 	case menuHitCustomHostAccessOpen:
 		if g.customHostScope == onlineSessionScopeInternet {
-			g.multiplayerMessage = "EXPERIMENTAL INTERNET USES PRIVATE INVITES ONLY"
-			return
+			if !experimentalInternetEnabled() || configuredPublicDirectoryURL() == "" {
+				g.multiplayerMessage = "PUBLIC DIRECTORY NOT CONFIGURED - USE INVITE CODE"
+				return
+			}
+			g.multiplayerMessage = "OPEN INTERNET ROOM: ANY PLAYER CAN JOIN; CREATE PUBLISHES THE ROOM"
 		}
 		g.customHostAccess = onlineSessionOpen
 	case menuHitCustomHostAccessInvite:
@@ -109,7 +113,6 @@ func (g *Game) createConfiguredOnlineSession() {
 	scope := onlineSessionScopeLAN
 	if experimentalInternetEnabled() && g.customHostScope == onlineSessionScopeInternet {
 		scope = onlineSessionScopeInternet
-		g.customHostAccess = onlineSessionInviteOnly
 	}
 	g.customHostScope = scope
 	access := g.customHostAccess
@@ -173,6 +176,9 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 	}
 	if editingExisting {
 		title = "LAN SESSION SETTINGS"
+		if experimentalInternetEnabled() && g.onlineSessionScope == onlineSessionScopeInternet {
+			title = "INTERNET SESSION SETTINGS"
+		}
 	}
 	drawSourceMenuText(screen, title, menuFontTwCen, 32, color.Black, 45, 32)
 
@@ -192,7 +198,7 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 	drawHostTypeCard(screen, customHostScopeLANRect, "LAN ONLY", "Players on your local network.", g.customHostScope == onlineSessionScopeLAN)
 	internetSubtitle := "Disabled in this release."
 	if experimentalInternetEnabled() {
-		internetSubtitle = "Experimental Cloudflare invite."
+		internetSubtitle = "Experimental Cloudflare hosting."
 	}
 	drawHostTypeCard(screen, customHostScopeInternetRect, "INTERNET", internetSubtitle, g.customHostScope == onlineSessionScopeInternet)
 
@@ -203,16 +209,25 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 	help := "This release supports LAN multiplayer only. OPEN and INVITE CODE both work inside the local network."
 	if g.customHostScope == onlineSessionScopeInternet {
 		help = "CREATE publishes a temporary Cloudflare tunnel. Requires official cloudflared; no uptime guarantee."
+		if g.customHostAccess == onlineSessionOpen {
+			help = "CREATE starts a public Cloudflare tunnel and lists this OPEN room. Anyone can join."
+		}
 	}
 	drawSourceMenuText(screen, help, menuFontCondensed, 11.5,
 		color.NRGBA{R: 0xb9, G: 0xbf, B: 0xc8, A: 0xff}, 180, 458)
 	info := "Returning to the server browser closes the host but keeps these settings until the game is closed."
+	if g.customHostScope == onlineSessionScopeInternet && configuredPublicDirectoryURL() == "" {
+		info = "OPEN requires a shared HTTPS directory. INVITE CODE works without a directory."
+	}
 	backLabel := "BACK TO SERVERS"
 	applyLabel := "CREATE SESSION"
 	if editingExisting {
 		info = "CANCEL keeps the host. LEAVE SESSION / ESC closes it and opens the server browser."
 		backLabel = "CANCEL"
 		applyLabel = "APPLY & RESTART"
+	}
+	if strings.HasPrefix(g.multiplayerMessage, "HOST ERROR:") || strings.HasPrefix(g.multiplayerMessage, "PUBLIC DIRECTORY") || strings.HasPrefix(g.multiplayerMessage, "OPEN INTERNET ROOM:") {
+		info = g.multiplayerMessage
 	}
 	drawSourceMenuText(screen, info, menuFontCondensed, 11,
 		color.NRGBA{R: 0x9f, G: 0xa6, B: 0xb0, A: 0xff}, 180, 477)

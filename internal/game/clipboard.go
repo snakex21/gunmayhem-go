@@ -102,6 +102,9 @@ func (g *Game) handleCopyInviteHit(hit int, write func(string) error) bool {
 // private Internet join screen from incorrectly describing every code as LAN.
 func customNetworkLabels() (tab, heading, address, placeholder string) {
 	if experimentalInternetEnabled() {
+		if configuredPublicDirectoryURL() != "" {
+			return "ONLINE", "LAN + INTERNET ROOMS", "JOIN CODE / IP:PORT (CTRL+V ON WINDOWS)", "ENTER JOIN CODE OR IP:PORT"
+		}
 		return "ONLINE", "LAN + PRIVATE INTERNET", "JOIN CODE / IP:PORT (CTRL+V ON WINDOWS)", "ENTER JOIN CODE OR IP:PORT"
 	}
 	return "LAN", "LAN SERVER BROWSER", "JOIN CODE / LAN IP:PORT (CTRL+V ON WINDOWS)", "ENTER LAN JOIN CODE OR IP:PORT"

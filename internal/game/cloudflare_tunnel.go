@@ -18,6 +18,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"gunmayhem-go/internal/masterapi"
+
 	"golang.org/x/net/websocket"
 )
 
@@ -106,8 +108,8 @@ func shouldUseCloudflareInternetTunnel(listenAddress string) bool {
 }
 
 func startCloudflareQuickTunnel(session *netplaySession) (*cloudflareQuickTunnel, error) {
-	if !experimentalInternetEnabled() || session == nil || !session.inviteOnly {
-		return nil, errors.New("Cloudflare hosting requires experimental opt-in and private invite authentication")
+	if !experimentalInternetEnabled() || session == nil || (!session.inviteOnly && (!masterapi.ValidHexIdentity(session.publicRoomID, 16) || configuredPublicDirectoryURL() == "")) {
+		return nil, errors.New("Cloudflare hosting requires experimental opt-in and a private invite or configured public room")
 	}
 	if session == nil || session.mode != netplayHost || session.closed.Load() {
 		return nil, errors.New("invalid Cloudflare tunnel host session")
@@ -155,6 +157,9 @@ func startCloudflareGateway(session *netplaySession) (*cloudflareQuickTunnel, er
 	if session == nil || session.mode != netplayHost || session.closed.Load() {
 		return nil, errors.New("invalid WebSocket gateway host session")
 	}
+	if session.publicRoomID != "" && !masterapi.ValidHexIdentity(session.publicRoomID, 16) {
+		return nil, errors.New("invalid public room identity")
+	}
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		return nil, fmt.Errorf("start local WebSocket gateway: %w", err)
@@ -167,8 +172,15 @@ func startCloudflareGateway(session *netplaySession) (*cloudflareQuickTunnel, er
 		ready:       make(chan struct{}),
 	}
 	mux := http.NewServeMux()
-	mux.Handle(cloudflareNetplayPath, websocket.Server{
+	path := cloudflareNetplayPath
+	if session.publicRoomID != "" {
+		path = masterapi.PublicRoomWebSocketPrefix + session.publicRoomID
+	}
+	mux.Handle(path, websocket.Server{
 		Handshake: func(config *websocket.Config, request *http.Request) error {
+			if session.publicAdmissionClosed.Load() || (request != nil && (request.URL.Path != path || request.URL.RawPath != "" || request.URL.RawQuery != "" || request.URL.ForceQuery)) {
+				return errors.New("room unavailable")
+			}
 			if request == nil || !containsWebSocketProtocol(request.Header.Get("Sec-WebSocket-Protocol"), cloudflareNetplayProtocol) {
 				return errors.New("Gun Mayhem WebSocket protocol required")
 			}
@@ -272,6 +284,10 @@ func (t *cloudflareQuickTunnel) setPublicURL(raw string) {
 	wsURL, err := normalizeCloudflareTunnelURL(raw)
 	if err != nil {
 		return
+	}
+	if t.session != nil && t.session.publicRoomID != "" {
+		u, _ := url.Parse(wsURL)
+		wsURL = "wss://" + u.Host + masterapi.PublicRoomWebSocketPrefix + t.session.publicRoomID
 	}
 	u, _ := url.Parse(wsURL)
 	publicURL := "https://" + u.Host

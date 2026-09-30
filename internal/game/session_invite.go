@@ -392,6 +392,9 @@ func (g *Game) currentHostDisplayJoinCodeLabel() string {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost {
 		return "OFFLINE"
 	}
+	if g.isPublicRoomHost() {
+		return g.publicDirectory.Status()
+	}
 	if g.onlineSessionVisibility == onlineSessionInviteOnly {
 		if code, ready := g.currentHostDisplayJoinCode(); ready && code != "" {
 			return "INVITE CODE: " + code

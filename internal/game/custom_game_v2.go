@@ -21,6 +21,7 @@ const (
 	menuHitCustomV2PlaylistGM2
 	menuHitCustomV2ApplyAll
 	menuHitCustomV2CopyInvite
+	menuHitCustomV2ClosePublicRoom
 	menuHitCustomV2RoundBase      = 11100
 	menuHitCustomV2MapBase        = 11200
 	menuHitCustomV2SlotRemoveBase = 11300
@@ -176,6 +177,9 @@ func (g *Game) setCustomV2Page(page int) {
 }
 
 func (g *Game) customV2HitAt(x, y float64) int {
+	if g.isPublicRoomHost() && g.customPage == customPagePlayers && customV2CopyInviteRect.Contains(x, y) {
+		return menuHitCustomV2ClosePublicRoom
+	}
 	if g.canCopyHostInvite() && customV2CopyInviteRect.Contains(x, y) {
 		return menuHitCustomV2CopyInvite
 	}
@@ -302,6 +306,10 @@ func (g *Game) customV2HitAt(x, y float64) int {
 }
 
 func (g *Game) activateCustomV2Hit(hit int) {
+	if hit == menuHitCustomV2ClosePublicRoom && g.isPublicRoomHost() {
+		g.returnToOnlineServerBrowser()
+		return
+	}
 	if g.handleCopyInviteHit(hit, writeClipboardText) {
 		return
 	}
@@ -753,6 +761,10 @@ func (g *Game) drawCustomV2OnlineShell(screen *ebiten.Image) {
 		if g.multiplayerMessage == "INVITE COPIED" || strings.HasPrefix(g.multiplayerMessage, "COPY ") {
 			drawSourceMenuText(screen, g.multiplayerMessage, menuFontCondensedExtraBold, 10.5, color.White, 431, 547)
 		}
+	}
+	if g.isPublicRoomHost() && g.customPage == customPagePlayers {
+		drawDevelopedMenuButton(screen, customV2CopyInviteRect, "CLOSE ROOM")
+		drawSourceMenuText(screen, "ENDS THIS HOSTED SESSION", menuFontCondensedExtraBold, 10.5, color.White, 431, 547)
 	}
 }
 

@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"gunmayhem-go/internal/masterapi"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -218,17 +220,19 @@ type netplaySession struct {
 	link   *netplayLink
 	ready  atomic.Bool
 
-	assignedPlayerID   atomic.Int32
-	allowedRemote      [5]atomic.Bool
-	inviteOnly         bool
-	expectedSessionKey string
-	shortJoinCode      string
-	publicSessionID    string
-	publicSessionName  string
-	clientSessionKey   string
-	probeMu            sync.RWMutex
-	probeInfo          netProbeInfo
-	publicTunnelURL    string
+	assignedPlayerID      atomic.Int32
+	allowedRemote         [5]atomic.Bool
+	inviteOnly            bool
+	expectedSessionKey    string
+	shortJoinCode         string
+	publicSessionID       string
+	publicSessionName     string
+	clientSessionKey      string
+	probeMu               sync.RWMutex
+	probeInfo             netProbeInfo
+	publicTunnelURL       string
+	publicRoomID          string // public routing identifier, never an invite secret
+	publicAdmissionClosed atomic.Bool
 
 	stateMu    sync.RWMutex
 	state      netSnapshot
@@ -405,14 +409,14 @@ func newClientNetplayFromConnWithStack(conn net.Conn, remoteLabel, sessionKey st
 }
 
 func (s *netplaySession) attachIncomingConn(conn net.Conn) bool {
-	if s == nil || conn == nil || s.closed.Load() || s.mode != netplayHost {
+	if s == nil || conn == nil || s.closed.Load() || s.publicAdmissionClosed.Load() || s.mode != netplayHost {
 		if conn != nil {
 			_ = conn.Close()
 		}
 		return false
 	}
 	s.pendingMu.Lock()
-	if s.closed.Load() || len(s.pending) >= maxPendingNetHandshakes {
+	if s.closed.Load() || s.publicAdmissionClosed.Load() || len(s.pending) >= maxPendingNetHandshakes {
 		s.pendingMu.Unlock()
 		_ = conn.Close()
 		return false
@@ -436,6 +440,10 @@ func (s *netplaySession) attachIncomingConn(conn net.Conn) bool {
 }
 
 func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
+	if s.publicAdmissionClosed.Load() {
+		_ = conn.Close()
+		return
+	}
 	link := normalizeNetplayStack(s.stack).adopt(conn)
 	challenge, err := newOnlineAuthChallenge()
 	if err != nil {
@@ -483,13 +491,13 @@ func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
 		return
 	}
 	_ = link.SetReadDeadline(time.Time{})
-	if s.closed.Load() {
+	if s.closed.Load() || s.publicAdmissionClosed.Load() {
 		_ = link.Close()
 		return
 	}
 
 	s.peersMu.Lock()
-	if s.closed.Load() {
+	if s.closed.Load() || s.publicAdmissionClosed.Load() {
 		s.peersMu.Unlock()
 		_ = link.Close()
 		return
@@ -1037,8 +1045,8 @@ func (g *Game) StartNetHostMode(addr string, visibility int) error {
 	return g.StartNetHostConfig(addr, onlineSessionScopeLAN, visibility)
 }
 
-// StartNetHostConfig supports LAN+OPEN, LAN+INVITE and opt-in INTERNET+INVITE.
-// Experimental Internet sessions never publish an OPEN DHT listing.
+// Internet OPEN additionally requires an explicitly configured HTTPS directory.
+// The CLI/legacy entry points remain LAN-only; DHT/relay/NAT are not enabled.
 
 func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 	if g == nil {
@@ -1050,12 +1058,21 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 	if visibility != onlineSessionOpen && visibility != onlineSessionInviteOnly {
 		return errors.New("invalid online session visibility")
 	}
+	directoryURL, roomID, roomOwner := "", "", ""
 	if scope == onlineSessionScopeInternet {
 		if !experimentalInternetEnabled() {
 			return errors.New("Internet hosting is experimental; set GUNMAYHEM_EXPERIMENTAL_INTERNET=1 to opt in")
 		}
-		if visibility != onlineSessionInviteOnly {
-			return errors.New("experimental Internet hosting requires a private invite")
+		if visibility == onlineSessionOpen {
+			directoryURL = configuredPublicDirectoryURL()
+			if directoryURL == "" {
+				return errors.New("public room directory is not configured; set an approved HTTPS GUNMAYHEM_MASTER_URL")
+			}
+			var err error
+			roomID, roomOwner, err = publicRoomIdentity()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	_ = g.CloseNetplay()
@@ -1074,6 +1091,10 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 		s.expectedSessionKey = authKey
 		s.shortJoinCode = shortCode
 		s.publicSessionID = publicOnlineSessionID(authKey)
+		s.publicRoomID = roomID
+		if roomID != "" {
+			s.publicSessionID = roomID
+		}
 		s.publicSessionName = sanitizeRemotePlayerName(g.multiplayerSessionName)
 		if s.publicSessionName == "" {
 			s.publicSessionName = "Gun Mayhem Game"
@@ -1124,6 +1145,9 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 			if _, tunnelErr = tunnel.WaitReady(cloudflareTunnelStartWindow); tunnelErr != nil {
 				_ = g.CloseNetplay()
 				return fmt.Errorf("start Internet tunnel: %w", tunnelErr)
+			}
+			if visibility == onlineSessionOpen {
+				g.publicDirectory = startPublicRoomAdvertiser(directoryURL, roomOwner, s, tunnel, nil)
 			}
 		}
 	}
@@ -1254,6 +1278,19 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 		networkDiagnostic("JOIN finish address=%s err=%v", server.Address, finalErr)
 	}()
 	_ = g.CloseNetplay()
+	if server.Transport == "public-wss" {
+		if !experimentalInternetEnabled() {
+			return errors.New("public Internet rooms require experimental opt-in")
+		}
+		s, err := newPublicRoomClient(server, dialPublicRoomWebSocket)
+		if err != nil {
+			return err
+		}
+		g.netplay = s
+		g.onlineSessionVisibility = onlineSessionOpen
+		g.onlineSessionScope = onlineSessionScopeInternet
+		return nil
+	}
 
 	if strings.EqualFold(strings.TrimSpace(server.Transport), "cloudflare") || strings.TrimSpace(server.TunnelAddress) != "" {
 		address := strings.TrimSpace(server.TunnelAddress)
@@ -1352,6 +1389,16 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 func (g *Game) CloseNetplay() error {
 	if g == nil {
 		return nil
+	}
+	if g.netplay != nil && masterapi.ValidHexIdentity(g.netplay.publicRoomID, 16) {
+		// Stop admission and existing gameplay immediately, before bounded HTTP
+		// deletion. A failed DELETE is still covered by the directory TTL.
+		g.netplay.publicAdmissionClosed.Store(true)
+		_ = g.netplay.Close()
+	}
+	if g.publicDirectory != nil {
+		_ = g.publicDirectory.Close()
+		g.publicDirectory = nil
 	}
 	// These caches belong to one connection/session, not to the user's saved
 	// character. Rejoining in the same process must resend unchanged config

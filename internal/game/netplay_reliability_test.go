@@ -266,8 +266,9 @@ func TestNetplayOversizedFrameDisconnectsOnlySender(t *testing.T) {
 	waitFor(t, "healthy input after attack", func() bool { return host.latestInputFor(2).Up })
 }
 
-func TestExperimentalInternetOptInIsInviteOnly(t *testing.T) {
+func TestExperimentalInternetDefaultsToInviteWithoutDirectory(t *testing.T) {
 	t.Setenv("GUNMAYHEM_EXPERIMENTAL_INTERNET", "1")
+	t.Setenv("GUNMAYHEM_MASTER_URL", "")
 	g := New()
 	g.activateCustomHostSetupHit(menuHitCustomHostScopeInternet)
 	if g.customHostScope != onlineSessionScopeInternet || g.customHostAccess != onlineSessionInviteOnly {
@@ -277,7 +278,7 @@ func TestExperimentalInternetOptInIsInviteOnly(t *testing.T) {
 	if g.customHostAccess != onlineSessionInviteOnly {
 		t.Fatal("experimental Internet exposed OPEN discovery")
 	}
-	if !strings.Contains(g.multiplayerMessage, "PRIVATE INVITES") {
+	if !strings.Contains(g.multiplayerMessage, "PUBLIC DIRECTORY NOT CONFIGURED") {
 		t.Fatal("restriction not explained")
 	}
 }

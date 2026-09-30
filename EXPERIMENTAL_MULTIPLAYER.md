@@ -3,7 +3,9 @@
 This branch extends the existing **native Go/Ebitengine game**, not a browser
 client. The host player's game remains the authoritative server. It preserves
 LAN play and adds an explicitly enabled, invite-only Internet path using the
-existing Cloudflare WebSocket gateway.
+existing Cloudflare WebSocket gateway. The later [public-room extension](PUBLIC_ROOMS.md)
+adds explicitly selected OPEN rooms only when a shared HTTPS directory is configured.
+No directory or live tunnel was deployed during this work.
 
 ## What changed
 
@@ -29,9 +31,10 @@ existing Cloudflare WebSocket gateway.
   still pause on focus loss, and unfocused local controls are neutral
 - The shared address field accepts the complete maximum-length 95-character
   Cloudflare invite, with a 128-character input bound
-- The CLI `--host` and legacy HOST button are LAN-only. No host startup path
-  publishes an OPEN Internet/DHT session. Internet hosting requires explicit
-  opt-in and private-invite access in the shared host API and tunnel launcher
+- The CLI `--host` and legacy HOST button are LAN-only. Internet hosting requires
+  explicit opt-in in the shared API and tunnel launcher. INVITE remains the
+  default; OPEN additionally requires the configured HTTPS directory and a
+  separate public routing ID. DHT, QUIC and legacy relay publication remain off
 
 The wire protocol on the gameplay-extension branch is **20** (the network-only
 milestone uses **19**). All players must use this branch's build; the
@@ -56,7 +59,7 @@ released protocol-18 build is intentionally rejected rather than misinterpreted.
 
 4. Open **CUSTOM GAME → ONLINE → CREATE SESSION → INTERNET**. With the opt-in
    unset the network browser is still labeled LAN. This experimental
-   selection forces **INVITE CODE**. Clicking CREATE starts a public temporary
+   selection defaults to **INVITE CODE**; retain it for a private trial. Clicking CREATE starts a public temporary
    Cloudflare tunnel; the UI discloses this before creation. Startup can take up
    to 20 seconds and is currently synchronous
 5. Configure the match and mark the intended guest slots as network humans.

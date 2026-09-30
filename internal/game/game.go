@@ -211,6 +211,7 @@ type Game struct {
 	multiplayerDiscoveryCh    chan masterServerDiscoveryResult
 	multiplayerDiscoveryDone  bool
 	serverAdvertiser          *masterServerAdvertiser
+	publicDirectory           *publicRoomAdvertiser
 	localServerAdvertiser     *localServerAdvertiser
 	lanDiscoveryResponder     *lanDiscoveryResponder
 	globalDHTAdvertiser       *globalDHTAdvertiser

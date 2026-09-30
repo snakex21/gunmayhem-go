@@ -102,6 +102,11 @@ func applyProbeInfoToServer(server multiplayerServerInfo, info netProbeInfo) mul
 	server.ChaosIntervalSeconds = info.ChaosIntervalSeconds
 	server.DirectAddress = strings.TrimSpace(info.DirectAddress)
 	server.TunnelAddress = strings.TrimSpace(info.TunnelAddress)
+	// A discovered LAN/local TCP route stays local. In particular a public room
+	// must not make LAN guests opt into Internet or strip its ID-bearing WSS path.
+	if server.Transport == "lan" || server.Transport == "local" {
+		server.TunnelAddress = ""
+	}
 	if server.TunnelAddress != "" {
 		server.Transport = "cloudflare"
 		server.Address = server.TunnelAddress
@@ -761,12 +766,24 @@ func (g *Game) refreshMultiplayerServers() {
 	ch := make(chan masterServerDiscoveryResult, 2)
 	g.multiplayerDiscoveryCh = ch
 	g.multiplayerMessage = "SEARCHING LAN..."
+	publicEnabled := experimentalInternetEnabled()
+	directoryURL := ""
+	if publicEnabled {
+		directoryURL = configuredPublicDirectoryURL()
+	}
 	go func() {
 		type sourceResult struct {
 			servers []multiplayerServerInfo
 			err     error
 		}
 		lanCh := make(chan sourceResult, 1)
+		publicCh := make(chan sourceResult, 1)
+		if publicEnabled {
+			go func() {
+				servers, err := fetchPublicRooms(directoryURL, nil)
+				publicCh <- sourceResult{servers: servers, err: err}
+			}()
+		}
 		go func() {
 			servers, err := discoverLANServers(lanDiscoveryTimeout)
 			lanCh <- sourceResult{servers: servers, err: err}
@@ -781,11 +798,20 @@ func (g *Game) refreshMultiplayerServers() {
 		if len(servers) == 0 && localErr != nil && lan.err != nil {
 			err = errors.Join(localErr, lan.err)
 		}
-		// Keep the first fast result for UI responsiveness and existing browser
-		// flow, then immediately finish. Internet discovery is deliberately not
-		// started in the LAN-only release.
+		// LAN renders without waiting for HTTPS. No public request is made unless
+		// explicitly opted in; private invitations are never directory lookups.
 		ch <- masterServerDiscoveryResult{Servers: servers, Err: err, Done: false}
-		ch <- masterServerDiscoveryResult{Servers: servers, Err: err, Done: true}
+		if publicEnabled {
+			public := <-publicCh
+			combined := mergeServerLists(servers, public.servers)
+			if len(combined) > 0 {
+				err = nil
+			}
+			// Keep local successes even if the public directory is unavailable.
+			ch <- masterServerDiscoveryResult{Servers: combined, MasterErr: public.err, Done: true}
+		} else {
+			ch <- masterServerDiscoveryResult{Servers: servers, Err: err, Done: true}
+		}
 	}()
 }
 
@@ -843,6 +869,15 @@ func (g *Game) pollMultiplayerServerBrowser() {
 			g.multiplayerMessage = "NO OPEN LAN SESSIONS FOUND"
 		} else {
 			g.multiplayerMessage = "FOUND OPEN LAN SESSIONS"
+		}
+		if experimentalInternetEnabled() {
+			if result.MasterErr != nil {
+				g.multiplayerMessage = "LAN / PRIVATE INVITES AVAILABLE - " + result.MasterErr.Error()
+			} else if len(result.Servers) == 0 {
+				g.multiplayerMessage = "NO OPEN LAN OR INTERNET ROOMS FOUND"
+			} else {
+				g.multiplayerMessage = "FOUND OPEN LAN / INTERNET ROOMS"
+			}
 		}
 	default:
 	}

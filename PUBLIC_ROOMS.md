@@ -129,3 +129,85 @@ experiment's narrow `trycloudflare.com` allowlist.
 
 Sources: [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)
 and [Cloudflare Tunnel setup](https://developers.cloudflare.com/tunnel/get-started/).
+
+## Game client and host setup
+
+Everyone runs this experimental protocol-20 build. The gameplay wire format is
+unchanged by public discovery; there are still at most four players. The host's
+PC runs the authoritative game and requires official `cloudflared`. Guests do
+not install cloudflared. No separate paid gameplay server is required, but the
+shared directory and Cloudflare transport are still infrastructure dependencies.
+
+After a directory operator has an approved, reachable HTTPS endpoint, each
+computer explicitly enables the experiment and configures that **same** base
+URL using `GUNMAYHEM_MASTER_URL` or the existing `master_server.txt` beside the
+executable. A private-invite trial requires no directory. There is no shipped
+public-directory default, account creation or automatic deployment.
+
+```powershell
+$env:GUNMAYHEM_EXPERIMENTAL_INTERNET = "1"
+$env:GUNMAYHEM_MASTER_URL = "https://YOUR-APPROVED-DIRECTORY"
+# Host only, if cloudflared is not already beside the game or in PATH:
+$env:GUNMAYHEM_CLOUDFLARED = "C:\Tools\cloudflared.exe"
+.\GunMayhem.exe
+```
+
+The URL above is a placeholder, not a live service. Directory URLs must use
+HTTPS and contain no embedded credentials, query or fragment. The legacy
+`GUNMAYHEM_ALLOW_INSECURE_MASTER` flag does not enable HTTP for public rooms.
+The loopback HTTP server example earlier only exercises server development;
+game-side TLS fixtures use explicitly trusted local test certificates.
+
+1. Host: **CUSTOM GAME → ONLINE → CREATE SESSION → INTERNET**. The initial
+   access choice is still **INVITE CODE**. Explicitly choose **OPEN**, then
+   **CREATE SESSION**. The UI discloses public room publication
+2. Configure **MODE → MAPS → SLOTS**, open **ONLINE PLAYER** slots, and wait for
+   the footer to say **PUBLIC ROOM: LISTED**. Directory failure is shown there;
+   a running tunnel alone does not mean the room is listed
+3. Guests: **CUSTOM GAME → ONLINE → REFRESH**, select the **INTERNET** room and
+   click **JOIN SESSION**. No invitation or link is required for that OPEN room
+4. Host starts **START ONLINE MATCH**. Existing character configuration, READY,
+   kick and manual rejoin rules apply. A kick closes that slot; it is not a
+   durable identity ban, and an anonymous player can use another open slot
+5. **CLOSE ROOM** on the host's SLOTS page ends the entire hosted session,
+   stops admission, disconnects peers and delists. Leaving/restarting the host
+   does the same. There is no host migration or automatic guest reconnect
+
+Closing cancels and waits for heartbeat work, then sends authenticated DELETE.
+The independently generated ID/ownership pair exists before the first POST,
+so an initial request whose response is lost can still be tombstoned. If DELETE
+fails, the directory's TTL removes the listing. Tunnel failure also stops new
+admission and attempts delisting. Existing peers are not forcibly closed merely
+because the directory is offline; if the directory expires and rejects a room
+with 409, the host must create a new session rather than silently reopen it.
+
+Private sessions never start the advertiser and have no public-room ID. Their
+128-bit invitation authentication stays unchanged. Directory ownership uses a
+different random 256-bit value, never a private game secret. Public guests need
+no such secret: the public 128-bit ID in `/ws/room/<id>` identifies the intended
+room, and a different ID/private route is rejected. Public listings are
+unverified advertisements, not a host trust or identity certification.
+
+Directory HTTP clients refuse all redirects, including 307/308, and bound
+responses. The browser preserves fast LAN results during public-directory
+failure. The new Internet route accepts only the exact validated WSS endpoint;
+it cannot fall back to arbitrary TCP, QUIC or legacy relay addresses. Native
+Origin gating is spoofable; OPEN is intentionally public admission, with the
+existing handshake/frame/input/slot bounds still enforced.
+
+## Integrated local test scope
+
+The game tests run the real directory handler over local TLS and the real WSS
+game handler behind another local TLS fixture. A dependency-injected dialer
+maps a validated synthetic Cloudflare route to that fixture; it does not contact
+Cloudflare or disable certificate verification. Coverage includes discovery,
+host plus three guests, a full-room rejection, input and authoritative snapshots,
+occupancy updates, kick/manual rejoin, wrong public ID/private path rejection,
+private-session exclusion, configuration gates, entropy failure, redirects,
+closing before a delayed initial registration, dead-tunnel delisting, expiry,
+failed DELETE and preservation of LAN results during a directory outage.
+
+These checks cannot establish Windows execution, real Internet latency,
+Cloudflare availability, production anti-abuse capacity or competitive balance.
+The separate manual two-computer, then four-player cross-network acceptance
+gate remains required. No public endpoint has been deployed by these tests.

@@ -1,5 +1,12 @@
 # Gun Mayhem public master + relay
 
+This document describes the retained v1 design. The experimental branch now
+defaults the master command to the separate **v2 directory-only** mode, on
+loopback with no gameplay relay. See [PUBLIC_ROOMS.md](PUBLIC_ROOMS.md) for the
+active public-room experiment. The game does not automatically enable the v1
+relay, DHT or private-code lookup flow described below. No shared directory has
+been deployed.
+
 ## Architecture
 
 Gun Mayhem keeps the player-hosted model: the host computer runs the authoritative match simulation. The public infrastructure has two separate jobs:
