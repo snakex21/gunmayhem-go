@@ -93,6 +93,7 @@ func TestLANInviteHostIsPrivateAndCodeReachable(t *testing.T) {
 }
 
 func TestInternetInviteStaysOffOpenBrowser(t *testing.T) {
+	t.Setenv("GUNMAYHEM_EXPERIMENTAL_INTERNET", "1")
 	g := New()
 	if err := g.StartNetHostConfig("127.0.0.1:0", onlineSessionScopeInternet, onlineSessionInviteOnly); err != nil {
 		t.Fatal(err)

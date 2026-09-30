@@ -71,3 +71,10 @@ Network hardening includes:
 Internet multiplayer is **not supported in this release**.
 
 The repository still contains experimental work for direct P2P, DHT discovery, QUIC, optional master/relay infrastructure and Cloudflare WebSocket tunnels. These implementations are kept for continued development and for a future attempt with a stronger networking design, but the released game intentionally exposes only the working LAN path.
+
+## Opt-in experiment on this branch
+
+See [EXPERIMENTAL_MULTIPLAYER.md](EXPERIMENTAL_MULTIPLAYER.md) for the private
+Cloudflare/WSS trial, explicit host opt-in, protocol-19 compatibility, tested
+disconnect/rejoin behavior and limitations. LAN remains the default; the
+experimental path is not yet validated by a real cross-network playtest.

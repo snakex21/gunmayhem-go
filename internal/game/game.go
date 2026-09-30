@@ -330,6 +330,9 @@ func New() *Game {
 }
 
 func (g *Game) Update() error {
+	// Network games must keep simulation/snapshots alive when the host alt-tabs.
+	// Local games retain pause-on-focus-loss behavior.
+	ebiten.SetRunnableOnUnfocused(g.netplay != nil)
 	if g.updateUpdaterRuntime() {
 		return ebiten.Termination
 	}

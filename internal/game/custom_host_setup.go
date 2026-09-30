@@ -2,6 +2,7 @@ package game
 
 import (
 	"image/color"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -29,6 +30,12 @@ var (
 	customHostCancelEditRect    = Rect{X: 340, Y: 500, W: 220, H: 50}
 	customHostApplyEditRect     = Rect{X: 600, Y: 500, W: 220, H: 50}
 )
+
+// Experimental Internet hosting is deliberately opt-in until remote playtests
+// establish acceptable latency. Selecting it exposes only a private invite flow.
+func experimentalInternetEnabled() bool {
+	return os.Getenv("GUNMAYHEM_EXPERIMENTAL_INTERNET") == "1"
+}
 
 func (g *Game) customHostSetupHitAt(x, y float64) int {
 	if g != nil && g.netplay != nil && g.netplay.mode == netplayHost {
@@ -75,9 +82,19 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 	case menuHitCustomHostScopeLAN:
 		g.customHostScope = onlineSessionScopeLAN
 	case menuHitCustomHostScopeInternet:
+		if experimentalInternetEnabled() {
+			g.customHostScope = onlineSessionScopeInternet
+			g.customHostAccess = onlineSessionInviteOnly
+			g.multiplayerMessage = "EXPERIMENTAL: CREATES A PUBLIC CLOUDFLARE TUNNEL; SHARE THE PRIVATE INVITE WITH FRIENDS"
+			return
+		}
 		g.customHostScope = onlineSessionScopeLAN
 		g.multiplayerMessage = "INTERNET MULTIPLAYER IS DISABLED IN THIS RELEASE - LAN ONLY"
 	case menuHitCustomHostAccessOpen:
+		if g.customHostScope == onlineSessionScopeInternet {
+			g.multiplayerMessage = "EXPERIMENTAL INTERNET USES PRIVATE INVITES ONLY"
+			return
+		}
 		g.customHostAccess = onlineSessionOpen
 	case menuHitCustomHostAccessInvite:
 		g.customHostAccess = onlineSessionInviteOnly
@@ -90,6 +107,10 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 
 func (g *Game) createConfiguredOnlineSession() {
 	scope := onlineSessionScopeLAN
+	if experimentalInternetEnabled() && g.customHostScope == onlineSessionScopeInternet {
+		scope = onlineSessionScopeInternet
+		g.customHostAccess = onlineSessionInviteOnly
+	}
 	g.customHostScope = scope
 	access := g.customHostAccess
 	if access != onlineSessionOpen && access != onlineSessionInviteOnly {
@@ -147,6 +168,9 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 0, 0, 900, 600, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xff})
 	ebitenutil.DrawRect(screen, 25, 20, 850, 70, color.NRGBA{R: 0xf5, G: 0xf5, B: 0xf5, A: 0xff})
 	title := "CREATE LAN SESSION"
+	if experimentalInternetEnabled() {
+		title = "CREATE SESSION (INTERNET EXPERIMENTAL)"
+	}
 	if editingExisting {
 		title = "LAN SESSION SETTINGS"
 	}
@@ -166,13 +190,21 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 
 	drawSourceMenuText(screen, "NETWORK REACH", menuFontCondensedExtraBold, 16, color.White, 180, 205)
 	drawHostTypeCard(screen, customHostScopeLANRect, "LAN ONLY", "Players on your local network.", g.customHostScope == onlineSessionScopeLAN)
-	drawHostTypeCard(screen, customHostScopeInternetRect, "INTERNET", "Disabled in this release.", false)
+	internetSubtitle := "Disabled in this release."
+	if experimentalInternetEnabled() {
+		internetSubtitle = "Experimental Cloudflare invite."
+	}
+	drawHostTypeCard(screen, customHostScopeInternetRect, "INTERNET", internetSubtitle, g.customHostScope == onlineSessionScopeInternet)
 
 	drawSourceMenuText(screen, "ACCESS", menuFontCondensedExtraBold, 16, color.White, 180, 332)
 	drawHostTypeCard(screen, customHostAccessOpenRect, "OPEN", "Visible in the selected scope.", g.customHostAccess == onlineSessionOpen)
 	drawHostTypeCard(screen, customHostAccessInviteRect, "INVITE CODE", "Hidden; only players with code join.", g.customHostAccess == onlineSessionInviteOnly)
 
-	drawSourceMenuText(screen, "This release supports LAN multiplayer only. OPEN and INVITE CODE both work inside the local network.", menuFontCondensed, 11.5,
+	help := "This release supports LAN multiplayer only. OPEN and INVITE CODE both work inside the local network."
+	if g.customHostScope == onlineSessionScopeInternet {
+		help = "CREATE publishes a temporary Cloudflare tunnel. Requires official cloudflared; no uptime guarantee."
+	}
+	drawSourceMenuText(screen, help, menuFontCondensed, 11.5,
 		color.NRGBA{R: 0xb9, G: 0xbf, B: 0xc8, A: 0xff}, 180, 458)
 	info := "Returning to the server browser closes the host but keeps these settings until the game is closed."
 	backLabel := "BACK TO SERVERS"

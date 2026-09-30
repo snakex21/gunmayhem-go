@@ -226,6 +226,10 @@ func (o *netplayOutbox) Push(msg netWireMessage) {
 }
 
 func (o *netplayOutbox) Next(stop, sessionDone <-chan struct{}) (netWireMessage, bool) {
+	return o.nextWithHeartbeat(stop, sessionDone, nil)
+}
+
+func (o *netplayOutbox) nextWithHeartbeat(stop, sessionDone <-chan struct{}, heartbeat <-chan time.Time) (netWireMessage, bool) {
 	if o == nil {
 		return netWireMessage{}, false
 	}
@@ -238,6 +242,8 @@ func (o *netplayOutbox) Next(stop, sessionDone <-chan struct{}) (netWireMessage,
 		return msg, true
 	case msg := <-o.input:
 		return msg, true
+	case <-heartbeat:
+		return netWireMessage{Type: netMessageKeepAlive}, true
 	case <-stop:
 		return netWireMessage{}, false
 	case <-sessionDone:

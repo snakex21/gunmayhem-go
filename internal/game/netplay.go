@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	netplayProtocolVersion = 18
+	netplayProtocolVersion = 19
 	maxOnlinePlayers       = 4
 )
 
@@ -38,6 +38,7 @@ const (
 	netMessageProbe         = 6
 	netMessageProbeReply    = 7
 	netMessagePostGameReady = 8
+	netMessageKeepAlive     = 9
 )
 
 type netSFXEvent struct {
@@ -187,6 +188,7 @@ type netplayPeer struct {
 
 	inputMu       sync.RWMutex
 	input         PlayerInputState
+	inputReceived time.Time
 	configMu      sync.RWMutex
 	config        CustomPlayerConfig
 	hasConfig     atomic.Bool
@@ -208,6 +210,8 @@ type netplaySession struct {
 	peersMu           sync.RWMutex
 	peers             map[int]*netplayPeer
 	pendingHandshakes atomic.Int32
+	pendingMu         sync.Mutex
+	pending           map[net.Conn]struct{}
 
 	connMu sync.Mutex
 	conn   net.Conn
@@ -317,6 +321,11 @@ func newHostNetplay(addr string) (*netplaySession, error) {
 }
 
 func newHostNetplayWithStack(addr string, stack *netplayStack) (*netplaySession, error) {
+	return newConfiguredHostNetplay(addr, stack, nil)
+}
+
+// Configure immutable authentication and slot policy before the accept loop starts.
+func newConfiguredHostNetplay(addr string, stack *netplayStack, configure func(*netplaySession)) (*netplaySession, error) {
 	stack = normalizeNetplayStack(stack)
 	ln, err := stack.listen(normalizeListenAddress(addr))
 	if err != nil {
@@ -331,6 +340,9 @@ func newHostNetplayWithStack(addr string, stack *netplayStack) (*netplaySession,
 	}
 	for id := 2; id <= maxOnlinePlayers; id++ {
 		s.allowedRemote[id].Store(true)
+	}
+	if configure != nil {
+		configure(s)
 	}
 	go s.acceptLoop()
 	return s, nil
@@ -399,13 +411,25 @@ func (s *netplaySession) attachIncomingConn(conn net.Conn) bool {
 		}
 		return false
 	}
-	if s.pendingHandshakes.Add(1) > maxPendingNetHandshakes {
-		s.pendingHandshakes.Add(-1)
+	s.pendingMu.Lock()
+	if s.closed.Load() || len(s.pending) >= maxPendingNetHandshakes {
+		s.pendingMu.Unlock()
 		_ = conn.Close()
 		return false
 	}
+	if s.pending == nil {
+		s.pending = make(map[net.Conn]struct{})
+	}
+	s.pending[conn] = struct{}{}
+	s.pendingHandshakes.Add(1)
+	s.pendingMu.Unlock()
 	go func() {
-		defer s.pendingHandshakes.Add(-1)
+		defer func() {
+			s.pendingMu.Lock()
+			delete(s.pending, conn)
+			s.pendingHandshakes.Add(-1)
+			s.pendingMu.Unlock()
+		}()
 		s.prepareIncomingConn(conn)
 	}()
 	return true
@@ -465,6 +489,11 @@ func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
 	}
 
 	s.peersMu.Lock()
+	if s.closed.Load() {
+		s.peersMu.Unlock()
+		_ = link.Close()
+		return
+	}
 	playerID := 0
 	for id := 2; id <= maxOnlinePlayers; id++ {
 		if !s.allowedRemote[id].Load() {
@@ -536,6 +565,9 @@ func (p *netplayPeer) latestInput() PlayerInputState {
 	}
 	p.inputMu.RLock()
 	defer p.inputMu.RUnlock()
+	if p.closed.Load() || p.inputReceived.IsZero() || time.Since(p.inputReceived) > netInputMaxAge {
+		return PlayerInputState{}
+	}
 	return p.input
 }
 
@@ -561,10 +593,18 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 	writerDone := make(chan struct{})
 	go func() {
 		defer close(writerDone)
+		heartbeat := time.NewTicker(netHeartbeatInterval)
+		defer heartbeat.Stop()
 		for {
 			select {
 			case state := <-peer.stateSend:
 				if err := peer.link.Write(netWireMessage{Type: netMessageState, Protocol: netplayProtocolVersion, PlayerID: peer.playerID, State: state}, maxServerWireFrame); err != nil {
+					s.setErr(err)
+					peer.close()
+					return
+				}
+			case <-heartbeat.C:
+				if err := peer.link.Write(netWireMessage{Type: netMessageKeepAlive, Protocol: netplayProtocolVersion, PlayerID: peer.playerID}, maxServerWireFrame); err != nil {
 					s.setErr(err)
 					peer.close()
 					return
@@ -578,6 +618,7 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 	var rate netRateGuard
 	for !s.closed.Load() && !peer.closed.Load() {
 		var msg netWireMessage
+		_ = peer.link.SetReadDeadline(time.Now().Add(netPeerIdleTimeout))
 		if err := peer.link.Read(maxClientWireFrame, &msg); err != nil {
 			if !errors.Is(err, net.ErrClosed) && !peer.closed.Load() {
 				s.setErr(err)
@@ -588,9 +629,9 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 			s.setErr(errors.New("remote client exceeded netplay message rate limit"))
 			break
 		}
-		if err := validateNetMessageForHost(msg); err != nil || msg.Type == netMessageHello {
+		if err := validateNetMessageForHost(msg); err != nil || msg.Type == netMessageHello || msg.Type == netMessageProbe || msg.PlayerID != peer.playerID {
 			if err == nil {
-				err = errors.New("unexpected repeated netplay hello")
+				err = errors.New("unexpected message or player identity on established netplay connection")
 			}
 			s.setErr(err)
 			break
@@ -599,6 +640,7 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 		case netMessageInput:
 			peer.inputMu.Lock()
 			peer.input = msg.Input
+			peer.inputReceived = time.Now()
 			peer.inputMu.Unlock()
 		case netMessagePlayerConfig:
 			cfg, err := sanitizeRemotePlayerConfig(msg.Config)
@@ -692,17 +734,21 @@ func (s *netplaySession) clientRun(link *netplayLink) {
 func (s *netplaySession) clientReadLoop(link *netplayLink) {
 	for !s.closed.Load() {
 		var msg netWireMessage
+		_ = link.SetReadDeadline(time.Now().Add(netPeerIdleTimeout))
 		if err := link.Read(maxServerWireFrame, &msg); err != nil {
 			s.setErr(fmt.Errorf("receive host message: %w", err))
 			return
 		}
-		if err := validateNetMessageForClient(msg); err != nil || msg.Type != netMessageState {
+		if err := validateNetMessageForClient(msg); err != nil || (msg.Type != netMessageState && msg.Type != netMessageKeepAlive) || msg.PlayerID != s.assignedPlayer() {
 			if err == nil {
 				err = errors.New("unexpected host message")
 			}
 			s.setErr(err)
 			s.ready.Store(false)
 			return
+		}
+		if msg.Type == netMessageKeepAlive {
+			continue
 		}
 		if err := validateNetSnapshot(msg.State); err != nil {
 			s.setErr(err)
@@ -716,8 +762,10 @@ func (s *netplaySession) clientReadLoop(link *netplayLink) {
 }
 
 func (s *netplaySession) clientWriteLoop(link *netplayLink, stop <-chan struct{}) {
+	heartbeat := time.NewTicker(netHeartbeatInterval)
+	defer heartbeat.Stop()
 	for {
-		msg, ok := s.outbox.Next(stop, s.done)
+		msg, ok := s.outbox.nextWithHeartbeat(stop, s.done, heartbeat.C)
 		if !ok {
 			return
 		}
@@ -945,6 +993,16 @@ func (s *netplaySession) Close() error {
 	if s.listener != nil {
 		_ = s.listener.Close()
 	}
+	s.ready.Store(false)
+	s.pendingMu.Lock()
+	pending := make([]net.Conn, 0, len(s.pending))
+	for conn := range s.pending {
+		pending = append(pending, conn)
+	}
+	s.pendingMu.Unlock()
+	for _, conn := range pending {
+		_ = conn.Close()
+	}
 	if s.done != nil {
 		close(s.done)
 	}
@@ -967,23 +1025,21 @@ func (s *netplaySession) Close() error {
 	return nil
 }
 
-// StartNetHost starts an Internet+LAN OPEN authoritative host for compatibility
-// with CLI and older tests.
+// StartNetHost starts a LAN-only OPEN host. CLI and legacy menus never
+// publish a public endpoint implicitly.
 func (g *Game) StartNetHost(addr string) error {
-	return g.StartNetHostConfig(addr, onlineSessionScopeInternet, onlineSessionOpen)
+	return g.StartNetHostConfig(addr, onlineSessionScopeLAN, onlineSessionOpen)
 }
 
-// StartNetHostMode is kept for compatibility. OPEN and INVITE both use the
-// Internet+LAN scope; new UI code should call StartNetHostConfig so network
-// reach and access policy remain independent.
+// StartNetHostMode is a LAN compatibility entry point. Internet hosting must
+// explicitly select the experimental scope and private invite policy.
 func (g *Game) StartNetHostMode(addr string, visibility int) error {
-	return g.StartNetHostConfig(addr, onlineSessionScopeInternet, visibility)
+	return g.StartNetHostConfig(addr, onlineSessionScopeLAN, visibility)
 }
 
-// StartNetHostConfig creates one of four combinations:
-// LAN+OPEN, LAN+INVITE, INTERNET+OPEN, INTERNET+INVITE.
-// OPEN controls browser visibility; scope controls whether Internet/NAT/DHT
-// services are started. INVITE sessions stay off browser lists in either scope.
+// StartNetHostConfig supports LAN+OPEN, LAN+INVITE and opt-in INTERNET+INVITE.
+// Experimental Internet sessions never publish an OPEN DHT listing.
+
 func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 	if g == nil {
 		return errors.New("nil game")
@@ -994,40 +1050,47 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 	if visibility != onlineSessionOpen && visibility != onlineSessionInviteOnly {
 		return errors.New("invalid online session visibility")
 	}
+	if scope == onlineSessionScopeInternet {
+		if !experimentalInternetEnabled() {
+			return errors.New("Internet hosting is experimental; set GUNMAYHEM_EXPERIMENTAL_INTERNET=1 to opt in")
+		}
+		if visibility != onlineSessionInviteOnly {
+			return errors.New("experimental Internet hosting requires a private invite")
+		}
+	}
 	_ = g.CloseNetplay()
 	key, err := newOnlineSessionKey()
 	if err != nil {
 		return fmt.Errorf("create session key: %w", err)
 	}
-	s, err := newHostNetplay(addr)
+	shortCode := ""
+	authKey := key
+	if visibility == onlineSessionInviteOnly && scope == onlineSessionScopeLAN {
+		shortCode = decentralizedOpenCode(key)
+		authKey = decentralizedCodeSessionKey(shortCode)
+	}
+	s, err := newConfiguredHostNetplay(addr, defaultNetplayStack(), func(s *netplaySession) {
+		s.inviteOnly = visibility == onlineSessionInviteOnly
+		s.expectedSessionKey = authKey
+		s.shortJoinCode = shortCode
+		s.publicSessionID = publicOnlineSessionID(authKey)
+		s.publicSessionName = sanitizeRemotePlayerName(g.multiplayerSessionName)
+		if s.publicSessionName == "" {
+			s.publicSessionName = "Gun Mayhem Game"
+		}
+		for id := 2; id <= maxOnlinePlayers; id++ {
+			s.allowedRemote[id].Store(g.customPlayers[id-1].Type == 1)
+		}
+	})
 	if err != nil {
 		return err
 	}
 	g.netplay = s
-	shortCode := ""
-	authKey := key
-	if visibility == onlineSessionInviteOnly {
-		shortCode = decentralizedOpenCode(key)
-		authKey = decentralizedCodeSessionKey(shortCode)
-	}
-	networkDiagnostic("HOST started listener=%s scope=%d visibility=%d", s.listener.Addr(), scope, visibility)
 	g.onlineSessionScope = scope
 	g.onlineSessionVisibility = visibility
 	g.onlineSessionKey = authKey
-	s.inviteOnly = visibility == onlineSessionInviteOnly
-	s.expectedSessionKey = authKey
-	s.shortJoinCode = shortCode
-	s.publicSessionID = publicOnlineSessionID(authKey)
-	s.publicSessionName = sanitizeRemotePlayerName(g.multiplayerSessionName)
-	if s.publicSessionName == "" {
-		s.publicSessionName = "Gun Mayhem Game"
-	}
-	var allowed [5]bool
-	for id := 2; id <= maxOnlinePlayers; id++ {
-		allowed[id] = g.customPlayers[id-1].Type == 1
-	}
-	s.setAllowedRemotePlayers(allowed)
-	// Seed browser metadata before LAN/DHT responders become visible so even a
+	networkDiagnostic("HOST started listener=%s scope=%d visibility=%d", s.listener.Addr(), scope, visibility)
+	// Seed browser metadata before LAN responders become visible so even a
 	// client that discovers the host immediately can preview the configured match.
 	g.updateNetplayPublicProbeInfo()
 
@@ -1051,8 +1114,7 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 
 		if scope == onlineSessionScopeInternet && shouldUseCloudflareInternetTunnel(addr) {
 			// Internet gameplay goes through a temporary Cloudflare Quick Tunnel.
-			// LAN remains direct and unchanged. OPEN still uses Mainline DHT only
-			// as a decentralized directory that points clients at this tunnel.
+			// Private invitations need no public directory or router port mapping.
 			tunnel, tunnelErr := startCloudflareQuickTunnel(s)
 			if tunnelErr != nil {
 				_ = g.CloseNetplay()
@@ -1066,19 +1128,9 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 		}
 	}
 
-	// OPEN Internet sessions publish only discovery metadata to Mainline DHT.
-	// The discovered UDP endpoint answers the tiny metadata probe with the
-	// temporary WSS tunnel address; gameplay itself never uses this QUIC path.
-	// INVITE ONLY needs no public DHT publication because its code contains the
-	// temporary tunnel hostname and authentication secret directly.
-	if scope == onlineSessionScopeInternet && (visibility == onlineSessionOpen || g.cloudflareTunnel == nil) {
-		if p2p, p2pErr := startP2PQUICHost(s, visibility, authKey); p2pErr == nil {
-			g.p2pHost = p2p
-		} else if g.cloudflareTunnel != nil {
-			_ = g.CloseNetplay()
-			return fmt.Errorf("start OPEN session discovery: %w", p2pErr)
-		}
-	}
+	// Internet invites contain the WSS hostname and full secret. They require
+	// no public directory, DHT announcement, QUIC port or router port mapping.
+
 	return nil
 }
 

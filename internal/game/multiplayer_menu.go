@@ -74,6 +74,19 @@ func (g *Game) updateMultiplayerSessionNameInput() {
 	}
 }
 
+// A longest supported Cloudflare invite is 95 ASCII characters. Keep room for
+// complete invite codes and IPv6 addresses, while retaining a bounded field.
+const maxMultiplayerAddressChars = 128
+
+func appendMultiplayerAddressInput(address string, chars []rune) string {
+	for _, ch := range chars {
+		if validNetAddressRune(ch) && len(address) < maxMultiplayerAddressChars {
+			address += string(ch)
+		}
+	}
+	return address
+}
+
 func (g *Game) updateMultiplayerAddressInput() {
 	if !g.multiplayerFocus {
 		return
@@ -84,12 +97,7 @@ func (g *Game) updateMultiplayerAddressInput() {
 			g.multiplayerAddress = string(r[:len(r)-1])
 		}
 	}
-	for _, ch := range ebiten.AppendInputChars(nil) {
-		if !validNetAddressRune(ch) || len([]rune(g.multiplayerAddress)) >= 80 {
-			continue
-		}
-		g.multiplayerAddress += string(ch)
-	}
+	g.multiplayerAddress = appendMultiplayerAddressInput(g.multiplayerAddress, ebiten.AppendInputChars(nil))
 }
 
 func (g *Game) maxMultiplayerServerScroll() int {

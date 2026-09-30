@@ -43,6 +43,9 @@ type cloudflareQuickTunnel struct {
 	wsURL     string
 	lastErr   error
 
+	connectionsMu sync.Mutex
+	connections   map[*trackedWebSocketConn]struct{}
+
 	ready     chan struct{}
 	readyOnce sync.Once
 	closeOnce sync.Once
@@ -67,6 +70,9 @@ func (c *trackedWebSocketConn) Close() error {
 	var err error
 	c.once.Do(func() {
 		if c.Conn != nil {
+			// Close on x/net/websocket writes a close frame first. An expired
+			// deadline also releases a blocked writer before that close handshake.
+			_ = c.Conn.SetDeadline(time.Now())
 			err = c.Conn.Close()
 		}
 		close(c.done)
@@ -76,7 +82,7 @@ func (c *trackedWebSocketConn) Close() error {
 
 func containsWebSocketProtocol(raw, wanted string) bool {
 	for _, part := range strings.Split(raw, ",") {
-		if strings.EqualFold(strings.TrimSpace(part), wanted) {
+		if strings.TrimSpace(part) == wanted {
 			return true
 		}
 	}
@@ -100,6 +106,9 @@ func shouldUseCloudflareInternetTunnel(listenAddress string) bool {
 }
 
 func startCloudflareQuickTunnel(session *netplaySession) (*cloudflareQuickTunnel, error) {
+	if !experimentalInternetEnabled() || session == nil || !session.inviteOnly {
+		return nil, errors.New("Cloudflare hosting requires experimental opt-in and private invite authentication")
+	}
 	if session == nil || session.mode != netplayHost || session.closed.Load() {
 		return nil, errors.New("invalid Cloudflare tunnel host session")
 	}
@@ -108,53 +117,12 @@ func startCloudflareQuickTunnel(session *netplaySession) (*cloudflareQuickTunnel
 		return nil, err
 	}
 
-	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	tunnel, err := startCloudflareGateway(session)
 	if err != nil {
-		return nil, fmt.Errorf("start local WebSocket gateway: %w", err)
+		return nil, err
 	}
 
-	tunnel := &cloudflareQuickTunnel{
-		session:  session,
-		listener: listener,
-		ready:    make(chan struct{}),
-	}
-	mux := http.NewServeMux()
-	mux.Handle(cloudflareNetplayPath, websocket.Server{
-		Handshake: func(config *websocket.Config, request *http.Request) error {
-			if request == nil || !containsWebSocketProtocol(request.Header.Get("Sec-WebSocket-Protocol"), cloudflareNetplayProtocol) {
-				return errors.New("Gun Mayhem WebSocket protocol required")
-			}
-			config.Protocol = []string{cloudflareNetplayProtocol}
-			return nil
-		},
-		Handler: websocket.Handler(func(conn *websocket.Conn) {
-			conn.PayloadType = websocket.BinaryFrame
-			tracked := newTrackedWebSocketConn(conn)
-			if !session.attachIncomingConn(tracked) {
-				_ = tracked.Close()
-				return
-			}
-			// x/net/websocket closes the connection when this handler returns.
-			// Netplay owns the connection after attachIncomingConn, so keep the
-			// HTTP handler alive until netplay itself closes that connection.
-			<-tracked.done
-		}),
-	})
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
-	tunnel.server = &http.Server{
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-		IdleTimeout:       30 * time.Second,
-	}
-	go func() {
-		if serveErr := tunnel.server.Serve(listener); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) && !tunnel.closed.Load() {
-			tunnel.setError(fmt.Errorf("local WebSocket gateway stopped: %w", serveErr))
-		}
-	}()
-
-	origin := "http://" + listener.Addr().String()
+	origin := "http://" + tunnel.listener.Addr().String()
 	cmd := exec.Command(executable, "tunnel", "--url", origin, "--no-autoupdate")
 	configureCloudflaredProcess(cmd)
 	stdout, err := cmd.StdoutPipe()
@@ -178,6 +146,84 @@ func startCloudflareQuickTunnel(session *netplaySession) (*cloudflareQuickTunnel
 	go tunnel.scanOutput(stdout)
 	go tunnel.scanOutput(stderr)
 	go tunnel.waitProcess()
+	return tunnel, nil
+}
+
+// startCloudflareGateway is also the integration-test seam: it binds only to
+// loopback and never launches cloudflared, creates an account or publishes a URL.
+func startCloudflareGateway(session *netplaySession) (*cloudflareQuickTunnel, error) {
+	if session == nil || session.mode != netplayHost || session.closed.Load() {
+		return nil, errors.New("invalid WebSocket gateway host session")
+	}
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		return nil, fmt.Errorf("start local WebSocket gateway: %w", err)
+	}
+
+	tunnel := &cloudflareQuickTunnel{
+		connections: make(map[*trackedWebSocketConn]struct{}),
+		session:     session,
+		listener:    listener,
+		ready:       make(chan struct{}),
+	}
+	mux := http.NewServeMux()
+	mux.Handle(cloudflareNetplayPath, websocket.Server{
+		Handshake: func(config *websocket.Config, request *http.Request) error {
+			if request == nil || !containsWebSocketProtocol(request.Header.Get("Sec-WebSocket-Protocol"), cloudflareNetplayProtocol) {
+				return errors.New("Gun Mayhem WebSocket protocol required")
+			}
+			origin, err := websocket.Origin(config, request)
+			if err != nil || origin == nil || origin.Scheme != "https" || origin.Host != "gunmayhem.invalid" || origin.User != nil || (origin.Path != "" && origin.Path != "/") || origin.RawQuery != "" || origin.Fragment != "" {
+				return errors.New("Gun Mayhem native client origin required")
+			}
+			// x/net/websocket uses Config.Origin for RemoteAddr on the server.
+			// Leaving it nil panics when netplay records the peer address.
+			config.Origin = origin
+			config.Protocol = []string{cloudflareNetplayProtocol}
+			return nil
+		},
+		Handler: websocket.Handler(func(conn *websocket.Conn) {
+			conn.PayloadType = websocket.BinaryFrame
+			tracked := newTrackedWebSocketConn(conn)
+			tunnel.connectionsMu.Lock()
+			if tunnel.closed.Load() {
+				tunnel.connectionsMu.Unlock()
+				_ = tracked.Close()
+				return
+			}
+			tunnel.connections[tracked] = struct{}{}
+			tunnel.connectionsMu.Unlock()
+			defer func() {
+				_ = tracked.Close()
+				tunnel.connectionsMu.Lock()
+				delete(tunnel.connections, tracked)
+				tunnel.connectionsMu.Unlock()
+			}()
+			if !session.attachIncomingConn(tracked) {
+				_ = tracked.Close()
+				return
+			}
+			// x/net/websocket closes the connection when this handler returns.
+			// Netplay owns the connection after attachIncomingConn, so keep the
+			// HTTP handler alive until netplay itself closes that connection.
+			<-tracked.done
+		}),
+	})
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	tunnel.server = &http.Server{
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		MaxHeaderBytes:    8 * 1024,
+		IdleTimeout:       30 * time.Second,
+	}
+	go func() {
+		if serveErr := tunnel.server.Serve(listener); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) && !tunnel.closed.Load() {
+			tunnel.setError(fmt.Errorf("local WebSocket gateway stopped: %w", serveErr))
+		}
+	}()
+
 	return tunnel, nil
 }
 
@@ -313,6 +359,17 @@ func (t *cloudflareQuickTunnel) Close() error {
 		if t.session != nil {
 			t.session.setPublicTunnelURL("")
 		}
+		// HTTP shutdown does not own hijacked WebSocket connections. Explicitly
+		// close both accepted peers and pending netplay handshakes on this gateway.
+		t.connectionsMu.Lock()
+		connections := make([]*trackedWebSocketConn, 0, len(t.connections))
+		for conn := range t.connections {
+			connections = append(connections, conn)
+		}
+		t.connectionsMu.Unlock()
+		for _, conn := range connections {
+			_ = conn.Close()
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if t.server != nil {
@@ -359,7 +416,7 @@ func findCloudflaredExecutable() (string, error) {
 	if executable, err := exec.LookPath("cloudflared"); err == nil {
 		return executable, nil
 	}
-	return "", errors.New("cloudflared was not found; rebuild the portable package so cloudflared.exe is included")
+	return "", errors.New("cloudflared was not found; install the official cloudflared binary and set GUNMAYHEM_CLOUDFLARED to its path")
 }
 
 func normalizeCloudflareTunnelURL(raw string) (string, error) {
@@ -485,7 +542,7 @@ func newClientNetplayCloudflare(rawURL, sessionKey string, timeout time.Duration
 		return nil, fmt.Errorf("connect through Cloudflare: %w", err)
 	}
 	conn.PayloadType = websocket.BinaryFrame
-	s, err := newClientNetplayFromConnWithKey(conn, "Cloudflare "+wsURL, strings.TrimSpace(sessionKey))
+	s, err := newClientNetplayFromConnWithKey(newTrackedWebSocketConn(conn), "Cloudflare "+wsURL, strings.TrimSpace(sessionKey))
 	if err != nil {
 		_ = conn.Close()
 		return nil, err

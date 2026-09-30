@@ -5,6 +5,9 @@ package game
 import "github.com/hajimehoshi/ebiten/v2"
 
 func sourceKeyDown(code int) bool {
+	if !ebiten.IsFocused() {
+		return false
+	}
 	key, ok := sourceKeyToEbiten(code)
 	return ok && ebiten.IsKeyPressed(key)
 }

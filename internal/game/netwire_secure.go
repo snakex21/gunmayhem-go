@@ -24,6 +24,9 @@ const (
 	maxServerWireFrame = 4 * 1024 * 1024
 
 	netHandshakeTimeout     = 5 * time.Second
+	netHeartbeatInterval    = time.Second
+	netPeerIdleTimeout      = 10 * time.Second
+	netInputMaxAge          = 500 * time.Millisecond
 	netWriteTimeout         = 5 * time.Second
 	maxClientMessagesPS     = 240
 	maxPendingNetHandshakes = 16
@@ -272,7 +275,7 @@ func validateNetMessageForHost(msg netWireMessage) error {
 			return errors.New("invalid public server probe")
 		}
 		return nil
-	case netMessageInput:
+	case netMessageInput, netMessageKeepAlive:
 		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
 			return errors.New("authentication fields are only allowed during handshake")
 		}
@@ -303,7 +306,7 @@ func validateNetMessageForClient(msg netWireMessage) error {
 			return errors.New("invalid host authentication challenge")
 		}
 		return nil
-	case netMessageHello, netMessageState:
+	case netMessageHello, netMessageState, netMessageKeepAlive:
 		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
 			return errors.New("unexpected host authentication fields")
 		}

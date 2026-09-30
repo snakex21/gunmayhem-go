@@ -2,7 +2,10 @@
 
 package game
 
-import "golang.org/x/sys/windows"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+	"golang.org/x/sys/windows"
+)
 
 var (
 	user32GetKeyDLL  = windows.NewLazySystemDLL("user32.dll")
@@ -12,6 +15,9 @@ var (
 // sourceKeyDown mirrors Flash Key.isDown(code) on Windows: both consume the
 // Windows virtual-key number. In particular P1 shoot/grenade are VK 219/221.
 func sourceKeyDown(code int) bool {
+	if !ebiten.IsFocused() {
+		return false
+	}
 	if code <= 0 {
 		return false
 	}
