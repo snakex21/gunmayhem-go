@@ -140,3 +140,11 @@ The Win32 implementation follows Microsoft's ownership and bounded-read rules:
 [OpenClipboard](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-openclipboard),
 [GetClipboardData](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclipboarddata),
 [SetClipboardData](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setclipboarddata).
+
+An additional Windows-target vet pass identified two native-address-to-Go-pointer
+views in the clipboard adapter. The follow-up replaces those views with a checked
+Win32 `RtlMoveMemory` copy into/from explicitly pinned, bounded Go buffers. No
+vet check was disabled. Windows-target vet now reports only the existing
+`menu.go:262` unreachable code, and the Windows cross-build passes. The mock
+clipboard tests still do not execute the native API; Windows runtime verification
+remains pending. API reference: [MoveMemory](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa366788(v=vs.85)).

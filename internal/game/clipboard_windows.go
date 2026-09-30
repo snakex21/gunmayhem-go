@@ -27,6 +27,7 @@ var (
 	clipboardGlobalUnlock     = clipboardKernel32.NewProc("GlobalUnlock")
 	clipboardGlobalAlloc      = clipboardKernel32.NewProc("GlobalAlloc")
 	clipboardGlobalFree       = clipboardKernel32.NewProc("GlobalFree")
+	clipboardMoveMemory       = clipboardKernel32.NewProc("RtlMoveMemory")
 )
 
 const clipboardUnicodeText = 13 // CF_UNICODETEXT
@@ -34,6 +35,9 @@ const clipboardUnicodeText = 13 // CF_UNICODETEXT
 // These calls occur only after an explicit paste shortcut or Copy Invite click.
 // See Microsoft OpenClipboard/GetClipboardData/SetClipboardData documentation.
 func readClipboardText() (string, error) {
+	if err := clipboardMoveMemory.Find(); err != nil {
+		return "", errors.New("clipboard memory copy unavailable")
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	if ok, _, _ := clipboardOpen.Call(0); ok == 0 {
@@ -53,12 +57,22 @@ func readClipboardText() (string, error) {
 		return "", errors.New("clipboard text unavailable")
 	}
 	defer clipboardGlobalUnlock.Call(handle)
-	// GlobalSize bounds this view. Decode copies before unlock/CloseClipboard;
-	// clipboard-owned memory is never freed by this application.
-	return decodeClipboardTextUTF16(unsafe.Slice((*uint16)(unsafe.Pointer(ptr)), int(size/2)))
+	// Copy exactly the checked GlobalSize into an equally sized Go allocation.
+	// Native handles/pointers remain native integers, never Go pointer views.
+	// Pin the Go buffer during the synchronous Win32 call, then decode the copy
+	// before unlocking. Clipboard-owned memory is never freed by this app.
+	units := make([]uint16, int(size/2))
+	var pin runtime.Pinner
+	pin.Pin(&units[0])
+	clipboardMoveMemory.Call(uintptr(unsafe.Pointer(&units[0])), ptr, size)
+	pin.Unpin()
+	return decodeClipboardTextUTF16(units)
 }
 
 func writeClipboardText(value string) error {
+	if err := clipboardMoveMemory.Find(); err != nil {
+		return errors.New("clipboard memory copy unavailable")
+	}
 	value, err := normalizePastedMultiplayerAddress(value)
 	if err != nil {
 		return err
@@ -94,7 +108,12 @@ func writeClipboardText(value string) error {
 	if ptr == 0 {
 		return errors.New("clipboard allocation unavailable")
 	}
-	copy(unsafe.Slice((*uint16)(unsafe.Pointer(ptr)), len(units)), units)
+	// GlobalAlloc above reserved this exact byte count. The synchronous native
+	// copy avoids converting its uintptr address into a Go-managed pointer.
+	var pin runtime.Pinner
+	pin.Pin(&units[0])
+	clipboardMoveMemory.Call(ptr, uintptr(unsafe.Pointer(&units[0])), uintptr(len(units)*2))
+	pin.Unpin()
 	clipboardGlobalUnlock.Call(handle)
 	if ok, _, _ := clipboardOpen.Call(hwnd); ok == 0 {
 		return errors.New("clipboard busy")
