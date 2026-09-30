@@ -295,12 +295,8 @@ func (g *Game) customSelectionUnlocked(editor, number int) bool {
 	if editor != customEditPerk {
 		return true
 	}
-	// Developed build: all real perks are available immediately. The Flash
-	// source locked perks 3/6/9 behind GM1 campaign progress, but that made
-	// visible choices such as GUN SPAWN appear broken until those missions had
-	// been completed. Keep only the real 1..9 perk range; frame 10 is not a
-	// selectable perk.
-	return number >= 1 && number <= 9
+	// Original perks plus the explicit Custom Game-only extension.
+	return number >= 1 && number <= maxCustomPerk
 }
 
 func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
@@ -360,6 +356,9 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 		case customEditGun:
 			cfg.Gun = number
 		case customEditPerk:
+			if !g.customSelectionUnlocked(customEditPerk, number) {
+				return true
+			}
 			cfg.Perk = number
 		case customEditEyes:
 			cfg.Eyes = number

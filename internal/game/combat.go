@@ -624,8 +624,7 @@ func explodeDevelopedProjectile(b *Bullet, players []*Player, explosions *[]Expl
 		if p.ShieldTime > 0 || p.PerkNumber == 6 {
 			push *= 0.2
 		}
-		p.VX += math.Cos(angle) * push
-		p.VY += math.Sin(angle) * push * 0.7
+		p.applyCombatImpulse(math.Cos(angle)*push, math.Sin(angle)*push*0.7)
 		p.LastHitBy = b.OwnerID
 		p.HitByGrenade = true
 	}
@@ -729,7 +728,7 @@ func updateInstagibBullet(arena Map, b *Bullet, players []*Player, instatrails *
 		if p.DamageMulti > 0 {
 			push *= p.DamageMulti
 		}
-		p.VX += push
+		p.applyCombatImpulse(push, 0)
 		p.HitNumber++
 		p.HitTimer = 0
 		p.LastHitBy = b.OwnerID
@@ -801,7 +800,7 @@ func hitPlayerWithBullet(arena Map, b *Bullet, players []*Player, minigun bool) 
 				push *= 0.33 // DefineSprite_369/370
 			}
 		}
-		p.VX += push
+		p.applyCombatImpulse(push, 0)
 		p.HitNumber++
 		p.HitTimer = 0
 		p.LastHitBy = b.OwnerID
@@ -877,7 +876,7 @@ func updateShells(arena Map, shells []Shell, players []*Player) {
 				if p == nil || !p.Active || !p.Hitbox().Contains(s.X, s.Y) {
 					continue
 				}
-				p.VX += 20 * float64(s.Facing)
+				p.applyCombatImpulse(20*float64(s.Facing), 0)
 				p.HitNumber++
 				p.HitTimer = 0
 				p.LastHitBy = s.OwnerID

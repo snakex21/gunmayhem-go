@@ -491,8 +491,7 @@ func (p *Player) igniteWithPower(ownerID, direction, frames int, power float64) 
 		// Make ignition immediately readable in a knockback-based game. Further
 		// pulses are applied by updateBurning for the configured duration.
 		initial := math.Max(1.5, math.Min(4, p.BurnPower*.15))
-		p.VX += initial * float64(direction)
-		p.VY -= initial * .45
+		p.applyCombatImpulse(initial*float64(direction), -initial*.45)
 		p.HitNumber++
 		p.HitTimer = 0
 		p.LastHitBy = ownerID
@@ -513,8 +512,7 @@ func (p *Player) applyFireContactKnockback(ownerID, direction int, horizontal, v
 	if p.ShieldTime > 0 {
 		multi *= 0.2
 	}
-	p.VX += horizontal * multi * float64(direction)
-	p.VY -= vertical * multi
+	p.applyCombatImpulse(horizontal*multi*float64(direction), -vertical*multi)
 	p.LastHitBy = ownerID
 	p.HitByGrenade = false
 	if cooldown < 1 {
@@ -556,8 +554,7 @@ func (p *Player) updateBurning() {
 	if p.DamageMulti > 0 {
 		tickPower *= p.DamageMulti
 	}
-	p.VX += tickPower*float64(direction) + phase
-	p.VY -= tickPower*.38 + math.Abs(phase)*.20
+	p.applyCombatImpulse(tickPower*float64(direction)+phase, -(tickPower*.38 + math.Abs(phase)*.20))
 	p.HitNumber++
 	p.HitTimer = 0
 	p.LastHitBy = p.BurnOwnerID

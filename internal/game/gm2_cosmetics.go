@@ -295,6 +295,8 @@ func developedThrowableSelectionItems() []customSelectionItem {
 
 func developedCustomSelectionItems(editor int) []customSelectionItem {
 	switch editor {
+	case customEditPerk:
+		return developedPerkSelectionItems()
 	case customEditColor:
 		return developedColorSelectionItems()
 	case customEditShirt:

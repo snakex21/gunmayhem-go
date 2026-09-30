@@ -115,7 +115,7 @@ func onlineCharacterVisualChoiceCount(picker int) int {
 	case onlineVisualCharacterGun:
 		return len(starterHandgunNumbers())
 	case onlineVisualCharacterPerk:
-		return 9
+		return maxCustomPerk
 	case onlineVisualCharacterTeam:
 		return 2
 	}
@@ -635,7 +635,13 @@ func (g *Game) drawOnlineCharacterFieldTile(dst *ebiten.Image, field int, cfg Cu
 		value = strings.TrimSpace(value[:14])
 	}
 	drawSourceMenuText(dst, label, menuFontCondensedExtraBold, 12.5, color.NRGBA{R: 0xff, G: 0x99, A: 0xff}, r.X+10, r.Y+12)
-	drawSourceMenuText(dst, value, menuFontTwCen, 14, color.NRGBA{A: 0xff}, r.X+10, r.Y+40)
+	valueFont, valueSize := menuFontTwCen, 14.0
+	if field == onlineCharPerk && cfg.Perk == perkKnockbackResistance {
+		// The exported regular face lacks digit 3; the existing extra-bold
+		// face contains this full label and also fits the narrow text column.
+		valueFont, valueSize = menuFontCondensedExtraBold, 11.0
+	}
+	drawSourceMenuText(dst, value, valueFont, valueSize, color.NRGBA{A: 0xff}, r.X+10, r.Y+40)
 }
 
 func (g *Game) drawOnlineCharacterMini(dst *ebiten.Image, r Rect, cfg CustomPlayerConfig) {

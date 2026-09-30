@@ -177,8 +177,7 @@ func portalCombatHit(b *Bullet, target *Player, portals *[]Portal) {
 		if direction == 0 {
 			direction = 1
 		}
-		target.VX += 24 * float64(direction)
-		target.VY -= 8
+		target.applyCombatImpulse(24*float64(direction), -8)
 	}
 	target.HitNumber++
 	target.HitTimer = 0

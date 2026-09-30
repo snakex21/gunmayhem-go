@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	netplayProtocolVersion = 19
+	netplayProtocolVersion = 20
 	maxOnlinePlayers       = 4
 )
 
@@ -146,7 +146,7 @@ type netSnapshot struct {
 	OnlinePerksEnabled             bool
 	OnlinePowerupsEnabled          bool
 	OnlineBlockedWeapons           [developedWeaponSlotCount]bool
-	OnlineBlockedPerks             [10]bool
+	OnlineBlockedPerks             [maxCustomPerk + 1]bool
 	PostGameReady                  [4]bool
 	PostGameReadyCountdown         int
 

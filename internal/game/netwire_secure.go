@@ -152,7 +152,7 @@ func sanitizeRemotePlayerConfig(cfg CustomPlayerConfig) (CustomPlayerConfig, err
 	if !isStarterHandgunNumber(cfg.Gun) {
 		return CustomPlayerConfig{}, errors.New("invalid starter weapon")
 	}
-	if cfg.Perk < 1 || cfg.Perk > 9 {
+	if cfg.Perk < 1 || cfg.Perk > maxCustomPerk {
 		return CustomPlayerConfig{}, errors.New("invalid player perk")
 	}
 	if cfg.Throwable < 0 || cfg.Throwable >= throwableTypeCount {

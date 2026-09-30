@@ -77,9 +77,8 @@ func (g *Game) updateCampaignPlayerCards() {
 func campaignCardX(slot int) float64 { return 27 + float64(slot)*220 }
 
 func (g *Game) campaignSelectionUnlocked(editor, number int) bool {
-	if g.campaignSetExtra && editor == customEditPerk {
-		// EXTRA is the expanded campaign: every real perk tile (1..9) is
-		// available from its player setup, independently of GM1 progress.
+	if editor == customEditPerk {
+		// Campaigns retain the original nine perks and their existing balance.
 		return number >= 1 && number <= 9
 	}
 	return g.customSelectionUnlocked(editor, number)

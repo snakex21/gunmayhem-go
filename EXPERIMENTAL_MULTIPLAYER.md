@@ -33,7 +33,8 @@ existing Cloudflare WebSocket gateway.
   publishes an OPEN Internet/DHT session. Internet hosting requires explicit
   opt-in and private-invite access in the shared host API and tunnel launcher
 
-The wire protocol is **19**. All players must use this branch's build; the
+The wire protocol on the gameplay-extension branch is **20** (the network-only
+milestone uses **19**). All players must use this branch's build; the
 released protocol-18 build is intentionally rejected rather than misinterpreted.
 
 ## Run a private trial
@@ -82,8 +83,9 @@ created by this branch.
   to setup after the last participant leaves, it may need to reopen a human slot
 - A changed Quick Tunnel hostname requires the host's new invitation. Host
   shutdown ends the session; there is no host migration
-- The four-player cap, existing maps, combat, perks and campaign content are
-  unchanged. Larger player counts require removing fixed four-player arrays,
+- The four-player cap, existing maps and campaign content are unchanged.
+  This branch separately adds the Custom Game-only perk described in
+  [KNOCKBACK_PERK.md](KNOCKBACK_PERK.md). Larger player counts require removing fixed four-player arrays,
   revisiting camera/HUD/spawn geometry, then load/bandwidth tests
 - Snapshot transport is reliable/ordered and sends render-complete state.
   Internet latency can remain visible; this work does not add local prediction,

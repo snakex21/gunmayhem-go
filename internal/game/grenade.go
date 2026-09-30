@@ -270,8 +270,7 @@ func explodeGrenade(g *Grenade, players []*Player) {
 			pushX /= 5
 			pushY /= 5
 		}
-		p.VX += pushX
-		p.VY += pushY
+		p.applyCombatImpulse(pushX, pushY)
 		p.LastHitBy = g.OwnerID
 		p.HitByGrenade = true
 	}
@@ -351,8 +350,7 @@ func spawnMolotovFire(arena Map, g *Grenade, players []*Player, patches *[]FireP
 		p.igniteWithPower(g.OwnerID, dir, 165, 20)
 		// Molotov is primarily an ignition weapon. Give the bottle impact a small
 		// readable shove without turning it into another high-explosive grenade.
-		p.VX += float64(dir) * 5.5
-		p.VY -= 2.8
+		p.applyCombatImpulse(float64(dir)*5.5, -2.8)
 		p.LastHitBy = g.OwnerID
 		p.HitByGrenade = true
 	}

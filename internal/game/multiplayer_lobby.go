@@ -190,11 +190,7 @@ func (g *Game) updateMultiplayerLobby() {
 		g.sendOnlineLocalConfigIfChanged()
 		return
 	}
-	if activated >= menuHitOnlinePerkBase && activated < menuHitOnlinePerkBase+10 && g.onlinePerkBlocklistOpen {
-		perk := activated - menuHitOnlinePerkBase
-		if perk >= 1 && perk < len(g.onlineBlockedPerks) {
-			g.onlineBlockedPerks[perk] = !g.onlineBlockedPerks[perk]
-		}
+	if g.activateOnlinePerkBlocklistHit(activated) {
 		return
 	}
 	if index, decoded := decodeOnlineBlockWeaponHit(activated); decoded && g.onlineBlocklistOpen {
@@ -321,7 +317,7 @@ func (g *Game) adjustOnlineCharacter(field, delta int) {
 	case onlineCharGun:
 		cfg.Gun = stepStarterHandgun(cfg.Gun, delta)
 	case onlineCharPerk:
-		cfg.Perk = wrapOnlineValue(cfg.Perk, 1, 9, delta)
+		cfg.Perk = wrapOnlineValue(cfg.Perk, 1, maxCustomPerk, delta)
 	case onlineCharTeam:
 		cfg.Team = wrapOnlineValue(cfg.Team, 1, 2, delta)
 	}
@@ -415,15 +411,21 @@ func (g *Game) onlineBlocklistHitAt(x, y float64) int {
 	return menuHitNone
 }
 
+func (g *Game) activateOnlinePerkBlocklistHit(hit int) bool {
+	perk := hit - menuHitOnlinePerkBase
+	if !g.onlinePerkBlocklistOpen || perk < 1 || perk > maxCustomPerk {
+		return false
+	}
+	g.onlineBlockedPerks[perk] = !g.onlineBlockedPerks[perk]
+	return true
+}
+
 func (g *Game) onlinePerkBlocklistHitAt(x, y float64) int {
 	if onlineOverlayBackRect.Contains(x, y) {
 		return menuHitOnlineOverlayBack
 	}
-	for perk := 1; perk <= 9; perk++ {
-		i := perk - 1
-		col := i % 3
-		row := i / 3
-		r := Rect{X: 170 + float64(col)*190, Y: 165 + float64(row)*85, W: 175, H: 65}
+	for perk := 1; perk <= maxCustomPerk; perk++ {
+		r := onlinePerkBlocklistRect(perk)
 		if r.Contains(x, y) {
 			return menuHitOnlinePerkBase + perk
 		}
@@ -716,21 +718,24 @@ func (g *Game) drawOnlinePerkBlocklist(screen *ebiten.Image) {
 	drawSourceMenuText(screen, "PERK / ABILITY BLOCKLIST", menuFontTwCen, 30, color.NRGBA{A: 0xff}, 170, 70)
 	drawSourceMenuText(screen, "Click a perk to allow/block it. Blocked perks cannot be used by any player.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 170, 112)
 
-	for perk := 1; perk <= 9; perk++ {
-		i := perk - 1
-		col := i % 3
-		row := i / 3
-		r := Rect{X: 170 + float64(col)*190, Y: 165 + float64(row)*85, W: 175, H: 65}
+	for perk := 1; perk <= maxCustomPerk; perk++ {
+		r := onlinePerkBlocklistRect(perk)
 		clr := color.NRGBA{R: 0x46, G: 0x4d, B: 0x57, A: 0xff}
 		if perk < len(g.onlineBlockedPerks) && g.onlineBlockedPerks[perk] {
 			clr = color.NRGBA{R: 0x65, G: 0x2e, B: 0x2e, A: 0xff}
 		}
 		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, clr)
 		drawSetupPerkThumb(screen, perk, Rect{X: r.X + 5, Y: r.Y + 5, W: 68, H: r.H - 10}, 1)
-		drawSourceMenuText(screen, onlinePerkName(perk), menuFontTwCen, 12.5, color.NRGBA{A: 0xff}, r.X+78, r.Y+19)
+		perkFontSize := 12.5
+		perkFont := menuFontTwCen
+		if perk == perkKnockbackResistance {
+			perkFontSize = 10.5
+			perkFont = menuFontCondensedExtraBold
+		}
+		drawSourceMenuText(screen, onlinePerkName(perk), perkFont, perkFontSize, color.NRGBA{A: 0xff}, r.X+78, r.Y+19)
 		drawSourceMenuText(screen, fmt.Sprintf("#%d", perk), menuFontCondensedExtraBold, 9.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, r.X+78, r.Y+39)
 	}
 
-	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d / 9", g.blockedOnlinePerkCount()), menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 170, 445)
+	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d / %d", g.blockedOnlinePerkCount(), maxCustomPerk), menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 170, 445)
 	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO RULES")
 }

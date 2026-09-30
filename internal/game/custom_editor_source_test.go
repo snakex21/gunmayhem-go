@@ -21,13 +21,13 @@ func TestCustomEditorRecoversSourceSelectionItems(t *testing.T) {
 
 func TestDevelopedCustomEditorStartsWithAllPerksUnlocked(t *testing.T) {
 	g := &Game{}
-	for perk := 1; perk <= 9; perk++ {
+	for perk := 1; perk <= maxCustomPerk; perk++ {
 		if !g.customSelectionUnlocked(customEditPerk, perk) {
 			t.Fatalf("perk%d should be available from the start", perk)
 		}
 	}
-	if g.customSelectionUnlocked(customEditPerk, 10) {
-		t.Fatal("non-perk frame10 must stay unavailable")
+	if g.customSelectionUnlocked(customEditPerk, maxCustomPerk+1) {
+		t.Fatal("unknown perk must stay unavailable")
 	}
 }
 

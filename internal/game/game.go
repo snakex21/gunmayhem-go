@@ -238,7 +238,7 @@ type Game struct {
 	onlinePerksEnabled        bool
 	onlinePowerupsEnabled     bool
 	onlineBlockedWeapons      [developedWeaponSlotCount]bool
-	onlineBlockedPerks        [10]bool
+	onlineBlockedPerks        [maxCustomPerk + 1]bool
 	postGameReady             [4]bool
 	postGameReadyCountdown    int
 

@@ -51,15 +51,16 @@ func onlineWeaponModeLabel(v int) string {
 
 func onlinePerkName(n int) string {
 	names := map[int]string{
-		1: "NO PERKS",
-		2: "SPEED+",
-		3: "JUMP+",
-		4: "MINI GUN",
-		5: "NO RECOIL",
-		6: "BLAST SHIELD",
-		7: "EXTRA AMMO",
-		8: "EXTRA NADES",
-		9: "GUN SPAWN",
+		1:                       "NO PERKS",
+		2:                       "SPEED+",
+		3:                       "JUMP+",
+		4:                       "MINI GUN",
+		5:                       "NO RECOIL",
+		6:                       "BLAST SHIELD",
+		7:                       "EXTRA AMMO",
+		8:                       "EXTRA NADES",
+		9:                       "GUN SPAWN",
+		perkKnockbackResistance: "KNOCKBACK -30%",
 	}
 	if name := names[n]; name != "" {
 		return name

@@ -187,17 +187,19 @@ func drawSetupPerkThumb(dst *ebiten.Image, number int, r Rect, alpha float64) {
 		1: {"NO", "PERKS"}, 2: {"SPEED+"}, 3: {"JUMP+"},
 		4: {"MINI", "GUN"}, 5: {"NO", "RECOIL"}, 6: {"BLAST", "SHIELD"},
 		7: {"EXTRA", "AMMO"}, 8: {"EXTRA", "NADES"}, 9: {"GUN", "SPAWN"},
+		perkKnockbackResistance: {"KNOCK", "BACK", "-30%"},
 	}
 	colors := map[int]color.NRGBA{
-		1: {R: 0xff, G: 0xff, B: 0xff, A: uint8(255 * alpha)},
-		2: {R: 0x33, G: 0xcc, B: 0x00, A: uint8(255 * alpha)},
-		3: {R: 0xff, G: 0x33, B: 0x99, A: uint8(255 * alpha)},
-		4: {R: 0x66, G: 0x66, B: 0x66, A: uint8(255 * alpha)},
-		5: {R: 0xff, G: 0xcc, B: 0x66, A: uint8(255 * alpha)},
-		6: {R: 0x00, G: 0x66, B: 0xff, A: uint8(255 * alpha)},
-		7: {R: 0xff, G: 0x99, B: 0x00, A: uint8(255 * alpha)},
-		8: {R: 0xff, G: 0x33, B: 0x00, A: uint8(255 * alpha)},
-		9: {R: 0x99, G: 0xff, B: 0x00, A: uint8(255 * alpha)},
+		1:                       {R: 0xff, G: 0xff, B: 0xff, A: uint8(255 * alpha)},
+		2:                       {R: 0x33, G: 0xcc, B: 0x00, A: uint8(255 * alpha)},
+		3:                       {R: 0xff, G: 0x33, B: 0x99, A: uint8(255 * alpha)},
+		4:                       {R: 0x66, G: 0x66, B: 0x66, A: uint8(255 * alpha)},
+		5:                       {R: 0xff, G: 0xcc, B: 0x66, A: uint8(255 * alpha)},
+		6:                       {R: 0x00, G: 0x66, B: 0xff, A: uint8(255 * alpha)},
+		7:                       {R: 0xff, G: 0x99, B: 0x00, A: uint8(255 * alpha)},
+		8:                       {R: 0xff, G: 0x33, B: 0x00, A: uint8(255 * alpha)},
+		9:                       {R: 0x99, G: 0xff, B: 0x00, A: uint8(255 * alpha)},
+		perkKnockbackResistance: {R: 0x66, G: 0xdd, B: 0xdd, A: uint8(255 * alpha)},
 	}
 	lines := labels[number]
 	if len(lines) == 0 {
@@ -222,6 +224,9 @@ func setupSelectionVisualRect(editor int, source Rect, localY float64) Rect {
 
 func (g *Game) drawSetupSelectionContents(dst *ebiten.Image, editor int, localY, alpha float64, campaign bool, selectedGun int) {
 	for _, item := range developedCustomSelectionItems(editor) {
+		if campaign && editor == customEditPerk && item.Number > 9 {
+			continue
+		}
 		r := setupSelectionVisualRect(editor, item.Rect, localY)
 		cellColor := color.NRGBA{R: 0x99, G: 0x99, B: 0x99, A: uint8(255 * alpha)}
 		if editor == customEditGun && item.Number == selectedGun {

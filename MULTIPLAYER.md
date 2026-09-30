@@ -75,6 +75,6 @@ The repository still contains experimental work for direct P2P, DHT discovery, Q
 ## Opt-in experiment on this branch
 
 See [EXPERIMENTAL_MULTIPLAYER.md](EXPERIMENTAL_MULTIPLAYER.md) for the private
-Cloudflare/WSS trial, explicit host opt-in, protocol-19 compatibility, tested
+Cloudflare/WSS trial, explicit host opt-in, same-build protocol compatibility, tested
 disconnect/rejoin behavior and limitations. LAN remains the default; the
 experimental path is not yet validated by a real cross-network playtest.
