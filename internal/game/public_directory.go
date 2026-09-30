@@ -121,7 +121,7 @@ func (a *publicRoomAdvertiser) loop() {
 			if a.terminal.Load() {
 				continue
 			}
-			if ready, _, _, _ := a.tunnel.Status(); !ready {
+			if ready, _, _, err := a.tunnel.Status(); !ready || err != nil {
 				a.terminal.Store(true)
 				a.session.publicAdmissionClosed.Store(true)
 				a.setStatus("PUBLIC ROOM CLOSED: TUNNEL STOPPED")
@@ -140,8 +140,8 @@ func (a *publicRoomAdvertiser) heartbeat() {
 	if a.closed.Load() || a.terminal.Load() {
 		return
 	}
-	ready, _, endpoint, _ := a.tunnel.Status()
-	if !ready || a.session.closed.Load() || a.session.inviteOnly || a.session.publicAdmissionClosed.Load() {
+	ready, _, endpoint, tunnelErr := a.tunnel.Status()
+	if !ready || tunnelErr != nil || a.session.closed.Load() || a.session.inviteOnly || a.session.publicAdmissionClosed.Load() {
 		return
 	}
 	room := publicRoomDescriptor(a.session, endpoint)

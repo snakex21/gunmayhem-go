@@ -82,6 +82,7 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 		}
 	case menuHitCustomHostScopeLAN:
 		g.customHostScope = onlineSessionScopeLAN
+		g.multiplayerMessage = "LAN SESSION - NO PUBLIC DIRECTORY"
 	case menuHitCustomHostScopeInternet:
 		if experimentalInternetEnabled() {
 			g.customHostScope = onlineSessionScopeInternet
@@ -98,10 +99,13 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 				return
 			}
 			g.multiplayerMessage = "OPEN INTERNET ROOM: ANY PLAYER CAN JOIN; CREATE PUBLISHES THE ROOM"
+		} else {
+			g.multiplayerMessage = "OPEN LAN SESSION - VISIBLE ON YOUR LOCAL NETWORK"
 		}
 		g.customHostAccess = onlineSessionOpen
 	case menuHitCustomHostAccessInvite:
 		g.customHostAccess = onlineSessionInviteOnly
+		g.multiplayerMessage = "INVITE CODE - NOT LISTED IN THE PUBLIC DIRECTORY"
 	case menuHitCustomHostLeave:
 		g.returnToOnlineServerBrowser()
 	case menuHitCustomHostCreate:

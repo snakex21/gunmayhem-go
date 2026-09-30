@@ -337,6 +337,51 @@ func TestPublicRoomTunnelFailureDelistsAndClosesAdmission(t *testing.T) {
 	}
 }
 
+func TestPublicRoomGatewayListenerFailureDelistsWhileTunnelProcessRuns(t *testing.T) {
+	s, gateway, owner := testPublicRoom(t)
+	directory := httptest.NewTLSServer(publicrooms.New(0, false).Handler())
+	defer directory.Close()
+	a := startPublicRoomAdvertiser(directory.URL, owner, s, gateway, directory.Client())
+	defer a.Close()
+	waitFor(t, "registered", func() bool { return a.Status() == "PUBLIC ROOM: LISTED" })
+	if err := gateway.listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "local gateway error recorded", func() bool { _, _, _, err := gateway.Status(); return err != nil })
+	if !gateway.running.Load() {
+		t.Fatal("fixture should retain running process state")
+	}
+	a.heartbeat()
+	waitFor(t, "failed gateway closes admission", func() bool { return s.publicAdmissionClosed.Load() })
+	waitFor(t, "failed gateway delists", func() bool {
+		rooms, err := fetchPublicRooms(directory.URL, directory.Client())
+		return err == nil && len(rooms) == 0
+	})
+	if !a.terminal.Load() {
+		t.Fatal("failed gateway remained renewable")
+	}
+}
+
+func TestPublicRoomAccessWarningTracksActualChoice(t *testing.T) {
+	t.Setenv("GUNMAYHEM_EXPERIMENTAL_INTERNET", "1")
+	t.Setenv("GUNMAYHEM_MASTER_URL", "https://directory.example.invalid")
+	g := &Game{}
+	g.activateCustomHostSetupHit(menuHitCustomHostScopeInternet)
+	g.activateCustomHostSetupHit(menuHitCustomHostAccessOpen)
+	if !strings.HasPrefix(g.multiplayerMessage, "OPEN INTERNET ROOM:") {
+		t.Fatal("public warning missing")
+	}
+	g.activateCustomHostSetupHit(menuHitCustomHostAccessInvite)
+	if strings.HasPrefix(g.multiplayerMessage, "OPEN INTERNET ROOM:") || g.customHostAccess != onlineSessionInviteOnly {
+		t.Fatal("public warning survived private selection")
+	}
+	g.activateCustomHostSetupHit(menuHitCustomHostAccessOpen)
+	g.activateCustomHostSetupHit(menuHitCustomHostScopeLAN)
+	if strings.HasPrefix(g.multiplayerMessage, "OPEN INTERNET ROOM:") || g.customHostScope != onlineSessionScopeLAN {
+		t.Fatal("public warning survived LAN selection")
+	}
+}
+
 func TestPublicRoomDirectoryExpiryIsTerminalAndDeleteFailureUsesTTL(t *testing.T) {
 	s, gateway, owner := testPublicRoom(t)
 	inner := publicrooms.New(30*time.Millisecond, false).Handler()
