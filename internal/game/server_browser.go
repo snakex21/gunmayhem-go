@@ -748,6 +748,34 @@ func mergeServerLists(lists ...[]multiplayerServerInfo) []multiplayerServerInfo 
 	return out
 }
 
+type publicCatalogState uint8
+
+const (
+	publicCatalogDisabled publicCatalogState = iota
+	publicCatalogUnconfigured
+	publicCatalogSearching
+	publicCatalogAvailable
+	publicCatalogUnavailable
+)
+
+// Both browser layouts use the same outcome rather than presenting a failed
+// catalog request as a successful search with no rooms.
+func (g *Game) multiplayerServerListEmptyLabel() string {
+	if g == nil || !g.multiplayerDiscoveryDone || g.multiplayerDiscoveryCh != nil {
+		return "SEARCHING..."
+	}
+	switch g.multiplayerCatalogState {
+	case publicCatalogUnconfigured:
+		return "CATALOG NOT CONFIGURED"
+	case publicCatalogUnavailable:
+		return "CATALOG UNAVAILABLE - RETRY"
+	case publicCatalogAvailable:
+		return "NO OPEN ROOMS FOUND"
+	default:
+		return "NO OPEN SERVERS - USE JOIN CODE"
+	}
+}
+
 func (g *Game) beginMultiplayerServerBrowser() {
 	if g == nil {
 		return
@@ -765,11 +793,17 @@ func (g *Game) refreshMultiplayerServers() {
 	}
 	ch := make(chan masterServerDiscoveryResult, 2)
 	g.multiplayerDiscoveryCh = ch
+	g.multiplayerDiscoveryDone = false
 	g.multiplayerMessage = "SEARCHING LAN..."
 	publicEnabled := experimentalInternetEnabled()
 	directoryURL := ""
+	g.multiplayerCatalogState = publicCatalogDisabled
 	if publicEnabled {
 		directoryURL = configuredPublicDirectoryURL()
+		g.multiplayerCatalogState = publicCatalogUnconfigured
+		if directoryURL != "" {
+			g.multiplayerCatalogState = publicCatalogSearching
+		}
 	}
 	go func() {
 		type sourceResult struct {
@@ -847,6 +881,12 @@ func (g *Game) pollMultiplayerServerBrowser() {
 		if result.Done {
 			g.multiplayerDiscoveryCh = nil
 			g.multiplayerDiscoveryDone = true
+			if g.multiplayerCatalogState == publicCatalogSearching {
+				g.multiplayerCatalogState = publicCatalogAvailable
+				if result.MasterErr != nil {
+					g.multiplayerCatalogState = publicCatalogUnavailable
+				}
+			}
 		}
 		if result.Err != nil && result.Done {
 			g.multiplayerServers = nil

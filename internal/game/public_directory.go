@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,14 +32,7 @@ func newPublicRoomIdentity(reader io.Reader) (id, owner string, err error) {
 }
 
 func normalizePublicDirectoryURL(raw string) string {
-	if len(raw) > 2048 || raw != strings.TrimSpace(raw) {
-		return ""
-	}
-	u, err := url.Parse(raw)
-	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.Opaque != "" || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.RawPath != "" {
-		return ""
-	}
-	return strings.TrimRight(u.String(), "/")
+	return masterapi.NormalizePublicDirectoryURL(raw)
 }
 
 func configuredPublicDirectoryURL() string {

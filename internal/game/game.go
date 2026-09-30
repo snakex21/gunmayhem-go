@@ -210,6 +210,7 @@ type Game struct {
 	multiplayerSelectedServer int
 	multiplayerDiscoveryCh    chan masterServerDiscoveryResult
 	multiplayerDiscoveryDone  bool
+	multiplayerCatalogState   publicCatalogState
 	serverAdvertiser          *masterServerAdvertiser
 	publicDirectory           *publicRoomAdvertiser
 	localServerAdvertiser     *localServerAdvertiser

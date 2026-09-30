@@ -469,10 +469,7 @@ func (g *Game) drawCustomBrowserServerList(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, customNetworkServerListRect.X, customNetworkServerListRect.Y, customNetworkServerListRect.W, customNetworkServerListRect.H,
 		color.NRGBA{R: 0x22, G: 0x27, B: 0x30, A: 0xff})
 	if len(g.multiplayerServers) == 0 {
-		label := "SEARCHING..."
-		if g.multiplayerDiscoveryDone && g.multiplayerDiscoveryCh == nil {
-			label = "NO OPEN SERVERS - USE JOIN CODE"
-		}
+		label := g.multiplayerServerListEmptyLabel()
 		drawSourceMenuText(screen, label, menuFontTwCen, 18, color.NRGBA{R: 0xaa, G: 0xb0, B: 0xb8, A: 0xff}, customNetworkServerListRect.X+18, customNetworkServerListRect.Y+85)
 		return
 	}

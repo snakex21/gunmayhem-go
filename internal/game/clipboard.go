@@ -98,8 +98,8 @@ func (g *Game) handleCopyInviteHit(hit int, write func(string) error) bool {
 	return true
 }
 
-// Public Internet discovery remains disabled; this only stops the opt-in
-// private Internet join screen from incorrectly describing every code as LAN.
+// Internet labels follow the explicit opt-in and configured catalog; ordinary
+// launches continue to describe the default LAN-only flow.
 func customNetworkLabels() (tab, heading, address, placeholder string) {
 	if experimentalInternetEnabled() {
 		if configuredPublicDirectoryURL() != "" {

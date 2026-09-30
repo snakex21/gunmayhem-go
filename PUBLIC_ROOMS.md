@@ -144,6 +144,25 @@ URL using `GUNMAYHEM_MASTER_URL` or the existing `master_server.txt` beside the
 executable. A private-invite trial requires no directory. There is no shipped
 public-directory default, account creation or automatic deployment.
 
+An experimental portable package can include that approved `master_server.txt`
+and an explicit **Start-Internet.bat** launcher. Players then launch that file
+and browse the shared room list without typing a URL or setting environment
+variables. The launcher opts in only for that game process; launching the plain
+executable still defaults to LAN. `GUNMAYHEM_MASTER_URL` remains an advanced
+override. The packager includes the config and launcher only when a bounded,
+valid HTTPS config file exists; missing configuration creates neither a
+placeholder endpoint nor an Internet launcher. Syntax validation does not prove
+that an endpoint is approved, deployed or reachable. Native Windows launcher
+execution and cross-network play still need acceptance testing.
+
+In a development build with Internet explicitly enabled but no catalog, the
+browser reports **CATALOG NOT CONFIGURED**. A failed catalog request reports
+**CATALOG UNAVAILABLE - RETRY**, rather than claiming there are no rooms. A
+successful empty catalog reports **NO OPEN ROOMS FOUND**; LAN results remain
+available during catalog failures.
+
+For operator/developer configuration without the packaged launcher:
+
 ```powershell
 $env:GUNMAYHEM_EXPERIMENTAL_INTERNET = "1"
 $env:GUNMAYHEM_MASTER_URL = "https://YOUR-APPROVED-DIRECTORY"

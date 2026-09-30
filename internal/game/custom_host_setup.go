@@ -33,7 +33,8 @@ var (
 )
 
 // Experimental Internet hosting is deliberately opt-in until remote playtests
-// establish acceptable latency. Selecting it exposes only a private invite flow.
+// establish acceptable latency. Internet selection defaults to a private invite;
+// a configured catalog additionally permits an explicitly selected OPEN room.
 func experimentalInternetEnabled() bool {
 	return os.Getenv("GUNMAYHEM_EXPERIMENTAL_INTERNET") == "1"
 }

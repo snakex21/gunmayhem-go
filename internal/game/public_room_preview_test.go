@@ -22,18 +22,19 @@ type publicRoomPreviewGame struct {
 	err    error
 }
 
+var publicRoomPreviewNames = []string{"create-public-room.png", "public-room-browser.png", "close-public-room.png", "catalog-unconfigured.png", "catalog-unavailable.png", "catalog-empty.png"}
+
 func (p *publicRoomPreviewGame) Layout(int, int) (int, int) { return 900, 600 }
 func (p *publicRoomPreviewGame) Update() error {
-	if p.frame >= 3 || p.err != nil {
+	if p.frame >= len(publicRoomPreviewNames) || p.err != nil {
 		return ebiten.Termination
 	}
 	return nil
 }
 func (p *publicRoomPreviewGame) Draw(screen *ebiten.Image) {
-	if p.frame >= 3 {
+	if p.frame >= len(publicRoomPreviewNames) {
 		return
 	}
-	names := []string{"create-public-room.png", "public-room-browser.png", "close-public-room.png"}
 	g := p.game
 	switch p.frame {
 	case 0:
@@ -47,10 +48,30 @@ func (p *publicRoomPreviewGame) Draw(screen *ebiten.Image) {
 		g.customPage = customPagePlayers
 		g.drawCustomV2OnlineShell(screen)
 		g.drawCustomV2Players(screen)
+	case 3, 4, 5:
+		g.netplay = nil
+		g.publicDirectory = nil
+		g.multiplayerServers = nil
+		g.multiplayerSelectedServer = -1
+		g.multiplayerDiscoveryDone = true
+		switch p.frame {
+		case 3:
+			_ = os.Setenv("GUNMAYHEM_MASTER_URL", "")
+			g.multiplayerCatalogState = publicCatalogUnconfigured
+			g.multiplayerMessage = "LAN / PRIVATE INVITES AVAILABLE - PUBLIC DIRECTORY NOT CONFIGURED"
+		case 4:
+			_ = os.Setenv("GUNMAYHEM_MASTER_URL", "https://directory.example.invalid")
+			g.multiplayerCatalogState = publicCatalogUnavailable
+			g.multiplayerMessage = "LAN / PRIVATE INVITES AVAILABLE - PUBLIC DIRECTORY UNAVAILABLE"
+		case 5:
+			g.multiplayerCatalogState = publicCatalogAvailable
+			g.multiplayerMessage = "NO OPEN LAN OR INTERNET ROOMS FOUND"
+		}
+		g.drawCustomNetworkPanel(screen)
 	}
 	pixels := make([]byte, 900*600*4)
 	screen.ReadPixels(pixels)
-	f, err := os.Create(filepath.Join(p.output, names[p.frame]))
+	f, err := os.Create(filepath.Join(p.output, publicRoomPreviewNames[p.frame]))
 	if err != nil {
 		p.err = err
 		return
@@ -96,7 +117,7 @@ func TestPublicRoomPreviewScreenshots(t *testing.T) {
 	if p.err != nil {
 		t.Fatal(p.err)
 	}
-	if p.frame != 3 {
+	if p.frame != len(publicRoomPreviewNames) {
 		t.Fatal("missing preview")
 	}
 }

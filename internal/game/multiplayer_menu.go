@@ -268,10 +268,7 @@ func (g *Game) drawMultiplayerServerList(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, multiplayerServerListRect.X, multiplayerServerListRect.Y, multiplayerServerListRect.W, multiplayerServerListRect.H,
 		color.NRGBA{R: 0x24, G: 0x27, B: 0x2d, A: 0xff})
 	if len(g.multiplayerServers) == 0 {
-		label := "SEARCHING..."
-		if g.multiplayerDiscoveryDone && g.multiplayerDiscoveryCh == nil {
-			label = "NO OPEN SERVERS - USE JOIN CODE"
-		}
+		label := g.multiplayerServerListEmptyLabel()
 		drawSourceMenuText(screen, label, menuFontTwCen, 18, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff},
 			multiplayerServerListRect.X+15, multiplayerServerListRect.Y+58)
 		return
