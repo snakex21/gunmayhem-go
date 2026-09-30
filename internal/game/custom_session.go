@@ -597,10 +597,11 @@ func (g *Game) drawCustomNetworkPanel(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 0, 0, 900, 600, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xff})
 	ebitenutil.DrawRect(screen, 25, 20, 850, 70, color.NRGBA{R: 0xf5, G: 0xf5, B: 0xf5, A: 0xff})
 	drawSourceMenuText(screen, "CUSTOM GAME", menuFontTwCen, 34, color.Black, 45, 30)
+	tab, heading, addressLabel, placeholder := customNetworkLabels()
 	drawCustomSessionButton(screen, customSessionLocalRect, "LOCAL", false, false)
-	drawCustomSessionButton(screen, customSessionOnlineRect, "LAN", true, true)
+	drawCustomSessionButton(screen, customSessionOnlineRect, tab, true, true)
 
-	drawSourceMenuText(screen, "LAN SERVER BROWSER", menuFontTwCen, 27, color.White, 55, 101)
+	drawSourceMenuText(screen, heading, menuFontTwCen, 27, color.White, 55, 101)
 	drawDevelopedMenuButton(screen, customNetworkCreateRect, "CREATE SESSION")
 	drawDevelopedMenuButton(screen, customNetworkRefreshRect, "REFRESH")
 
@@ -609,11 +610,11 @@ func (g *Game) drawCustomNetworkPanel(screen *ebiten.Image) {
 	g.drawCustomBrowserServerList(screen)
 	g.drawCustomServerPreview(screen)
 
-	drawSourceMenuText(screen, "JOIN CODE / LAN IP:PORT", menuFontCondensedExtraBold, 12.5, color.White, customNetworkAddressRect.X, 448)
+	drawSourceMenuText(screen, addressLabel, menuFontCondensedExtraBold, 12.5, color.White, customNetworkAddressRect.X, 448)
 	ebitenutil.DrawRect(screen, customNetworkAddressRect.X, customNetworkAddressRect.Y, customNetworkAddressRect.W, customNetworkAddressRect.H, color.NRGBA{R: 0xee, G: 0xee, B: 0xee, A: 0xff})
 	address := g.multiplayerAddress
 	if address == "" {
-		address = "PASTE LAN JOIN CODE OR IP:PORT"
+		address = placeholder
 	}
 	if g.multiplayerFocus {
 		address += "_"

@@ -118,3 +118,25 @@ These remain local synthetic, render and cross-build checks. No live Cloudflare
 endpoint, remote-player match, Windows execution, or full security audit was
 performed. The existing GitHub workflow runs on release tags, not this branch;
 local checks are not represented as remote CI results.
+
+## Clipboard usability follow-up
+
+The private host's SLOTS page has an explicit COPY INVITE action. The shared
+join field accepts Ctrl+V on Windows, with atomic full-field replacement after
+the existing ASCII/128-character validation. Only surrounding whitespace is
+trimmed; embedded whitespace, malformed UTF-16, oversized input and unsafe
+characters fail without changing the old field. Clipboard data and backend
+error details are never logged or echoed. Other platforms report unsupported
+clipboard access in the UI and retain manual text entry.
+
+- Mock clipboard validation/copy/paste tests, race detector, three repeats: passed
+- Combined network/perk/font/rejoin/clipboard race selection: passed (32.457 s)
+- Windows amd64 cross-build: passed; native Windows clipboard execution pending
+- Static production-font join-browser and Copy Invite layout fixtures: passed
+- Unfiltered full suite: same four baseline failures (47.371 s); no new failure
+- No test reads or writes the real OS clipboard or starts a public tunnel
+
+The Win32 implementation follows Microsoft's ownership and bounded-read rules:
+[OpenClipboard](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-openclipboard),
+[GetClipboardData](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclipboarddata),
+[SetClipboardData](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setclipboarddata).

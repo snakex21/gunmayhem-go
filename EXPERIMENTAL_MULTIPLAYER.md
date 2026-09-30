@@ -54,14 +54,22 @@ released protocol-18 build is intentionally rejected rather than misinterpreted.
    .\GunMayhem.exe
    ```
 
-4. Open **CUSTOM GAME → LAN → CREATE SESSION → INTERNET**. This experimental
+4. Open **CUSTOM GAME → ONLINE → CREATE SESSION → INTERNET**. With the opt-in
+   unset the network browser is still labeled LAN. This experimental
    selection forces **INVITE CODE**. Clicking CREATE starts a public temporary
    Cloudflare tunnel; the UI discloses this before creation. Startup can take up
    to 20 seconds and is currently synchronous
 5. Configure the match and mark the intended guest slots as network humans.
    Share the complete `GMT1-…` invitation only with the intended players. It
-   contains the session secret; treat it like a password. Guests run the same
-   native build and enter the code in the existing join field
+   contains the session secret; treat it like a password. On Windows the host
+   can explicitly click **COPY INVITE** in SLOTS. Guests run the same native
+   build, click the join field, press **Ctrl+V**, check it and click **JOIN**.
+   Paste replaces the full field (including its default loopback address).
+   Invalid, multiline or overlong pasted values leave the old field unchanged;
+   surrounding whitespace is trimmed. Clipboard access occurs only on that
+   shortcut/click and never logs its contents. This implementation uses Windows
+   clipboard APIs; other platforms show an explicit unsupported message and
+   still accept typed codes. A busy/unavailable clipboard reports failure
 6. The host must keep both the game and its child `cloudflared` process running.
    Leaving the session shuts the gateway and tunnel down. A new hosted session
    uses a new secret and generally a new tunnel hostname

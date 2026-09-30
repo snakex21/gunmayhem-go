@@ -91,6 +91,10 @@ func (g *Game) updateMultiplayerAddressInput() {
 	if !g.multiplayerFocus {
 		return
 	}
+	if (ebiten.IsKeyPressed(ebiten.KeyControlLeft) || ebiten.IsKeyPressed(ebiten.KeyControlRight)) && inpututil.IsKeyJustPressed(ebiten.KeyV) {
+		g.pasteMultiplayerAddress(readClipboardText)
+		return
+	}
 	if textEraseRepeated() {
 		r := []rune(g.multiplayerAddress)
 		if len(r) > 0 {

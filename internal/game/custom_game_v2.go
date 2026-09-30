@@ -20,6 +20,7 @@ const (
 	menuHitCustomV2PlaylistGM1
 	menuHitCustomV2PlaylistGM2
 	menuHitCustomV2ApplyAll
+	menuHitCustomV2CopyInvite
 	menuHitCustomV2RoundBase      = 11100
 	menuHitCustomV2MapBase        = 11200
 	menuHitCustomV2SlotRemoveBase = 11300
@@ -35,6 +36,7 @@ var (
 	customV2TabPlayersRect  = Rect{X: 521, Y: 48, W: 90, H: 34}
 	customV2BackRect        = Rect{X: 20, Y: 528, W: 190, H: 52}
 	customV2StartRect       = Rect{X: 660, Y: 528, W: 220, H: 52}
+	customV2CopyInviteRect  = Rect{X: 230, Y: 528, W: 190, H: 52}
 
 	customV2LivesMinusRect  = Rect{X: 365, Y: 283, W: 44, H: 38}
 	customV2LivesPlusRect   = Rect{X: 505, Y: 283, W: 44, H: 38}
@@ -174,6 +176,9 @@ func (g *Game) setCustomV2Page(page int) {
 }
 
 func (g *Game) customV2HitAt(x, y float64) int {
+	if g.canCopyHostInvite() && customV2CopyInviteRect.Contains(x, y) {
+		return menuHitCustomV2CopyInvite
+	}
 	// Both Local and Online are step-based flows. The step headers are real
 	// navigation controls, not decorative labels.
 	if !g.customOnlineMode {
@@ -297,6 +302,9 @@ func (g *Game) customV2HitAt(x, y float64) int {
 }
 
 func (g *Game) activateCustomV2Hit(hit int) {
+	if g.handleCopyInviteHit(hit, writeClipboardText) {
+		return
+	}
 	if hit == menuHitNone {
 		return
 	}
@@ -740,6 +748,12 @@ func (g *Game) drawCustomV2OnlineShell(screen *ebiten.Image) {
 	}
 	ebitenutil.DrawRect(screen, customV2StartRect.X, customV2StartRect.Y, customV2StartRect.W, customV2StartRect.H, startFill)
 	drawSourceMenuText(screen, startLabel, menuFontTwCen, 17, color.White, customV2StartRect.X+14, customV2StartRect.Y+17)
+	if g.canCopyHostInvite() {
+		drawDevelopedMenuButton(screen, customV2CopyInviteRect, "COPY INVITE")
+		if g.multiplayerMessage == "INVITE COPIED" || strings.HasPrefix(g.multiplayerMessage, "COPY ") {
+			drawSourceMenuText(screen, g.multiplayerMessage, menuFontCondensedExtraBold, 10.5, color.White, 431, 547)
+		}
+	}
 }
 
 func (g *Game) drawCustomV2Match(screen *ebiten.Image) {
