@@ -25,6 +25,10 @@ jobs:
         shell: pwsh
         run: go test ./...
 
+      - name: Fetch pinned cloudflared
+        shell: pwsh
+        run: ./scripts/fetch_cloudflared.ps1
+
       - name: Build tagged Windows game
         shell: pwsh
         run: |

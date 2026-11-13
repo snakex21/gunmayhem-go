@@ -25,3 +25,6 @@ coverage.out
 build/go-tmp/
 build/go-cache/
 build/test-data/
+
+# Local runtime data
+/tmp/

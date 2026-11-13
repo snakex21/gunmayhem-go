@@ -28,6 +28,7 @@ const (
 	masterHeartbeatResponseMax  = 16 << 10
 	masterServerListResponseMax = 2 << 20
 	localServerStaleAfter       = 7 * time.Second
+	internetServerVerifyTimeout = 12 * time.Second
 )
 
 type multiplayerServerInfo struct {
@@ -760,7 +761,7 @@ func (g *Game) refreshMultiplayerServers() {
 	}
 	ch := make(chan masterServerDiscoveryResult, 2)
 	g.multiplayerDiscoveryCh = ch
-	g.multiplayerMessage = "SEARCHING LAN..."
+	g.multiplayerMessage = "SEARCHING NETWORK..."
 	go func() {
 		type sourceResult struct {
 			servers []multiplayerServerInfo
@@ -777,15 +778,32 @@ func (g *Game) refreshMultiplayerServers() {
 		networkDiagnostic("BROWSER LAN candidates=%d addresses=%v err=%v", len(lan.servers), serverAddressesForDiagnostic(lan.servers), lan.err)
 
 		servers := mergeServerLists(localServers, lan.servers)
-		var err error
+		var lanErr error
 		if len(servers) == 0 && localErr != nil && lan.err != nil {
-			err = errors.Join(localErr, lan.err)
+			lanErr = errors.Join(localErr, lan.err)
 		}
-		// Keep the first fast result for UI responsiveness and existing browser
-		// flow, then immediately finish. Internet discovery is deliberately not
-		// started in the LAN-only release.
-		ch <- masterServerDiscoveryResult{Servers: servers, Err: err, Done: false}
-		ch <- masterServerDiscoveryResult{Servers: servers, Err: err, Done: true}
+		// Publish LAN/local results immediately. Internet DHT discovery is slower
+		// and must never make a LAN host appear frozen in the browser.
+		ch <- masterServerDiscoveryResult{Servers: servers, Err: lanErr, Done: false}
+
+		internetCandidates, dhtErr := discoverGlobalOpenServers(globalDHTLookupTimeout)
+		if len(internetCandidates) > 0 {
+			internetCandidates = verifyGlobalOpenServers(internetCandidates, internetServerVerifyTimeout)
+		}
+		// Log the internet/OPEN half of discovery separately from LAN. Without this
+		// line a silent DHT failure is indistinguishable from "nobody is hosting",
+		// because the LAN line is published first and always reports 0.
+		networkDiagnostic("BROWSER global candidates=%d addresses=%v err=%v", len(internetCandidates), serverAddressesForDiagnostic(internetCandidates), dhtErr)
+		if len(internetCandidates) > 0 {
+			servers = mergeServerLists(servers, internetCandidates)
+		}
+		networkDiagnostic("BROWSER merged candidates=%d addresses=%v", len(servers), serverAddressesForDiagnostic(servers))
+
+		finalErr := lanErr
+		if len(servers) == 0 && dhtErr != nil {
+			finalErr = errors.Join(finalErr, dhtErr)
+		}
+		ch <- masterServerDiscoveryResult{Servers: servers, Err: finalErr, DHTErr: dhtErr, Done: true}
 	}()
 }
 
@@ -833,16 +851,20 @@ func (g *Game) pollMultiplayerServerBrowser() {
 		g.multiplayerSelectedServer = -1
 		if !result.Done {
 			if len(result.Servers) > 0 {
-				g.multiplayerMessage = "FOUND LAN SESSIONS"
+				g.multiplayerMessage = "FOUND LAN SESSIONS - SEARCHING INTERNET..."
 			} else {
-				g.multiplayerMessage = "SEARCHING LAN..."
+				g.multiplayerMessage = "SEARCHING INTERNET..."
 			}
 			return
 		}
 		if len(result.Servers) == 0 {
-			g.multiplayerMessage = "NO OPEN LAN SESSIONS FOUND"
+			if result.DHTErr != nil {
+				g.multiplayerMessage = "NO OPEN SESSIONS - INTERNET DISCOVERY UNAVAILABLE"
+			} else {
+				g.multiplayerMessage = "NO OPEN SESSIONS FOUND"
+			}
 		} else {
-			g.multiplayerMessage = "FOUND OPEN LAN SESSIONS"
+			g.multiplayerMessage = "FOUND OPEN SESSIONS"
 		}
 	default:
 	}

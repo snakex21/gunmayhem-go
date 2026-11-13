@@ -25,15 +25,15 @@ func (r Rect) Contains(x, y float64) bool {
 }
 
 type Map struct {
-	Number      int
-	Gravity     float64
-	LowFriction bool
-	Platforms   []Rect
-	SpawnMinX   float64
-	SpawnMaxX   float64
-	CrateMinX   float64
-	CrateMaxX   float64
-	LowestY     float64
+	Number      int     `cbor:",omitempty"`
+	Gravity     float64 `cbor:",omitempty"`
+	LowFriction bool    `cbor:",omitempty"`
+	Platforms   []Rect  `cbor:",omitempty"`
+	SpawnMinX   float64 `cbor:",omitempty"`
+	SpawnMaxX   float64 `cbor:",omitempty"`
+	CrateMinX   float64 `cbor:",omitempty"`
+	CrateMaxX   float64 `cbor:",omitempty"`
+	LowestY     float64 `cbor:",omitempty"`
 }
 
 // Map 1 reconstructed directly from the XFL:

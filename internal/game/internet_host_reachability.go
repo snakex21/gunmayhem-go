@@ -11,12 +11,16 @@ import (
 // hostInternetReachability keeps Internet reachability separate from LAN
 // discovery. LAN never depends on any of these checks.
 type hostInternetReachability struct {
-	DirectAddress string
-	DirectMethod  string
-	MappingDone   bool
-	P2PReady      bool
-	P2PEndpoint   string
-	P2PErr        error
+	DirectAddress      string
+	DirectMethod       string
+	MappingDone        bool
+	P2PReady           bool
+	P2PEndpoint        string
+	P2PErr             error
+	CloudflareRequired bool
+	CloudflareReady    bool
+	CloudflareURL      string
+	CloudflareErr      error
 }
 
 func (g *Game) currentHostInternetReachability() hostInternetReachability {
@@ -67,6 +71,10 @@ func (g *Game) currentHostInternetReachability() hostInternetReachability {
 	if g.p2pHost != nil {
 		status.P2PEndpoint, status.P2PReady, status.P2PErr = g.p2pHost.Status()
 	}
+	if g.cloudflareTunnel != nil {
+		status.CloudflareRequired = true
+		status.CloudflareReady, status.CloudflareURL, _, status.CloudflareErr = g.cloudflareTunnel.Status()
+	}
 	return status
 }
 
@@ -99,6 +107,21 @@ func (s hostInternetReachability) directReadyLabel() string {
 }
 
 func (s hostInternetReachability) openSessionLabel() string {
+	if s.CloudflareRequired {
+		if s.CloudflareErr != nil {
+			return "CLOUDFLARE TUNNEL ERROR: " + strings.ToUpper(s.CloudflareErr.Error())
+		}
+		if !s.CloudflareReady {
+			return "CLOUDFLARE TUNNEL STARTING..."
+		}
+		if s.P2PReady {
+			return "CLOUDFLARE WSS READY - OPEN SESSION IN SERVER BROWSER"
+		}
+		if s.P2PErr != nil {
+			return "CLOUDFLARE WSS READY - DHT RETRYING..."
+		}
+		return "CLOUDFLARE WSS READY - PUBLISHING TO SERVER BROWSER..."
+	}
 	if direct := s.directReadyLabel(); direct != "" {
 		return direct + " - OPEN SESSION IN SERVER BROWSER"
 	}

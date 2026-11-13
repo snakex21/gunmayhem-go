@@ -32,6 +32,11 @@ echo Running tests...
 go test ./...
 if errorlevel 1 goto :fail
 
+echo.
+echo Fetching pinned Cloudflare Tunnel client...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%CD%\scripts\fetch_cloudflared.ps1"
+if errorlevel 1 goto :fail
+
 rem Untagged portable test builds use a valid prerelease version instead of
 rem presenting themselves as DEV BUILD. A release tag or explicit environment
 rem value still takes precedence.
@@ -48,7 +53,7 @@ go build -ldflags "-H=windowsgui -X gunmayhem-go/internal/updater.CurrentVersion
 if errorlevel 1 goto :fail
 
 echo.
-echo Packaging LAN-only portable Windows build...
+echo Packaging portable Windows build with Cloudflare Quick Tunnel...
 go run .\scripts\package_portable.go
 if errorlevel 1 goto :fail
 

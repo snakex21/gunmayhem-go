@@ -34,7 +34,7 @@ const (
 	p2pPunchLookup       = 2200 * time.Millisecond
 	p2pDialTimeout       = 20 * time.Second
 	p2pAnnounceTimeout   = 8 * time.Second
-	p2pReannounceEvery   = 10 * time.Minute
+	p2pReannounceEvery   = globalDHTAnnounceEvery
 	p2pMaxPunchPeers     = 32
 	p2pPortPredictRadius = 2
 )
@@ -290,13 +290,14 @@ type p2pQUICHost struct {
 	closed atomic.Bool
 	stop   chan struct{}
 
-	session    *netplaySession
-	visibility int
-	sessionKey string
-	mux        *p2pPacketMux
-	transport  *quic.Transport
-	listener   *quic.Listener
-	dht        *dhtLiteClient
+	session          *netplaySession
+	visibility       int
+	sessionKey       string
+	cloudflareTunnel *cloudflareQuickTunnel
+	mux              *p2pPacketMux
+	transport        *quic.Transport
+	listener         *quic.Listener
+	dht              *dhtLiteClient
 
 	mu              sync.RWMutex
 	publicEndpoint  string
@@ -306,6 +307,10 @@ type p2pQUICHost struct {
 }
 
 func startP2PQUICHost(session *netplaySession, visibility int, sessionKey string) (*p2pQUICHost, error) {
+	return startP2PQUICHostWithTunnel(session, visibility, sessionKey, nil)
+}
+
+func startP2PQUICHostWithTunnel(session *netplaySession, visibility int, sessionKey string, tunnel *cloudflareQuickTunnel) (*p2pQUICHost, error) {
 	if session == nil || session.mode != netplayHost || strings.TrimSpace(sessionKey) == "" {
 		return nil, errors.New("invalid P2P host configuration")
 	}
@@ -339,8 +344,8 @@ func startP2PQUICHost(session *netplaySession, visibility int, sessionKey string
 	}
 	h := &p2pQUICHost{
 		stop: make(chan struct{}), session: session, visibility: visibility,
-		sessionKey: strings.TrimSpace(sessionKey), mux: mux, transport: transport,
-		listener: listener, dht: dht,
+		sessionKey: strings.TrimSpace(sessionKey), cloudflareTunnel: tunnel,
+		mux: mux, transport: transport, listener: listener, dht: dht,
 	}
 	networkDiagnostic("P2P host socket local=%s preferredUDP=%d", mux.LocalAddr(), preferredUDPPort)
 	go h.acceptLoop()
@@ -531,6 +536,12 @@ func (h *p2pQUICHost) metadataLoop() {
 			if h.visibility != onlineSessionOpen || string(pkt.data) != p2pMetadataRequest || pkt.addr == nil {
 				continue
 			}
+			if h.cloudflareTunnel != nil {
+				ready, _, _, err := h.cloudflareTunnel.Status()
+				if err != nil || !ready {
+					continue
+				}
+			}
 			info := h.session.publicProbeInfo()
 			payload, err := json.Marshal(info)
 			if err != nil || len(payload)+len(p2pMetadataResponse) > p2pMetadataMaxPacket {
@@ -579,13 +590,45 @@ func (h *p2pQUICHost) acceptLoop() {
 	}
 }
 
+func (h *p2pQUICHost) waitUntilPublishable() error {
+	if h == nil || h.cloudflareTunnel == nil {
+		return nil
+	}
+	deadline := time.NewTimer(cloudflareTunnelStartWindow + 5*time.Second)
+	defer deadline.Stop()
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		ready, _, _, err := h.cloudflareTunnel.Status()
+		if ready {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if h.closed.Load() {
+			return errors.New("P2P host closed while waiting for Cloudflare tunnel")
+		}
+		select {
+		case <-deadline.C:
+			return errors.New("timed out waiting for Cloudflare tunnel before DHT publication")
+		case <-ticker.C:
+		case <-h.stop:
+			return errors.New("P2P host stopped while waiting for Cloudflare tunnel")
+		}
+	}
+}
+
 func (h *p2pQUICHost) discoveryLoop() {
 	privateHash := privateHostDHTHash(h.sessionKey)
 	announce := func() (string, error) {
+		if err := h.waitUntilPublishable(); err != nil {
+			return "", err
+		}
 		// OPEN publishes only to the public browser rendezvous. INVITE ONLY stays
 		// off that swarm and publishes only private/code-derived rendezvous data.
 		code := strings.TrimSpace(h.session.shortJoinCode)
-		hashes := [][20]byte{globalOpenDHTInfoHashAt(time.Now())}
+		hashes := globalOpenDHTAnnouncementHashes(time.Now())
 		if h.visibility == onlineSessionInviteOnly {
 			if code == "" {
 				code = decentralizedOpenCode(h.sessionKey)
@@ -606,6 +649,7 @@ func (h *p2pQUICHost) discoveryLoop() {
 		// endpoint :1. Nodes that support BEP 5 still store the observed NAT
 		// source port, while extension-aware responses override it below.
 		type result struct {
+			hash     [20]byte
 			observed []string
 			err      error
 		}
@@ -614,12 +658,13 @@ func (h *p2pQUICHost) discoveryLoop() {
 			hash := hash
 			go func() {
 				observed, err := announceDHTPeerWithClientObserved(announceCtx, h.dht, hash, announcePort, true)
-				results <- result{observed: observed, err: err}
+				results <- result{hash: hash, observed: observed, err: err}
 			}()
 		}
 		var observed []string
 		var announceErr error
 		successes := 0
+		activePublished := false
 		for range hashes {
 			result := <-results
 			observed = append(observed, result.observed...)
@@ -627,6 +672,7 @@ func (h *p2pQUICHost) discoveryLoop() {
 				announceErr = errors.Join(announceErr, result.err)
 			} else {
 				successes++
+				activePublished = activePublished || result.hash == hashes[0]
 			}
 		}
 		// Read the short-code record back through an independent DHT traversal.
@@ -639,10 +685,16 @@ func (h *p2pQUICHost) discoveryLoop() {
 		}
 		h.setObservedEndpoints(observed)
 		endpoint := chooseObservedEndpoint(observed)
-		if successes != len(hashes) && announceErr == nil {
-			announceErr = errors.New("not all P2P rendezvous hashes were published")
+		if successes == 0 || (h.visibility == onlineSessionOpen && !activePublished) {
+			if announceErr == nil {
+				announceErr = errors.New("active P2P rendezvous hash was not published")
+			}
+			return "", announceErr
 		}
-		return endpoint, announceErr
+		if announceErr != nil {
+			networkDiagnostic("P2P DHT partial publication succeeded=%d/%d ignored=%v", successes, len(hashes), announceErr)
+		}
+		return endpoint, nil
 	}
 
 	for attempt := 0; attempt < 4 && !h.closed.Load(); attempt++ {

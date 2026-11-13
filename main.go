@@ -39,11 +39,11 @@ func main() {
 	port := flag.Int("port", 7777, "TCP port used by --host")
 	join := flag.String("join", "", "join a host, for example 192.168.1.20:7777")
 	flag.Parse()
-	if !*host && *join == "" {
-		networksetup.EnsureConfigured()
-	}
 	if *host && *join != "" {
 		log.Fatal("use either --host or --join, not both")
+	}
+	if *host || *join == "" {
+		networksetup.EnsureConfigured()
 	}
 
 	cfg, err := game.LoadAppConfig()

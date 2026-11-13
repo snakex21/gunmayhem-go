@@ -79,13 +79,15 @@ func writeNetFrame(conn net.Conn, codec netplayCodec, msg netWireMessage, maxFra
 	if len(payload) == 0 || len(payload) > maxFrame {
 		return fmt.Errorf("netplay frame too large: %d bytes", len(payload))
 	}
-	var header [4]byte
-	binary.BigEndian.PutUint32(header[:], uint32(len(payload)))
+	// Header and payload go out as ONE conn.Write. On a WebSocket transport
+	// every Write becomes a separate message, so the previous two-write framing
+	// sent every netplay frame as a tiny 4-byte message followed by the payload.
+	// That doubled message/frame overhead on the Cloudflare WSS path.
+	frame := make([]byte, 4+len(payload))
+	binary.BigEndian.PutUint32(frame[:4], uint32(len(payload)))
+	copy(frame[4:], payload)
 	_ = conn.SetWriteDeadline(time.Now().Add(netWriteTimeout))
-	if err := writeAll(conn, header[:]); err != nil {
-		return err
-	}
-	if err := writeAll(conn, payload); err != nil {
+	if err := writeAll(conn, frame); err != nil {
 		return err
 	}
 	_ = conn.SetWriteDeadline(time.Time{})

@@ -75,8 +75,8 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 	case menuHitCustomHostScopeLAN:
 		g.customHostScope = onlineSessionScopeLAN
 	case menuHitCustomHostScopeInternet:
-		g.customHostScope = onlineSessionScopeLAN
-		g.multiplayerMessage = "INTERNET MULTIPLAYER IS DISABLED IN THIS RELEASE - LAN ONLY"
+		g.customHostScope = onlineSessionScopeInternet
+		g.multiplayerMessage = "INTERNET QUICK TUNNEL - INVITE CODE RECOMMENDED"
 	case menuHitCustomHostAccessOpen:
 		g.customHostAccess = onlineSessionOpen
 	case menuHitCustomHostAccessInvite:
@@ -89,8 +89,11 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 }
 
 func (g *Game) createConfiguredOnlineSession() {
-	scope := onlineSessionScopeLAN
-	g.customHostScope = scope
+	scope := g.customHostScope
+	if scope != onlineSessionScopeLAN && scope != onlineSessionScopeInternet {
+		scope = onlineSessionScopeLAN
+		g.customHostScope = scope
+	}
 	access := g.customHostAccess
 	if access != onlineSessionOpen && access != onlineSessionInviteOnly {
 		access = onlineSessionOpen
@@ -146,9 +149,9 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 	editingExisting := g.netplay != nil && g.netplay.mode == netplayHost
 	ebitenutil.DrawRect(screen, 0, 0, 900, 600, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xff})
 	ebitenutil.DrawRect(screen, 25, 20, 850, 70, color.NRGBA{R: 0xf5, G: 0xf5, B: 0xf5, A: 0xff})
-	title := "CREATE LAN SESSION"
+	title := "CREATE SESSION"
 	if editingExisting {
-		title = "LAN SESSION SETTINGS"
+		title = "SESSION SETTINGS"
 	}
 	drawSourceMenuText(screen, title, menuFontTwCen, 32, color.Black, 45, 32)
 
@@ -166,13 +169,14 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 
 	drawSourceMenuText(screen, "NETWORK REACH", menuFontCondensedExtraBold, 16, color.White, 180, 205)
 	drawHostTypeCard(screen, customHostScopeLANRect, "LAN ONLY", "Players on your local network.", g.customHostScope == onlineSessionScopeLAN)
-	drawHostTypeCard(screen, customHostScopeInternetRect, "INTERNET", "Disabled in this release.", false)
+	drawHostTypeCard(screen, customHostScopeInternetRect, "INTERNET", "Cloudflare WSS tunnel + LAN.", g.customHostScope == onlineSessionScopeInternet)
 
 	drawSourceMenuText(screen, "ACCESS", menuFontCondensedExtraBold, 16, color.White, 180, 332)
 	drawHostTypeCard(screen, customHostAccessOpenRect, "OPEN", "Visible in the selected scope.", g.customHostAccess == onlineSessionOpen)
 	drawHostTypeCard(screen, customHostAccessInviteRect, "INVITE CODE", "Hidden; only players with code join.", g.customHostAccess == onlineSessionInviteOnly)
 
-	drawSourceMenuText(screen, "This release supports LAN multiplayer only. OPEN and INVITE CODE both work inside the local network.", menuFontCondensed, 11.5,
+	scopeInfo := "LAN stays direct. INTERNET uses a temporary Cloudflare WSS tunnel; INVITE CODE is the most reliable access mode."
+	drawSourceMenuText(screen, scopeInfo, menuFontCondensed, 11.5,
 		color.NRGBA{R: 0xb9, G: 0xbf, B: 0xc8, A: 0xff}, 180, 458)
 	info := "Returning to the server browser closes the host but keeps these settings until the game is closed."
 	backLabel := "BACK TO SERVERS"

@@ -7,16 +7,16 @@ import (
 )
 
 type CustomPlayerConfig struct {
-	Name      string
-	Color     int
-	Shirt     int
-	Hat       int
-	Eyes      int
-	Gun       int
-	Perk      int
-	Throwable int
-	Type      int // source playertype: 0 empty, 1 human, 2 AI
-	Team      int
+	Name      string `cbor:",omitempty"`
+	Color     int    `cbor:",omitempty"`
+	Shirt     int    `cbor:",omitempty"`
+	Hat       int    `cbor:",omitempty"`
+	Eyes      int    `cbor:",omitempty"`
+	Gun       int    `cbor:",omitempty"`
+	Perk      int    `cbor:",omitempty"`
+	Throwable int    `cbor:",omitempty"`
+	Type      int    `cbor:",omitempty"` // source playertype: 0 empty, 1 human, 2 AI
+	Team      int    `cbor:",omitempty"`
 }
 
 func sourceDefaultCustomPlayers() [4]CustomPlayerConfig {

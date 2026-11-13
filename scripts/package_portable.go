@@ -63,6 +63,24 @@ func copyFile(src, dst string) error {
 	return closeErr
 }
 
+func findCloudflared(root string) (string, error) {
+	candidates := []string{
+		strings.TrimSpace(os.Getenv("GUNMAYHEM_CLOUDFLARED")),
+		filepath.Join(root, "build", "tools", "cloudflared.exe"),
+		filepath.Join(root, "cloudflared.exe"),
+	}
+	for _, candidate := range candidates {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("cloudflared.exe not found; run scripts\\fetch_cloudflared.ps1 or set GUNMAYHEM_CLOUDFLARED")
+}
+
 func copyDir(src, dst string) error {
 	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -243,6 +261,13 @@ func main() {
 	if err := copyFile(filepath.Join(root, "GunMayhem.exe"), filepath.Join(outRoot, "GunMayhem.exe")); err != nil {
 		panic(err)
 	}
+	cloudflared, err := findCloudflared(root)
+	if err != nil {
+		panic(err)
+	}
+	if err := copyFile(cloudflared, filepath.Join(outRoot, "cloudflared.exe")); err != nil {
+		panic(fmt.Errorf("copy cloudflared.exe: %w", err))
+	}
 	if err := copyDir(filepath.Join(root, "assets"), filepath.Join(outRoot, "assets")); err != nil {
 		panic(err)
 	}
@@ -262,38 +287,44 @@ func main() {
 	instructions := strings.TrimSpace(`GUN MAYHEM - PORTABLE MULTIPLAYER
 
 Ta paczka jest gotowa do skopiowania na drugi komputer. Nie wymaga instalacji Go.
+Zawiera cloudflared.exe wymagany do Internetowego quick tunelu.
 
-MULTIPLAYER W TYM WYDANIU DZIALA TYLKO W LAN.
-Internetowy multiplayer jest wylaczony, poniewaz obecna implementacja nie jest wystarczajaco niezawodna do wydania.
+MULTIPLAYER W TYM WYDANIU:
+- LAN dziala bezposrednio.
+- Internet dziala przez eksperymentalny Cloudflare Quick Tunnel.
+- Do Internetu zalecany jest tryb INVITE CODE; adres jest losowy i zmienia sie po restarcie hosta.
 
 JAK ZAGRAC W LAN:
 1. Skopiuj caly folder na drugi komputer.
 2. Na komputerze hosta uruchom GunMayhem.exe.
-3. Wejdz: CUSTOM GAME -> LAN -> CREATE SESSION.
+3. Wejdz: CUSTOM GAME -> ONLINE -> CREATE SESSION.
 4. Wybierz ACCESS: OPEN albo INVITE CODE.
 5. Przy pierwszym uruchomieniu zezwol GunMayhem.exe w Zaporze Windows dla sieci prywatnej.
 6. Ustaw co najmniej jeden slot P2-P4 jako ONLINE PLAYER.
-7. Na drugim komputerze wejdz do LAN SERVER BROWSER i nacisnij REFRESH.
-8. Dla INVITE CODE wpisz kod GM-XXXXXX w pole JOIN CODE / LAN IP:PORT.
+7. Na drugim komputerze wejdz do NETWORK SERVER BROWSER i nacisnij REFRESH.
+8. Dla INVITE CODE wpisz kod GM-XXXXXX w pole JOIN INVITE CODE / IP:PORT.
 
-OPEN:
-- sesja pojawia sie automatycznie w przegladarce LAN,
-- kod nie jest wymagany.
+JAK ZAGRAC PRZEZ INTERNET:
+1. Host wybiera CUSTOM GAME -> ONLINE -> CREATE SESSION.
+2. Wybiera NETWORK REACH: INTERNET oraz ACCESS: INVITE CODE.
+3. Gra uruchamia cloudflared i czeka na publiczny adres WSS.
+4. Host kopiuje kod GMT1-... i przesyla go znajomemu.
+5. Znajomy wkleja ten sam kod w polu JOIN CODE i naciska JOIN.
+6. Host musi pozostac uruchomiony; po restarcie kod przestaje dzialac.
 
-INVITE CODE:
-- sesja nie pojawia sie na otwartej liscie,
-- dolaczenie wymaga lokalnego kodu GM-XXXXXX,
-- host sprawdza kod przed przydzieleniem slotu gracza.
+INTERNET + OPEN jest dostepne, ale zalezne od eksperymentalnego DHT i jest mniej niezawodne niz INVITE CODE.
+Nie przekierowuj portu 7777 na routerze. Internetowy host potrzebuje tylko lacznosci wychodzacej HTTPS/TCP 443.
 
 PLIKI:
 - GunMayhem.exe - kompletna gra klient/host; hostujacy gracz jest serwerem meczu,
+- cloudflared.exe - klient Cloudflare Quick Tunnel do Internetowego multiplayeru,
 - assets/ - wymagane zasoby gry,
 - assets/gm2/ - wybrane zasoby runtime GM2,
 - data/ - lokalne ustawienia i zapisy tworzone na danym komputerze,
 - data/network.log - log diagnostyczny multiplayera,
 - MULTIPLAYER.md - dokladniejszy opis multiplayera.
 
-Wersja paczki: v0.16.0 / Windows x64, multiplayer LAN only.
+Wersja paczki: v0.16.0 / Windows x64, LAN + eksperymentalny Internet Quick Tunnel.
 `) + "\r\n"
 	if err := os.WriteFile(filepath.Join(outRoot, "MULTIPLAYER_TEST.txt"), []byte(instructions), 0o644); err != nil {
 		panic(err)

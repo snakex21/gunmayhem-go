@@ -4,7 +4,7 @@ A source-faithful reimplementation of **Gun Mayhem** in Go using [Ebitengine](ht
 
 The goal is not to reproduce the original Flash code structure. The goal is to reproduce **how the game actually behaves**: movement, weapons, AI, campaign rules, HUD timing, Flash timelines, map geometry, effects and all the small edge cases that made the original game feel the way it did.
 
-> **Status:** work in progress. The game is playable, but this repository is still being compared against the original Flash source and corrected mechanic by mechanic. Multiplayer in the current public release is **LAN-only**; Internet multiplayer remains experimental and is disabled in the released UI.
+> **Status:** work in progress. The game is playable, but this repository is still being compared against the original Flash source and corrected mechanic by mechanic. Multiplayer supports LAN plus an experimental Cloudflare Quick Tunnel path; Internet hosting should be treated as a temporary test feature.
 
 ## Goals
 
@@ -55,7 +55,7 @@ A fresh clone contains the runtime assets required by the Go port in `assets/`, 
 
 ## Build
 
-On Windows, use `build.bat`. It runs the tests with project-local Go scratch/cache directories and builds `GunMayhem.exe` as a Windows GUI application, so launching the game does not open a console window.
+On Windows, use `build.bat`. It runs the tests, downloads the pinned `cloudflared.exe` client, builds `GunMayhem.exe` as a Windows GUI application, and creates a portable package containing the tunnel client.
 
 Manual Windows build:
 
@@ -87,7 +87,7 @@ Tagged Windows release builds check `snakex21/gunmayhem-go` GitHub Releases asyn
 
 The updater uses the release ZIP `GunMayhem-Windows-x64.zip` (the older `GunMayhem-Multiplayer-Portable.zip` name is also accepted), installs files after the running game exits, preserves the local `data/` directory, restarts the new executable and removes the downloaded ZIP/helper afterward. Update work files stay under the game's own `data/update/` directory; the system TEMP directory is not used.
 
-`build.bat` injects the exact Git tag as the application version when HEAD is on a tag. The current LAN-only release line defaults to `v0.16.0`; `GUNMAYHEM_VERSION=vX.Y.Z` can override it explicitly. For a release: build from the release tag (or set that environment variable), run `go run ./scripts/package_portable.go`, then attach `build/GunMayhem-Windows-x64.zip` to the GitHub Release with the same/newer version tag.
+`build.bat` injects the exact Git tag as the application version when HEAD is on a tag. The current release line defaults to `v0.16.0`; `GUNMAYHEM_VERSION=vX.Y.Z` can override it explicitly. For a release: build from the release tag (or set that environment variable), run `go run ./scripts/package_portable.go`, then attach `build/GunMayhem-Windows-x64.zip` to the GitHub Release with the same/newer version tag. The package includes the pinned `cloudflared.exe` required for the experimental Internet path.
 
 ## Project structure
 
@@ -110,7 +110,7 @@ The updater uses the release ZIP `GunMayhem-Windows-x64.zip` (the older `GunMayh
 
 See [ASSETS.md](ASSETS.md) for the runtime/reference split. The Go runtime reads only `assets/`; `source/` is kept separate for 1:1 reverse-engineering work.
 
-The developed `main` branch unifies local and LAN network play inside **Custom Game**. The shared player setup supports local humans, LAN human slots, AI bots and empty slots (including mixed matches such as 2 humans vs 2 bots), while LAN play keeps authoritative hosting, synchronized setup/rules, server discovery and join-in-progress. Internet networking experiments remain in the source tree but are disabled in the public release. Custom Game can also run a configurable 1-20 round playlist where every round stores its own map, with per-map READY flow in network play and cumulative per-nickname standings. Chaos Mode can rotate a host-selected pool of weapon, movement, environmental and hazard events during a match, including grenade/dynamite/Molotov rain and crate/powerup storms. See [MULTIPLAYER.md](MULTIPLAYER.md) for details.
+The developed `main` branch unifies local and LAN network play inside **Custom Game**. The shared player setup supports local humans, LAN human slots, AI bots and empty slots (including mixed matches such as 2 humans vs 2 bots), while LAN play keeps authoritative hosting, synchronized setup/rules, server discovery and join-in-progress. Internet hosting is available as an experimental Cloudflare Quick Tunnel path in this build; see `MULTIPLAYER.md` for its DHT directory, invite-code mode, firewall setup and limitations. Custom Game can also run a configurable 1-20 round playlist where every round stores its own map, with per-map READY flow in network play and cumulative per-nickname standings. Chaos Mode can rotate a host-selected pool of weapon, movement, environmental and hazard events during a match, including grenade/dynamite/Molotov rain and crate/powerup storms. See [MULTIPLAYER.md](MULTIPLAYER.md) for details.
 
 ## Development rule
 

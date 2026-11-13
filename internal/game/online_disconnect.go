@@ -55,6 +55,17 @@ func (g *Game) clearDisconnectedOnlineHumanSlots() {
 	g.syncOnlineHostState()
 }
 
+// onlineSlotTypesForDiagnostic renders the configured type of every player slot
+// (0 empty, 1 human, 2 AI) so an aborted match can be explained from the log
+// alone, without guessing which side went away.
+func (g *Game) onlineSlotTypesForDiagnostic() []int {
+	out := make([]int, 0, maxOnlinePlayers)
+	for id := 1; id <= maxOnlinePlayers; id++ {
+		out = append(out, g.customPlayers[id-1].Type)
+	}
+	return out
+}
+
 // returnOnlineHostToLobbyIfAlone keeps the hosted session alive but aborts the
 // current online match when fewer than two active participants remain. It sends
 // the host back to the unified Custom Game SLOTS page, not the obsolete lobby.
@@ -84,6 +95,7 @@ func (g *Game) returnOnlineHostToLobbyIfAlone() bool {
 	g.resetChaosRuntime()
 	g.clearDisconnectedOnlineHumanSlots()
 	g.openOnlineCustomSlots("PLAYER LEFT - WAITING FOR PLAYER / ADD AI")
-	networkDiagnostic("HOST match aborted: fewer than two active participants; returned to Custom Game SLOTS")
+	networkDiagnostic("HOST match aborted: fewer than two active participants; returned to Custom Game SLOTS connected=%v slots=%v online=%v",
+		g.netplay.connectedPlayerIDs(), g.onlineSlotTypesForDiagnostic(), g.onlinePlayerSlots)
 	return true
 }

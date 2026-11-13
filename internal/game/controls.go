@@ -4,8 +4,8 @@ package game
 // savedata2.data.controlarray. The original game calls Key.isDown(number), so
 // keeping these numeric codes avoids keyboard-layout reinterpretation.
 type Controls struct {
-	Up, Left, Down, Right int
-	Shoot, Grenade        int
+	Up, Left, Down, Right int `cbor:",omitempty"`
+	Shoot, Grenade        int `cbor:",omitempty"`
 }
 
 // Original defaults from frame_2/DoAction.as controlarray.

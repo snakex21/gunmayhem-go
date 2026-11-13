@@ -48,135 +48,138 @@ type netSFXEvent struct {
 }
 
 type netProbeInfo struct {
-	ID                   string
-	Name                 string
-	Players              int
-	MaxPlayers           int
-	GameMode             int
-	Lives                int
-	Rounds               int
-	Maps                 [customSeriesMaxRounds]int
-	PlaylistConfigured   bool
-	Crates               bool
-	Pickups              bool
-	RuleSummary          string
-	ChaosEnabled         bool
-	ChaosEvents          int
-	ChaosIntervalSeconds int
-	DirectAddress        string
-	TunnelAddress        string
+	ID                   string                     `cbor:",omitempty"`
+	Name                 string                     `cbor:",omitempty"`
+	Players              int                        `cbor:",omitempty"`
+	MaxPlayers           int                        `cbor:",omitempty"`
+	GameMode             int                        `cbor:",omitempty"`
+	Lives                int                        `cbor:",omitempty"`
+	Rounds               int                        `cbor:",omitempty"`
+	Maps                 [customSeriesMaxRounds]int `cbor:",omitempty"`
+	PlaylistConfigured   bool                       `cbor:",omitempty"`
+	Crates               bool                       `cbor:",omitempty"`
+	Pickups              bool                       `cbor:",omitempty"`
+	RuleSummary          string                     `cbor:",omitempty"`
+	ChaosEnabled         bool                       `cbor:",omitempty"`
+	ChaosEvents          int                        `cbor:",omitempty"`
+	ChaosIntervalSeconds int                        `cbor:",omitempty"`
+	DirectAddress        string                     `cbor:",omitempty"`
+	TunnelAddress        string                     `cbor:",omitempty"`
 }
 
 type netWireMessage struct {
-	Type      int
-	Protocol  int
-	PlayerID  int
-	Challenge string
-	AuthProof string
-	Probe     netProbeInfo
-	Input     PlayerInputState
-	Config    CustomPlayerConfig
-	Ready     bool
-	State     netSnapshot
+	Type      int                `cbor:",omitempty"`
+	Protocol  int                `cbor:",omitempty"`
+	PlayerID  int                `cbor:",omitempty"`
+	Challenge string             `cbor:",omitempty"`
+	AuthProof string             `cbor:",omitempty"`
+	Probe     netProbeInfo       `cbor:",omitempty"`
+	Input     PlayerInputState   `cbor:",omitempty"`
+	Config    CustomPlayerConfig `cbor:",omitempty"`
+	Ready     bool               `cbor:",omitempty"`
+	State     netSnapshot        `cbor:",omitempty"`
 }
 
 // netSnapshot is deliberately a render-complete snapshot of the authoritative
 // host. The client does not run combat physics; it renders the newest host
 // snapshot and only sends its local input back to the host.
 type netSnapshot struct {
-	Screen int
-	Arena  Map
+	// cbor:",omitempty" on snapshot fields keeps the render-complete state small.
+	// The host sends one of these per game frame over a Cloudflare WSS link, so
+	// the mostly-zero fields were previously pure overhead.
+	Screen int `cbor:",omitempty"`
+	Arena  Map `cbor:",omitempty"`
 
-	Players        []Player
-	Bullets        []Bullet
-	InstagibTrails []InstagibTrailEffect
-	PlayerTrails   []PlayerTrailEffect
-	Shells         []Shell
-	Flashes        []MuzzleFlash
-	Grenades       []Grenade
-	FirePatches    []FirePatch
-	Portals        []Portal
-	DynamiteFX     []DynamiteEffect
-	BlastFX        []BlastEffect
-	JetThrustFX    []JetThrustEffect
-	DropPackFX     []DropPackEffect
-	Explosions     []Explosion
-	Killfeeds      []KillFeedEntry
-	Crates         []Crate
-	Powerups       []Powerup
-	PowerupNameFX  []PowerupNameEffect
-	LifeBlingFX    []LifeBlingEffect
-	SFXEvents      []netSFXEvent
+	Players        []Player              `cbor:",omitempty"`
+	Bullets        []Bullet              `cbor:",omitempty"`
+	InstagibTrails []InstagibTrailEffect `cbor:",omitempty"`
+	PlayerTrails   []PlayerTrailEffect   `cbor:",omitempty"`
+	Shells         []Shell               `cbor:",omitempty"`
+	Flashes        []MuzzleFlash         `cbor:",omitempty"`
+	Grenades       []Grenade             `cbor:",omitempty"`
+	FirePatches    []FirePatch           `cbor:",omitempty"`
+	Portals        []Portal              `cbor:",omitempty"`
+	DynamiteFX     []DynamiteEffect      `cbor:",omitempty"`
+	BlastFX        []BlastEffect         `cbor:",omitempty"`
+	JetThrustFX    []JetThrustEffect     `cbor:",omitempty"`
+	DropPackFX     []DropPackEffect      `cbor:",omitempty"`
+	Explosions     []Explosion           `cbor:",omitempty"`
+	Killfeeds      []KillFeedEntry       `cbor:",omitempty"`
+	Crates         []Crate               `cbor:",omitempty"`
+	Powerups       []Powerup             `cbor:",omitempty"`
+	PowerupNameFX  []PowerupNameEffect   `cbor:",omitempty"`
+	LifeBlingFX    []LifeBlingEffect     `cbor:",omitempty"`
+	SFXEvents      []netSFXEvent         `cbor:",omitempty"`
 
-	MapFXFrame int
-	CameraX    float64
-	CameraY    float64
+	MapFXFrame int     `cbor:",omitempty"`
+	CameraX    float64 `cbor:",omitempty"`
+	CameraY    float64 `cbor:",omitempty"`
 
-	GameMode   int
-	TotalLives int
-	TeamGame   bool
-	CrateON    bool
-	PowerON    bool
-	GameWin    bool
+	GameMode   int  `cbor:",omitempty"`
+	TotalLives int  `cbor:",omitempty"`
+	TeamGame   bool `cbor:",omitempty"`
+	CrateON    bool `cbor:",omitempty"`
+	PowerON    bool `cbor:",omitempty"`
+	GameWin    bool `cbor:",omitempty"`
 
-	OnlineMatchSetup               bool
-	CustomPage                     int
-	CustomMenuX                    float64
-	CustomMode                     int
-	CustomMap                      int
-	CustomMapSetGM2                bool
-	CustomLives                    int
-	CustomSeriesRounds             int
-	CustomSeriesRound              int
-	CustomSeriesStats              [4]customSeriesPlayerStats
-	CustomSeriesMaps               [customSeriesMaxRounds]int
-	CustomSeriesPlaylistConfigured bool
-	ChaosEnabled                   bool
-	ChaosCurrentEffect             int
-	ChaosFrame                     int
-	ChaosBannerFrame               int
-	ChaosIntervalSeconds           int
-	OnlinePlayerCount              int
-	OnlinePlayerSlots              [4]bool
-	OnlineCustomPlayers            [4]CustomPlayerConfig
-	OnlineMapRotation              int
-	OnlineWeaponMode               int
-	OnlineOnlyWeapon               int
-	OnlinePerksEnabled             bool
-	OnlinePowerupsEnabled          bool
-	OnlineBlockedWeapons           [developedWeaponSlotCount]bool
-	OnlineBlockedPerks             [10]bool
-	PostGameReady                  [4]bool
-	PostGameReadyCountdown         int
+	OnlineMatchSetup               bool                           `cbor:",omitempty"`
+	CustomPage                     int                            `cbor:",omitempty"`
+	CustomMenuX                    float64                        `cbor:",omitempty"`
+	CustomMode                     int                            `cbor:",omitempty"`
+	CustomMap                      int                            `cbor:",omitempty"`
+	CustomMapSetGM2                bool                           `cbor:",omitempty"`
+	CustomLives                    int                            `cbor:",omitempty"`
+	CustomSeriesRounds             int                            `cbor:",omitempty"`
+	CustomSeriesRound              int                            `cbor:",omitempty"`
+	CustomSeriesStats              [4]customSeriesPlayerStats     `cbor:",omitempty"`
+	CustomSeriesMaps               [customSeriesMaxRounds]int     `cbor:",omitempty"`
+	CustomSeriesPlaylistConfigured bool                           `cbor:",omitempty"`
+	ChaosEnabled                   bool                           `cbor:",omitempty"`
+	ChaosCurrentEffect             int                            `cbor:",omitempty"`
+	ChaosFrame                     int                            `cbor:",omitempty"`
+	ChaosBannerFrame               int                            `cbor:",omitempty"`
+	ChaosIntervalSeconds           int                            `cbor:",omitempty"`
+	OnlinePlayerCount              int                            `cbor:",omitempty"`
+	OnlinePlayerSlots              [4]bool                        `cbor:",omitempty"`
+	OnlineCustomPlayers            [4]CustomPlayerConfig          `cbor:",omitempty"`
+	OnlineMapRotation              int                            `cbor:",omitempty"`
+	OnlineWeaponMode               int                            `cbor:",omitempty"`
+	OnlineOnlyWeapon               int                            `cbor:",omitempty"`
+	OnlinePerksEnabled             bool                           `cbor:",omitempty"`
+	OnlinePowerupsEnabled          bool                           `cbor:",omitempty"`
+	OnlineBlockedWeapons           [developedWeaponSlotCount]bool `cbor:",omitempty"`
+	OnlineBlockedPerks             [10]bool                       `cbor:",omitempty"`
+	PostGameReady                  [4]bool                        `cbor:",omitempty"`
+	PostGameReadyCountdown         int                            `cbor:",omitempty"`
 
-	Paused            bool
-	PausePressed      int
-	FadeActive        bool
-	FadeFrame         int
-	FadeTarget        int
-	FadePurpose       int
-	MatchWinCountdown int
-	SoloWinFrame      int
-	TeamGameWin       bool
-	TeamWinner        int
-	WinnerPlayerID    int
-	WinnerAnimFrame   int
-	TeamWinAnimFrame  int
-	CampaignLoseFrame int
-	ZombieWaveFrame   int
+	Paused            bool `cbor:",omitempty"`
+	PausePressed      int  `cbor:",omitempty"`
+	FadeActive        bool `cbor:",omitempty"`
+	FadeFrame         int  `cbor:",omitempty"`
+	FadeTarget        int  `cbor:",omitempty"`
+	FadePurpose       int  `cbor:",omitempty"`
+	MatchWinCountdown int  `cbor:",omitempty"`
+	SoloWinFrame      int  `cbor:",omitempty"`
+	TeamGameWin       bool `cbor:",omitempty"`
+	TeamWinner        int  `cbor:",omitempty"`
+	WinnerPlayerID    int  `cbor:",omitempty"`
+	WinnerAnimFrame   int  `cbor:",omitempty"`
+	TeamWinAnimFrame  int  `cbor:",omitempty"`
+	CampaignLoseFrame int  `cbor:",omitempty"`
+	ZombieWaveFrame   int  `cbor:",omitempty"`
 
-	HUDLastLifeFrame   [4]int
-	HUDLastLifePlaying [4]bool
-	HUDLastLevel       [4]int
+	HUDLastLifeFrame   [4]int  `cbor:",omitempty"`
+	HUDLastLifePlaying [4]bool `cbor:",omitempty"`
+	HUDLastLevel       [4]int  `cbor:",omitempty"`
 
-	CampaignMode  bool
-	CampaignLevel int
+	CampaignMode  bool `cbor:",omitempty"`
+	CampaignLevel int  `cbor:",omitempty"`
 
-	Gototest        bool
-	TestGunNumber   int
-	TestGunDisabled bool
-	TestGunRespawn  int
-	TestGunFrame    int
+	Gototest        bool `cbor:",omitempty"`
+	TestGunNumber   int  `cbor:",omitempty"`
+	TestGunDisabled bool `cbor:",omitempty"`
+	TestGunRespawn  int  `cbor:",omitempty"`
+	TestGunFrame    int  `cbor:",omitempty"`
 }
 
 type netplayPeer struct {
@@ -576,9 +579,11 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 	}()
 
 	var rate netRateGuard
+	var peerReadErr error
 	for !s.closed.Load() && !peer.closed.Load() {
 		var msg netWireMessage
 		if err := peer.link.Read(maxClientWireFrame, &msg); err != nil {
+			peerReadErr = err
 			if !errors.Is(err, net.ErrClosed) && !peer.closed.Load() {
 				s.setErr(err)
 			}
@@ -618,10 +623,23 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 	peer.close()
 	<-writerDone
 	s.peersMu.Lock()
+	removed := false
 	if current := s.peers[peer.playerID]; current == peer {
 		delete(s.peers, peer.playerID)
+		removed = true
+	}
+	remaining := make([]int, 0, len(s.peers))
+	for id := 2; id <= maxOnlinePlayers; id++ {
+		if _, ok := s.peers[id]; ok {
+			remaining = append(remaining, id)
+		}
 	}
 	s.peersMu.Unlock()
+	// Without this line a match abort is indistinguishable from a genuine client
+	// disconnect: the guard only reports "fewer than two participants".
+	if removed {
+		networkDiagnostic("HOST peer disconnected player=%d addr=%s err=%v remaining=%v", peer.playerID, peer.addr, peerReadErr, remaining)
+	}
 }
 
 func (s *netplaySession) clientRun(link *netplayLink) {
@@ -1059,10 +1077,9 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 				return fmt.Errorf("start Internet tunnel: %w", tunnelErr)
 			}
 			g.cloudflareTunnel = tunnel
-			if _, tunnelErr = tunnel.WaitReady(cloudflareTunnelStartWindow); tunnelErr != nil {
-				_ = g.CloseNetplay()
-				return fmt.Errorf("start Internet tunnel: %w", tunnelErr)
-			}
+			// Do not block the game thread while Cloudflare allocates and health-checks
+			// a public URL. OPEN discovery waits for this monitor before publishing.
+			tunnel.monitorStartup()
 		}
 	}
 
@@ -1072,7 +1089,7 @@ func (g *Game) StartNetHostConfig(addr string, scope, visibility int) error {
 	// INVITE ONLY needs no public DHT publication because its code contains the
 	// temporary tunnel hostname and authentication secret directly.
 	if scope == onlineSessionScopeInternet && (visibility == onlineSessionOpen || g.cloudflareTunnel == nil) {
-		if p2p, p2pErr := startP2PQUICHost(s, visibility, authKey); p2pErr == nil {
+		if p2p, p2pErr := startP2PQUICHostWithTunnel(s, visibility, authKey, g.cloudflareTunnel); p2pErr == nil {
 			g.p2pHost = p2p
 		} else if g.cloudflareTunnel != nil {
 			_ = g.CloseNetplay()
@@ -1115,15 +1132,19 @@ func (g *Game) StartNetClient(addr string) error {
 		return errors.New("nil game")
 	}
 	_ = g.CloseNetplay()
+	networkDiagnostic("JOIN path=manual dial start address=%s", addr)
 	s, err := newClientNetplay(addr)
 	if err != nil {
+		networkDiagnostic("JOIN path=manual dial failed address=%s err=%v", addr, err)
 		return err
 	}
 	if err := waitForClientHandshake(s, netHandshakeTimeout+time.Second); err != nil {
+		networkDiagnostic("JOIN path=manual handshake failed address=%s err=%v", addr, err)
 		_ = s.Close()
 		return err
 	}
 	g.netplay = s
+	networkDiagnostic("JOIN path=manual ready address=%s player=%d", addr, s.assignedPlayer())
 	return nil
 }
 
@@ -1199,7 +1220,11 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 	}
 	networkDiagnostic("JOIN start name=%q source=%q transport=%q address=%s relay=%s", server.Name, server.Sources, server.Transport, server.Address, server.RelayAddress)
 	defer func() {
-		networkDiagnostic("JOIN finish address=%s err=%v", server.Address, finalErr)
+		player := 0
+		if g.netplay != nil {
+			player = g.netplay.assignedPlayer()
+		}
+		networkDiagnostic("JOIN finish address=%s transport=%s player=%d err=%v", server.Address, server.Transport, player, finalErr)
 	}()
 	_ = g.CloseNetplay()
 
@@ -1208,15 +1233,19 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 		if address == "" {
 			address = strings.TrimSpace(server.Address)
 		}
+		networkDiagnostic("JOIN path=cloudflare selected tunnel=%s advertised=%s", address, server.Address)
 		s, err := newClientNetplayCloudflare(address, "", 8*time.Second)
 		if err != nil {
+			networkDiagnostic("JOIN path=cloudflare dial failed tunnel=%s err=%v", address, err)
 			return err
 		}
 		if err := waitForClientHandshake(s, netHandshakeTimeout+time.Second); err != nil {
+			networkDiagnostic("JOIN path=cloudflare handshake failed tunnel=%s err=%v", address, err)
 			_ = s.Close()
 			return err
 		}
 		g.netplay = s
+		networkDiagnostic("JOIN path=cloudflare ready tunnel=%s player=%d", address, s.assignedPlayer())
 		return nil
 	}
 
@@ -1226,25 +1255,31 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 		if direct := strings.TrimSpace(server.DirectAddress); direct != "" {
 			if s, err := tryDirectClientSession(direct, "", 1800*time.Millisecond); err == nil {
 				g.netplay = s
+				networkDiagnostic("JOIN path=quic-direct ready address=%s player=%d", direct, s.assignedPlayer())
 				return nil
 			} else {
 				networkDiagnostic("JOIN direct advertised path failed address=%s err=%v", direct, err)
 			}
 		}
+		networkDiagnostic("JOIN path=quic dial start address=%s", server.Address)
 		conn, err := dialP2PQUIC(server.Address, "", p2pDialTimeout)
 		if err != nil {
+			networkDiagnostic("JOIN path=quic dial failed address=%s err=%v", server.Address, err)
 			return err
 		}
 		s, err := newClientNetplayFromConn(conn, "P2P "+server.Address)
 		if err != nil {
+			networkDiagnostic("JOIN path=quic session failed address=%s err=%v", server.Address, err)
 			_ = conn.Close()
 			return err
 		}
 		if err := waitForClientHandshake(s, 4*time.Second); err != nil {
+			networkDiagnostic("JOIN path=quic handshake failed address=%s err=%v", server.Address, err)
 			_ = s.Close()
 			return err
 		}
 		g.netplay = s
+		networkDiagnostic("JOIN path=quic ready address=%s player=%d", server.Address, s.assignedPlayer())
 		return nil
 	}
 
@@ -1258,33 +1293,44 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 		if strings.TrimSpace(server.RelayAddress) != "" && relayID != "" {
 			directTimeout = 750 * time.Millisecond
 		}
+		networkDiagnostic("JOIN path=direct dial start address=%s timeout=%s relay=%s", server.Address, directTimeout, server.RelayAddress)
 		if s, err := newClientNetplayWithTimeout(server.Address, directTimeout); err == nil {
 			if handshakeErr := waitForClientHandshake(s, netHandshakeTimeout+time.Second); handshakeErr == nil {
 				g.netplay = s
+				networkDiagnostic("JOIN path=direct ready address=%s player=%d", server.Address, s.assignedPlayer())
 				return nil
 			} else {
+				networkDiagnostic("JOIN path=direct handshake failed address=%s err=%v", server.Address, handshakeErr)
 				directErr = handshakeErr
 				_ = s.Close()
 			}
 		} else {
+			networkDiagnostic("JOIN path=direct dial failed address=%s err=%v", server.Address, err)
 			directErr = err
 		}
 	}
 	if strings.TrimSpace(server.RelayAddress) != "" && relayID != "" {
+		networkDiagnostic("JOIN path=relay dial start relay=%s id=%s", server.RelayAddress, relayID)
 		conn, err := dialRelayNetplay(server.RelayAddress, relayID)
 		if err == nil {
 			s, sessionErr := newClientNetplayFromConn(conn, "relay "+server.RelayAddress)
 			if sessionErr == nil {
 				if handshakeErr := waitForClientHandshake(s, netHandshakeTimeout+time.Second); handshakeErr == nil {
 					g.netplay = s
+					networkDiagnostic("JOIN path=relay ready relay=%s player=%d", server.RelayAddress, s.assignedPlayer())
 					return nil
 				} else {
+					networkDiagnostic("JOIN path=relay handshake failed relay=%s err=%v", server.RelayAddress, handshakeErr)
 					sessionErr = handshakeErr
 					_ = s.Close()
 				}
+			} else {
+				networkDiagnostic("JOIN path=relay session failed relay=%s err=%v", server.RelayAddress, sessionErr)
 			}
 			_ = conn.Close()
 			err = sessionErr
+		} else {
+			networkDiagnostic("JOIN path=relay dial failed relay=%s err=%v", server.RelayAddress, err)
 		}
 		if directErr != nil {
 			return fmt.Errorf("direct connection failed: %v; relay failed: %w", directErr, err)
@@ -1292,6 +1338,7 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 		return fmt.Errorf("relay failed: %w", err)
 	}
 	if directErr != nil {
+		networkDiagnostic("JOIN all paths failed address=%s directErr=%v", server.Address, directErr)
 		return directErr
 	}
 	return errors.New("server has no usable address")

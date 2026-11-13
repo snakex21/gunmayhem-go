@@ -44,6 +44,17 @@ func globalOpenDHTLookupHashes(now time.Time) [][20]byte {
 	}
 }
 
+// globalOpenDHTAnnouncementHashes publishes both the active rendezvous window
+// and the next one. Browsers look up the active and previous windows, so this
+// keeps OPEN sessions discoverable across a window boundary without leaving a
+// gap while the host waits for its next re-announcement.
+func globalOpenDHTAnnouncementHashes(now time.Time) [][20]byte {
+	return [][20]byte{
+		globalOpenDHTInfoHashAt(now),
+		globalOpenDHTInfoHashAt(now.Add(globalDHTSessionWindow)),
+	}
+}
+
 var globalDHTBootstrap = []string{
 	"router.bittorrent.com:6881",
 	"router.utorrent.com:6881",

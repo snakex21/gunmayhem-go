@@ -14,16 +14,9 @@ import (
 
 const configureArg = "--gunmayhem-configure-network"
 
-const (
-	lanGameplayPort  = 7777
-	lanDiscoveryPort = 7778
-)
-
 var (
 	shell32           = syscall.NewLazyDLL("shell32.dll")
 	procShellExecuteW = shell32.NewProc("ShellExecuteW")
-	ruleDiscovery     = "Gun Mayhem LAN Discovery"
-	ruleGameplay      = "Gun Mayhem LAN Gameplay"
 )
 
 func HandleSpecialMode(args []string) (bool, error) {
@@ -34,55 +27,54 @@ func HandleSpecialMode(args []string) (bool, error) {
 }
 
 func EnsureConfigured() {
-	if firewallConfigured() {
+	executablePath, err := os.Executable()
+	if err == nil && firewallConfigured(executablePath) {
 		return
 	}
 	_ = launchElevatedHelper()
 }
 
-func firewallConfigured() bool {
-	return firewallRuleExists(ruleDiscovery) && firewallRuleExists(ruleGameplay)
+func firewallConfigured(executablePath string) bool {
+	for _, rule := range firewallRules(executablePath) {
+		if !firewallRuleExists(rule) {
+			return false
+		}
+	}
+	return true
 }
 
-func firewallRuleExists(name string) bool {
-	cmd := exec.Command("netsh", "advfirewall", "firewall", "show", "rule", "name="+name)
+func firewallRuleExists(rule firewallRule) bool {
+	cmd := exec.Command("netsh", firewallShowArgs(rule.name)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return false
 	}
-	return bytes.Contains(bytes.ToLower(out), bytes.ToLower([]byte(name)))
+	return firewallOutputHasProgram(out, rule.program)
 }
 
 func configureFirewall() error {
-	if err := replaceRule(ruleDiscovery, "UDP", lanDiscoveryPort); err != nil {
+	executablePath, err := os.Executable()
+	if err != nil {
 		return err
 	}
-	if err := replaceRule(ruleGameplay, "TCP", lanGameplayPort); err != nil {
-		return err
+	for _, rule := range firewallRules(executablePath) {
+		if err := replaceRule(rule); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func replaceRule(name, protocol string, port int) error {
-	deleteCmd := exec.Command("netsh", "advfirewall", "firewall", "delete", "rule", "name="+name)
+func replaceRule(rule firewallRule) error {
+	deleteCmd := exec.Command("netsh", firewallDeleteArgs(rule.name)...)
 	deleteCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	_ = deleteCmd.Run()
 
-	addCmd := exec.Command(
-		"netsh", "advfirewall", "firewall", "add", "rule",
-		"name="+name,
-		"dir=in",
-		"action=allow",
-		"protocol="+protocol,
-		fmt.Sprintf("localport=%d", port),
-		"profile=any",
-		"remoteip=LocalSubnet",
-		"enable=yes",
-	)
+	addCmd := exec.Command("netsh", firewallAddArgs(rule)...)
 	addCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if out, err := addCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("firewall rule %q: %w (%s)", name, err, bytes.TrimSpace(out))
+		return fmt.Errorf("firewall rule %q: %w (%s)", rule.name, err, bytes.TrimSpace(out))
 	}
 	return nil
 }

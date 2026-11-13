@@ -2,7 +2,7 @@ package game
 
 import "testing"
 
-func TestHostSetupReleaseStaysLANOnly(t *testing.T) {
+func TestHostSetupSelectsInternetScope(t *testing.T) {
 	g := New()
 	g.customHostSetupOpen = true
 	g.multiplayerSessionName = "Weekend Chaos"
@@ -13,20 +13,20 @@ func TestHostSetupReleaseStaysLANOnly(t *testing.T) {
 	}
 
 	g.activateCustomHostSetupHit(menuHitCustomHostScopeInternet)
-	if g.customHostScope != onlineSessionScopeLAN || g.customHostAccess != onlineSessionInviteOnly {
-		t.Fatalf("disabled Internet option changed release scope: scope=%d access=%d", g.customHostScope, g.customHostAccess)
+	if g.customHostScope != onlineSessionScopeInternet || g.customHostAccess != onlineSessionInviteOnly {
+		t.Fatalf("INTERNET+INVITE selection mismatch: scope=%d access=%d", g.customHostScope, g.customHostAccess)
 	}
 	if g.multiplayerMessage == "" {
-		t.Fatal("disabled Internet option did not explain that the release is LAN-only")
+		t.Fatal("Internet option did not explain the Quick Tunnel path")
 	}
 
 	g.activateCustomHostSetupHit(menuHitCustomHostAccessOpen)
-	if g.customHostScope != onlineSessionScopeLAN || g.customHostAccess != onlineSessionOpen {
-		t.Fatalf("changing access unexpectedly changed LAN scope: scope=%d access=%d", g.customHostScope, g.customHostAccess)
+	if g.customHostScope != onlineSessionScopeInternet || g.customHostAccess != onlineSessionOpen {
+		t.Fatalf("changing access unexpectedly changed Internet scope: scope=%d access=%d", g.customHostScope, g.customHostAccess)
 	}
 
 	g.activateCustomHostSetupHit(menuHitCustomHostBack)
-	if g.multiplayerSessionName != "Weekend Chaos" || g.customHostScope != onlineSessionScopeLAN || g.customHostAccess != onlineSessionOpen {
+	if g.multiplayerSessionName != "Weekend Chaos" || g.customHostScope != onlineSessionScopeInternet || g.customHostAccess != onlineSessionOpen {
 		t.Fatal("host setup values were reset when closing create-session screen")
 	}
 }

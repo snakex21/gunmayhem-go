@@ -1,23 +1,29 @@
 # Multiplayer / Custom Game
 
-Gun Mayhem Go uses the host player's PC as the authoritative game server. In the current public release, multiplayer is supported **only inside a local network (LAN)**.
+Gun Mayhem Go uses the host player's PC as the authoritative game server. The current build supports **LAN** and an experimental **Internet** path based on Cloudflare Quick Tunnels.
 
-Internet multiplayer experiments using DHT, QUIC, relay/master-server and Cloudflare Quick Tunnels remain in the source tree for future work, but they are not exposed as a supported gameplay path in this release because they are not reliable enough yet.
+Internet multiplayer is intentionally experimental. Quick Tunnels are useful for testing with friends, but they are temporary public endpoints and are not a production-grade, low-latency matchmaking service.
 
 ## Supported multiplayer modes
 
-Open **CUSTOM GAME -> LAN -> CREATE SESSION**.
+Open **CUSTOM GAME -> ONLINE -> CREATE SESSION**.
 
-The supported network reach is:
+The available network reach modes are:
 
 - **LAN ONLY** - players connected to the same local network.
+- **INTERNET + LAN** - the host also starts a temporary Cloudflare Quick Tunnel. **INVITE CODE** is recommended.
 
-Internet hosting is shown as disabled in the session setup screen.
+Internet hosting is shown as an experimental option in the session setup screen. It requires the bundled `cloudflared.exe` (or a binary selected with `GUNMAYHEM_CLOUDFLARED`).
 
 LAN sessions can use either access policy:
 
 - **OPEN** - the session appears automatically in the LAN server browser.
 - **INVITE CODE** - the session stays hidden and a joining player must enter the generated `GM-XXXXXX` code.
+
+Internet sessions also support both access policies:
+
+- **OPEN** - the temporary tunnel is published through the experimental DHT directory; this is less reliable than an invite.
+- **INVITE CODE** - the host displays a `GMT1-...` code containing the temporary tunnel hostname and session secret. The recipient pastes that code into the normal JOIN CODE field.
 
 Returning from the hosted lobby or match setup to the server browser closes the host session immediately while keeping the Custom Game configuration in memory until the game is closed.
 
@@ -31,7 +37,7 @@ A player can:
 
 LAN discovery uses UDP port `7778`. The gameplay listener uses TCP port `7777` by default.
 
-If Windows Firewall asks for permission, allow `GunMayhem.exe` on private networks.
+If Windows Firewall asks for permission, allow `GunMayhem.exe` on private networks. On the first launch after moving the portable folder, the game asks for administrator approval once and creates path-specific rules for the current `GunMayhem.exe` and `cloudflared.exe`; moving the folder again causes the path check to recreate them.
 
 ## OPEN LAN sessions
 
@@ -45,9 +51,13 @@ INVITE CODE sessions do not appear in the normal open LAN list. The host display
 
 The code is used for private LAN discovery and authentication. The client proves knowledge of the session key before receiving a player slot.
 
-## Custom Game series
+## Joining an Internet session
 
-Custom Game can run a configurable multi-map series in local and LAN multiplayer. Each map gets its own Post Game Summary and the series keeps cumulative statistics. In network play, connected human players can mark themselves ready between maps before the host continues.
+For the most reliable experimental Internet flow, the host chooses **INTERNET + INVITE CODE** and sends the displayed `GMT1-...` code to the other player. The player enters it in the same JOIN CODE field used for LAN codes. The host must keep the game running; restarting it creates a different tunnel and invalidates the old code.
+
+The Quick Tunnel uses outbound TCP/UDP `7844` for the tunnel and HTTPS/TCP `443` for the public health check and WSS connection. No router port-forwarding is required. Creating the session no longer waits on the game screen for Cloudflare readiness: the UI returns immediately and publishes an OPEN session only after the public endpoint becomes healthy. The endpoint is temporary and must not be treated as a permanent server address. Internet + OPEN relies on the experimental DHT directory and may fail when UDP/DHT discovery is blocked; use an invite code when possible.
+
+Quick Tunnel traffic passes through Cloudflare. Do not share an invite code publicly: possession of the code grants access to the session.
 
 ## Security model
 
@@ -68,6 +78,4 @@ Network hardening includes:
 
 ## Internet multiplayer status
 
-Internet multiplayer is **not supported in this release**.
-
-The repository still contains experimental work for direct P2P, DHT discovery, QUIC, optional master/relay infrastructure and Cloudflare WebSocket tunnels. These implementations are kept for continued development and for a future attempt with a stronger networking design, but the released game intentionally exposes only the working LAN path.
+Internet multiplayer is available as an **experimental** Quick Tunnel path in this build. It is best for temporary tests with a known player, not for public competitive release. The repository also contains experimental DHT, QUIC and optional relay/master-server infrastructure for future work.

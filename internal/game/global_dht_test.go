@@ -12,6 +12,37 @@ import (
 	quic "github.com/quic-go/quic-go"
 )
 
+func TestGlobalOpenDHTAnnouncementCoversWindowBoundary(t *testing.T) {
+	windowSeconds := int64(globalDHTSessionWindow / time.Second)
+	// Start one second before a boundary. The host must publish the next lookup
+	// window as well as the active one, otherwise browsers lose the session for
+	// a full re-announcement interval at every two-minute boundary.
+	started := time.Unix(windowSeconds*2-1, 0)
+	announced := make(map[[20]byte]bool)
+	for _, hash := range globalOpenDHTAnnouncementHashes(started) {
+		announced[hash] = true
+	}
+
+	for _, lookupAt := range []time.Time{
+		started.Add(2 * time.Second),
+		started.Add(globalDHTSessionWindow + 2*time.Second),
+	} {
+		found := false
+		for _, hash := range globalOpenDHTLookupHashes(lookupAt) {
+			if announced[hash] {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("announcement windows do not cover browser lookup at %s", lookupAt.UTC())
+		}
+	}
+	if p2pReannounceEvery > globalDHTAnnounceEvery {
+		t.Fatalf("P2P re-announcement interval %v exceeds DHT refresh interval %v", p2pReannounceEvery, globalDHTAnnounceEvery)
+	}
+}
+
 func TestDHTBencodeRoundTrip(t *testing.T) {
 	var id [20]byte
 	for i := range id {

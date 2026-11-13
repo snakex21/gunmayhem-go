@@ -27,7 +27,7 @@ const (
 	cloudflareInviteCodePrefix  = "GMT1-"
 	cloudflareTunnelHostSuffix  = ".trycloudflare.com"
 	cloudflareTunnelURLMaxLen   = 160
-	cloudflareTunnelStartWindow = 20 * time.Second
+	cloudflareTunnelStartWindow = 30 * time.Second
 )
 
 var quickTunnelURLRE = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
@@ -43,11 +43,12 @@ type cloudflareQuickTunnel struct {
 	wsURL     string
 	lastErr   error
 
-	ready     chan struct{}
-	readyOnce sync.Once
-	closeOnce sync.Once
-	closed    atomic.Bool
-	running   atomic.Bool
+	ready       chan struct{}
+	readyOnce   sync.Once
+	publicReady atomic.Bool
+	closeOnce   sync.Once
+	closed      atomic.Bool
+	running     atomic.Bool
 }
 
 type trackedWebSocketConn struct {
@@ -56,8 +57,20 @@ type trackedWebSocketConn struct {
 	once sync.Once
 }
 
+type cloudflareWebSocketAddr struct{}
+
+func (cloudflareWebSocketAddr) Network() string { return "cloudflare-wss" }
+func (cloudflareWebSocketAddr) String() string  { return "cloudflare-wss" }
+
 func newTrackedWebSocketConn(conn net.Conn) *trackedWebSocketConn {
 	return &trackedWebSocketConn{Conn: conn, done: make(chan struct{})}
+}
+
+// RemoteAddr returns the Cloudflare relay instead of nil for x/net/websocket
+// connections. The game uses this value as a diagnostic peer label; it is not
+// the player's real IP address.
+func (c *trackedWebSocketConn) RemoteAddr() net.Addr {
+	return cloudflareWebSocketAddr{}
 }
 
 func (c *trackedWebSocketConn) Close() error {
@@ -181,6 +194,30 @@ func startCloudflareQuickTunnel(session *netplaySession) (*cloudflareQuickTunnel
 	return tunnel, nil
 }
 
+// monitorStartup performs the potentially slow public /healthz wait outside the
+// game-thread call that creates a session. Status continues to expose STARTING
+// until the Cloudflare tunnel is ready.
+func (t *cloudflareQuickTunnel) monitorStartup() {
+	if t == nil {
+		return
+	}
+	go func() {
+		if _, err := t.WaitReady(cloudflareTunnelStartWindow); err != nil {
+			if t.closed.Load() {
+				return
+			}
+			t.setError(fmt.Errorf("Internet tunnel startup: %w", err))
+			networkDiagnostic("CLOUDFLARE quick tunnel startup failed: %v", err)
+			return
+		}
+		ready, publicURL, _, _ := t.Status()
+		if !ready {
+			return
+		}
+		networkDiagnostic("CLOUDFLARE quick tunnel startup ready public=%s", publicURL)
+	}()
+}
+
 func (t *cloudflareQuickTunnel) scanOutput(reader io.Reader) {
 	if t == nil || reader == nil {
 		return
@@ -204,6 +241,7 @@ func (t *cloudflareQuickTunnel) waitProcess() {
 	}
 	err := t.cmd.Wait()
 	t.running.Store(false)
+	t.publicReady.Store(false)
 	if t.session != nil {
 		t.session.setPublicTunnelURL("")
 	}
@@ -236,16 +274,16 @@ func (t *cloudflareQuickTunnel) setPublicURL(raw string) {
 		t.wsURL = wsURL
 		t.lastErr = nil
 	}
-	ready := t.wsURL != ""
+	wsURL = t.wsURL
 	t.mu.Unlock()
-	if !ready {
+	if wsURL == "" {
 		return
 	}
-	if t.session != nil {
-		t.session.setPublicTunnelURL(wsURL)
-	}
+	// cloudflared prints the Quick Tunnel hostname before its public DNS is
+	// necessarily resolvable. Publish the URL to our own waiter, but do not
+	// expose it to LAN/DHT clients until the public health endpoint succeeds.
 	t.readyOnce.Do(func() { close(t.ready) })
-	networkDiagnostic("CLOUDFLARE quick tunnel ready public=%s websocket=%s", publicURL, wsURL)
+	networkDiagnostic("CLOUDFLARE quick tunnel advertised public=%s websocket=%s", publicURL, wsURL)
 }
 
 func (t *cloudflareQuickTunnel) setError(err error) {
@@ -261,6 +299,49 @@ func (t *cloudflareQuickTunnel) setError(err error) {
 	}
 }
 
+func (t *cloudflareQuickTunnel) markPublicReady() (string, error) {
+	if t == nil {
+		return "", errors.New("Cloudflare tunnel is not running")
+	}
+	t.mu.RLock()
+	wsURL := t.wsURL
+	t.mu.RUnlock()
+	if wsURL == "" || !t.running.Load() || t.closed.Load() {
+		return "", errors.New("Cloudflare tunnel is not ready")
+	}
+	if t.publicReady.CompareAndSwap(false, true) && t.session != nil {
+		t.session.setPublicTunnelURL(wsURL)
+	}
+	t.mu.RLock()
+	publicURL := t.publicURL
+	t.mu.RUnlock()
+	networkDiagnostic("CLOUDFLARE quick tunnel ready public=%s websocket=%s", publicURL, wsURL)
+	return wsURL, nil
+}
+
+func probeCloudflareTunnelHealth(ctx context.Context, publicURL string) error {
+	publicURL = strings.TrimRight(strings.TrimSpace(publicURL), "/")
+	if publicURL == "" {
+		return errors.New("Cloudflare public URL is empty")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, publicURL+"/healthz", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Cache-Control", "no-cache")
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("Cloudflare health returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
 func (t *cloudflareQuickTunnel) Status() (ready bool, publicURL, wsURL string, err error) {
 	if t == nil {
 		return false, "", "", errors.New("Cloudflare tunnel is not running")
@@ -270,7 +351,7 @@ func (t *cloudflareQuickTunnel) Status() (ready bool, publicURL, wsURL string, e
 	wsURL = t.wsURL
 	err = t.lastErr
 	t.mu.RUnlock()
-	ready = wsURL != "" && t.running.Load() && !t.closed.Load()
+	ready = t.publicReady.Load() && wsURL != "" && t.running.Load() && !t.closed.Load()
 	return ready, publicURL, wsURL, err
 }
 
@@ -286,20 +367,42 @@ func (t *cloudflareQuickTunnel) WaitReady(timeout time.Duration) (string, error)
 	} else if err != nil {
 		return "", err
 	}
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-	select {
-	case <-t.ready:
-		ready, _, wsURL, err := t.Status()
-		if ready {
+	deadline := time.Now().Add(timeout)
+	var lastHealthErr error
+	for {
+		if ready, _, wsURL, err := t.Status(); ready {
 			return wsURL, nil
-		}
-		if err != nil {
+		} else if err != nil {
 			return "", err
 		}
-		return "", errors.New("Cloudflare tunnel did not become ready")
-	case <-timer.C:
-		return "", errors.New("Cloudflare tunnel startup timed out")
+		_, publicURL, _, _ := t.Status()
+		if publicURL != "" {
+			probeTimeout := time.Until(deadline)
+			if probeTimeout <= 0 {
+				return "", fmt.Errorf("Cloudflare tunnel startup timed out waiting for public health: %w", lastHealthErr)
+			}
+			if probeTimeout > 2*time.Second {
+				probeTimeout = 2 * time.Second
+			}
+			probeCtx, cancel := context.WithTimeout(context.Background(), probeTimeout)
+			healthErr := probeCloudflareTunnelHealth(probeCtx, publicURL)
+			cancel()
+			if healthErr == nil {
+				return t.markPublicReady()
+			}
+			lastHealthErr = healthErr
+			networkDiagnostic("CLOUDFLARE quick tunnel health pending public=%s err=%v", publicURL, healthErr)
+		}
+		if time.Now().After(deadline) {
+			if lastHealthErr != nil {
+				return "", fmt.Errorf("Cloudflare tunnel startup timed out waiting for public health: %w", lastHealthErr)
+			}
+			return "", errors.New("Cloudflare tunnel startup timed out")
+		}
+		select {
+		case <-t.ready:
+		case <-time.After(250 * time.Millisecond):
+		}
 	}
 }
 
@@ -310,6 +413,7 @@ func (t *cloudflareQuickTunnel) Close() error {
 	var closeErr error
 	t.closeOnce.Do(func() {
 		t.closed.Store(true)
+		t.publicReady.Store(false)
 		if t.session != nil {
 			t.session.setPublicTunnelURL("")
 		}

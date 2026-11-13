@@ -85,7 +85,7 @@ func (g *Game) updateMultiplayerAddressInput() {
 		}
 	}
 	for _, ch := range ebiten.AppendInputChars(nil) {
-		if !validNetAddressRune(ch) || len([]rune(g.multiplayerAddress)) >= 80 {
+		if !validNetAddressRune(ch) || len([]rune(g.multiplayerAddress)) >= cloudflareTunnelURLMaxLen {
 			continue
 		}
 		g.multiplayerAddress += string(ch)

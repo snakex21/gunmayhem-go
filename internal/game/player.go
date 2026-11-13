@@ -6,179 +6,181 @@ import (
 )
 
 type PlayerInputState struct {
-	Left    bool
-	Right   bool
-	Up      bool
-	Down    bool
-	Shoot   bool
-	Grenade bool
+	Left    bool `cbor:",omitempty"`
+	Right   bool `cbor:",omitempty"`
+	Up      bool `cbor:",omitempty"`
+	Down    bool `cbor:",omitempty"`
+	Shoot   bool `cbor:",omitempty"`
+	Grenade bool `cbor:",omitempty"`
 }
 
 type Player struct {
-	ID       int
-	Name     string
-	Controls Controls
+	// Every player is copied into each network snapshot, so cbor omitempty
+	// keeps the mostly-zero source fields off the Cloudflare WSS link.
+	ID       int      `cbor:",omitempty"`
+	Name     string   `cbor:",omitempty"`
+	Controls Controls `cbor:",omitempty"`
 
-	RemoteControlled bool
-	RemoteInput      PlayerInputState
+	RemoteControlled bool             `cbor:",omitempty"`
+	RemoteInput      PlayerInputState `cbor:",omitempty"`
 
-	X, Y       float64
-	VX, VY     float64
-	Facing     int
-	JumpNum    int
-	JumpHeld   bool
-	DownHeld   bool
-	FreePass   bool
-	Grounded   bool
-	HardLanded bool
+	X, Y       float64 `cbor:",omitempty"`
+	VX, VY     float64 `cbor:",omitempty"`
+	Facing     int     `cbor:",omitempty"`
+	JumpNum    int     `cbor:",omitempty"`
+	JumpHeld   bool    `cbor:",omitempty"`
+	DownHeld   bool    `cbor:",omitempty"`
+	FreePass   bool    `cbor:",omitempty"`
+	Grounded   bool    `cbor:",omitempty"`
+	HardLanded bool    `cbor:",omitempty"`
 
-	Lives               int
-	TotalLives          int
-	GameMode            int
-	CurrentLevel        int
-	CurrentGun          int
-	KillSelf            bool
-	Active              bool
-	LastHitBy           int
-	LastDeathBy         int
-	LastDeathX          float64
-	LastDeathY          float64
-	LastDeathMod        int
-	HitByGrenade        bool
-	HitNumber           int
-	HitTimer            int
-	InstagibFrame       int
-	InstagibPlaying     bool
-	CheapTimer          int
-	Kills               int
-	Deaths              int
-	ShotsFired          int
-	HitsLanded          int
-	CratesCollected     int
-	PowerupsCollected   int
-	Score               int
-	DeathSerial         int
-	DefaultWeapon       int
-	PerkNumber          int
-	Weight              float64
-	Weapon              WeaponState
-	Grenades            int
-	ThrowableType       int
-	GrenadeHeld         bool
-	GrenadePower        float64
-	InvisibleTime       int
-	ShieldTime          int
-	ShieldFrame         int
-	ShieldChildFrame    int
-	ShieldPlaying       bool
-	ShieldChildActive   bool
-	ShieldAlpha         float64
-	JetFuel             float64
-	JetpackAlpha        float64
-	JetThrusted         bool
-	JetDropped          bool
-	SpeedTime           int
-	BurnTime            int
-	BurnOwnerID         int
-	BurnDirection       int
-	BurnTick            int
-	BurnPower           float64
-	FireContactCooldown int
-	PortalNextColor     int
-	PortalCooldown      int
+	Lives               int         `cbor:",omitempty"`
+	TotalLives          int         `cbor:",omitempty"`
+	GameMode            int         `cbor:",omitempty"`
+	CurrentLevel        int         `cbor:",omitempty"`
+	CurrentGun          int         `cbor:",omitempty"`
+	KillSelf            bool        `cbor:",omitempty"`
+	Active              bool        `cbor:",omitempty"`
+	LastHitBy           int         `cbor:",omitempty"`
+	LastDeathBy         int         `cbor:",omitempty"`
+	LastDeathX          float64     `cbor:",omitempty"`
+	LastDeathY          float64     `cbor:",omitempty"`
+	LastDeathMod        int         `cbor:",omitempty"`
+	HitByGrenade        bool        `cbor:",omitempty"`
+	HitNumber           int         `cbor:",omitempty"`
+	HitTimer            int         `cbor:",omitempty"`
+	InstagibFrame       int         `cbor:",omitempty"`
+	InstagibPlaying     bool        `cbor:",omitempty"`
+	CheapTimer          int         `cbor:",omitempty"`
+	Kills               int         `cbor:",omitempty"`
+	Deaths              int         `cbor:",omitempty"`
+	ShotsFired          int         `cbor:",omitempty"`
+	HitsLanded          int         `cbor:",omitempty"`
+	CratesCollected     int         `cbor:",omitempty"`
+	PowerupsCollected   int         `cbor:",omitempty"`
+	Score               int         `cbor:",omitempty"`
+	DeathSerial         int         `cbor:",omitempty"`
+	DefaultWeapon       int         `cbor:",omitempty"`
+	PerkNumber          int         `cbor:",omitempty"`
+	Weight              float64     `cbor:",omitempty"`
+	Weapon              WeaponState `cbor:",omitempty"`
+	Grenades            int         `cbor:",omitempty"`
+	ThrowableType       int         `cbor:",omitempty"`
+	GrenadeHeld         bool        `cbor:",omitempty"`
+	GrenadePower        float64     `cbor:",omitempty"`
+	InvisibleTime       int         `cbor:",omitempty"`
+	ShieldTime          int         `cbor:",omitempty"`
+	ShieldFrame         int         `cbor:",omitempty"`
+	ShieldChildFrame    int         `cbor:",omitempty"`
+	ShieldPlaying       bool        `cbor:",omitempty"`
+	ShieldChildActive   bool        `cbor:",omitempty"`
+	ShieldAlpha         float64     `cbor:",omitempty"`
+	JetFuel             float64     `cbor:",omitempty"`
+	JetpackAlpha        float64     `cbor:",omitempty"`
+	JetThrusted         bool        `cbor:",omitempty"`
+	JetDropped          bool        `cbor:",omitempty"`
+	SpeedTime           int         `cbor:",omitempty"`
+	BurnTime            int         `cbor:",omitempty"`
+	BurnOwnerID         int         `cbor:",omitempty"`
+	BurnDirection       int         `cbor:",omitempty"`
+	BurnTick            int         `cbor:",omitempty"`
+	BurnPower           float64     `cbor:",omitempty"`
+	FireContactCooldown int         `cbor:",omitempty"`
+	PortalNextColor     int         `cbor:",omitempty"`
+	PortalCooldown      int         `cbor:",omitempty"`
 
 	// Developed Custom Game modifiers. Zero multipliers mean the original 1x
 	// behavior so source/campaign players are unchanged unless a rule enables
 	// them explicitly.
-	RuleMoveMultiplier   float64
-	RuleJumpMultiplier   float64
-	RuleInfiniteJetpack  bool
-	RuleJetpackSoundLive bool
-	MiniTime             int
-	MiniMulti            float64
-	PlayerScale          float64
-	Alpha                float64
-	PlayerColor          int
-	ShirtNumber          int
-	HatNumber            int
-	EyeNumber            int
-	UseGM2Cosmetics      bool
-	HeadFrame            int
-	VisualHeadY          float64
+	RuleMoveMultiplier   float64 `cbor:",omitempty"`
+	RuleJumpMultiplier   float64 `cbor:",omitempty"`
+	RuleInfiniteJetpack  bool    `cbor:",omitempty"`
+	RuleJetpackSoundLive bool    `cbor:",omitempty"`
+	MiniTime             int     `cbor:",omitempty"`
+	MiniMulti            float64 `cbor:",omitempty"`
+	PlayerScale          float64 `cbor:",omitempty"`
+	Alpha                float64 `cbor:",omitempty"`
+	PlayerColor          int     `cbor:",omitempty"`
+	ShirtNumber          int     `cbor:",omitempty"`
+	HatNumber            int     `cbor:",omitempty"`
+	EyeNumber            int     `cbor:",omitempty"`
+	UseGM2Cosmetics      bool    `cbor:",omitempty"`
+	HeadFrame            int     `cbor:",omitempty"`
+	VisualHeadY          float64 `cbor:",omitempty"`
 
 	// Source visual state from DefineSprite_697_player. These are MovieClip
 	// properties in Flash and are eased every onEnterFrame; keeping them as
 	// state avoids inventing positions in Draw().
-	VisualBodyY        float64
-	VisualEyesY        float64
-	VisualHand1X       float64
-	VisualHand1Y       float64
-	VisualHand2X       float64
-	VisualHand2Y       float64
-	VisualHand1ChildX  float64
-	VisualHand1ChildY  float64
-	VisualHand2ChildX  float64
-	VisualHand2ChildY  float64
-	VisualHand1Alpha   float64
-	VisualHand2Alpha   float64
-	VisualGunX         float64
-	VisualGunY         float64
-	VisualGunRotation  float64
-	VisualLeg1Rotation float64
-	VisualLeg2Rotation float64
-	IdleTime           int
-	IdleMax            int
-	WalkAnim           int
-	WalkRequested      bool
+	VisualBodyY        float64 `cbor:",omitempty"`
+	VisualEyesY        float64 `cbor:",omitempty"`
+	VisualHand1X       float64 `cbor:",omitempty"`
+	VisualHand1Y       float64 `cbor:",omitempty"`
+	VisualHand2X       float64 `cbor:",omitempty"`
+	VisualHand2Y       float64 `cbor:",omitempty"`
+	VisualHand1ChildX  float64 `cbor:",omitempty"`
+	VisualHand1ChildY  float64 `cbor:",omitempty"`
+	VisualHand2ChildX  float64 `cbor:",omitempty"`
+	VisualHand2ChildY  float64 `cbor:",omitempty"`
+	VisualHand1Alpha   float64 `cbor:",omitempty"`
+	VisualHand2Alpha   float64 `cbor:",omitempty"`
+	VisualGunX         float64 `cbor:",omitempty"`
+	VisualGunY         float64 `cbor:",omitempty"`
+	VisualGunRotation  float64 `cbor:",omitempty"`
+	VisualLeg1Rotation float64 `cbor:",omitempty"`
+	VisualLeg2Rotation float64 `cbor:",omitempty"`
+	IdleTime           int     `cbor:",omitempty"`
+	IdleMax            int     `cbor:",omitempty"`
+	WalkAnim           int     `cbor:",omitempty"`
+	WalkRequested      bool    `cbor:",omitempty"`
 
 	// Flash leg timelines are independent movie clips (Symbol 282 and 189).
 	// They play while |vx| > 3 and stop on frame 1 after movement ends.
-	LegFrame1   int
-	LegFrame2   int
-	LegPlaying1 bool
-	LegPlaying2 bool
-	TripleJump  bool
+	LegFrame1   int  `cbor:",omitempty"`
+	LegFrame2   int  `cbor:",omitempty"`
+	LegPlaying1 bool `cbor:",omitempty"`
+	LegPlaying2 bool `cbor:",omitempty"`
+	TripleJump  bool `cbor:",omitempty"`
 
-	AI               bool
-	AILeft           bool
-	AIRight          bool
-	AIUp             bool
-	AIDown           bool
-	AIShoot          bool
-	AIGrenade        bool
-	AITargetPlayerID int
-	AITargetPlayer   bool
-	AITargetX        float64
-	AITargetY        float64
-	AITargetTimer    int
-	AITargetValid    bool
-	AITargetKind     int
-	AITargetSerial   int
-	AISearchTime     int
-	AISearchX        float64
-	AISearchY        float64
-	AISearchPlayerID int
-	AIFireCadence    int
-	AILockLeft       int
-	AILockRight      int
-	AILockUp         int
-	AIIdleTime2      int
-	AIPrevX          float64
-	AISpecial        int
-	AIFakeDoubleTime int
-	DamageMulti      float64
-	FirepowerMulti   float64
+	AI               bool    `cbor:",omitempty"`
+	AILeft           bool    `cbor:",omitempty"`
+	AIRight          bool    `cbor:",omitempty"`
+	AIUp             bool    `cbor:",omitempty"`
+	AIDown           bool    `cbor:",omitempty"`
+	AIShoot          bool    `cbor:",omitempty"`
+	AIGrenade        bool    `cbor:",omitempty"`
+	AITargetPlayerID int     `cbor:",omitempty"`
+	AITargetPlayer   bool    `cbor:",omitempty"`
+	AITargetX        float64 `cbor:",omitempty"`
+	AITargetY        float64 `cbor:",omitempty"`
+	AITargetTimer    int     `cbor:",omitempty"`
+	AITargetValid    bool    `cbor:",omitempty"`
+	AITargetKind     int     `cbor:",omitempty"`
+	AITargetSerial   int     `cbor:",omitempty"`
+	AISearchTime     int     `cbor:",omitempty"`
+	AISearchX        float64 `cbor:",omitempty"`
+	AISearchY        float64 `cbor:",omitempty"`
+	AISearchPlayerID int     `cbor:",omitempty"`
+	AIFireCadence    int     `cbor:",omitempty"`
+	AILockLeft       int     `cbor:",omitempty"`
+	AILockRight      int     `cbor:",omitempty"`
+	AILockUp         int     `cbor:",omitempty"`
+	AIIdleTime2      int     `cbor:",omitempty"`
+	AIPrevX          float64 `cbor:",omitempty"`
+	AISpecial        int     `cbor:",omitempty"`
+	AIFakeDoubleTime int     `cbor:",omitempty"`
+	DamageMulti      float64 `cbor:",omitempty"`
+	FirepowerMulti   float64 `cbor:",omitempty"`
 
-	Team                   int
-	OwnerPlayerID          int
-	IsDouble               bool
-	DoubleTime             int
-	PersistentDouble       bool
-	WantsDouble            bool
-	DoubleSpawnPositionSet bool
-	DoubleSpawnX           float64
-	DoubleSpawnY           float64
-	PendingSounds          []string
+	Team                   int      `cbor:",omitempty"`
+	OwnerPlayerID          int      `cbor:",omitempty"`
+	IsDouble               bool     `cbor:",omitempty"`
+	DoubleTime             int      `cbor:",omitempty"`
+	PersistentDouble       bool     `cbor:",omitempty"`
+	WantsDouble            bool     `cbor:",omitempty"`
+	DoubleSpawnPositionSet bool     `cbor:",omitempty"`
+	DoubleSpawnX           float64  `cbor:",omitempty"`
+	DoubleSpawnY           float64  `cbor:",omitempty"`
+	PendingSounds          []string `cbor:",omitempty"`
 }
 
 func NewPlayer(id int, m Map) *Player {

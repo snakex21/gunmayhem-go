@@ -77,12 +77,86 @@ func (tcpNetplayTransport) Dial(ctx context.Context, address string) (net.Conn, 
 
 type cborNetplayCodec struct{}
 
-func (cborNetplayCodec) Encode(msg netWireMessage) ([]byte, error) {
-	payload, err := netCBOREnc.Marshal(msg)
+// netWireMessage is a tagged union, but CBOR encodes a struct as a map, so
+// marshalling the union wrote the field names of EVERY message type on the
+// wire. An input frame (one per rendered frame, per client) therefore also
+// carried an empty netSnapshot worth ~780 bytes. These per-type views keep
+// each message down to the fields it actually needs; Decode still targets
+// netWireMessage, so absent fields decode to their zero values as before.
+type netWireInputMsg struct {
+	Type     int              `cbor:",omitempty"`
+	Protocol int              `cbor:",omitempty"`
+	PlayerID int              `cbor:",omitempty"`
+	Input    PlayerInputState `cbor:",omitempty"`
+}
+
+type netWireStateMsg struct {
+	Type     int         `cbor:",omitempty"`
+	Protocol int         `cbor:",omitempty"`
+	PlayerID int         `cbor:",omitempty"`
+	State    netSnapshot `cbor:",omitempty"`
+}
+
+type netWireConfigMsg struct {
+	Type     int                `cbor:",omitempty"`
+	Protocol int                `cbor:",omitempty"`
+	PlayerID int                `cbor:",omitempty"`
+	Config   CustomPlayerConfig `cbor:",omitempty"`
+}
+
+type netWireReadyMsg struct {
+	Type     int `cbor:",omitempty"`
+	Protocol int `cbor:",omitempty"`
+	PlayerID int `cbor:",omitempty"`
+	Ready    bool
+}
+
+type netWireHelloMsg struct {
+	Type      int    `cbor:",omitempty"`
+	Protocol  int    `cbor:",omitempty"`
+	PlayerID  int    `cbor:",omitempty"`
+	Challenge string `cbor:",omitempty"`
+	AuthProof string `cbor:",omitempty"`
+}
+
+type netWireProbeMsg struct {
+	Type     int `cbor:",omitempty"`
+	Protocol int `cbor:",omitempty"`
+}
+
+type netWireProbeReplyMsg struct {
+	Type     int          `cbor:",omitempty"`
+	Protocol int          `cbor:",omitempty"`
+	Probe    netProbeInfo `cbor:",omitempty"`
+}
+
+func encodeNetMessage(msg netWireMessage) ([]byte, error) {
+	var view any = msg
+	switch msg.Type {
+	case netMessageInput:
+		view = netWireInputMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Input: msg.Input}
+	case netMessageState:
+		view = netWireStateMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, State: msg.State}
+	case netMessagePlayerConfig:
+		view = netWireConfigMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Config: msg.Config}
+	case netMessagePostGameReady:
+		view = netWireReadyMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Ready: msg.Ready}
+	case netMessageHello, netMessageChallenge:
+		view = netWireHelloMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Challenge: msg.Challenge, AuthProof: msg.AuthProof}
+	case netMessageProbe:
+		view = netWireProbeMsg{Type: msg.Type, Protocol: msg.Protocol}
+	case netMessageProbeReply:
+		view = netWireProbeReplyMsg{Type: msg.Type, Protocol: msg.Protocol, Probe: msg.Probe}
+	}
+	payload, err := netCBOREnc.Marshal(view)
 	if err != nil {
 		return nil, fmt.Errorf("encode netplay message: %w", err)
 	}
 	return payload, nil
+}
+
+func (cborNetplayCodec) Encode(msg netWireMessage) ([]byte, error) {
+	return encodeNetMessage(msg)
 }
 
 func (cborNetplayCodec) Decode(payload []byte, msg *netWireMessage) error {
