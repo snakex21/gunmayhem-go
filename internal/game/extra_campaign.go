@@ -388,14 +388,6 @@ func (g *Game) updateExtraCampaignMenu() {
 	}
 }
 
-func extraCampaignEnemyLives(spec extraCampaignMission) int {
-	total := 0
-	for _, enemy := range spec.Enemies {
-		total += enemy.Lives
-	}
-	return total
-}
-
 // extraCampaignUnitCount is the number of non-player enemies to defeat.
 func extraCampaignUnitCount(spec extraCampaignMission) int {
 	total := 0

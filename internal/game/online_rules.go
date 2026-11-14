@@ -25,19 +25,6 @@ func onlineAllWeaponNumbers() []int {
 	return out
 }
 
-func onlineMapRotationLabel(v int) string {
-	switch v {
-	case onlineMapRandomGM1:
-		return "RANDOM GM1"
-	case onlineMapRandomGM2:
-		return "RANDOM GM2"
-	case onlineMapRandomAll:
-		return "RANDOM ALL"
-	default:
-		return "FIXED MAP"
-	}
-}
-
 func onlineWeaponModeLabel(v int) string {
 	switch v {
 	case onlineWeaponsOnlyOne:

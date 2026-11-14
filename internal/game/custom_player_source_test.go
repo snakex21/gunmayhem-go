@@ -23,8 +23,8 @@ func TestCustomPlayerDefaultsAndSlotHits(t *testing.T) {
 	g := &Game{}
 	g.initCustomPlayerSetup()
 	if g.activeCustomPlayerCount() != 2 { t.Fatalf("default active=%d want2", g.activeCustomPlayerCount()) }
-	// Empty source slot3 at X=460,Y=500 exposes HUMAN/AI buttons.
-	if got := g.customPlayerSetupHitAt(460+20+50, 500-254.95+10); got != playerSlotHit(2, playerSlotActionHuman) {
-		t.Fatalf("empty human hit=%d", got)
+	// An empty slot accepts the HUMAN action code.
+	if !g.activateCustomPlayerSlot(playerSlotHit(2, playerSlotActionHuman)) || g.customPlayers[2].Type != 1 {
+		t.Fatalf("empty slot HUMAN action: type=%d", g.customPlayers[2].Type)
 	}
 }

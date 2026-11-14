@@ -51,10 +51,3 @@ func projectTestDir(t *testing.T) string {
 	t.Cleanup(func() { _ = os.RemoveAll(dir) })
 	return dir
 }
-
-func useProjectTestDataDir(t *testing.T) string {
-	t.Helper()
-	dir := projectTestDir(t)
-	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
-	return dir
-}

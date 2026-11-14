@@ -22,7 +22,7 @@ const (
 	screenPostGame
 	screenSeriesSummary
 	screenGameplay
-	screenMultiplayer
+	_ // was screenMultiplayer (legacy menu, removed); keeps wire values stable
 	screenMultiplayerLobby
 )
 
@@ -71,8 +71,6 @@ func (g *Game) updateMenu() error {
 		g.updateGunLibraryMenu()
 	case screenCredits:
 		g.updateCreditsMenu()
-	case screenMultiplayer:
-		g.updateMultiplayerMenu()
 	case screenMultiplayerLobby:
 		// Retired UI compatibility: never show the standalone lobby again.
 		g.openOnlineCustomSlots("SESSION ACTIVE - WAITING FOR PLAYER / ADD AI")
@@ -100,10 +98,6 @@ const (
 	menuHitMapBase  = 200
 )
 
-// Exact frame-1 visual bounds of Symbol 1048 from the source XFL (the Gun
-// Library BACK button still uses the Flash hit shape).
-var wideButtonLocal = Rect{X: 0, Y: -0.01953125, W: 639.9993896484375, H: 60.05859375}
-
 func sourceMenuHitRect(local Rect, tx, ty, sx, sy float64) Rect {
 	return transformedLocalRect(local, tx, ty, sx, sy)
 }
@@ -124,34 +118,6 @@ func (g *Game) resolveMenuRelease(hit int) (int, bool) {
 		}
 	}
 	return menuHitNone, false
-}
-
-func (g *Game) updateSecondaryMenu() {
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		g.menuPressed = menuHitNone
-		g.beginFade(screenMainMenu, fadePurposeScreen)
-		return
-	}
-	mx, my := g.cursorPos()
-	hit := menuHitNone
-	switch g.screen {
-	case screenCredits:
-		// Symbol1046.btn_back = Symbol792 at (716.15,520.15).
-		if sourceMenuHitRect(campaignBackLocal, 716.15, 520.15, 1, 1).Contains(float64(mx), float64(my)) {
-			hit = menuHitGameBack
-		}
-	case screenGunLibrary:
-		// Symbol1198.btn_back = Symbol1048 at (679.75,20.05), xscale 31.25%.
-		if sourceMenuHitRect(wideButtonLocal, 679.75, 20.05, 0.3125, 0.9991607666015625).Contains(float64(mx), float64(my)) {
-			hit = menuHitGameBack
-		}
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if ok && activated == menuHitGameBack {
-		// Symbols1046 (Credits) and 1198 (Gun Library) both play menu.wav on Back.
-		g.playSourceSFX("menu.wav", false)
-		g.beginFade(screenMainMenu, fadePurposeScreen)
-	}
 }
 
 func (g *Game) updatePostGameMenu() {
@@ -379,8 +345,6 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 		} else {
 			g.drawSecondaryMenuFallback(screen, "CREDITS")
 		}
-	case screenMultiplayer:
-		g.drawMultiplayerMenu(screen)
 	case screenMultiplayerLobby:
 		g.drawCustomGameMenu(screen)
 	case screenSeriesSummary:

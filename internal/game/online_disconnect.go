@@ -13,7 +13,6 @@ func (g *Game) openOnlineCustomSlots(message string) {
 	g.customHostSetupOpen = false
 	g.customRulesOpen = false
 	g.customChaosOpen = false
-	g.onlineLobbyCustomize = false
 	g.onlineRulesOpen = false
 	g.onlineBlocklistOpen = false
 	g.onlinePerkBlocklistOpen = false

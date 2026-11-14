@@ -49,7 +49,7 @@ func TestMolotovTimingOutMidAirSnapsToPlatformBelow(t *testing.T) {
 	grenades := []Grenade{{X: 200, Y: 200, Type: ThrowableMolotov, OwnerID: 1, Fuse: throwableProfiles[ThrowableMolotov].Fuse}}
 	var fire []FirePatch
 	var sparks []DynamiteEffect
-	updateGrenades(arena, grenades, nil, nil, &sparks, nil, &fire)
+	updateGrenadesWithAreas(arena, grenades, nil, nil, &sparks, nil, &fire, nil)
 	if !grenades[0].Dead || len(fire) == 0 {
 		t.Fatalf("timed-out molotov: dead=%v fire=%d", grenades[0].Dead, len(fire))
 	}
@@ -74,7 +74,7 @@ func TestMolotovTimingOutHighAboveVoidFizzles(t *testing.T) {
 		var fire []FirePatch
 		var sparks []DynamiteEffect
 		victim := &Player{ID: 2, Active: true, X: start.X, Y: start.Y + 30, DamageMulti: 1}
-		updateGrenades(arena, grenades, []*Player{victim}, nil, &sparks, nil, &fire)
+		updateGrenadesWithAreas(arena, grenades, []*Player{victim}, nil, &sparks, nil, &fire, nil)
 		if !grenades[0].Dead || len(fire) != 0 || victim.BurnTime != 0 {
 			t.Fatalf("molotov at %+v should fizzle: dead=%v fire=%+v burn=%d", start, grenades[0].Dead, fire, victim.BurnTime)
 		}
@@ -98,7 +98,7 @@ func TestMolotovFireSpawnsOnStruckPlatformNotTheOneAbove(t *testing.T) {
 	// Falling bottle crosses the lower platform top between frames.
 	grenades := []Grenade{{X: 100, Y: 330, VY: 15, Type: ThrowableMolotov, OwnerID: 1, FreePass: true}}
 	var fire []FirePatch
-	updateGrenades(arena, grenades, nil, nil, nil, nil, &fire)
+	updateGrenadesWithAreas(arena, grenades, nil, nil, nil, nil, &fire, nil)
 	if len(fire) == 0 {
 		t.Fatal("molotov impact on lower platform spawned no fire")
 	}
@@ -185,7 +185,7 @@ func TestAIFleesLiveGrenadeBeforeItExplodes(t *testing.T) {
 	var dyn []DynamiteEffect
 	var blast []BlastEffect
 	var explosions []Explosion
-	updateGrenades(arena, grenades, players, &explosions, &dyn, &blast, nil)
+	updateGrenadesWithAreas(arena, grenades, players, &explosions, &dyn, &blast, nil, nil)
 	if grenades[0].Fuse != 40 {
 		t.Fatalf("dynamite warning tick=%d, want source fusetime 40", grenades[0].Fuse)
 	}
@@ -275,7 +275,7 @@ func TestGrenadeThrowPreviewLandsWhereGrenadeLands(t *testing.T) {
 	}
 	gr := []Grenade{{X: p.X + 30, Y: p.Y - 35, VX: 8, VY: -8, Type: ThrowableMk2, Fuse: -1000}}
 	for i := 0; i < 200 && !gr[0].HitGround; i++ {
-		updateGrenades(arena, gr, nil, nil, nil, nil, nil)
+		updateGrenadesWithAreas(arena, gr, nil, nil, nil, nil, nil, nil)
 	}
 	end := points[len(points)-1]
 	if math.Abs(end.X-gr[0].X) > 1 {

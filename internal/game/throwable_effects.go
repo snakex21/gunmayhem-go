@@ -54,20 +54,6 @@ func isSelectablePerk(n int) bool {
 	return false
 }
 
-// stepSelectablePerk moves through selectablePerkNumbers with wrap-around.
-func stepSelectablePerk(current, delta int) int {
-	perks := selectablePerkNumbers()
-	index := 0
-	for i, perk := range perks {
-		if perk == current {
-			index = i
-			break
-		}
-	}
-	index = ((index+delta)%len(perks) + len(perks)) % len(perks)
-	return perks[index]
-}
-
 // playerHeadgear returns the head-worn gear (flash goggles, thermal goggles
 // or gas mask) the player has, or 0. A player has exactly one ability slot,
 // so at most one of them can be active; should that ever change, the render

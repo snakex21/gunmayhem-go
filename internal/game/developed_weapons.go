@@ -499,25 +499,6 @@ func isStarterHandgunNumber(number int) bool {
 	return false
 }
 
-func stepStarterHandgun(number, delta int) int {
-	handguns := starterHandgunNumbers()
-	if len(handguns) == 0 {
-		return 1
-	}
-	index := -1
-	for i, candidate := range handguns {
-		if candidate == number {
-			index = i
-			break
-		}
-	}
-	if index < 0 {
-		return handguns[0]
-	}
-	index = (index + delta%len(handguns) + len(handguns)) % len(handguns)
-	return handguns[index]
-}
-
 func customWeaponAssetAvailable(number int) bool {
 	customWeaponAssetsOnce.Do(func() {
 		for n, spec := range developedWeaponSpecs {

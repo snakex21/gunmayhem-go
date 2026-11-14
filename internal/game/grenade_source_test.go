@@ -11,5 +11,5 @@ func TestGrenadeSourceRegistration(t *testing.T) {
 	if r == nil {
 		t.Fatal("missing grenade raster")
 	}
-	t.Logf("grenade visible=%+v rasterBounds=%+v image=%v", visible, r.Bounds, sourceRasterImageSize(r))
+	t.Logf("grenade visible=%+v rasterBounds=%+v image=%v", visible, r.Bounds, r.Image.Bounds().Size())
 }

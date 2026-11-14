@@ -643,7 +643,7 @@ func TestOnlineRulesModals(t *testing.T) {
 	}
 	k.click(t, "on.perkblock.back")
 	k.click(t, "on.rules.done")
-	if g.onlineRulesOpen || g.customOnlineRulesOverlayActive() {
+	if g.onlineRulesOpen || g.onlineBlocklistOpen || g.onlinePerkBlocklistOpen || g.onlineVisualPicker != onlineVisualNone {
 		t.Fatal("DONE did not close the rules")
 	}
 }

@@ -3,7 +3,6 @@ package game
 import (
 	"encoding/xml"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 )
@@ -134,107 +133,4 @@ func loadChildTransformTimeline(parentLibrary, childLibrary string) ([]SourceTra
 		return nil, err
 	}
 	return timelines[0], nil
-}
-
-// legacy token parser retained below only for source constructs not expressible
-// by the direct DOM layer parser above.
-func loadChildTransformTimelineLegacy(parentLibrary, childLibrary string) ([]SourceTransformFrame, error) {
-	libraryDir, err := findOriginalPath("fla", "LIBRARY")
-	if err != nil {
-		return nil, err
-	}
-	path := filepath.Join(libraryDir, parentLibrary+".xml")
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	dec := xml.NewDecoder(f)
-	type held struct {
-		index    int
-		duration int
-		matrix   xflMatrix
-		found    bool
-	}
-	var current *held
-	var inTarget bool
-	var targetDepth int
-	var keys []held
-	maxFrame := 0
-
-	for {
-		tok, err := dec.Token()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		switch t := tok.(type) {
-		case xml.StartElement:
-			switch t.Name.Local {
-			case "DOMFrame":
-				current = &held{
-					index:    intAttr(t.Attr, "index", 0),
-					duration: intAttr(t.Attr, "duration", 1),
-					matrix:   xflMatrix{A: 1, D: 1},
-				}
-				if current.duration < 1 {
-					current.duration = 1
-				}
-			case "DOMSymbolInstance":
-				if current != nil && !inTarget && stringAttr(t.Attr, "libraryItemName", "") == childLibrary {
-					inTarget = true
-					targetDepth = 1
-					current.found = true
-				} else if inTarget {
-					targetDepth++
-				}
-			case "Matrix":
-				if current != nil && inTarget {
-					current.matrix = xflMatrix{
-						A:  floatAttr(t.Attr, "a", 1),
-						B:  floatAttr(t.Attr, "b", 0),
-						C:  floatAttr(t.Attr, "c", 0),
-						D:  floatAttr(t.Attr, "d", 1),
-						TX: floatAttr(t.Attr, "tx", 0),
-						TY: floatAttr(t.Attr, "ty", 0),
-					}
-				}
-			}
-		case xml.EndElement:
-			switch t.Name.Local {
-			case "DOMSymbolInstance":
-				if inTarget {
-					targetDepth--
-					if targetDepth == 0 {
-						inTarget = false
-					}
-				}
-			case "DOMFrame":
-				if current != nil {
-					if current.found {
-						keys = append(keys, *current)
-						end := current.index + current.duration
-						if end > maxFrame {
-							maxFrame = end
-						}
-					}
-					current = nil
-				}
-			}
-		}
-	}
-
-	if len(keys) == 0 || maxFrame == 0 {
-		return nil, errors.New("XFL: no child timeline " + childLibrary + " in " + parentLibrary)
-	}
-	frames := make([]SourceTransformFrame, maxFrame)
-	for _, key := range keys {
-		for i := key.index; i < key.index+key.duration && i < len(frames); i++ {
-			frames[i] = SourceTransformFrame{Matrix: key.matrix, Valid: true}
-		}
-	}
-	return frames, nil
 }

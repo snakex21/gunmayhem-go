@@ -15,7 +15,7 @@ func TestOnlineWizardRulesOverlayIsReachableAndDrawn(t *testing.T) {
 	g.runOnlineLobbyUpdate(uiInput{X: -10, Y: -10})
 	k := onlineLobbyKit(g)
 	k.click(t, "on.rules")
-	if !g.onlineRulesOpen || !g.customOnlineRulesOverlayActive() {
+	if !g.onlineRulesOpen || !(g.onlineRulesOpen || g.onlineBlocklistOpen || g.onlinePerkBlocklistOpen || g.onlineVisualPicker != onlineVisualNone) {
 		t.Fatal("RULES did not open the rules overlay")
 	}
 	if !k.has("on.rules.done") {

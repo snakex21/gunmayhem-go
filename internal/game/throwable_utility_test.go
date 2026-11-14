@@ -385,9 +385,6 @@ func TestGearMovedToAbilitySlotOnlineAndInMenus(t *testing.T) {
 			}
 		}
 	}
-	if stepSelectablePerk(9, 1) != 1 || stepSelectablePerk(1, -1) != 9 {
-		t.Fatal("perk stepping must wrap within 1..9")
-	}
 }
 
 func TestHeadgearReplacesHatOnlyAtRenderTime(t *testing.T) {

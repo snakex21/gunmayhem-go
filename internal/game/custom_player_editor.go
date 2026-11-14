@@ -1,7 +1,6 @@
 package game
 
 import (
-	"math"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -21,12 +20,9 @@ const (
 )
 
 const (
-	menuHitPlayerEditBase       = 1000
-	menuHitPlayerEditorBackBase = 1100
-	menuHitPlayerSelectBase     = 2000
-	menuHitPlayerHatPageBase    = 7000
-	menuHitPlayerTeamBase       = 7100
-	menuHitPlayerColorBase      = 7200
+	menuHitPlayerSelectBase = 2000
+	menuHitPlayerTeamBase   = 7100
+	menuHitPlayerColorBase  = 7200
 	// B1: was 8000, whose 8000-8927 range overlapped the mode options (8001-8007),
 	// modifiers (8200+) and chaos (8700+). Every family now owns a disjoint
 	// range, see TestCustomGameHitCodesAreUnique.
@@ -45,12 +41,9 @@ var (
 	customSelectionData map[int][]customSelectionItem
 )
 
-func customEditHit(slot, editor int) int { return menuHitPlayerEditBase + slot*10 + editor }
-func customEditorBackHit(slot int) int   { return menuHitPlayerEditorBackBase + slot }
 func customSelectHit(slot, editor, number int) int {
 	return menuHitPlayerSelectBase + slot*1000 + editor*100 + number
 }
-func customHatPageHit(slot int) int       { return menuHitPlayerHatPageBase + slot }
 func customTeamHit(slot, team int) int    { return menuHitPlayerTeamBase + slot*10 + team }
 func customColorHit(slot, number int) int { return menuHitPlayerColorBase + slot*100 + number }
 func customThrowableChoiceHit(slot, kind int) int {
@@ -189,113 +182,6 @@ func sourceCustomizerNumber(editor int, x, y float64) int {
 	return n
 }
 
-func (g *Game) customPlayerEditorHitAt(x, y float64) int {
-	for slot := range g.customPlayers {
-		if g.customPlayers[slot].Type == 0 {
-			continue
-		}
-		cardX := 20.0 + float64(slot)*220
-		cardY := g.customCardY[slot]
-		editor := g.customEditor[slot]
-		if editor == 0 {
-			// Developed throwable selection is a real editor page like HANDGUN,
-			// not a row of tiny cycle icons on the player card.
-			// Four exact Symbol806 EDIT hit areas from Symbol1302 frame3.
-			edits := [...]struct {
-				editor   int
-				x, y, sx float64
-			}{
-				{customEditShirt, 17.5, 127.5, 0.538726806640625},
-				{customEditHat1, 17.5, 93.0, 0.538726806640625},
-				{customEditGun, 17.5, 161.7, 0.5387115478515625},
-				{customEditPerk, 17.5, 220.75, 0.53875732421875},
-				{customEditThrowable, 17.5, 248.0, 0.53875732421875},
-				{customEditAbility, setupAbilityButtonX, 220.75, 0.53875732421875},
-			}
-			for _, e := range edits {
-				if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+e.x, cardY+e.y, e.sx, 1).Contains(x, y) {
-					return customEditHit(slot, e.editor)
-				}
-			}
-			// Developed main exposes GM2's separate eyes selection without
-			// altering the frozen GM1/original branch.
-			if gm2CosmeticsAvailable() &&
-				sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+17.5, cardY+196.2, 0.538726806640625, 1).Contains(x, y) {
-				return customEditHit(slot, customEditEyes)
-			}
-
-			// Name field is a real DOMInputText. Give focus on mouse press/release
-			// by returning a dedicated hit id in the same onRelease pipeline.
-			if (Rect{X: cardX + 32.5, Y: cardY + 294.35, W: 139.55, H: 17.9}).Contains(x, y) {
-				return menuHitPlayerColorBase + 500 + slot // name focus marker
-			}
-
-			// In the developed build the source COLOR strip opens a proper palette
-			// page. That keeps the original card geometry while making room for all
-			// ten GM1 plus twenty GM2 colours without overlapping NAME/team controls.
-			if sourceColorSelectorRect(cardX, cardY).Contains(x, y) {
-				return customEditHit(slot, customEditColor)
-			}
-
-			if g.customMode == SourceGameModeTeams {
-				// Symbol804 at card local (22,360.25); Symbol800 teamA/B children.
-				teamA := sourceMenuHitRect(Rect{X: 0, Y: 0, W: 148.5, H: 24}, cardX+22, cardY+360.25, 0.496795654296875, 1)
-				teamB := sourceMenuHitRect(Rect{X: 0, Y: 0, W: 148.5, H: 24}, cardX+22+82.05, cardY+360.25, 0.496795654296875, 1)
-				if teamA.Contains(x, y) {
-					return customTeamHit(slot, 1)
-				}
-				if teamB.Contains(x, y) {
-					return customTeamHit(slot, 2)
-				}
-			}
-			continue
-		}
-
-		// During slide=2 the entire Symbol1302 card sits at originY-400, while
-		// Symbol835 itself stays at local (0,0). Use parsed source child bounds.
-		for _, item := range developedCustomSelectionItems(editor) {
-			r := item.Rect
-			r.X += cardX
-			r.Y += cardY
-			if r.Contains(x, y) && g.customSelectionUnlocked(editor, item.Number) {
-				if editor == customEditGun && item.Number >= 98 {
-					return customDevelopedGunHit(slot, item.Number)
-				}
-				return customSelectHit(slot, editor, item.Number)
-			}
-		}
-
-		// Hat page switch: Symbol806 at Symbol835 local (27.25,671.7).
-		if editor == customEditHat1 || editor == customEditHat2 {
-			if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+27.25, cardY+671.7, 1, 1).Contains(x, y) {
-				return customHatPageHit(slot)
-			}
-		}
-		// Symbol1302.btn_back is local (27.5,759.45).
-		if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+27.5, cardY+759.45, 1, 1).Contains(x, y) {
-			return customEditorBackHit(slot)
-		}
-	}
-	return menuHitNone
-}
-
-func sourceColorNumberAt(cardX, cardY, x, y float64) (int, bool) {
-	// Use the very same source matrix as rendering. Keeping hit-testing and
-	// drawing on one transform prevents the visible palette drifting away from
-	// its clickable cells after window/UI changes.
-	m := sourceColorTransform(cardX, cardY)
-	if !m.IsInvertible() {
-		return 0, false
-	}
-	m.Invert()
-	lx, ly := m.Apply(x, y)
-	if lx < 0 || lx >= 50 || ly < 0 || ly >= 125 {
-		return 0, false
-	}
-	n := int(math.Floor(lx/25))*5 + int(math.Floor(ly/25)) + 1
-	return n, n >= 1 && n <= 10
-}
-
 func (g *Game) customSelectionUnlocked(editor, number int) bool {
 	if editor != customEditPerk {
 		return true
@@ -330,29 +216,6 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 		g.customEditor[slot] = 0
 		return true
 	}
-	if hit >= menuHitPlayerEditBase && hit < menuHitPlayerEditBase+40 {
-		v := hit - menuHitPlayerEditBase
-		slot, editor := v/10, v%10
-		if slot >= 0 && slot < 4 && ((editor >= 1 && editor <= 4) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor || editor == customEditAbility) {
-			if !g.onlineMayEditCustomCharacterSlot(slot) {
-				return true
-			}
-			for i := range g.customEditor {
-				g.customEditor[i] = 0
-			}
-			if editor == customEditHat1 && g.customPlayers[slot].Hat > 36 {
-				editor = customEditHat2
-			}
-			g.customEditor[slot] = editor
-			g.customNameFocus = 0
-			return true
-		}
-	}
-	if hit >= menuHitPlayerEditorBackBase && hit < menuHitPlayerEditorBackBase+4 {
-		slot := hit - menuHitPlayerEditorBackBase
-		g.customEditor[slot] = 0
-		return true
-	}
 	if slot, editor, number, ok := decodeCustomSelectHit(hit); ok {
 		if !g.onlineMayEditCustomCharacterSlot(slot) {
 			return true
@@ -384,18 +247,6 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 			}
 		}
 		g.customEditor[slot] = 0
-		return true
-	}
-	if hit >= menuHitPlayerHatPageBase && hit < menuHitPlayerHatPageBase+4 {
-		slot := hit - menuHitPlayerHatPageBase
-		if !g.onlineMayEditCustomCharacterSlot(slot) {
-			return true
-		}
-		if g.customEditor[slot] == customEditHat1 {
-			g.customEditor[slot] = customEditHat2
-		} else {
-			g.customEditor[slot] = customEditHat1
-		}
 		return true
 	}
 	if hit >= menuHitPlayerTeamBase && hit < menuHitPlayerTeamBase+40 {

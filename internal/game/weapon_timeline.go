@@ -65,14 +65,6 @@ func weaponTimeline(number int) WeaponTimelineDef {
 	return def
 }
 
-func loadWeaponTimeline(libraryName string) (WeaponTimelineDef, error) {
-	libraryDir, err := findOriginalPath("fla", "LIBRARY")
-	if err != nil {
-		return WeaponTimelineDef{}, err
-	}
-	return loadWeaponTimelineFromDir(libraryDir, libraryName)
-}
-
 func loadWeaponTimelineFromDir(libraryDir, libraryName string) (WeaponTimelineDef, error) {
 	f, err := os.Open(filepath.Join(libraryDir, libraryName+".xml"))
 	if err != nil {

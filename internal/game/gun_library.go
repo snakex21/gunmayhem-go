@@ -1,16 +1,9 @@
 package game
 
 import (
-	"encoding/xml"
-	"image/color"
-	"io"
 	"math"
-	"os"
-	"strings"
-	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
@@ -19,113 +12,6 @@ type gunLibraryButton struct {
 	X, Y  float64
 	Scale float64
 	W, H  float64
-}
-
-var (
-	gunLibraryButtonsOnce sync.Once
-	gunLibraryButtonsData []gunLibraryButton
-	gunLibraryNamesOnce   sync.Once
-	gunLibraryNamesData   map[int]string
-	gunLibraryCardOnce    sync.Once
-	gunLibraryCardImage   *ebiten.Image
-	gunLibraryEraseOnce   sync.Once
-	gunLibraryEraseImage  *ebiten.Image
-)
-
-// sourceGunLibraryButtons recovers all 57 Symbol913 buttons directly from
-// Symbol1198. The source stores the gun number in each instance's initial
-// _rotation, reads Math.round(_rotation), then changes the visible rotation to
-// -20 degrees. This avoids a hand-authored 57-entry coordinate table.
-func sourceGunLibraryButtons() []gunLibraryButton {
-	gunLibraryButtonsOnce.Do(func() {
-		doc, err := loadXFLVectorDoc("Symbol 1198")
-		if err != nil {
-			return
-		}
-		for _, layer := range doc.Timeline.Layers {
-			frame, ok := activeVectorFrame(layer.Frames, 0)
-			if !ok {
-				continue
-			}
-			for _, inst := range frame.Elements.Instances {
-				if inst.Library != "Symbol 913" {
-					continue
-				}
-				m := matrixFromVector(inst.Matrix.Value)
-				gun := int(math.Round(math.Atan2(m.B, m.A) * 180 / math.Pi))
-				if !isGunLibraryGunNumber(gun) {
-					continue
-				}
-				s := math.Hypot(m.A, m.B)
-				if s <= 0 {
-					s = 1
-				}
-				gunLibraryButtonsData = append(gunLibraryButtonsData, gunLibraryButton{Gun: gun, X: m.TX, Y: m.TY, Scale: s})
-			}
-		}
-	})
-	return gunLibraryButtonsData
-}
-
-func sourceGunLibraryNames() map[int]string {
-	gunLibraryNamesOnce.Do(func() {
-		gunLibraryNamesData = map[int]string{}
-		path, err := findOriginalPath("fla", "LIBRARY", "Symbol 1190.xml")
-		if err != nil {
-			return
-		}
-		f, err := os.Open(path)
-		if err != nil {
-			return
-		}
-		defer f.Close()
-
-		dec := xml.NewDecoder(f)
-		currentFrame := -1
-		for {
-			tok, err := dec.Token()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return
-			}
-			switch t := tok.(type) {
-			case xml.StartElement:
-				switch t.Name.Local {
-				case "DOMFrame":
-					currentFrame = intAttr(t.Attr, "index", -1)
-				case "characters":
-					if currentFrame < 0 {
-						continue
-					}
-					var value string
-					if err := dec.DecodeElement(&value, &t); err != nil {
-						return
-					}
-					value = strings.TrimSpace(value)
-					if value != "" {
-						gunLibraryNamesData[currentFrame+1] = value
-					}
-				}
-			case xml.EndElement:
-				if t.Name.Local == "DOMFrame" {
-					currentFrame = -1
-				}
-			}
-		}
-	})
-	return gunLibraryNamesData
-}
-
-func sourceGunLibraryName(frame int) string {
-	if name := sourceGunLibraryNames()[frame]; name != "" {
-		return name
-	}
-	if def, ok := WeaponByNumber(frame); ok {
-		return def.Name
-	}
-	return "Nothing Selected"
 }
 
 func (b gunLibraryButton) contains(x, y float64) bool {
@@ -166,15 +52,6 @@ func (g *Game) gunUnlocked(gun int) bool {
 	}
 	idx := gun - 10
 	return idx >= 0 && idx < len(g.campaignGuns) && g.campaignGuns[idx]
-}
-
-func (g *Game) gunLibraryHitAt(x, y float64) int {
-	for _, b := range sourceGunLibraryButtons() {
-		if b.contains(x, y) && g.gunUnlocked(b.Gun) {
-			return b.Gun
-		}
-	}
-	return 0
 }
 
 func (g *Game) updateGunLibraryMenu() {
@@ -252,77 +129,6 @@ func (g *Game) updateGunLibraryMenu() {
 	}
 }
 
-func drawGunLibraryBarOutline(screen *ebiten.Image, x, y float64) {
-	const w = 219.4
-	const h = 5.6
-	c := color.NRGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xff}
-	ebitenutil.DrawLine(screen, x, y, x, y+h, c)
-	ebitenutil.DrawLine(screen, x, y+h, x+w, y+h, c)
-	ebitenutil.DrawLine(screen, x+w, y+h, x+w, y, c)
-}
-
-func (g *Game) drawGunLibraryStatCard(screen *ebiten.Image, frame int) {
-	const x = 458.1
-	const y = 457.6
-
-	// Symbol1197 background is #797979. Cover only the dynamic/stat half of
-	// the flattened guncard; the TEST button and dropgun live to the right.
-	ebitenutil.DrawRect(screen, x, y, 315, 114, color.NRGBA{R: 0x79, G: 0x79, B: 0x79, A: 0xff})
-
-	// Symbol1190's exported PNGs are all the same, but its XFL vector bars are
-	// genuinely frame-specific. These source-raster frames contain those bars.
-	drawSourceRaster(screen, g.assets.GunLibraryStats[frame], x, y, 1, 1, 1)
-
-	white := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-	name := sourceGunLibraryName(frame)
-	if _, ok := WeaponByNumber(frame); ok {
-		name = weaponDisplayName(frame)
-	}
-	drawSourceMenuText(screen, name, menuFontTwCen, 14.2, white, x+4.5, y+4.5)
-	drawSourceMenuText(screen, "Damage", menuFontCondensed, 14.15, white, x+44, y+22.5)
-	drawSourceMenuText(screen, "Rate of Fire", menuFontCondensed, 14.15, white, x+27, y+39)
-	drawSourceMenuText(screen, "Ammo Capacity", menuFontCondensed, 14.15, white, x+9, y+55.5)
-	drawSourceMenuText(screen, "Weight", menuFontCondensed, 14.15, white, x+50, y+73.5)
-	drawSourceMenuText(screen, "Recoil", menuFontCondensed, 14.15, white, x+55, y+90)
-
-	for _, top := range []float64{29.0, 45.35, 61.9, 78.4, 95.0} {
-		drawGunLibraryBarOutline(screen, x+91.2, y+top)
-	}
-}
-
-func drawGunLibraryCardBackground(screen *ebiten.Image, b gunLibraryButton) {
-	// Symbol913 contains Symbol911 at (-20,-20). Symbol911's artwork is
-	// Symbol336: an exact 800x800 #ff9900 square scaled by .05, i.e. 40x40.
-	// The constructor then forces the whole Symbol913 clip to -20 degrees.
-	gunLibraryCardOnce.Do(func() {
-		gunLibraryCardImage = ebiten.NewImage(40, 40)
-		gunLibraryCardImage.Fill(color.NRGBA{R: 0xff, G: 0x99, B: 0x00, A: 0xff})
-	})
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(-20, -20)
-	op.GeoM.Scale(b.Scale, b.Scale)
-	op.GeoM.Rotate(-20 * math.Pi / 180)
-	op.GeoM.Translate(b.X, b.Y)
-	screen.DrawImage(gunLibraryCardImage, op)
-}
-
-func eraseFrozenGunLibraryButton(screen *ebiten.Image, b gunLibraryButton) {
-	// FFDec flattens Symbol1198 before Symbol913's constructor runs. The source
-	// matrix rotation (10..66 degrees) is only a hidden gun-number carrier; at
-	// runtime AS2 immediately changes it to -20. Erase that frozen instance in
-	// its original encoded rotation before drawing the real runtime card.
-	gunLibraryEraseOnce.Do(func() {
-		gunLibraryEraseImage = ebiten.NewImage(48, 48)
-		gunLibraryEraseImage.Fill(color.NRGBA{R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff})
-	})
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(-24, -24)
-	op.GeoM.Scale(b.Scale, b.Scale)
-	op.GeoM.Rotate(float64(b.Gun) * math.Pi / 180)
-	op.GeoM.Translate(b.X, b.Y)
-	screen.DrawImage(gunLibraryEraseImage, op)
-}
-
 func drawGunLibraryCleanThumb(screen *ebiten.Image, raster *SourceRaster, x, y, maxW, maxH, scale, rotation float64) {
 	if raster == nil || raster.Image == nil {
 		return
@@ -339,26 +145,6 @@ func drawGunLibraryCleanThumb(screen *ebiten.Image, raster *SourceRaster, x, y, 
 	op.GeoM.Rotate(rotation * math.Pi / 180)
 	op.GeoM.Translate(x, y)
 	screen.DrawImage(raster.Image, op)
-}
-
-func (g *Game) drawGunLibraryButtons(screen *ebiten.Image) {
-	buttons := sourceGunLibraryButtons()
-	// First remove every FFDec-frozen Symbol913. Doing this in a separate pass
-	// prevents one erase rectangle from covering a neighboring rebuilt card.
-	for _, b := range buttons {
-		eraseFrozenGunLibraryButton(screen, b)
-	}
-	for _, b := range buttons {
-		drawGunLibraryCardBackground(screen, b)
-		// Use the same clean gun sprite as gameplay, not Symbol595's flattened
-		// wrapper (which exposes Flash helper/control-point artwork).
-		drawGunLibraryCleanThumb(screen, g.assets.GunLibraryThumbs[b.Gun], b.X, b.Y, 34, 25, b.Scale, -20)
-		if !g.gunUnlocked(b.Gun) {
-			// Symbol913 frame2 adds this exact white direct-shape overlay when the
-			// campaign gunarray entry is false. Nested dropgun artwork is skipped.
-			drawSourceRasterRot(screen, g.assets.GunLibraryLockedOverlay, b.X, b.Y, b.Scale, b.Scale, -20, 1)
-		}
-	}
 }
 
 func (g *Game) drawGunLibraryInteractions(screen *ebiten.Image) {

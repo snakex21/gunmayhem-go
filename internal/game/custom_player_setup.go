@@ -116,26 +116,6 @@ func (g *Game) playCustomWarning(kind int) {
 	g.customWarningFrame = 2
 }
 
-func (g *Game) customPlayerSetupHitAt(x, y float64) int {
-	for i := range g.customPlayers {
-		cardX := 20.0 + float64(i)*220
-		cardY := g.customCardY[i]
-		if g.customPlayers[i].Type == 0 {
-			if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+20, cardY-254.95, 1.0775146484375, 1).Contains(x, y) {
-				return playerSlotHit(i, playerSlotActionHuman)
-			}
-			if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+20, cardY-220.95, 1.0775146484375, 1).Contains(x, y) {
-				return playerSlotHit(i, playerSlotActionAI)
-			}
-		} else {
-			if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+20, cardY+9.15, 1.0775146484375, 1).Contains(x, y) {
-				return playerSlotHit(i, playerSlotActionClear)
-			}
-		}
-	}
-	return menuHitNone
-}
-
 func (g *Game) activateCustomPlayerSlot(hit int) bool {
 	slot, action, ok := decodePlayerSlotHit(hit)
 	if !ok {

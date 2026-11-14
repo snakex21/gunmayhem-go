@@ -426,3 +426,11 @@ func startExtraMissionForTest(t *testing.T, level int) *Game {
 	}
 	return g
 }
+
+func extraCampaignEnemyLives(spec extraCampaignMission) int {
+	total := 0
+	for _, enemy := range spec.Enemies {
+		total += enemy.Lives
+	}
+	return total
+}

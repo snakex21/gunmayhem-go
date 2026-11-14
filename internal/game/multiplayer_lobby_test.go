@@ -48,31 +48,6 @@ func TestOnlineClientSnapshotDoesNotUndoLocalCharacterChoice(t *testing.T) {
 	}
 }
 
-func TestOnlineLobbyHostCanOpenSetupWhileAlone(t *testing.T) {
-	host, err := newHostNetplay("127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer host.Close()
-
-	g := New()
-	g.netplay = host
-	g.screen = screenMultiplayerLobby
-	if got := g.multiplayerLobbyHitAt(multiplayerLobbySetupRect.X+10, multiplayerLobbySetupRect.Y+10); got != menuHitMultiplayerLobbySetup {
-		t.Fatalf("host setup must be available while alone, hit=%d", got)
-	}
-
-	client, err := newClientNetplay(host.listener.Addr().String())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer client.Close()
-	waitFor(t, "online lobby 2/2", host.connected)
-	if got := g.multiplayerLobbyHitAt(multiplayerLobbySetupRect.X+10, multiplayerLobbySetupRect.Y+10); got != menuHitMultiplayerLobbySetup {
-		t.Fatalf("setup hit=%d want=%d after real connection", got, menuHitMultiplayerLobbySetup)
-	}
-}
-
 func TestOnlineMatchSkipsLocalPlayerSetupAndCreatesTwoNetworkSlots(t *testing.T) {
 	host, err := newHostNetplay("127.0.0.1:0")
 	if err != nil {
@@ -136,72 +111,25 @@ func TestOnlineCharacterConfigSynchronizesToHost(t *testing.T) {
 	}
 }
 
-func TestOnlineHandgunArrowsCycleThroughFullStarterRoster(t *testing.T) {
-	g := New()
-	g.netplay = &netplaySession{mode: netplayHost}
-	handguns := starterHandgunNumbers()
-	if len(handguns) <= 6 {
-		t.Fatalf("starter handgun roster has only %d entries", len(handguns))
-	}
-	g.customPlayers[0].Gun = 6
-	g.adjustOnlineCharacter(onlineCharGun, 1)
-	if got := g.customPlayers[0].Gun; got != handguns[6] {
-		t.Fatalf("next handgun after base roster=%d want%d", got, handguns[6])
-	}
-	g.adjustOnlineCharacter(onlineCharGun, -1)
-	if got := g.customPlayers[0].Gun; got != 6 {
-		t.Fatalf("previous handgun did not return to base roster: %d", got)
-	}
-	g.customPlayers[0].Gun = handguns[len(handguns)-1]
-	g.adjustOnlineCharacter(onlineCharGun, 1)
-	if got := g.customPlayers[0].Gun; got != handguns[0] {
-		t.Fatalf("handgun roster did not wrap: %d want%d", got, handguns[0])
-	}
-}
-
-func TestEveryOnlineStarterHandgunTileCanBeSelected(t *testing.T) {
-	host, err := newHostNetplay("127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer host.Close()
-	g := New()
-	g.netplay = host
-	handguns := starterHandgunNumbers()
-	pageSize := onlineCharacterVisualPageSize(onlineVisualCharacterGun)
-	for absolute, want := range handguns {
-		g.onlineVisualPicker = onlineVisualCharacterGun
-		g.onlineVisualPage = absolute / pageSize
-		visible := absolute % pageSize
-		r := onlineVisualCharacterChoiceRect(onlineVisualCharacterGun, visible)
-		hit := g.onlineVisualPickerHitAt(r.X+r.W/2, r.Y+r.H/2)
-		index, ok := decodeOnlineVisualChoiceHit(hit)
-		if !ok || index != visible {
-			t.Fatalf("handgun %d tile hit=%d index=%d ok=%v", want, hit, index, ok)
-		}
-		g.applyOnlineVisualChoice(index)
-		if got := g.customPlayers[0].Gun; got != want {
-			t.Fatalf("handgun tile selected %d want%d", got, want)
-		}
-	}
-}
-
 func TestEveryOnlineWeaponBlocklistTileDecodesAcrossAllPages(t *testing.T) {
 	g := New()
+	g.onlineBlocklistOpen = true
 	weapons := onlineAllWeaponNumbers()
 	if len(weapons) <= 100 {
 		t.Fatalf("weapon list has only %d entries; test needs the formerly broken later pages", len(weapons))
 	}
 	for absolute, weapon := range weapons {
-		g.onlineBlocklistPage = absolute / 24
-		visible := absolute % 24
-		col := visible % 4
-		row := visible / 4
-		r := Rect{X: 80 + float64(col)*190, Y: 125 + float64(row)*52, W: 175, H: 42}
-		hit := g.onlineBlocklistHitAt(r.X+r.W/2, r.Y+r.H/2)
+		hit := menuHitOnlineBlockBase + absolute
 		index, ok := decodeOnlineBlockWeaponHit(hit)
 		if !ok || index != absolute {
-			t.Fatalf("weapon #%d blocklist tile hit=%d decoded index=%d ok=%v want index=%d", weapon, hit, index, ok, absolute)
+			t.Fatalf("weapon #%d blocklist code %d decoded index=%d ok=%v want index=%d", weapon, hit, index, ok, absolute)
+		}
+		if weapon <= 0 || weapon >= len(g.onlineBlockedWeapons) {
+			continue
+		}
+		g.activateOnlineLobbyHit(hit)
+		if !g.onlineBlockedWeapons[weapon] {
+			t.Fatalf("weapon #%d was not blocked by its tile code", weapon)
 		}
 	}
 }
@@ -340,31 +268,6 @@ func TestOnlineRulesFilterWeaponsAndPerks(t *testing.T) {
 	}
 }
 
-func TestOnlineVisualCharacterPickerAppliesChoice(t *testing.T) {
-	host, err := newHostNetplay("127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer host.Close()
-	g := New()
-	g.netplay = host
-	g.onlineLobbyCustomize = true
-	g.onlineVisualPicker = onlineVisualCharacterFace
-	g.applyOnlineVisualChoice(10) // visible index 10 -> face 11
-	if g.customPlayers[0].Eyes != 11 {
-		t.Fatalf("visual face choice=%d want11", g.customPlayers[0].Eyes)
-	}
-	if g.onlineVisualPicker != onlineVisualNone {
-		t.Fatalf("visual picker stayed open: %d", g.onlineVisualPicker)
-	}
-
-	g.onlineVisualPicker = onlineVisualCharacterGun
-	g.applyOnlineVisualChoice(len(starterHandgunNumbers()) - 1)
-	if g.customPlayers[0].Gun != 231 {
-		t.Fatalf("visual developed handgun choice=%d want231", g.customPlayers[0].Gun)
-	}
-}
-
 func TestOnlineVisualWeaponAndMapPickerUsePicturesByIndex(t *testing.T) {
 	g := New()
 	weapons := onlineAllWeaponNumbers()
@@ -389,25 +292,28 @@ func TestOnlineVisualWeaponAndMapPickerUsePicturesByIndex(t *testing.T) {
 	}
 }
 
-func TestOnlineVisualHitAreasOpenPictureSelectors(t *testing.T) {
+func TestOnlineRuleChoiceCodesSelectModes(t *testing.T) {
 	g := New()
-	for field := 0; field < onlineCharFieldCount; field++ {
-		r := onlineCharacterFieldRect(field)
-		if got := g.onlineCharacterHitAt(r.X+r.W/2, r.Y+r.H/2); got != onlineCharacterVisualFieldHit(field) {
-			t.Fatalf("character field %d hit=%d", field, got)
-		}
-	}
 	for mode := 0; mode < 4; mode++ {
-		r := Rect{X: 60 + float64(mode)*195, Y: 125, W: 180, H: 72}
-		if got := g.onlineRulesHitAt(r.X+r.W/2, r.Y+r.H/2); got != menuHitOnlineRuleMapChoiceBase+mode {
-			t.Fatalf("map visual mode %d hit=%d", mode, got)
+		g.activateOnlineLobbyHit(menuHitOnlineRuleMapChoiceBase + mode)
+		if g.onlineMapRotation != mode {
+			t.Fatalf("map mode code %d selected %d", mode, g.onlineMapRotation)
 		}
 	}
 	for mode := 0; mode < 3; mode++ {
-		r := Rect{X: 80 + float64(mode)*250, Y: 220, W: 230, H: 70}
-		if got := g.onlineRulesHitAt(r.X+r.W/2, r.Y+r.H/2); got != menuHitOnlineRuleWeaponChoiceBase+mode {
-			t.Fatalf("weapon visual mode %d hit=%d", mode, got)
+		g.activateOnlineLobbyHit(menuHitOnlineRuleWeaponChoiceBase + mode)
+		if g.onlineWeaponMode != mode {
+			t.Fatalf("weapon mode code %d selected %d", mode, g.onlineWeaponMode)
 		}
+	}
+	g.activateOnlineLobbyHit(menuHitOnlineRuleOnlyWeaponPicker)
+	if g.onlineVisualPicker != onlineVisualOnlyWeapon {
+		t.Fatalf("only-weapon picker did not open: %d", g.onlineVisualPicker)
+	}
+	g.activateOnlineLobbyHit(menuHitOnlineOverlayBack)
+	g.activateOnlineLobbyHit(menuHitOnlineRuleFixedMapPicker)
+	if g.onlineVisualPicker != onlineVisualFixedMap {
+		t.Fatalf("fixed-map picker did not open: %d", g.onlineVisualPicker)
 	}
 }
 

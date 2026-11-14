@@ -52,17 +52,6 @@ func optionsControlKeyRect(player, index int) Rect {
 	return Rect{X: card.X + 104, Y: card.Y + 52 + float64(index)*48, W: 92, H: 40}
 }
 
-func optionsControlHitAt(x, y float64) (player, index int, ok bool) {
-	for p := 0; p < 4; p++ {
-		for i := range optionControlLabels {
-			if optionsControlKeyRect(p, i).Contains(x, y) {
-				return p, i, true
-			}
-		}
-	}
-	return 0, 0, false
-}
-
 func (g *Game) updateOptionsMenu() {
 	in := g.readUIInput(&g.optionsUI)
 	if g.optionsKeyCapturePlayer > 0 {

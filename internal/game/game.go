@@ -236,7 +236,6 @@ type Game struct {
 
 	gunLibrarySelected          int
 	gunLibraryPressed           int
-	gunLibraryGM2               bool
 	gunLibraryPage              int
 	gunLibraryCategory          int
 	gunLibraryThrowableSelected int
@@ -290,7 +289,6 @@ type Game struct {
 	onlineMatchSetup          bool
 	onlinePlayerCount         int
 	onlinePlayerSlots         [4]bool
-	onlineLobbyCustomize      bool
 	onlineRulesOpen           bool
 	onlineBlocklistOpen       bool
 	onlinePerkBlocklistOpen   bool
@@ -1840,15 +1838,6 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("DEV | mapa %d/13 | gamemode %d | bron: %s | F2/F3 mapa | R reset", g.arena.Number, g.GameMode, g.players[0].Weapon.Def.DisplayName()), 10, 30)
 		ebitenutil.DebugPrintAt(screen, "P1 strzalki + [ ] | P2 WASD + T Y | F4 AI P2 | F1 wylacz debug", 10, 46)
 	}
-}
-
-func drawImageAt(dst, src *ebiten.Image, x, y float64) {
-	if src == nil {
-		return
-	}
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(x, y)
-	dst.DrawImage(src, op)
 }
 
 func (g *Game) Layout(_, _ int) (int, int) {

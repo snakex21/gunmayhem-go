@@ -96,14 +96,6 @@ func loadGeneratedThrowableImage(filename string) *ebiten.Image {
 	return ebiten.NewImageFromImage(trimmed)
 }
 
-func throwableSetupChoiceRect(cardX, cardY float64, kind int) Rect {
-	if kind < 0 || kind >= throwableTypeCount {
-		return Rect{}
-	}
-	// Six visual choices fit exactly in the old 165px throwable selector row.
-	return Rect{X: cardX + 17.5 + float64(kind)*27.5, Y: cardY + 245, W: 25, H: 22}
-}
-
 func (g *Game) drawThrowableSetupChoice(dst *ebiten.Image, kind int, r Rect, selected bool) {
 	if dst == nil || r.W <= 0 || r.H <= 0 || kind < 0 || kind >= throwableTypeCount {
 		return

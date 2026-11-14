@@ -197,10 +197,6 @@ const (
 	grenadeThrowHandY  = -14.0
 )
 
-func updateGrenades(arena Map, grenades []Grenade, players []*Player, explosions *[]Explosion, dynamite *[]DynamiteEffect, blast *[]BlastEffect, fire *[]FirePatch) {
-	updateGrenadesWithAreas(arena, grenades, players, explosions, dynamite, blast, fire, nil)
-}
-
 // updateGrenadesWithAreas is updateGrenades plus the area-effect list that gas
 // and smoke clouds (and the flashbang burst visual) are spawned into. A nil
 // areas pointer still applies every direct effect (blast, fire, blind).

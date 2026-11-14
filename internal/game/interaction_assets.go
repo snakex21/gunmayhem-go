@@ -191,9 +191,6 @@ func loadInteractionAssets(a *Assets) {
 	if base, err := renderSolidXFLFrame("Symbol 1417", 0); err == nil {
 		a.TestPickupBase = base
 	}
-	if overlay, err := renderSolidXFLFrameShapesOnly("Symbol 913", 1); err == nil {
-		a.GunLibraryLockedOverlay = overlay
-	}
 	a.CustomPlayerCard = loadSourceRaster("Symbol 1302", 2, "sprites", "DefineSprite_1302", "1", "3.png")
 	// Symbol806 constructor immediately gotoAndStop(2).
 	a.CustomEditButton = loadSourceRaster("Symbol 806", 1, "sprites", "DefineSprite_806", "1", "2.png")
@@ -297,13 +294,6 @@ func (a *Assets) EnsureGunLibrary() {
 	gunLibraryFrames := append([]int{7}, integerRange(1, 6)...)
 	gunLibraryFrames = append(gunLibraryFrames, integerRange(10, 86)...)
 	for _, frame := range gunLibraryFrames {
-		if frame <= 66 {
-			if stat, err := renderSolidXFLFrame("Symbol 1190", frame-1); err == nil {
-				a.GunLibraryStats[frame] = stat
-			} else {
-				a.GunLibraryStats[frame] = loadSourceRaster("Symbol 1190", frame-1, "sprites", "DefineSprite_1190", "1", strconv.Itoa(frame)+".png")
-			}
-		}
 		if def, ok := WeaponByNumber(frame); ok {
 			if frame >= 67 {
 				a.GunLibraryThumbs[frame] = loadTightOriginalPNGIn("gm2", "sprites", def.SpriteDir, "1.png")

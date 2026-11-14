@@ -23,76 +23,6 @@ const (
 
 const menuHitCustomNetworkServerBase = 9800
 
-var (
-	customSessionLocalRect        = Rect{X: 646, Y: 16, W: 96, H: 30}
-	customSessionOnlineRect       = Rect{X: 748, Y: 16, W: 106, H: 30}
-	customSessionRulesRect        = Rect{X: 760, Y: 45, W: 105, H: 28}
-	customSessionNetworkRect      = Rect{X: 646, Y: 50, W: 208, H: 28}
-	customNetworkCreateRect       = Rect{X: 55, Y: 135, W: 300, H: 45}
-	customNetworkRefreshRect      = Rect{X: 370, Y: 135, W: 150, H: 45}
-	customNetworkServerListRect   = Rect{X: 55, Y: 205, W: 385, H: 230}
-	customNetworkPreviewRect      = Rect{X: 455, Y: 205, W: 390, H: 230}
-	customNetworkJoinSelectedRect = Rect{X: 620, Y: 392, W: 205, H: 34}
-	customNetworkAddressRect      = Rect{X: 55, Y: 468, W: 470, H: 40}
-	customNetworkDirectJoinRect   = Rect{X: 540, Y: 468, W: 140, H: 40}
-	customNetworkMainMenuRect     = Rect{X: 55, Y: 530, W: 250, H: 45}
-)
-
-func (g *Game) customSessionHitAt(x, y float64) int {
-	// LOCAL/ONLINE toggles exist on the local setup and browser, but not as
-	// invisible hot-zones inside the sequential online wizard.
-	if g.customNetworkOpen || !g.customOnlineMode {
-		if customSessionLocalRect.Contains(x, y) {
-			return menuHitCustomSessionLocal
-		}
-		if customSessionOnlineRect.Contains(x, y) {
-			return menuHitCustomSessionOnline
-		}
-	}
-	if g.customOnlineMode && !g.customNetworkOpen && g.netplay != nil && g.netplay.mode == netplayHost && customSessionRulesRect.Contains(x, y) {
-		return menuHitCustomSessionRules
-	}
-	return menuHitNone
-}
-
-func (g *Game) customBrowserServerHitAt(x, y float64) int {
-	if !customNetworkServerListRect.Contains(x, y) {
-		return menuHitNone
-	}
-	const rowH = 34.0
-	row := int((y - customNetworkServerListRect.Y) / rowH)
-	if row < 0 || row >= 6 {
-		return menuHitNone
-	}
-	index := g.multiplayerServerScroll + row
-	if index < 0 || index >= len(g.multiplayerServers) {
-		return menuHitNone
-	}
-	return menuHitCustomNetworkServerBase + index
-}
-
-func (g *Game) customNetworkHitAt(x, y float64) int {
-	if customNetworkMainMenuRect.Contains(x, y) {
-		return menuHitCustomNetworkMainMenu
-	}
-	if g.netplay == nil && customNetworkCreateRect.Contains(x, y) {
-		return menuHitCustomNetworkCreateSetup
-	}
-	if g.netplay == nil && customNetworkRefreshRect.Contains(x, y) {
-		return menuHitCustomNetworkRefresh
-	}
-	if customNetworkDirectJoinRect.Contains(x, y) {
-		return menuHitCustomNetworkJoin
-	}
-	if g.multiplayerSelectedServer >= 0 && g.multiplayerSelectedServer < len(g.multiplayerServers) && customNetworkJoinSelectedRect.Contains(x, y) {
-		return menuHitCustomNetworkJoinSelected
-	}
-	if hit := g.customBrowserServerHitAt(x, y); hit >= menuHitCustomNetworkServerBase {
-		return hit
-	}
-	return menuHitNone
-}
-
 func (g *Game) returnToOnlineServerBrowser() {
 	if g == nil {
 		return
@@ -270,10 +200,6 @@ func (g *Game) customSessionStatus() string {
 	return "ONLINE - CONNECTING"
 }
 
-func (g *Game) customOnlineRulesOverlayActive() bool {
-	return g.onlineRulesOpen || g.onlineBlocklistOpen || g.onlinePerkBlocklistOpen || g.onlineVisualPicker != onlineVisualNone
-}
-
 func onOff(v bool) string {
 	if v {
 		return "ON"
@@ -288,17 +214,8 @@ func customPlayerEditorHitSlot(hit int) (int, bool) {
 	if hit >= menuHitPlayerThrowableBase && hit < menuHitPlayerThrowableBase+4*throwableHitStride {
 		return (hit - menuHitPlayerThrowableBase) / throwableHitStride, true
 	}
-	if hit >= menuHitPlayerEditBase && hit < menuHitPlayerEditBase+40 {
-		return (hit - menuHitPlayerEditBase) / 10, true
-	}
-	if hit >= menuHitPlayerEditorBackBase && hit < menuHitPlayerEditorBackBase+4 {
-		return hit - menuHitPlayerEditorBackBase, true
-	}
 	if slot, _, _, ok := decodeCustomSelectHit(hit); ok {
 		return slot, true
-	}
-	if hit >= menuHitPlayerHatPageBase && hit < menuHitPlayerHatPageBase+4 {
-		return hit - menuHitPlayerHatPageBase, true
 	}
 	if hit >= menuHitPlayerTeamBase && hit < menuHitPlayerTeamBase+40 {
 		return (hit - menuHitPlayerTeamBase) / 10, true
@@ -335,10 +252,6 @@ func (g *Game) onlineMayEditCustomCharacterSlot(slot int) bool {
 	default:
 		return false
 	}
-}
-
-func (g *Game) onlineHostMayEditCustomSlot(slot int) bool {
-	return g.onlineMayEditCustomCharacterSlot(slot)
 }
 
 func (g *Game) removeOnlineCustomSlot(slot int) {

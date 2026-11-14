@@ -123,24 +123,6 @@ var chaosEffectSpecs = []chaosEffectSpec{
 	{chaosEffectZeroGravity, "ZERO GRAVITY", "Gravity becomes extremely weak until the next chaos event."},
 }
 
-var (
-	customChaosSetupRect         = Rect{X: -1240, Y: 458, W: 290, H: 40}
-	customChaosToggleRect        = Rect{X: -1760, Y: 138, W: 205, H: 42}
-	customChaosIntervalMinusRect = Rect{X: -1535, Y: 138, W: 45, H: 42}
-	customChaosIntervalPlusRect  = Rect{X: -1335, Y: 138, W: 45, H: 42}
-	customChaosSelectAllRect     = Rect{X: -1280, Y: 138, W: 150, H: 42}
-	customChaosClearRect         = Rect{X: -1115, Y: 138, W: 150, H: 42}
-	customChaosBackRect          = Rect{X: -1195, Y: 548, W: 245, H: 36}
-)
-
-func customChaosEffectRect(index int) Rect {
-	// Five compact columns keep the enlarged event pool readable without
-	// requiring paging or pushing the bottom controls off-screen.
-	col := index % 5
-	row := index / 5
-	return Rect{X: -1760 + float64(col)*164, Y: 190 + float64(row)*31, W: 154, H: 28}
-}
-
 func (g *Game) initCustomChaosDefaults() {
 	if g == nil {
 		return
@@ -151,36 +133,6 @@ func (g *Game) initCustomChaosDefaults() {
 	for _, spec := range chaosEffectSpecs {
 		g.customChaosSelected[spec.ID] = true
 	}
-}
-
-func (g *Game) customChaosHitAt(x, y float64) int {
-	if g == nil || !g.customChaosOpen {
-		return menuHitNone
-	}
-	if customChaosToggleRect.Contains(x, y) {
-		return menuHitChaosToggle
-	}
-	if customChaosIntervalMinusRect.Contains(x, y) {
-		return menuHitChaosIntervalMinus
-	}
-	if customChaosIntervalPlusRect.Contains(x, y) {
-		return menuHitChaosIntervalPlus
-	}
-	if customChaosSelectAllRect.Contains(x, y) {
-		return menuHitChaosSelectAll
-	}
-	if customChaosClearRect.Contains(x, y) {
-		return menuHitChaosClear
-	}
-	for i, spec := range chaosEffectSpecs {
-		if customChaosEffectRect(i).Contains(x, y) {
-			return menuHitChaosEffectBase + spec.ID
-		}
-	}
-	if customChaosBackRect.Contains(x, y) {
-		return menuHitChaosBack
-	}
-	return menuHitCustomModifiersBlock
 }
 
 func (g *Game) activateCustomChaosHit(hit int) bool {
@@ -248,79 +200,6 @@ func chaosEffectLabel(id int) string {
 		}
 	}
 	return "CHAOS"
-}
-
-func chaosEffectHint(id int) string {
-	for _, spec := range chaosEffectSpecs {
-		if spec.ID == id {
-			return spec.Hint
-		}
-	}
-	return "Choose which events may be drawn by Chaos Mode."
-}
-
-func drawChaosEffectButton(screen *ebiten.Image, r Rect, label string, selected bool) {
-	fill := color.NRGBA{R: 0x2e, G: 0x31, B: 0x36, A: 0xff}
-	if selected {
-		fill = color.NRGBA{R: 0xff, G: 0x66, B: 0x00, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x55, G: 0x58, B: 0x60, A: 0xff})
-	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
-	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 9.8, color.White, r.X+7, r.Y+7)
-}
-
-func (g *Game) drawCustomChaosOverlay(screen *ebiten.Image) {
-	if g == nil || !g.customChaosOpen {
-		return
-	}
-	x := g.customMenuX - 1790
-	// Chaos is a real full-screen setup page, not a translucent/popup panel.
-	// Fill the whole stage first so no LOCAL/ONLINE header or controls can show
-	// through around the old 850x516 panel bounds.
-	screen.Fill(color.NRGBA{R: 0x11, G: 0x14, B: 0x19, A: 0xff})
-	drawSourceMenuText(screen, "CHAOS MODE SETUP", menuFontCondensedExtraBold, 29, color.White, x+20, 22)
-	drawSourceMenuText(screen, "Choose the event pool manually. Chaos will only draw from the effects selected below.", menuFontCondensed, 13.5, color.NRGBA{R: 0xc5, G: 0xca, B: 0xd1, A: 0xff}, x+20, 58)
-
-	toggle := customChaosToggleRect
-	toggle.X += g.customMenuX
-	drawModifierButton(screen, toggle, map[bool]string{false: "CHAOS MODE: OFF", true: "CHAOS MODE: ON"}[g.customChaosEnabled], g.customChaosEnabled)
-
-	minus := customChaosIntervalMinusRect
-	minus.X += g.customMenuX
-	plus := customChaosIntervalPlusRect
-	plus.X += g.customMenuX
-	drawModifierButton(screen, minus, "-", false)
-	drawModifierButton(screen, plus, "+", false)
-	drawSourceMenuText(screen, fmt.Sprintf("CHANGE EVERY %ds", g.customChaosInterval), menuFontCondensedExtraBold, 14, color.White, g.customMenuX-1477, 150)
-
-	all := customChaosSelectAllRect
-	all.X += g.customMenuX
-	clear := customChaosClearRect
-	clear.X += g.customMenuX
-	drawModifierButton(screen, all, "SELECT ALL", false)
-	drawModifierButton(screen, clear, "CLEAR", false)
-
-	mx, my := g.cursorPos()
-	hover := 0
-	for i, spec := range chaosEffectSpecs {
-		r := customChaosEffectRect(i)
-		r.X += g.customMenuX
-		drawChaosEffectButton(screen, r, spec.Label, g.customChaosSelected[spec.ID])
-		if r.Contains(float64(mx), float64(my)) {
-			hover = spec.ID
-		}
-	}
-
-	hint := "Hover an event for details. Selected events form the Chaos pool."
-	if hover != 0 {
-		hint = chaosEffectHint(hover)
-	}
-	drawSourceMenuText(screen, fmt.Sprintf("POOL: %d/%d", g.chaosSelectedCount(), len(chaosEffectSpecs)), menuFontCondensedExtraBold, 13.5, color.NRGBA{R: 0xff, G: 0xa0, B: 0x24, A: 0xff}, x+20, 482)
-	drawSourceMenuText(screen, hint, menuFontCondensed, 13, color.NRGBA{R: 0xc5, G: 0xca, B: 0xd1, A: 0xff}, x+125, 482)
-
-	back := customChaosBackRect
-	back.X += g.customMenuX
-	drawModifierButton(screen, back, "BACK TO MODIFIERS", false)
 }
 
 func (g *Game) chaosIntervalFrames() int {

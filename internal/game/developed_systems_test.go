@@ -94,7 +94,7 @@ func TestMolotovCreatesPersistentFireInsteadOfGrenadeBlast(t *testing.T) {
 	var explosions []Explosion
 	var blast []BlastEffect
 	var fire []FirePatch
-	updateGrenades(arena, grenades, nil, &explosions, nil, &blast, &fire)
+	updateGrenadesWithAreas(arena, grenades, nil, &explosions, nil, &blast, &fire, nil)
 	if !grenades[0].Dead || len(fire) == 0 || len(explosions) != 0 || len(blast) != 0 {
 		t.Fatalf("molotov result: dead=%v fire=%d explosions=%d blast=%d", grenades[0].Dead, len(fire), len(explosions), len(blast))
 	}

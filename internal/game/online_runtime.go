@@ -13,22 +13,6 @@ func (g *Game) onlineLocalPlayerID() int {
 	return 0
 }
 
-func (g *Game) onlineConnectedPlayerCount() int {
-	if g == nil || g.netplay == nil {
-		return 0
-	}
-	if g.netplay.mode == netplayHost {
-		return 1 + g.netplay.connectedCount()
-	}
-	if g.onlinePlayerCount > 0 {
-		return g.onlinePlayerCount
-	}
-	if g.netplay.connected() {
-		return 2
-	}
-	return 0
-}
-
 func (g *Game) syncOnlineHostState() {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost {
 		return

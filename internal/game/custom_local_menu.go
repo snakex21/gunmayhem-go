@@ -110,15 +110,6 @@ func (g *Game) updateCustomLocalMenu() {
 
 func (g *Game) customLocalTextFocus() bool { return g.customNameFocus > 0 || g.customLivesFocus }
 
-// customLocalFrameInput applies the text-focus keyboard filter to a frame of
-// input (tests use it to drive typing frames like updateCustomLocalMenu).
-func (g *Game) customLocalFrameInput(in uiInput) uiInput {
-	if g.customLocalTextFocus() {
-		return in.pointerOnly()
-	}
-	return in
-}
-
 // runCustomLocalUpdate is one update pass for a frame of input (tests drive it).
 func (g *Game) runCustomLocalUpdate(in uiInput) {
 	ctx := g.customUI.begin(uiPassUpdate, nil, in)

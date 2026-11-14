@@ -6,8 +6,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// Every player's seven key buttons (incl. ABILITY) are hit at their drawn rect
-// and registered in the kit with the same geometry.
+// Every player's seven key buttons (incl. ABILITY) are registered in the kit
+// at their drawn rect, and clicking one starts capturing that binding.
 func TestOptionsControlKeyButtonsHitTheirBinding(t *testing.T) {
 	g := New()
 	g.optionsTab = optionsTabControls
@@ -15,18 +15,21 @@ func TestOptionsControlKeyButtonsHitTheirBinding(t *testing.T) {
 	for p := 0; p < 4; p++ {
 		for i := range optionControlLabels {
 			r := optionsControlKeyRect(p, i)
-			gp, gi, ok := optionsControlHitAt(r.X+r.W/2, r.Y+r.H/2)
-			if !ok || gp != p || gi != i {
-				t.Fatalf("key p%d i%d hit p=%d i=%d ok=%v", p, i, gp, gi, ok)
-			}
 			it, found := g.optionsUI.item(fmt.Sprintf("opt.key.%d.%d", p, i))
 			if !found || it.rect != r {
 				t.Fatalf("key p%d i%d registered=%v rect=%+v want %+v", p, i, found, it.rect, r)
 			}
+			g.optionsKeyCapturePlayer, g.optionsKeyCaptureIndex = 0, 0
+			x, y := r.X+r.W/2, r.Y+r.H/2
+			g.runOptionsUpdate(uiInput{X: x, Y: y, Moved: true})
+			g.runOptionsUpdate(uiInput{X: x, Y: y, Pressed: true, Down: true})
+			g.runOptionsUpdate(uiInput{X: x, Y: y, Released: true})
+			if g.optionsKeyCapturePlayer != p+1 || g.optionsKeyCaptureIndex != i {
+				t.Fatalf("click on key p%d i%d captured player=%d index=%d", p, i, g.optionsKeyCapturePlayer, g.optionsKeyCaptureIndex)
+			}
+			g.optionsKeyCapturePlayer, g.optionsKeyCaptureIndex = 0, 0
+			g.runOptionsUpdate(uiInput{X: x, Y: y})
 		}
-	}
-	if _, _, ok := optionsControlHitAt(5, 5); ok {
-		t.Fatal("hit outside the key buttons")
 	}
 }
 

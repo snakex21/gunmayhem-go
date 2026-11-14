@@ -2,15 +2,12 @@ package game
 
 import (
 	"fmt"
-	"image/color"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"golang.org/x/image/font"
 )
 
 // Online quality-of-life helpers: clipboard copy/paste of join codes,
@@ -405,46 +402,4 @@ func wrapTextToWidth(text string, maxWidth float64, measure func(string) float64
 	}
 	flush()
 	return lines
-}
-
-func sourceMenuTextWidth(kind sourceMenuFontKind, size float64) func(string) float64 {
-	face, err := sourceMenuFace(kind, size)
-	if err != nil || face == nil {
-		// Rough fallback so wrapping still happens without the font.
-		return func(s string) float64 { return float64(len([]rune(s))) * size * 0.55 }
-	}
-	return func(s string) float64 {
-		return float64(font.MeasureString(face, s).Ceil())
-	}
-}
-
-// drawWrappedMenuText draws text wrapped into at most maxLines lines starting
-// at (x, topY). The last line ends with "..." when text was cut; the full text
-// is in network.log. It returns the number of lines drawn.
-func drawWrappedMenuText(screen *ebiten.Image, text string, kind sourceMenuFontKind, size float64, clr color.Color, x, topY, maxWidth, lineHeight float64, maxLines int, background color.Color) int {
-	measure := sourceMenuTextWidth(kind, size)
-	lines := wrapTextToWidth(text, maxWidth, measure)
-	if len(lines) == 0 {
-		return 0
-	}
-	if maxLines > 0 && len(lines) > maxLines {
-		lines = lines[:maxLines]
-		last := []rune(lines[maxLines-1])
-		for len(last) > 0 && measure(string(last)+"...") > maxWidth {
-			last = last[:len(last)-1]
-		}
-		lines[maxLines-1] = string(last) + "..."
-	}
-	if background != nil {
-		ebitenutil.DrawRect(screen, x-6, topY-3, maxWidth+12, float64(len(lines))*lineHeight+6, background)
-	}
-	for i, line := range lines {
-		drawSourceMenuText(screen, line, kind, size, clr, x, topY+float64(i)*lineHeight)
-	}
-	return len(lines)
-}
-
-// wrappedLineCount reports how many lines text needs at the given width.
-func wrappedLineCount(text string, kind sourceMenuFontKind, size, maxWidth float64) int {
-	return len(wrapTextToWidth(text, maxWidth, sourceMenuTextWidth(kind, size)))
 }

@@ -10,28 +10,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-// The developed library keeps the original Gun Library presentation: four
-// weapon-family panels, handguns at the bottom and the original stat/test area.
-// GM2 additions are folded into those same four families instead of living on
-// a separate GM1/GM2/ALL page.
-var developedGunLibraryCategories = []struct {
-	guns      []int
-	columns   [3]float64
-	firstY    float64
-	rowStep   float64
-	cardScale float64
-}{
-	// Three compact columns keep every family entirely inside the original
-	// upper panels. With at most 20 weapons per family this needs only seven
-	// rows, so nothing can spill into SPECIAL / HANDGUNS / the stat card.
-	{[]int{12, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 67, 68, 69, 70, 71}, [3]float64{55, 105, 155}, 214, 31.5, 0.68},
-	{[]int{11, 14, 16, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 77, 78, 79, 80, 81}, [3]float64{242, 322, 402}, 214, 31.5, 0.68},
-	{[]int{13, 15, 18, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 82, 83, 84, 85, 86}, [3]float64{487, 552, 617}, 214, 31.5, 0.68},
-	{[]int{10, 17, 20, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 72, 73, 74, 75, 76}, [3]float64{687, 757, 827}, 214, 31.5, 0.68},
-}
-
-const developedCustomGunLibraryPageSize = 18
-
 var (
 	gunLibraryPreviousPageRect = Rect{X: 285, Y: 426, W: 112, H: 28}
 	gunLibraryNextPageRect     = Rect{X: 503, Y: 426, W: 112, H: 28}
@@ -181,65 +159,6 @@ func (g *Game) organizedGunLibraryHitAt(x, y float64) int {
 	return 0
 }
 
-func developedGunLibraryButtons() []gunLibraryButton {
-	out := make([]gunLibraryButton, 0, 83)
-	// Preserve the exact source positions of the six starter handguns.
-	for _, b := range sourceGunLibraryButtons() {
-		if b.Gun >= 1 && b.Gun <= 6 {
-			out = append(out, b)
-		}
-	}
-	for _, category := range developedGunLibraryCategories {
-		const rowsPerColumn = 7
-		for i, gun := range category.guns {
-			col := i / rowsPerColumn
-			row := i % rowsPerColumn
-			if col >= len(category.columns) {
-				continue
-			}
-			out = append(out, gunLibraryButton{
-				Gun:   gun,
-				X:     category.columns[col],
-				Y:     category.firstY + float64(row)*category.rowStep,
-				Scale: category.cardScale,
-			})
-		}
-	}
-	return out
-}
-
-func developedGunLibraryPageCount() int {
-	customCount := len(allDevelopedWeaponNumbers())
-	return 1 + (customCount+developedCustomGunLibraryPageSize-1)/developedCustomGunLibraryPageSize
-}
-
-func developedGunLibraryButtonsForPage(page int) []gunLibraryButton {
-	if page <= 0 {
-		return developedGunLibraryButtons()
-	}
-	weapons := allDevelopedWeaponNumbers()
-	start := (page - 1) * developedCustomGunLibraryPageSize
-	if start >= len(weapons) {
-		return nil
-	}
-	end := start + developedCustomGunLibraryPageSize
-	if end > len(weapons) {
-		end = len(weapons)
-	}
-	out := make([]gunLibraryButton, 0, end-start)
-	for i, gun := range weapons[start:end] {
-		out = append(out, gunLibraryButton{
-			Gun:   gun,
-			X:     95 + float64(i%6)*142,
-			Y:     235 + float64(i/6)*78,
-			Scale: 1,
-			W:     128,
-			H:     64,
-		})
-	}
-	return out
-}
-
 func (g *Game) changeGunLibraryPage(delta int) {
 	if g.organizedGunLibraryThrowableTab() {
 		g.gunLibraryPage = 0
@@ -260,15 +179,6 @@ func (g *Game) changeGunLibraryPage(delta int) {
 		g.gunLibraryPage += count
 	}
 	g.gunLibraryPressed = 0
-}
-
-func (g *Game) developedGunLibraryHitAt(x, y float64) int {
-	for _, b := range developedGunLibraryButtonsForPage(g.gunLibraryPage) {
-		if b.contains(x, y) && g.gunUnlocked(b.Gun) {
-			return b.Gun
-		}
-	}
-	return 0
 }
 
 func (g *Game) drawDevelopedGunLibrary(screen *ebiten.Image) {
@@ -415,87 +325,4 @@ func (g *Game) drawOrganizedGunLibraryFooter(screen *ebiten.Image, category Deve
 	test := Rect{X: 756, Y: 514, W: 108, H: 44}
 	ebitenutil.DrawRect(screen, test.X, test.Y, test.W, test.H, orange)
 	drawSourceMenuText(screen, "TEST", menuFontCondensedExtraBold, 19, color.Black, 787, 525)
-}
-
-func (g *Game) drawCustomGunLibraryCard(screen *ebiten.Image, b gunLibraryButton) {
-	x := b.X - b.W/2
-	y := b.Y - b.H/2
-	border := color.NRGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xff}
-	if g.gunLibrarySelected == b.Gun {
-		border = color.NRGBA{R: 0xff, G: 0x99, B: 0x00, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, x, y, b.W, b.H, border)
-	ebitenutil.DrawRect(screen, x+3, y+3, b.W-6, b.H-6, color.NRGBA{R: 0xe3, G: 0xe3, B: 0xe3, A: 0xff})
-	thumbHeight := 34.0
-	if b.Gun == 178 {
-		thumbHeight = 44 // the compound bow is intentionally tall rather than long
-	}
-	drawGunLibraryCleanThumb(screen, g.gunLibraryRaster(b.Gun), b.X, b.Y-8, b.W-14, thumbHeight, 1, 0)
-	name := weaponDisplayName(b.Gun)
-	runes := []rune(name)
-	if len(runes) > 20 {
-		name = string(runes[:19]) + "…"
-	}
-	drawSourceMenuText(screen, name, menuFontCondensed, 10.8, color.Black, x+6, y+b.H-18)
-	if !g.gunUnlocked(b.Gun) {
-		ebitenutil.DrawRect(screen, x+3, y+3, b.W-6, b.H-6, color.NRGBA{A: 0x88})
-	}
-}
-
-func (g *Game) drawDevelopedGunLibraryPager(screen *ebiten.Image) {
-	count := developedGunLibraryPageCount()
-	if count <= 1 {
-		return
-	}
-	buttonColor := color.NRGBA{R: 0xff, G: 0x99, B: 0x00, A: 0xff}
-	borderColor := color.NRGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xff}
-	for _, r := range []Rect{gunLibraryPreviousPageRect, gunLibraryNextPageRect} {
-		ebitenutil.DrawRect(screen, r.X-2, r.Y-2, r.W+4, r.H+4, borderColor)
-		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, buttonColor)
-	}
-	drawSourceMenuText(screen, "< PREV", menuFontCondensed, 18, color.Black, gunLibraryPreviousPageRect.X+15, gunLibraryPreviousPageRect.Y+5)
-	drawSourceMenuText(screen, "NEXT >", menuFontCondensed, 18, color.Black, gunLibraryNextPageRect.X+14, gunLibraryNextPageRect.Y+5)
-	label := "ARSENAL " + strconv.Itoa(g.gunLibraryPage+1) + "/" + strconv.Itoa(count)
-	drawSourceMenuText(screen, label, menuFontCondensed, 19, color.Black, 395, 168)
-}
-
-func drawDevelopedStatFill(screen *ebiten.Image, x, y, fraction float64) {
-	fraction = math.Max(0, math.Min(1, fraction))
-	ebitenutil.DrawRect(screen, x, y, 219.4*fraction, 5.6, color.NRGBA{R: 0x55, G: 0x55, B: 0x55, A: 0xff})
-}
-
-// GM1 keeps its exact source-authored stat frames. GM2 has no matching GM1
-// Symbol1190 frames, so build the same five-bar card from the source weapon
-// values while keeping the same geometry and typography.
-func (g *Game) drawDevelopedGunLibraryStatCard(screen *ebiten.Image, frame int) {
-	if frame <= 66 {
-		g.drawGunLibraryStatCard(screen, frame)
-		return
-	}
-	def, ok := WeaponByNumber(frame)
-	if !ok {
-		g.drawGunLibraryStatCard(screen, 7)
-		return
-	}
-
-	const x = 458.1
-	const y = 457.6
-	ebitenutil.DrawRect(screen, x, y, 315, 114, color.NRGBA{R: 0x79, G: 0x79, B: 0x79, A: 0xff})
-	white := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-	drawSourceMenuText(screen, def.DisplayName(), menuFontTwCen, 14.2, white, x+4.5, y+4.5)
-	drawSourceMenuText(screen, "Damage", menuFontCondensed, 14.15, white, x+44, y+22.5)
-	drawSourceMenuText(screen, "Rate of Fire", menuFontCondensed, 14.15, white, x+27, y+39)
-	drawSourceMenuText(screen, "Ammo Capacity", menuFontCondensed, 14.15, white, x+9, y+55.5)
-	drawSourceMenuText(screen, "Weight", menuFontCondensed, 14.15, white, x+50, y+73.5)
-	drawSourceMenuText(screen, "Recoil", menuFontCondensed, 14.15, white, x+55, y+90)
-
-	tops := []float64{29.0, 45.35, 61.9, 78.4, 95.0}
-	for _, top := range tops {
-		drawGunLibraryBarOutline(screen, x+91.2, y+top)
-	}
-	drawDevelopedStatFill(screen, x+91.2, y+29.0, def.Firepower/70)
-	drawDevelopedStatFill(screen, x+91.2, y+45.35, (1/math.Max(1, float64(def.ROF)))/0.5)
-	drawDevelopedStatFill(screen, x+91.2, y+61.9, float64(def.Bullets)/40)
-	drawDevelopedStatFill(screen, x+91.2, y+78.4, def.Weight)
-	drawDevelopedStatFill(screen, x+91.2, y+95.0, def.Recoil/10)
 }

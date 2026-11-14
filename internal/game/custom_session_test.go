@@ -4,23 +4,6 @@ import (
 	"testing"
 )
 
-func TestCustomGameSessionToggleHitboxes(t *testing.T) {
-	g := New()
-	if got := g.customSessionHitAt(customSessionLocalRect.X+10, customSessionLocalRect.Y+10); got != menuHitCustomSessionLocal {
-		t.Fatalf("local session hit=%d", got)
-	}
-	if got := g.customSessionHitAt(customSessionOnlineRect.X+10, customSessionOnlineRect.Y+10); got != menuHitCustomSessionOnline {
-		t.Fatalf("online session hit=%d", got)
-	}
-	g.customOnlineMode = true
-	if got := g.customSessionHitAt(customSessionNetworkRect.X+10, customSessionNetworkRect.Y+10); got != menuHitNone {
-		t.Fatalf("online wizard must not keep an invisible network-status hitbox, hit=%d", got)
-	}
-	if got := g.customNetworkHitAt(customNetworkMainMenuRect.X+10, customNetworkMainMenuRect.Y+10); got != menuHitCustomNetworkMainMenu {
-		t.Fatalf("network main-menu hit=%d", got)
-	}
-}
-
 func TestServerBrowserClickSelectsPreviewWithoutJoining(t *testing.T) {
 	g := New()
 	g.customOnlineMode = true
@@ -29,12 +12,7 @@ func TestServerBrowserClickSelectsPreviewWithoutJoining(t *testing.T) {
 		ID: "preview", Name: "Preview Server", Address: "127.0.0.1:7777", Players: 1, MaxPlayers: 4,
 		GameMode: SourceGameModeNormal, Lives: 7, Rounds: 3, Maps: [customSeriesMaxRounds]int{2, 7, 11}, RuleSummary: "LOW GRAVITY",
 	}}
-	r := customNetworkServerListRect
-	hit := g.customBrowserServerHitAt(r.X+10, r.Y+10)
-	if hit != menuHitCustomNetworkServerBase {
-		t.Fatalf("server hit=%d want=%d", hit, menuHitCustomNetworkServerBase)
-	}
-	g.activateCustomNetworkHit(hit)
+	g.activateCustomNetworkHit(menuHitCustomNetworkServerBase)
 	if g.multiplayerSelectedServer != 0 {
 		t.Fatalf("selected server=%d want0", g.multiplayerSelectedServer)
 	}
@@ -173,17 +151,17 @@ func TestOnlineHostMayEditHostAndBotsButNotRemoteSlots(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer g.CloseNetplay()
-	if !g.onlineHostMayEditCustomSlot(0) {
+	if !g.onlineMayEditCustomCharacterSlot(0) {
 		t.Fatal("host must be able to edit its own slot")
 	}
-	if g.onlineHostMayEditCustomSlot(1) {
+	if g.onlineMayEditCustomCharacterSlot(1) {
 		t.Fatal("host must not edit a human ONLINE slot, even while it is waiting")
 	}
 	g.onlinePlayerSlots[1] = true
-	if g.onlineHostMayEditCustomSlot(1) {
+	if g.onlineMayEditCustomCharacterSlot(1) {
 		t.Fatal("host must not edit a connected ONLINE player's cosmetics")
 	}
-	if !g.onlineHostMayEditCustomSlot(2) {
+	if !g.onlineMayEditCustomCharacterSlot(2) {
 		t.Fatal("host must be able to edit an AI bot slot")
 	}
 }
@@ -211,14 +189,13 @@ func TestOnlineCharacterOwnershipBlocksHostFromRemoteLoadout(t *testing.T) {
 		t.Fatalf("host could not edit bot loadout: gun=%d", g.customPlayers[2].Gun)
 	}
 
-	hostNameRect := Rect{X: 20 + 32.5, Y: g.customCardY[0] + 294.35, W: 139.55, H: 17.9}
-	hostNickHit := g.customV2HitAt(hostNameRect.X+4, hostNameRect.Y+4)
-	if hostNickHit != menuHitPlayerColorBase+500 {
-		t.Fatalf("host nickname field hit=%d", hostNickHit)
+	g.customNameFocus = 0
+	if !g.activateCustomPlayerEditorHit(menuHitPlayerColorBase+500) || g.customNameFocus != 1 {
+		t.Fatalf("host nickname field did not take focus: focus=%d", g.customNameFocus)
 	}
-	remoteNameRect := Rect{X: 240 + 32.5, Y: g.customCardY[1] + 294.35, W: 139.55, H: 17.9}
-	remoteNickHit := g.customV2HitAt(remoteNameRect.X+4, remoteNameRect.Y+4)
-	if remoteNickHit == menuHitPlayerColorBase+501 {
+	g.customNameFocus = 0
+	g.activateCustomPlayerEditorHit(menuHitPlayerColorBase + 501)
+	if g.customNameFocus != 0 {
 		t.Fatal("host can focus a remote player's nickname field")
 	}
 }

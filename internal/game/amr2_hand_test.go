@@ -78,3 +78,20 @@ func TestAMR2BoltHandDetectionUsesPixelsInsteadOfTimelineGuess(t *testing.T) {
 		t.Fatalf("looped AMR-2 frame has only %d requested-color pixels", seenTint)
 	}
 }
+
+// amr2ExportedHandColor is the hand fill FFDec baked into AMR-2 frame N.
+func amr2ExportedHandColor(frame int) (color.NRGBA, bool) {
+	if frame < 2 {
+		return color.NRGBA{}, false
+	}
+	// gunhand starts on AMR-2 frame3. Symbol368 has 21 timeline ticks because
+	// its final (20th color) keyframe lasts two ticks before looping.
+	nested := (frame - 2) % 21
+	if nested < 0 {
+		nested += 21
+	}
+	if nested >= len(amr2ExportedHandPalette) {
+		nested = len(amr2ExportedHandPalette) - 1
+	}
+	return amr2ExportedHandPalette[nested], true
+}

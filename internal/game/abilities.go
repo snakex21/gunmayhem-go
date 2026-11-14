@@ -123,19 +123,6 @@ func abilityFromMenuNumber(number int) (int, bool) {
 	return list[number-1], true
 }
 
-func stepSelectableAbility(current, delta int) int {
-	list := selectableAbilityNumbers()
-	index := 0
-	for i, n := range list {
-		if n == current {
-			index = i
-			break
-		}
-	}
-	index = ((index+delta)%len(list) + len(list)) % len(list)
-	return list[index]
-}
-
 func abilityName(n int) string {
 	switch n {
 	case abilityNone:

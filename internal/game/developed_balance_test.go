@@ -496,3 +496,17 @@ func TestBowsAndHarpoonHaveNoMuzzleFlash(t *testing.T) {
 		}
 	}
 }
+
+// developedFireDelayForRPM converts a real-world rate of fire to the frame
+// delay the catalog is calibrated against (test helper).
+func developedFireDelayForRPM(basis developedRateBasis, rpm float64) int {
+	k, ok := developedRateConstant[basis]
+	if !ok || rpm <= 0 {
+		return 0
+	}
+	delay := int(math.Round(k / rpm))
+	if delay < developedMinFireDelay {
+		delay = developedMinFireDelay
+	}
+	return delay
+}

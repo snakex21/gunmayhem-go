@@ -444,9 +444,11 @@ func TestAbilityKeyMigrationAvoidsConflicts(t *testing.T) {
 	if controlByIndex(c, 6) != 90 || c.Ability != 90 {
 		t.Fatal("ability key not rebindable")
 	}
-	ability := optionsControlKeyRect(0, 6)
-	if p, i, ok := optionsControlHitAt(ability.X+10, ability.Y+10); !ok || p != 0 || i != 6 {
-		t.Fatalf("ability key hitbox p=%d i=%d ok=%v", p, i, ok)
+	g := New()
+	g.optionsTab = optionsTabControls
+	g.runOptionsUpdate(uiInput{})
+	if it, ok := g.optionsUI.item("opt.key.0.6"); !ok || it.rect != optionsControlKeyRect(0, 6) {
+		t.Fatalf("ability key button missing from the options kit: ok=%v", ok)
 	}
 }
 

@@ -125,14 +125,6 @@ func alphaBounds(src image.Image) (image.Rectangle, bool) {
 	return image.Rect(minX, minY, maxX+1, maxY+1), true
 }
 
-func sourceSymbolCanvasBounds(libraryName string) (Rect, error) {
-	libraryDir, err := findOriginalPath("fla", "LIBRARY")
-	if err != nil {
-		return Rect{}, err
-	}
-	return sourceSymbolCanvasBoundsInDir(libraryDir, libraryName)
-}
-
 func sourceSymbolCanvasBoundsInDir(libraryDir, libraryName string) (Rect, error) {
 	key := filepath.Clean(libraryDir) + "|" + libraryName
 	if r, ok := symbolBoundsCache[key]; ok {
@@ -360,14 +352,6 @@ func unionRectPoint(r Rect, x, y float64) Rect {
 	maxX := math.Max(r.X+r.W, x)
 	maxY := math.Max(r.Y+r.H, y)
 	return Rect{X: minX, Y: minY, W: maxX - minX, H: maxY - minY}
-}
-
-func sourceRasterImageSize(r *SourceRaster) image.Point {
-	if r == nil || r.Image == nil {
-		return image.Point{}
-	}
-	b := r.Image.Bounds()
-	return image.Pt(b.Dx(), b.Dy())
 }
 
 func drawSourceRaster(dst *ebiten.Image, r *SourceRaster, x, y, scaleX, scaleY, alpha float64) {

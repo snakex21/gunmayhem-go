@@ -35,55 +35,53 @@ type Assets struct {
 	// Root/menu interaction clips. These are kept frame-by-frame because the
 	// source ActionScript drives their timelines directly (fadeaway, countdown,
 	// campaign unlocks, etc.) rather than treating them as static overlays.
-	CampaignBase            *SourceRaster
-	CampaignSlider          *SourceRaster
-	CampaignBack            *SourceRaster
-	CampaignUnlock          map[int]*SourceRaster
-	CampaignPlayerCard      *SourceRaster
-	CampaignInfoPanel       *SourceRaster
-	CampaignStartButton     *SourceRaster
-	CampaignInfoFrames      map[int]*SourceRaster
-	CampaignLevelIcons      map[int]*SourceRaster
-	CampaignLevelLocks      map[int]*SourceRaster
-	CampaignLevelBase       *SourceRaster
-	PauseMenu               *SourceRaster
-	FadeFrames              map[int]*SourceRaster
-	WinCountdownFrames      map[int]*SourceRaster // FFDec fallback only; exported frames are frozen on "3"
-	WinCountdownTimelines   map[int][]SourceTransformFrame
-	WinnerFrames            map[int]*SourceRaster
-	CampaignLoseFrames      map[int]*SourceRaster
-	TeamWinFrames           map[int]*SourceRaster
-	ZombieWaveFrames        map[int]*SourceRaster
-	PostGameMenu            *SourceRaster // flattened fallback only; contains baked placeholder values
-	PostGameBackground      *SourceRaster
-	PostGamePanelBase       *SourceRaster
-	PostGameButton          *SourceRaster
-	PostGameWinnerBorder    *SourceRaster
-	OptionToggleFrames      map[int]*SourceRaster
-	OptionLockup            *SourceRaster
-	OptionPanelBase         *SourceRaster
-	OptionKeyFrames         map[int]*SourceRaster
-	OptionArrowGlyphs       map[int]*SourceRaster
-	OptionLockupBase        *SourceRaster
-	GunLibraryStats         map[int]*SourceRaster
-	GunLibraryDrops         map[int]*SourceRaster
-	GunLibraryThumbs        map[int]*SourceRaster
-	GunLibraryLockedOverlay *SourceRaster
-	TestPickupBase          *SourceRaster
-	CustomWarningLives      map[int]*SourceRaster
-	CustomWarningPlayers    map[int]*SourceRaster
-	CustomPlayerCard        *SourceRaster
-	CustomEditButton        *SourceRaster
-	PlayerColorMask         *SourceRaster
-	CustomSelectionFrames   map[int]*SourceRaster
-	StarterGunFrames        map[int]*SourceRaster
-	PerkFrames              map[int]*SourceRaster
-	ModeDisplayFrames       map[int]*SourceRaster
-	ModeCheckFrames         map[int]*SourceRaster
-	MapPreviewImages        map[int]*SourceRaster
-	CampaignThumbs          map[int]*SourceRaster
-	CampaignLockOverlay     *SourceRaster
-	CampaignDoneOverlay     *SourceRaster
+	CampaignBase          *SourceRaster
+	CampaignSlider        *SourceRaster
+	CampaignBack          *SourceRaster
+	CampaignUnlock        map[int]*SourceRaster
+	CampaignPlayerCard    *SourceRaster
+	CampaignInfoPanel     *SourceRaster
+	CampaignStartButton   *SourceRaster
+	CampaignInfoFrames    map[int]*SourceRaster
+	CampaignLevelIcons    map[int]*SourceRaster
+	CampaignLevelLocks    map[int]*SourceRaster
+	CampaignLevelBase     *SourceRaster
+	PauseMenu             *SourceRaster
+	FadeFrames            map[int]*SourceRaster
+	WinCountdownFrames    map[int]*SourceRaster // FFDec fallback only; exported frames are frozen on "3"
+	WinCountdownTimelines map[int][]SourceTransformFrame
+	WinnerFrames          map[int]*SourceRaster
+	CampaignLoseFrames    map[int]*SourceRaster
+	TeamWinFrames         map[int]*SourceRaster
+	ZombieWaveFrames      map[int]*SourceRaster
+	PostGameMenu          *SourceRaster // flattened fallback only; contains baked placeholder values
+	PostGameBackground    *SourceRaster
+	PostGamePanelBase     *SourceRaster
+	PostGameButton        *SourceRaster
+	PostGameWinnerBorder  *SourceRaster
+	OptionToggleFrames    map[int]*SourceRaster
+	OptionLockup          *SourceRaster
+	OptionPanelBase       *SourceRaster
+	OptionKeyFrames       map[int]*SourceRaster
+	OptionArrowGlyphs     map[int]*SourceRaster
+	OptionLockupBase      *SourceRaster
+	GunLibraryDrops       map[int]*SourceRaster
+	GunLibraryThumbs      map[int]*SourceRaster
+	TestPickupBase        *SourceRaster
+	CustomWarningLives    map[int]*SourceRaster
+	CustomWarningPlayers  map[int]*SourceRaster
+	CustomPlayerCard      *SourceRaster
+	CustomEditButton      *SourceRaster
+	PlayerColorMask       *SourceRaster
+	CustomSelectionFrames map[int]*SourceRaster
+	StarterGunFrames      map[int]*SourceRaster
+	PerkFrames            map[int]*SourceRaster
+	ModeDisplayFrames     map[int]*SourceRaster
+	ModeCheckFrames       map[int]*SourceRaster
+	MapPreviewImages      map[int]*SourceRaster
+	CampaignThumbs        map[int]*SourceRaster
+	CampaignLockOverlay   *SourceRaster
+	CampaignDoneOverlay   *SourceRaster
 
 	TorsoColors       map[int]*SourceRaster
 	HeadColors        map[int]*SourceRaster
@@ -181,7 +179,6 @@ func LoadAssets() *Assets {
 		OptionToggleFrames:      make(map[int]*SourceRaster),
 		OptionKeyFrames:         make(map[int]*SourceRaster),
 		OptionArrowGlyphs:       make(map[int]*SourceRaster),
-		GunLibraryStats:         make(map[int]*SourceRaster),
 		GunLibraryDrops:         make(map[int]*SourceRaster),
 		GunLibraryThumbs:        make(map[int]*SourceRaster),
 		CustomWarningLives:      make(map[int]*SourceRaster),
@@ -791,22 +788,6 @@ var amr2ExportedHandPalette = [...]color.NRGBA{
 	{R: 0x00, G: 0xff, B: 0x00, A: 0xff}, {R: 0xcc, G: 0xff, B: 0x00, A: 0xff},
 }
 
-func amr2ExportedHandColor(frame int) (color.NRGBA, bool) {
-	if frame < 2 {
-		return color.NRGBA{}, false
-	}
-	// gunhand starts on AMR-2 frame3. Symbol368 has 21 timeline ticks because
-	// its final (20th color) keyframe lasts two ticks before looping.
-	nested := (frame - 2) % 21
-	if nested < 0 {
-		nested += 21
-	}
-	if nested >= len(amr2ExportedHandPalette) {
-		nested = len(amr2ExportedHandPalette) - 1
-	}
-	return amr2ExportedHandPalette[nested], true
-}
-
 func recolorAMR2EmbeddedHand(src image.Image, _ int, tint color.NRGBA) (image.Image, bool) {
 	b := src.Bounds()
 	if b.Empty() {
@@ -872,12 +853,6 @@ func findAMR2ExportedHand(src image.Image) (fill color.NRGBA, minX, minY, maxX, 
 		ok = true
 	}
 	return
-}
-
-func rgbChroma(c color.NRGBA) uint8 {
-	maxV := max(c.R, max(c.G, c.B))
-	minV := min(c.R, min(c.G, c.B))
-	return maxV - minV
 }
 
 func rgbDistanceFromScale(c, base color.NRGBA, scale float64) float64 {

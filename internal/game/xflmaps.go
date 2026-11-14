@@ -28,79 +28,6 @@ type xflInstance struct {
 
 var numberRE = regexp.MustCompile(`-?\d+`)
 
-func LoadOriginalMaps() (map[int]Map, error) {
-	library, err := findOriginalPath("fla", "LIBRARY")
-	if err != nil {
-		return nil, err
-	}
-
-	instances, err := parseGroundInstances(filepath.Join(library, "Symbol 1444.xml"))
-	if err != nil {
-		return nil, err
-	}
-
-	byFrame := make(map[int]map[string]xflInstance)
-	for _, inst := range instances {
-		if byFrame[inst.Frame] == nil {
-			byFrame[inst.Frame] = make(map[string]xflInstance)
-		}
-		byFrame[inst.Frame][inst.Name] = inst
-	}
-
-	maps := make(map[int]Map)
-	for frame := 0; frame < 13; frame++ {
-		items := byFrame[frame]
-		platformInst, ok := items["platform"]
-		if !ok {
-			return nil, errors.New("XFL: missing platform instance for map frame " + strconv.Itoa(frame))
-		}
-		platformRects, err := symbolRects(library, platformInst.Library)
-		if err != nil {
-			return nil, err
-		}
-
-		const groundX = 66.0
-		const groundY = 210.2
-		for i := range platformRects {
-			platformRects[i] = transformRect(platformRects[i], platformInst.Matrix)
-			platformRects[i].X += groundX
-			platformRects[i].Y += groundY
-		}
-
-		spawnMin, spawnMax, err := instanceXBounds(library, items["spawnarea"], groundX)
-		if err != nil {
-			return nil, err
-		}
-		crateMin, crateMax, err := instanceXBounds(library, items["cratearea"], groundX)
-		if err != nil {
-			return nil, err
-		}
-		lowest, ok := items["lowest"]
-		if !ok {
-			return nil, errors.New("XFL: missing lowest instance for map frame " + strconv.Itoa(frame))
-		}
-
-		gravity := DefaultGravity
-		// Symbol 1444 frame index 3 contains `_root.gravity = 0.6`.
-		if frame == 3 {
-			gravity = 0.6
-		}
-
-		maps[frame+1] = Map{
-			Number:      frame + 1,
-			Gravity:     gravity,
-			LowFriction: false,
-			Platforms:   platformRects,
-			SpawnMinX:   spawnMin,
-			SpawnMaxX:   spawnMax,
-			CrateMinX:   crateMin,
-			CrateMaxX:   crateMax,
-			LowestY:     groundY + lowest.Matrix.TY,
-		}
-	}
-	return maps, nil
-}
-
 // LoadOriginalMap parses only the requested source frame. Main Menu needs map1
 // for its background/demo state; the other twelve maps are deferred until a
 // campaign/custom/test match actually selects them.
@@ -598,13 +525,4 @@ func floatAttr(attrs []xml.Attr, name string, fallback float64) float64 {
 		return fallback
 	}
 	return f
-}
-
-func sortedMapNumbers(m map[int]Map) []int {
-	out := make([]int, 0, len(m))
-	for n := range m {
-		out = append(out, n)
-	}
-	sort.Ints(out)
-	return out
 }

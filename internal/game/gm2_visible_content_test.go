@@ -3,46 +3,44 @@ package game
 import "testing"
 
 func TestGM2WeaponLibraryExposesAllTwentyAdditions(t *testing.T) {
-	seen := map[int]gunLibraryButton{}
-	for _, b := range developedGunLibraryButtons() {
-		seen[b.Gun] = b
+	g := &Game{}
+	for i := range g.campaignGuns {
+		g.campaignGuns[i] = true
 	}
 	for n := 67; n <= 86; n++ {
 		if !isGunLibraryGunNumber(n) {
 			t.Fatalf("GM2 weapon %d is not accepted by Gun Library", n)
 		}
-		b, ok := seen[n]
-		if !ok {
-			t.Fatalf("GM2 weapon %d has no visible library card", n)
-		}
-		g := &Game{}
-		for i := range g.campaignGuns {
-			g.campaignGuns[i] = true
-		}
-		if hit := g.developedGunLibraryHitAt(b.X, b.Y); hit != n {
+		b, page := organizedLibraryButton(t, n)
+		g.gunLibraryPage = page
+		if hit := g.organizedGunLibraryHitAt(b.X, b.Y); hit != n {
 			t.Fatalf("GM2 weapon card %d hit=%d", n, hit)
 		}
 	}
 }
 
 func TestCombinedGunLibraryExposesWholePlayableCatalogue(t *testing.T) {
-	buttons := developedGunLibraryButtons()
-	if len(buttons) != 83 {
-		t.Fatalf("combined weapon count=%d want83", len(buttons))
-	}
 	seen := map[int]bool{}
-	for _, b := range buttons {
-		if seen[b.Gun] {
-			t.Fatalf("duplicate combined weapon card %d", b.Gun)
+	for _, n := range organizedGunLibraryNumbers(0) {
+		if seen[n] {
+			t.Fatalf("duplicate Gun Library weapon %d", n)
 		}
-		seen[b.Gun] = true
-		if b.Gun >= 10 && b.Y > 404 {
-			t.Fatalf("developed weapon %d spills below upper family panels at y=%.1f", b.Gun, b.Y)
-		}
+		seen[n] = true
 	}
 	for _, n := range []int{1, 6, 10, 66, 67, 86} {
 		if !seen[n] {
-			t.Fatalf("combined weapon %d has no visible card", n)
+			t.Fatalf("weapon %d has no Gun Library card", n)
+		}
+	}
+	// Every category tab lists only weapons of the ALL tab.
+	for _, tab := range organizedGunLibraryTabs {
+		if tab.throwables {
+			continue
+		}
+		for _, n := range organizedGunLibraryNumbers(tab.category) {
+			if !seen[n] {
+				t.Fatalf("%s tab weapon %d missing from ALL", tab.label, n)
+			}
 		}
 	}
 }
@@ -52,32 +50,28 @@ func TestCustomGunLibraryPagesExposeEveryAvailableDefinedWeapon(t *testing.T) {
 	if len(want) != 145 {
 		t.Fatalf("available custom weapon count=%d want145", len(want))
 	}
-	if pages := developedGunLibraryPageCount(); pages != 10 {
-		t.Fatalf("library page count=%d want10", pages)
+	g := &Game{}
+	for i := range g.campaignGuns {
+		g.campaignGuns[i] = true
 	}
-
 	seen := map[int]bool{}
-	for page := 1; page < developedGunLibraryPageCount(); page++ {
-		buttons := developedGunLibraryButtonsForPage(page)
-		expected := developedCustomGunLibraryPageSize
-		remaining := len(want) - (page-1)*developedCustomGunLibraryPageSize
-		if remaining < expected {
-			expected = remaining
+	pages := organizedGunLibraryPageCount(0)
+	for page := 0; page < pages; page++ {
+		buttons := organizedGunLibraryButtons(0, page)
+		if len(buttons) == 0 || len(buttons) > organizedGunLibraryPageSize {
+			t.Fatalf("page %d card count=%d", page, len(buttons))
 		}
-		if len(buttons) != expected {
-			t.Fatalf("custom page %d card count=%d want%d", page, len(buttons), expected)
-		}
-		g := &Game{gunLibraryPage: page}
+		g.gunLibraryPage = page
 		for _, b := range buttons {
 			if seen[b.Gun] {
-				t.Fatalf("duplicate custom weapon card %d", b.Gun)
+				t.Fatalf("duplicate weapon card %d", b.Gun)
 			}
 			seen[b.Gun] = true
 			if !isGunLibraryGunNumber(b.Gun) {
-				t.Fatalf("custom weapon %d is rejected by Gun Library", b.Gun)
+				t.Fatalf("weapon %d is rejected by Gun Library", b.Gun)
 			}
-			if hit := g.developedGunLibraryHitAt(b.X, b.Y); hit != b.Gun {
-				t.Fatalf("custom page %d weapon %d hit=%d", page, b.Gun, hit)
+			if hit := g.organizedGunLibraryHitAt(b.X, b.Y); hit != b.Gun {
+				t.Fatalf("page %d weapon %d hit=%d", page, b.Gun, hit)
 			}
 		}
 	}

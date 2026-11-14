@@ -669,3 +669,51 @@ func (g *Game) buildOnlineHostSetup(ctx *uiCtx) {
 		g.onlineHostSetupAction(menuHitCustomHostBack)
 	}
 }
+
+// Text input for the browser join field and the host session name.
+
+func validNetAddressRune(r rune) bool {
+	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune(".:-_[]", r)
+}
+
+func (g *Game) updateMultiplayerSessionNameInput() {
+	if !g.multiplayerNameFocus || g.netplay != nil {
+		return
+	}
+	if textEraseRepeated() {
+		r := []rune(g.multiplayerSessionName)
+		if len(r) > 0 {
+			g.multiplayerSessionName = string(r[:len(r)-1])
+		}
+	}
+	for _, ch := range ebiten.AppendInputChars(nil) {
+		if len([]rune(g.multiplayerSessionName)) >= 24 || ch < 32 || ch == 127 {
+			continue
+		}
+		g.multiplayerSessionName += string(ch)
+	}
+}
+
+func (g *Game) updateMultiplayerAddressInput() {
+	// Ctrl+V / Shift+Insert works whenever the join field is on screen; long
+	// GMT1 invite codes are impractical to type.
+	if isPasteShortcutJustPressed() {
+		g.pasteIntoMultiplayerAddress()
+		return
+	}
+	if !g.multiplayerFocus {
+		return
+	}
+	if textEraseRepeated() {
+		r := []rune(g.multiplayerAddress)
+		if len(r) > 0 {
+			g.multiplayerAddress = string(r[:len(r)-1])
+		}
+	}
+	for _, ch := range ebiten.AppendInputChars(nil) {
+		if !validNetAddressRune(ch) || len([]rune(g.multiplayerAddress)) >= cloudflareTunnelURLMaxLen {
+			continue
+		}
+		g.multiplayerAddress += string(ch)
+	}
+}

@@ -1,7 +1,5 @@
 package game
 
-import "math"
-
 // Real-world rate of fire for the developed weapons 87-231.
 //
 // The 84 source weapons (1-86) keep their ActionScript values. The added
@@ -58,18 +56,6 @@ var developedRateConstant = map[developedRateBasis]float64{
 // developedMinFireDelay is the fastest cadence in the game: the source M134
 // minigun (55) fires every 2 frames.
 const developedMinFireDelay = 2
-
-func developedFireDelayForRPM(basis developedRateBasis, rpm float64) int {
-	k, ok := developedRateConstant[basis]
-	if !ok || rpm <= 0 {
-		return 0
-	}
-	delay := int(math.Round(k / rpm))
-	if delay < developedMinFireDelay {
-		delay = developedMinFireDelay
-	}
-	return delay
-}
 
 type developedFireRate struct {
 	Basis    developedRateBasis

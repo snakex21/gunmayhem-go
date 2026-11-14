@@ -105,3 +105,12 @@ func TestM1911ReloadQueuesSourceSounds(t *testing.T) {
 		t.Fatalf("M1911 reload queued sounds=%v; want magazine and slide", p.PendingSounds)
 	}
 }
+
+// soundPath resolves a source sound name to its asset path (test helper).
+func (a *sourceAudioEngine) soundPath(name string) string {
+	if a == nil {
+		return ""
+	}
+	a.ensureAssets()
+	return a.assets[strings.ToLower(name)].Path
+}

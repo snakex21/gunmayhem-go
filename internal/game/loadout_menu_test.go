@@ -124,7 +124,12 @@ func TestLoadoutCharacterWritesConfig(t *testing.T) {
 	if g.customNameFocus != 2 {
 		t.Fatalf("name focus=%d want 2", g.customNameFocus)
 	}
-	g.runCustomLocalUpdate(g.customLocalFrameInput(uiInput{NextTab: true, Esc: true}))
+	// updateCustomLocalMenu hands a text-focused frame only pointer input.
+	typed := uiInput{NextTab: true, Esc: true}
+	if g.customLocalTextFocus() {
+		typed = typed.pointerOnly()
+	}
+	g.runCustomLocalUpdate(typed)
 	if g.customLoadoutTab != loadoutTabCharacter || g.customLoadoutSlot != 2 {
 		t.Fatal("keys typed into the name reached the loadout screen")
 	}

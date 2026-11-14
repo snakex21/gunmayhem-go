@@ -41,11 +41,6 @@ func TestLiveHostSessionEditorCanLeaveToServerBrowser(t *testing.T) {
 	g.customOnlineMode = true
 	g.customNetworkOpen = true
 	g.customHostSetupOpen = true
-	x := customHostLeaveRect.X + customHostLeaveRect.W/2
-	y := customHostLeaveRect.Y + customHostLeaveRect.H/2
-	if hit := g.customHostSetupHitAt(x, y); hit != menuHitCustomHostLeave {
-		t.Fatalf("LEAVE SESSION hit=%d want=%d", hit, menuHitCustomHostLeave)
-	}
 	g.activateCustomHostSetupHit(menuHitCustomHostLeave)
 	if g.netplay != nil || !g.customNetworkOpen || g.customHostSetupOpen {
 		t.Fatalf("leave session did not return to browser: netplay=%v network=%v setup=%v", g.netplay != nil, g.customNetworkOpen, g.customHostSetupOpen)

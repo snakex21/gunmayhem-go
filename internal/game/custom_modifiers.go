@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	"image/color"
 	"math/rand"
 
@@ -63,26 +62,6 @@ var customModifierSpecs = []customModifierSpec{
 	{customModifierNoCrates, "NO CRATES"},
 	{customModifierCratesEverywhere, "CRATES EVERYWHERE"},
 	{customModifierJetpacks, "JETPACKS ON"},
-}
-
-var (
-	customModifiersCloseRect         = Rect{X: -1190, Y: 542, W: 250, H: 42}
-	customModifiersRandomRect        = Rect{X: -1760, Y: 378, W: 240, H: 44}
-	customModifiersScopeSeriesRect   = Rect{X: -1760, Y: 458, W: 235, H: 40}
-	customModifiersScopePerRoundRect = Rect{X: -1510, Y: 458, W: 235, H: 40}
-	customModifiersRoundPrevRect     = Rect{X: -1240, Y: 508, W: 48, H: 30}
-	customModifiersRoundNextRect     = Rect{X: -998, Y: 508, W: 48, H: 30}
-	customModifiersCountRects        = [3]Rect{
-		{X: -1500, Y: 378, W: 58, H: 44},
-		{X: -1432, Y: 378, W: 58, H: 44},
-		{X: -1364, Y: 378, W: 58, H: 44},
-	}
-)
-
-func customModifierRect(index int) Rect {
-	col := index % 3
-	row := index / 3
-	return Rect{X: -1760 + float64(col)*290, Y: 98 + float64(row)*55, W: 240, H: 44}
 }
 
 func customModifiersConflict(a, b int) bool {
@@ -283,49 +262,6 @@ func (g *Game) customModifierEditingAllowed() bool {
 	// must remain fully editable. Once connected as a client, only the host may
 	// change match rules.
 	return !g.customOnlineMode || g.netplay == nil || g.netplay.mode == netplayHost
-}
-
-func (g *Game) customModifierHitAt(x, y float64) int {
-	if g.customChaosOpen {
-		return g.customChaosHitAt(x, y)
-	}
-	if !g.customRulesOpen {
-		return menuHitNone
-	}
-	for i, spec := range customModifierSpecs {
-		if customModifierRect(i).Contains(x, y) {
-			return menuHitCustomModifierBase + spec.ID
-		}
-	}
-	if customModifiersRandomRect.Contains(x, y) {
-		return menuHitCustomModifiersRandom
-	}
-	for i, r := range customModifiersCountRects {
-		if r.Contains(x, y) {
-			return menuHitCustomModifiersRandom1 + i
-		}
-	}
-	if customModifiersScopeSeriesRect.Contains(x, y) {
-		return menuHitCustomModifiersScopeSeries
-	}
-	if customModifiersScopePerRoundRect.Contains(x, y) {
-		return menuHitCustomModifiersScopePerRound
-	}
-	if customChaosSetupRect.Contains(x, y) {
-		return menuHitChaosSetup
-	}
-	if g.customPerRoundRules {
-		if customModifiersRoundPrevRect.Contains(x, y) {
-			return menuHitCustomModifiersRoundPrev
-		}
-		if customModifiersRoundNextRect.Contains(x, y) {
-			return menuHitCustomModifiersRoundNext
-		}
-	}
-	if customModifiersCloseRect.Contains(x, y) {
-		return menuHitCustomModifiersClose
-	}
-	return menuHitCustomModifiersBlock
 }
 
 func (g *Game) activateCustomModifierHit(hit int) bool {
@@ -560,89 +496,4 @@ func drawModifierButton(screen *ebiten.Image, r Rect, label string, selected boo
 	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x55, G: 0x58, B: 0x60, A: 0xff})
 	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
 	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 12.5, color.White, r.X+8, r.Y+10)
-}
-
-func (g *Game) drawCustomModifiersOverlay(screen *ebiten.Image) {
-	if !g.customRulesOpen {
-		return
-	}
-	if g.customChaosOpen {
-		g.drawCustomChaosOverlay(screen)
-		return
-	}
-
-	// Full-screen developed overlay. The old panel started its first row on top
-	// of the help text, which made the explanation practically unreadable.
-	ebitenutil.DrawRect(screen, 0, 0, 900, 600, color.NRGBA{R: 0x12, G: 0x15, B: 0x19, A: 0xff})
-	drawSourceMenuText(screen, "CUSTOM GAME MODIFIERS", menuFontCondensedExtraBold, 30, color.White, 24, 18)
-	drawSourceMenuText(screen, "Pick modifiers manually. Conflicting choices are switched off automatically.", menuFontCondensed, 14.5,
-		color.NRGBA{R: 0xc9, G: 0xcd, B: 0xd3, A: 0xff}, 24, 58)
-
-	mx, my := g.cursorPos()
-	hoverHint := "Hover a modifier to see what it changes."
-	for i, spec := range customModifierSpecs {
-		r := customModifierRect(i)
-		r.X += g.customMenuX
-		drawModifierButton(screen, r, spec.Label, g.customModifierEnabledForEdit(spec.ID))
-		if r.Contains(float64(mx), float64(my)) {
-			hoverHint = customModifierHint(spec.ID)
-		}
-	}
-
-	randomRect := customModifiersRandomRect
-	randomRect.X += g.customMenuX
-	drawModifierButton(screen, randomRect, "RANDOM RULES", g.customRandomRulesForEdit())
-	if randomRect.Contains(float64(mx), float64(my)) {
-		hoverHint = "Random Rules ignores manual picks and chooses compatible modifiers when the round starts."
-	}
-	count := g.customRandomCountForEdit()
-	for i, rr := range customModifiersCountRects {
-		rr.X += g.customMenuX
-		drawModifierButton(screen, rr, string(rune('1'+i)), count == i+1)
-		if rr.Contains(float64(mx), float64(my)) {
-			hoverHint = "Choose how many compatible random modifiers are picked for this round."
-		}
-	}
-	drawSourceMenuText(screen, "1 / 2 / 3 = NUMBER OF RANDOM MODIFIERS", menuFontCondensedExtraBold, 12.5,
-		color.NRGBA{R: 0xd7, G: 0xda, B: 0xdf, A: 0xff}, 505, 387)
-	drawSourceMenuText(screen, "They are re-rolled when each configured round starts.", menuFontCondensed, 12,
-		color.NRGBA{R: 0xae, G: 0xb4, B: 0xbc, A: 0xff}, 505, 405)
-	drawSourceMenuText(screen, hoverHint, menuFontCondensed, 12.5,
-		color.NRGBA{R: 0xff, G: 0xb2, B: 0x47, A: 0xff}, 40, 432)
-
-	drawSourceMenuText(screen, "RULE SCOPE", menuFontCondensedExtraBold, 12.5, color.White, 40, 444)
-	seriesRect := customModifiersScopeSeriesRect
-	seriesRect.X += g.customMenuX
-	perRoundRect := customModifiersScopePerRoundRect
-	perRoundRect.X += g.customMenuX
-	drawModifierButton(screen, seriesRect, "SAME FOR WHOLE SERIES", !g.customPerRoundRules)
-	drawModifierButton(screen, perRoundRect, "EACH ROUND / MAP", g.customPerRoundRules)
-	chaosRect := customChaosSetupRect
-	chaosRect.X += g.customMenuX
-	chaosLabel := "CHAOS SETUP"
-	if g.customChaosEnabled {
-		chaosLabel = fmt.Sprintf("CHAOS ON - %d EVENTS", g.chaosSelectedCount())
-	}
-	drawModifierButton(screen, chaosRect, chaosLabel, g.customChaosEnabled)
-
-	if g.customPerRoundRules {
-		prev := customModifiersRoundPrevRect
-		prev.X += g.customMenuX
-		next := customModifiersRoundNextRect
-		next.X += g.customMenuX
-		round := g.customModifierEditRound()
-		drawModifierButton(screen, prev, "<", false)
-		drawModifierButton(screen, next, ">", false)
-		drawSourceMenuText(screen, fmt.Sprintf("EDITING ROUND %d / %d", round, clampCustomSeriesRounds(g.customSeriesRounds)),
-			menuFontCondensedExtraBold, 13.5, color.White, 620, 514)
-		drawSourceMenuText(screen, "Each round/map remembers its own rules.", menuFontCondensed, 11.5,
-			color.NRGBA{R: 0xaf, G: 0xb4, B: 0xbd, A: 0xff}, 40, 515)
-	} else {
-		drawSourceMenuText(screen, "The same modifier setup is used on every map in the series.", menuFontCondensed, 11.5,
-			color.NRGBA{R: 0xaf, G: 0xb4, B: 0xbd, A: 0xff}, 40, 515)
-	}
-
-	closeRect := customModifiersCloseRect
-	closeRect.X += g.customMenuX
-	drawModifierButton(screen, closeRect, "BACK TO GAME SETUP", false)
 }

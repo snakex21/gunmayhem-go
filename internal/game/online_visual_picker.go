@@ -9,24 +9,12 @@ import (
 )
 
 const (
-	onlineVisualNone = iota
-	onlineVisualCharacterColor
-	onlineVisualCharacterShirt
-	onlineVisualCharacterHat
-	onlineVisualCharacterFace
-	onlineVisualCharacterGun
-	onlineVisualCharacterPerk
-	onlineVisualCharacterTeam
-	onlineVisualCharacterAbility
-)
-
-const (
+	onlineVisualNone       = 0
 	onlineVisualOnlyWeapon = 100
 	onlineVisualFixedMap   = 101
 )
 
 const (
-	menuHitOnlineVisualFieldBase      = 9000
 	menuHitOnlineVisualChoiceBase     = 9100
 	menuHitOnlineVisualPrevPage       = 9250
 	menuHitOnlineVisualNextPage       = 9251
@@ -35,15 +23,6 @@ const (
 	menuHitOnlineRuleOnlyWeaponPicker = 9320
 	menuHitOnlineRuleFixedMapPicker   = 9321
 )
-
-func onlineCharacterVisualFieldHit(field int) int {
-	return menuHitOnlineVisualFieldBase + field
-}
-
-func decodeOnlineCharacterVisualFieldHit(hit int) (int, bool) {
-	field := hit - menuHitOnlineVisualFieldBase
-	return field, field >= 0 && field < onlineCharFieldCount
-}
 
 func onlineVisualChoiceHit(index int) int {
 	return menuHitOnlineVisualChoiceBase + index
@@ -54,123 +33,9 @@ func decodeOnlineVisualChoiceHit(hit int) (int, bool) {
 	return index, index >= 0 && index < 100
 }
 
-func onlineCharacterFieldRect(field int) Rect {
-	col := field % 2
-	row := field / 2
-	return Rect{X: 405 + float64(col)*220, Y: 130 + float64(row)*95, W: 205, H: 84}
-}
-
-func (g *Game) onlineCharacterVisualHitAt(x, y float64) int {
-	if onlineOverlayBackRect.Contains(x, y) {
-		return menuHitOnlineOverlayBack
-	}
-	for field := 0; field < onlineCharFieldCount; field++ {
-		if onlineCharacterFieldRect(field).Contains(x, y) {
-			return onlineCharacterVisualFieldHit(field)
-		}
-	}
-	return menuHitNone
-}
-
-func onlineCharacterPickerForField(field int) int {
-	switch field {
-	case onlineCharColor:
-		return onlineVisualCharacterColor
-	case onlineCharShirt:
-		return onlineVisualCharacterShirt
-	case onlineCharHat:
-		return onlineVisualCharacterHat
-	case onlineCharFace:
-		return onlineVisualCharacterFace
-	case onlineCharGun:
-		return onlineVisualCharacterGun
-	case onlineCharPerk:
-		return onlineVisualCharacterPerk
-	case onlineCharTeam:
-		return onlineVisualCharacterTeam
-	case onlineCharAbility:
-		return onlineVisualCharacterAbility
-	}
-	return onlineVisualNone
-}
-
-func (g *Game) openOnlineCharacterVisualPicker(field int) {
-	g.onlineVisualPicker = onlineCharacterPickerForField(field)
-	g.onlineVisualPage = 0
-}
-
 func (g *Game) closeOnlineVisualPicker() {
 	g.onlineVisualPicker = onlineVisualNone
 	g.onlineVisualPage = 0
-}
-
-func onlineCharacterVisualChoiceCount(picker int) int {
-	switch picker {
-	case onlineVisualCharacterColor:
-		return maxDevelopedColorValue()
-	case onlineVisualCharacterShirt:
-		return maxDevelopedShirtValue()
-	case onlineVisualCharacterHat:
-		return maxDevelopedHatValue()
-	case onlineVisualCharacterFace:
-		return maxDevelopedEyeValue()
-	case onlineVisualCharacterGun:
-		return len(starterHandgunNumbers())
-	case onlineVisualCharacterPerk:
-		return len(selectablePerkNumbers())
-	case onlineVisualCharacterAbility:
-		return len(selectableAbilityNumbers())
-	case onlineVisualCharacterTeam:
-		return 2
-	}
-	return 0
-}
-
-func onlineCharacterVisualCols(picker int) int {
-	switch picker {
-	case onlineVisualCharacterColor:
-		return 5
-	case onlineVisualCharacterShirt, onlineVisualCharacterFace:
-		return 4
-	case onlineVisualCharacterHat:
-		return 6
-	case onlineVisualCharacterGun:
-		return 7
-	case onlineVisualCharacterPerk:
-		return 3
-	case onlineVisualCharacterAbility:
-		return 5
-	case onlineVisualCharacterTeam:
-		return 2
-	}
-	return 4
-}
-
-func onlineCharacterVisualPageSize(picker int) int {
-	cols := onlineCharacterVisualCols(picker)
-	if cols <= 0 {
-		return 1
-	}
-	// Four visual rows fit above the navigation buttons at y=520.
-	return cols * 4
-}
-
-func onlineVisualCharacterChoiceRect(picker, visibleIndex int) Rect {
-	cols := onlineCharacterVisualCols(picker)
-	pageSize := onlineCharacterVisualPageSize(picker)
-	if cols <= 0 || visibleIndex < 0 || visibleIndex >= pageSize {
-		return Rect{}
-	}
-	gap := 10.0
-	areaX, areaW := 70.0, 760.0
-	cellW := (areaW - gap*float64(cols-1)) / float64(cols)
-	cellH := 82.0
-	return Rect{
-		X: areaX + float64(visibleIndex%cols)*(cellW+gap),
-		Y: 125 + float64(visibleIndex/cols)*(cellH+gap),
-		W: cellW,
-		H: cellH,
-	}
 }
 
 func onlineFixedMapNumbers() []int {
@@ -195,9 +60,6 @@ func (g *Game) onlineVisualPagedItems() []int {
 }
 
 func (g *Game) onlineVisualPageSize() int {
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
-		return onlineCharacterVisualPageSize(g.onlineVisualPicker)
-	}
 	if g.onlineVisualPicker == onlineVisualFixedMap {
 		return 12
 	}
@@ -205,13 +67,6 @@ func (g *Game) onlineVisualPageSize() int {
 }
 
 func (g *Game) onlineVisualMaxPage() int {
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
-		count := onlineCharacterVisualChoiceCount(g.onlineVisualPicker)
-		if count <= 0 {
-			return 0
-		}
-		return (count - 1) / g.onlineVisualPageSize()
-	}
 	items := g.onlineVisualPagedItems()
 	if len(items) == 0 {
 		return 0
@@ -219,102 +74,7 @@ func (g *Game) onlineVisualMaxPage() int {
 	return (len(items) - 1) / g.onlineVisualPageSize()
 }
 
-func onlineVisualPagedRect(picker, visibleIndex int) Rect {
-	if picker == onlineVisualFixedMap {
-		col := visibleIndex % 3
-		row := visibleIndex / 3
-		return Rect{X: 65 + float64(col)*260, Y: 125 + float64(row)*82, W: 245, H: 72}
-	}
-	col := visibleIndex % 4
-	row := visibleIndex / 4
-	return Rect{X: 65 + float64(col)*195, Y: 125 + float64(row)*54, W: 180, H: 46}
-}
-
-func (g *Game) onlineVisualPickerHitAt(x, y float64) int {
-	if onlineOverlayBackRect.Contains(x, y) {
-		return menuHitOnlineOverlayBack
-	}
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
-		count := onlineCharacterVisualChoiceCount(g.onlineVisualPicker)
-		pageSize := g.onlineVisualPageSize()
-		start := g.onlineVisualPage * pageSize
-		for i := 0; i < pageSize && start+i < count; i++ {
-			if onlineVisualCharacterChoiceRect(g.onlineVisualPicker, i).Contains(x, y) {
-				return onlineVisualChoiceHit(i)
-			}
-		}
-		if g.onlineVisualPage > 0 && (Rect{X: 245, Y: 520, W: 150, H: 42}).Contains(x, y) {
-			return menuHitOnlineVisualPrevPage
-		}
-		if g.onlineVisualPage < g.onlineVisualMaxPage() && (Rect{X: 505, Y: 520, W: 150, H: 42}).Contains(x, y) {
-			return menuHitOnlineVisualNextPage
-		}
-		return menuHitNone
-	}
-	items := g.onlineVisualPagedItems()
-	pageSize := g.onlineVisualPageSize()
-	start := g.onlineVisualPage * pageSize
-	for i := 0; i < pageSize && start+i < len(items); i++ {
-		if onlineVisualPagedRect(g.onlineVisualPicker, i).Contains(x, y) {
-			return onlineVisualChoiceHit(i)
-		}
-	}
-	if g.onlineVisualPage > 0 && (Rect{X: 245, Y: 470, W: 150, H: 42}).Contains(x, y) {
-		return menuHitOnlineVisualPrevPage
-	}
-	if g.onlineVisualPage < g.onlineVisualMaxPage() && (Rect{X: 505, Y: 470, W: 150, H: 42}).Contains(x, y) {
-		return menuHitOnlineVisualNextPage
-	}
-	return menuHitNone
-}
-
 func (g *Game) applyOnlineVisualChoice(visibleIndex int) {
-	id := g.onlineLocalPlayerID()
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
-		if id < 1 || id > 4 {
-			return
-		}
-		choiceCount := onlineCharacterVisualChoiceCount(g.onlineVisualPicker)
-		absolute := g.onlineVisualPage*g.onlineVisualPageSize() + visibleIndex
-		if visibleIndex < 0 || absolute < 0 || absolute >= choiceCount {
-			return
-		}
-		choice := absolute + 1
-		if g.onlineVisualPicker == onlineVisualCharacterGun {
-			handguns := starterHandgunNumbers()
-			choice = handguns[absolute]
-		}
-		if g.onlineVisualPicker == onlineVisualCharacterPerk {
-			choice = selectablePerkNumbers()[absolute]
-		}
-		if g.onlineVisualPicker == onlineVisualCharacterAbility {
-			choice = selectableAbilityNumbers()[absolute]
-		}
-		cfg := &g.customPlayers[id-1]
-		cfg.Type = 1
-		switch g.onlineVisualPicker {
-		case onlineVisualCharacterColor:
-			cfg.Color = choice
-		case onlineVisualCharacterShirt:
-			cfg.Shirt = choice
-		case onlineVisualCharacterHat:
-			cfg.Hat = choice
-		case onlineVisualCharacterFace:
-			cfg.Eyes = choice
-		case onlineVisualCharacterGun:
-			cfg.Gun = choice
-		case onlineVisualCharacterPerk:
-			cfg.Perk = choice
-		case onlineVisualCharacterAbility:
-			cfg.Ability = choice
-		case onlineVisualCharacterTeam:
-			cfg.Team = choice
-		}
-		g.sendOnlineLocalConfigIfChanged()
-		g.closeOnlineVisualPicker()
-		return
-	}
-
 	items := g.onlineVisualPagedItems()
 	absolute := g.onlineVisualPage*g.onlineVisualPageSize() + visibleIndex
 	if absolute < 0 || absolute >= len(items) {
@@ -335,22 +95,6 @@ func (g *Game) applyOnlineVisualChoice(visibleIndex int) {
 
 func onlineVisualPickerTitle(picker int) string {
 	switch picker {
-	case onlineVisualCharacterColor:
-		return "CHOOSE COLOR"
-	case onlineVisualCharacterShirt:
-		return "CHOOSE SHIRT"
-	case onlineVisualCharacterHat:
-		return "CHOOSE HAT"
-	case onlineVisualCharacterFace:
-		return "CHOOSE FACE"
-	case onlineVisualCharacterGun:
-		return "CHOOSE HANDGUN"
-	case onlineVisualCharacterPerk:
-		return "CHOOSE PERK"
-	case onlineVisualCharacterAbility:
-		return "CHOOSE ABILITY / GEAR"
-	case onlineVisualCharacterTeam:
-		return "CHOOSE TEAM"
 	case onlineVisualOnlyWeapon:
 		return "CHOOSE THE ONLY WEAPON"
 	case onlineVisualFixedMap:

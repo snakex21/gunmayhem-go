@@ -160,14 +160,6 @@ func (a *sourceAudioEngine) ensureAssets() {
 	}
 }
 
-func (a *sourceAudioEngine) soundPath(name string) string {
-	if a == nil {
-		return ""
-	}
-	a.ensureAssets()
-	return a.assets[strings.ToLower(name)].Path
-}
-
 func stereoPCM16(raw []byte, channels int) []byte {
 	if channels == 2 {
 		return raw
@@ -267,10 +259,6 @@ func (a *sourceAudioEngine) decodedPCM(name string) []byte {
 	}
 	a.pcm[key] = pcm
 	return pcm
-}
-
-func (a *sourceAudioEngine) playSFX(name string, volume float64) {
-	a.playSFXGain(name, volume, 1)
 }
 
 func (a *sourceAudioEngine) playSFXGain(name string, volume, gain float64) {

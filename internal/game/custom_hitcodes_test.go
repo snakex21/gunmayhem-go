@@ -41,13 +41,10 @@ func customPlayerEditorCodes() map[int]string {
 		for action := playerSlotActionHuman; action <= playerSlotActionClear; action++ {
 			add(playerSlotHit(slot, action), fmt.Sprintf("slot%d action%d", slot, action))
 		}
-		add(customEditorBackHit(slot), fmt.Sprintf("editor back slot%d", slot))
-		add(customHatPageHit(slot), fmt.Sprintf("hat page slot%d", slot))
 		add(menuHitPlayerColorBase+500+slot, fmt.Sprintf("name slot%d", slot))
 		add(customTeamHit(slot, 1), fmt.Sprintf("team A slot%d", slot))
 		add(customTeamHit(slot, 2), fmt.Sprintf("team B slot%d", slot))
 		for _, editor := range editors {
-			add(customEditHit(slot, editor), fmt.Sprintf("open editor %d slot%d", editor, slot))
 			for _, item := range developedCustomSelectionItems(editor) {
 				n := item.Number
 				switch {
@@ -164,13 +161,8 @@ func TestCustomNetworkBrowserHitCodesAreUnique(t *testing.T) {
 
 func TestOnlineOverlayHitCodesAreUnique(t *testing.T) {
 	s := newHitCodeSet(t, "online overlays")
-	for code := menuHitMultiplayerLobbySetup; code <= menuHitOnlineBlockNextPage; code++ {
+	for code := menuHitOnlineOverlayBack; code <= menuHitOnlineBlockNextPage; code++ {
 		s.add(code, fmt.Sprintf("lobby control %d", code))
-	}
-	for field := 0; field < onlineCharFieldCount; field++ {
-		s.add(onlineCharacterHit(field, -1), fmt.Sprintf("character %d -", field))
-		s.add(onlineCharacterHit(field, 1), fmt.Sprintf("character %d +", field))
-		s.add(onlineCharacterVisualFieldHit(field), fmt.Sprintf("character picture %d", field))
 	}
 	for i := range onlineAllWeaponNumbers() {
 		s.add(menuHitOnlineBlockBase+i, fmt.Sprintf("weapon block %d", i))

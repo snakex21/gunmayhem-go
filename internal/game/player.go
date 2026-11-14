@@ -35,72 +35,72 @@ type Player struct {
 	Grounded   bool    `cbor:",omitempty"`
 	HardLanded bool    `cbor:",omitempty"`
 
-	Lives               int         `cbor:",omitempty"`
-	TotalLives          int         `cbor:",omitempty"`
-	GameMode            int         `cbor:",omitempty"`
-	CurrentLevel        int         `cbor:",omitempty"`
-	CurrentGun          int         `cbor:",omitempty"`
-	KillSelf            bool        `cbor:",omitempty"`
-	Active              bool        `cbor:",omitempty"`
-	LastHitBy           int         `cbor:",omitempty"`
-	LastDeathBy         int         `cbor:",omitempty"`
-	LastDeathX          float64     `cbor:",omitempty"`
-	LastDeathY          float64     `cbor:",omitempty"`
-	LastDeathMod        int         `cbor:",omitempty"`
-	HitByGrenade        bool        `cbor:",omitempty"`
-	HitNumber           int         `cbor:",omitempty"`
-	HitTimer            int         `cbor:",omitempty"`
-	InstagibFrame       int         `cbor:",omitempty"`
-	InstagibPlaying     bool        `cbor:",omitempty"`
-	CheapTimer          int         `cbor:",omitempty"`
-	Kills               int         `cbor:",omitempty"`
-	Deaths              int         `cbor:",omitempty"`
-	ShotsFired          int         `cbor:",omitempty"`
-	HitsLanded          int         `cbor:",omitempty"`
-	CratesCollected     int         `cbor:",omitempty"`
-	PowerupsCollected   int         `cbor:",omitempty"`
-	Score               int         `cbor:",omitempty"`
-	DeathSerial         int         `cbor:",omitempty"`
-	DefaultWeapon       int         `cbor:",omitempty"`
-	PerkNumber          int         `cbor:",omitempty"`
-	Weight              float64     `cbor:",omitempty"`
-	Weapon              WeaponState `cbor:",omitempty"`
-	Grenades            int         `cbor:",omitempty"`
-	ThrowableType       int         `cbor:",omitempty"`
-	GrenadeHeld         bool        `cbor:",omitempty"`
-	GrenadePower        float64     `cbor:",omitempty"`
-	InvisibleTime       int         `cbor:",omitempty"`
-	ShieldTime          int         `cbor:",omitempty"`
-	ShieldFrame         int         `cbor:",omitempty"`
-	ShieldChildFrame    int         `cbor:",omitempty"`
-	ShieldPlaying       bool        `cbor:",omitempty"`
-	ShieldChildActive   bool        `cbor:",omitempty"`
-	ShieldAlpha         float64     `cbor:",omitempty"`
-	JetFuel             float64     `cbor:",omitempty"`
-	JetpackAlpha        float64     `cbor:",omitempty"`
-	JetThrusted         bool        `cbor:",omitempty"`
-	JetDropped          bool        `cbor:",omitempty"`
-	SpeedTime           int         `cbor:",omitempty"`
-	BurnTime            int         `cbor:",omitempty"`
-	BurnOwnerID         int         `cbor:",omitempty"`
-	BurnDirection       int         `cbor:",omitempty"`
-	BurnTick            int         `cbor:",omitempty"`
-	BurnPower           float64     `cbor:",omitempty"`
+	Lives             int         `cbor:",omitempty"`
+	TotalLives        int         `cbor:",omitempty"`
+	GameMode          int         `cbor:",omitempty"`
+	CurrentLevel      int         `cbor:",omitempty"`
+	CurrentGun        int         `cbor:",omitempty"`
+	KillSelf          bool        `cbor:",omitempty"`
+	Active            bool        `cbor:",omitempty"`
+	LastHitBy         int         `cbor:",omitempty"`
+	LastDeathBy       int         `cbor:",omitempty"`
+	LastDeathX        float64     `cbor:",omitempty"`
+	LastDeathY        float64     `cbor:",omitempty"`
+	LastDeathMod      int         `cbor:",omitempty"`
+	HitByGrenade      bool        `cbor:",omitempty"`
+	HitNumber         int         `cbor:",omitempty"`
+	HitTimer          int         `cbor:",omitempty"`
+	InstagibFrame     int         `cbor:",omitempty"`
+	InstagibPlaying   bool        `cbor:",omitempty"`
+	CheapTimer        int         `cbor:",omitempty"`
+	Kills             int         `cbor:",omitempty"`
+	Deaths            int         `cbor:",omitempty"`
+	ShotsFired        int         `cbor:",omitempty"`
+	HitsLanded        int         `cbor:",omitempty"`
+	CratesCollected   int         `cbor:",omitempty"`
+	PowerupsCollected int         `cbor:",omitempty"`
+	Score             int         `cbor:",omitempty"`
+	DeathSerial       int         `cbor:",omitempty"`
+	DefaultWeapon     int         `cbor:",omitempty"`
+	PerkNumber        int         `cbor:",omitempty"`
+	Weight            float64     `cbor:",omitempty"`
+	Weapon            WeaponState `cbor:",omitempty"`
+	Grenades          int         `cbor:",omitempty"`
+	ThrowableType     int         `cbor:",omitempty"`
+	GrenadeHeld       bool        `cbor:",omitempty"`
+	GrenadePower      float64     `cbor:",omitempty"`
+	InvisibleTime     int         `cbor:",omitempty"`
+	ShieldTime        int         `cbor:",omitempty"`
+	ShieldFrame       int         `cbor:",omitempty"`
+	ShieldChildFrame  int         `cbor:",omitempty"`
+	ShieldPlaying     bool        `cbor:",omitempty"`
+	ShieldChildActive bool        `cbor:",omitempty"`
+	ShieldAlpha       float64     `cbor:",omitempty"`
+	JetFuel           float64     `cbor:",omitempty"`
+	JetpackAlpha      float64     `cbor:",omitempty"`
+	JetThrusted       bool        `cbor:",omitempty"`
+	JetDropped        bool        `cbor:",omitempty"`
+	SpeedTime         int         `cbor:",omitempty"`
+	BurnTime          int         `cbor:",omitempty"`
+	BurnOwnerID       int         `cbor:",omitempty"`
+	BurnDirection     int         `cbor:",omitempty"`
+	BurnTick          int         `cbor:",omitempty"`
+	BurnPower         float64     `cbor:",omitempty"`
 	// Burning panic (burn_panic.go). BurnMax (HUD bar reference) and the
 	// panic run state (flailing visuals) are synced; the RNG, timers and
 	// pat-down counters are host-only simulation state.
-	BurnMax             int         `cbor:",omitempty"`
-	BurnPanicTime       int         `cbor:",omitempty"` // > 0 while input is overridden
-	BurnPanicDir        int         `cbor:",omitempty"`
-	BurnRNG             uint32      `cbor:",omitempty" net:"-"`
-	BurnJoltTimer       int         `cbor:",omitempty" net:"-"`
-	BurnPanicTimer      int         `cbor:",omitempty" net:"-"` // frames until the next panic run
-	BurnPatDowns        int         `cbor:",omitempty" net:"-"`
-	BurnPatCooldown     int         `cbor:",omitempty" net:"-"`
-	BurnIgnitions       int         `cbor:",omitempty" net:"-"`
-	FireContactCooldown int         `cbor:",omitempty"`
-	PortalNextColor     int         `cbor:",omitempty"`
-	PortalCooldown      int         `cbor:",omitempty"`
+	BurnMax             int    `cbor:",omitempty"`
+	BurnPanicTime       int    `cbor:",omitempty"` // > 0 while input is overridden
+	BurnPanicDir        int    `cbor:",omitempty"`
+	BurnRNG             uint32 `cbor:",omitempty" net:"-"`
+	BurnJoltTimer       int    `cbor:",omitempty" net:"-"`
+	BurnPanicTimer      int    `cbor:",omitempty" net:"-"` // frames until the next panic run
+	BurnPatDowns        int    `cbor:",omitempty" net:"-"`
+	BurnPatCooldown     int    `cbor:",omitempty" net:"-"`
+	BurnIgnitions       int    `cbor:",omitempty" net:"-"`
+	FireContactCooldown int    `cbor:",omitempty"`
+	PortalNextColor     int    `cbor:",omitempty"`
+	PortalCooldown      int    `cbor:",omitempty"`
 	// Flashbang blindness (throwable_effects.go). Synced to clients so each
 	// one can white out its own screen.
 	BlindTime     int     `cbor:",omitempty"`
@@ -558,10 +558,6 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 		p.KillSelf = false
 		p.Kill(m)
 	}
-}
-
-func (p *Player) ignite(ownerID, direction, frames int) {
-	p.igniteWithPower(ownerID, direction, frames, 6)
 }
 
 func (p *Player) igniteWithPower(ownerID, direction, frames int, power float64) {
