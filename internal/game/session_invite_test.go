@@ -1,40 +1,12 @@
 package game
 
 import (
-	"errors"
 	"net"
 	"net/netip"
 	"strings"
 	"testing"
 	"time"
 )
-
-func TestInviteCodeRoundTrip(t *testing.T) {
-	key, err := newOnlineSessionKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-	code, err := encodeInviteCode(true, key, []inviteCandidate{
-		{Addr: netip.MustParseAddr("203.0.113.44"), Port: 7777},
-		{Addr: netip.MustParseAddr("192.168.1.20"), Port: 7777},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.HasPrefix(code, inviteCodePrefix) || len(code) > 80 {
-		t.Fatalf("unexpected invite code %q len=%d", code, len(code))
-	}
-	decoded, err := decodeInviteCode(code)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !decoded.InviteOnly || decoded.SessionKey != key || len(decoded.Candidates) != 2 {
-		t.Fatalf("decoded invite=%+v", decoded)
-	}
-	if decoded.Candidates[0] != "203.0.113.44:7777" || decoded.Candidates[1] != "192.168.1.20:7777" {
-		t.Fatalf("candidates=%v", decoded.Candidates)
-	}
-}
 
 func TestShortOpenCodeRoundTrip(t *testing.T) {
 	code, err := encodeShortOpenCode(netip.MustParseAddr("203.0.113.44"), 45123)
@@ -176,33 +148,6 @@ func TestInviteOnlyHostRequiresSessionKey(t *testing.T) {
 	}
 }
 
-func TestJoinByInviteCodeWithoutMasterServer(t *testing.T) {
-	key, err := newOnlineSessionKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-	host, err := newHostNetplay("127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer host.Close()
-	host.inviteOnly = true
-	host.expectedSessionKey = key
-	port := host.listener.Addr().(*net.TCPAddr).Port
-	code, err := encodeInviteCode(true, key, []inviteCandidate{{Addr: netip.MustParseAddr("127.0.0.1"), Port: uint16(port)}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	clientGame := &Game{}
-	defer clientGame.CloseNetplay()
-	if err := clientGame.StartNetClientInvite(code); err != nil {
-		t.Fatalf("join by self-contained invite code failed: %v", err)
-	}
-	if clientGame.netplay == nil || clientGame.netplay.assignedPlayer() < 2 {
-		t.Fatal("invite code join did not establish a player session")
-	}
-}
-
 func TestOpenHostAcceptsClientWithoutSessionKey(t *testing.T) {
 	host, err := newHostNetplay("127.0.0.1:0")
 	if err != nil {
@@ -228,14 +173,6 @@ func TestCGNATAddressIsNotInternetReady(t *testing.T) {
 	}
 }
 
-func TestInviteCodeRejectsGarbage(t *testing.T) {
-	for _, code := range []string{"", "GM6-", "GM6-AAAA", "GM5-AAAAAAAA", "example.com:7777"} {
-		if _, err := decodeInviteCode(code); err == nil {
-			t.Fatalf("accepted invalid code %q", code)
-		}
-	}
-}
-
 func TestShortOpenCodeRejectsGarbage(t *testing.T) {
 	for _, code := range []string{"", "GM-", "GM-AAAA", "GM16-AAAAAAAAAA", "GM-!!!!!!!!!!"} {
 		if _, err := decodeShortOpenCode(code); err == nil {
@@ -251,54 +188,6 @@ func TestLocalInviteCandidatesHaveValidPorts(t *testing.T) {
 		}
 		if net.ParseIP(c.Addr.String()) == nil {
 			t.Fatalf("candidate IP not parseable: %s", c.Addr)
-		}
-	}
-}
-
-func TestHostInviteCodeKeepsMappedTCPInsteadOfObservedQUICPort(t *testing.T) {
-	key, err := newOnlineSessionKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-	host, err := newHostNetplay("127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer host.Close()
-
-	mapper := &natPortMapper{
-		internalPort: 7777,
-		done:         make(chan struct{}),
-		mapped:       true,
-		externalIP:   "198.51.100.25",
-		externalPort: 45123,
-	}
-	close(mapper.done)
-	g := &Game{
-		netplay:          host,
-		onlineSessionKey: key,
-		natPortMapper:    mapper,
-		p2pHost: &p2pQUICHost{
-			publicEndpoint:  "203.0.113.44:61234",
-			publicEndpoints: []string{"203.0.113.44:61234"},
-		},
-	}
-
-	code, internetReady, ready := g.currentHostInviteCode()
-	if !ready || !internetReady || code == "" {
-		t.Fatalf("invite code not ready: code=%q internet=%v ready=%v", code, internetReady, ready)
-	}
-	decoded, err := decodeInviteCode(code)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "198.51.100.25:45123"
-	if len(decoded.Candidates) == 0 || decoded.Candidates[0] != want {
-		t.Fatalf("first direct candidate=%v want %s", decoded.Candidates, want)
-	}
-	for _, candidate := range decoded.Candidates {
-		if candidate == "203.0.113.44:61234" {
-			t.Fatalf("QUIC UDP endpoint leaked into TCP invite candidates: %v", decoded.Candidates)
 		}
 	}
 }
@@ -334,11 +223,8 @@ func TestOpenInternetHostReportsP2PStartingInsteadOfPortMapping(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer host.Close()
-	mapper := &natPortMapper{internalPort: 7777, done: make(chan struct{}), lastErr: errors.New("UPnP unavailable")}
-	close(mapper.done)
 	g := &Game{
 		netplay:                 host,
-		natPortMapper:           mapper,
 		onlineSessionScope:      onlineSessionScopeInternet,
 		onlineSessionVisibility: onlineSessionOpen,
 	}

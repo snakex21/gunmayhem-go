@@ -1,43 +1,28 @@
 package game
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
 	"net"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
-
-	"gunmayhem-go/internal/masterapi"
 )
 
 const (
-	masterServerConfigFile      = "master_server.txt"
-	masterHeartbeatInterval     = 10 * time.Second
-	masterRequestTimeout        = 4 * time.Second
-	masterServerListTimeout     = 5 * time.Second
-	masterHeartbeatResponseMax  = 16 << 10
-	masterServerListResponseMax = 2 << 20
 	localServerStaleAfter       = 7 * time.Second
 	internetServerVerifyTimeout = 12 * time.Second
 )
 
 type multiplayerServerInfo struct {
 	ID                   string
-	RelayID              string
 	Code                 string
 	Name                 string
 	Address              string
-	RelayAddress         string
 	Transport            string
 	Sources              string
 	Players              int
@@ -110,12 +95,11 @@ func applyProbeInfoToServer(server multiplayerServerInfo, info netProbeInfo) mul
 	return server
 }
 
-type masterServerDiscoveryResult struct {
-	Servers   []multiplayerServerInfo
-	Err       error
-	MasterErr error
-	DHTErr    error
-	Done      bool
+type serverDiscoveryResult struct {
+	Servers []multiplayerServerInfo
+	Err     error
+	DHTErr  error
+	Done    bool
 }
 
 type localHostRecord struct {
@@ -137,52 +121,6 @@ type localServerAdvertiser struct {
 	path    string
 	stop    chan struct{}
 	done    chan struct{}
-}
-
-type masterServerAdvertiser struct {
-	closed  atomic.Bool
-	client  *http.Client
-	baseURL string
-	name    string
-	tcpPort int
-	session *netplaySession
-	mapper  *natPortMapper
-	done    chan struct{}
-	stop    chan struct{}
-
-	mu           sync.RWMutex
-	id           string
-	secret       string
-	publicAddr   string
-	relayAddress string
-	relayTunnel  *relayHostTunnel
-	lastErr      error
-	registered   bool
-}
-
-func decodeLimitedJSON(r io.Reader, maxBytes int64, dst any) error {
-	if r == nil || dst == nil || maxBytes <= 0 {
-		return errors.New("invalid limited JSON decode")
-	}
-	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
-	if err != nil {
-		return err
-	}
-	if int64(len(data)) > maxBytes {
-		return errors.New("master response too large")
-	}
-	if err := json.Unmarshal(data, dst); err != nil {
-		return err
-	}
-	return nil
-}
-
-func defaultPublicServerName() string {
-	host, err := os.Hostname()
-	if err != nil || strings.TrimSpace(host) == "" {
-		return "Gun Mayhem Host"
-	}
-	return strings.TrimSpace(host)
 }
 
 func localServerRegistryDir() string {
@@ -317,351 +255,6 @@ func discoverLocalServers() ([]multiplayerServerInfo, error) {
 	return out, nil
 }
 
-func normalizeMasterServerURL(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return ""
-	}
-	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return ""
-	}
-	if u.Scheme == "http" && os.Getenv("GUNMAYHEM_ALLOW_INSECURE_MASTER") != "1" {
-		host := strings.TrimSpace(u.Hostname())
-		ip := net.ParseIP(host)
-		localHTTP := strings.EqualFold(host, "localhost") || (ip != nil && (ip.IsLoopback() || ip.IsPrivate()))
-		if !localHTTP {
-			return ""
-		}
-	}
-	return strings.TrimRight(u.String(), "/")
-}
-
-func configuredMasterServerURL() string {
-	if v := normalizeMasterServerURL(os.Getenv("GUNMAYHEM_MASTER_URL")); v != "" {
-		return v
-	}
-	if exe, err := os.Executable(); err == nil {
-		if data, readErr := os.ReadFile(filepath.Join(filepath.Dir(exe), masterServerConfigFile)); readErr == nil {
-			if v := normalizeMasterServerURL(string(data)); v != "" {
-				return v
-			}
-		}
-	}
-	if data, err := os.ReadFile(masterServerConfigFile); err == nil {
-		if v := normalizeMasterServerURL(string(data)); v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-func startMasterServerAdvertiser(tcpPort int, session *netplaySession) *masterServerAdvertiser {
-	return startMasterServerAdvertiserWithMapper(tcpPort, session, nil)
-}
-
-func startMasterServerAdvertiserWithMapper(tcpPort int, session *netplaySession, mapper *natPortMapper) *masterServerAdvertiser {
-	name := "Gun Mayhem Game"
-	if session != nil && strings.TrimSpace(session.publicSessionName) != "" {
-		name = session.publicSessionName
-	}
-	a := &masterServerAdvertiser{
-		client:  &http.Client{Timeout: masterRequestTimeout},
-		baseURL: configuredMasterServerURL(),
-		name:    name,
-		tcpPort: tcpPort,
-		session: session,
-		mapper:  mapper,
-		done:    make(chan struct{}),
-		stop:    make(chan struct{}),
-	}
-	if a.baseURL == "" {
-		a.setStatus("", errors.New("public master server is not configured"), false)
-		return a
-	}
-	go a.loop()
-	return a
-}
-
-func (a *masterServerAdvertiser) loop() {
-	defer close(a.done)
-	// Register immediately so the relay can come online without waiting for
-	// router discovery. If automatic port mapping later selects another public
-	// port, refresh the directory entry once with the final mapping.
-	a.sendHeartbeat()
-	if a.mapper != nil && !a.closed.Load() {
-		a.mapper.Wait(natDiscoveryTimeout + time.Second)
-		if !a.closed.Load() {
-			a.sendHeartbeat()
-		}
-	}
-	ticker := time.NewTicker(masterHeartbeatInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			a.sendHeartbeat()
-		case <-a.stop:
-			return
-		}
-	}
-}
-
-func (a *masterServerAdvertiser) sendHeartbeat() {
-	if a == nil || a.closed.Load() {
-		return
-	}
-	players := 1
-	if a.session != nil {
-		players += a.session.connectedCount()
-	}
-	a.mu.RLock()
-	id := a.id
-	secret := a.secret
-	a.mu.RUnlock()
-	maxPlayers := maxOnlinePlayers
-	if a.session != nil {
-		maxPlayers = a.session.humanCapacity()
-	}
-	advertisedPort := a.tcpPort
-	if a.mapper != nil {
-		advertisedPort = a.mapper.AdvertisedPort(a.tcpPort)
-	}
-	hb := masterapi.HeartbeatRequest{
-		ID:         id,
-		Secret:     secret,
-		Name:       a.name,
-		Port:       advertisedPort,
-		Players:    players,
-		MaxPlayers: maxPlayers,
-		Protocol:   netplayProtocolVersion,
-	}
-	if a.session != nil {
-		hb.SessionID = strings.TrimSpace(a.session.publicSessionID)
-		hb.Private = a.session.inviteOnly
-		if hb.Private {
-			hb.JoinCode = strings.TrimSpace(a.session.shortJoinCode)
-		}
-		info := a.session.publicProbeInfo()
-		hb.GameMode = info.GameMode
-		hb.Lives = info.Lives
-		hb.Rounds = info.Rounds
-		hb.Maps = info.Maps
-		hb.PlaylistConfigured = info.PlaylistConfigured
-		hb.Crates = info.Crates
-		hb.Pickups = info.Pickups
-		hb.RuleSummary = info.RuleSummary
-		hb.ChaosEnabled = info.ChaosEnabled
-		hb.ChaosEvents = info.ChaosEvents
-		hb.ChaosIntervalSeconds = info.ChaosIntervalSeconds
-	}
-	data, err := json.Marshal(hb)
-	if err != nil {
-		a.setStatus("", err, false)
-		return
-	}
-	req, err := http.NewRequest(http.MethodPost, a.baseURL+masterapi.HeartbeatPath, bytes.NewReader(data))
-	if err != nil {
-		a.setStatus("", err, false)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := a.client.Do(req)
-	if err != nil {
-		a.setStatus("", err, false)
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		a.setStatus("", errors.New("master heartbeat HTTP "+resp.Status), false)
-		return
-	}
-	var answer masterapi.HeartbeatResponse
-	if err := decodeLimitedJSON(resp.Body, masterHeartbeatResponseMax, &answer); err != nil {
-		a.setStatus("", err, false)
-		return
-	}
-	if strings.TrimSpace(answer.ID) == "" || strings.TrimSpace(answer.Secret) == "" || strings.TrimSpace(answer.Address) == "" {
-		a.setStatus("", errors.New("master returned incomplete registration"), false)
-		return
-	}
-	a.mu.Lock()
-	a.id = strings.TrimSpace(answer.ID)
-	a.secret = strings.TrimSpace(answer.Secret)
-	a.publicAddr = strings.TrimSpace(answer.Address)
-	a.relayAddress = strings.TrimSpace(answer.RelayAddress)
-	relayAddress := a.relayAddress
-	relayID := a.id
-	relaySecret := a.secret
-	existingRelay := a.relayTunnel
-	a.lastErr = nil
-	a.registered = true
-	a.mu.Unlock()
-	if relayAddress != "" && existingRelay == nil && a.session != nil {
-		tunnel := startRelayHostTunnel(relayAddress, relayID, relaySecret, a.session)
-		a.mu.Lock()
-		if a.relayTunnel == nil && !a.closed.Load() {
-			a.relayTunnel = tunnel
-			tunnel = nil
-		}
-		a.mu.Unlock()
-		if tunnel != nil {
-			_ = tunnel.Close()
-		}
-	}
-}
-
-func (a *masterServerAdvertiser) setStatus(publicAddr string, err error, registered bool) {
-	a.mu.Lock()
-	if publicAddr != "" {
-		a.publicAddr = publicAddr
-	}
-	a.lastErr = err
-	a.registered = registered
-	a.mu.Unlock()
-}
-
-func (a *masterServerAdvertiser) Status() (registered bool, publicAddr string, err error) {
-	if a == nil {
-		return false, "", nil
-	}
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-	return a.registered, a.publicAddr, a.lastErr
-}
-
-func (a *masterServerAdvertiser) RelayStatus() (configured, ready bool, err error) {
-	if a == nil {
-		return false, false, nil
-	}
-	a.mu.RLock()
-	address := a.relayAddress
-	tunnel := a.relayTunnel
-	a.mu.RUnlock()
-	if address == "" {
-		return false, false, nil
-	}
-	if tunnel == nil {
-		return true, false, nil
-	}
-	ready, err = tunnel.Status()
-	return true, ready, err
-}
-
-func (a *masterServerAdvertiser) Close() error {
-	if a == nil || a.closed.Swap(true) {
-		return nil
-	}
-	close(a.stop)
-	a.mu.RLock()
-	id := a.id
-	secret := a.secret
-	relay := a.relayTunnel
-	a.mu.RUnlock()
-	if relay != nil {
-		_ = relay.Close()
-	}
-	if id == "" || secret == "" || a.baseURL == "" {
-		return nil
-	}
-	req, err := http.NewRequest(http.MethodDelete, a.baseURL+masterapi.ServersPath+"?id="+url.QueryEscape(id), nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set(masterapi.ServerSecretHeader, secret)
-	client := &http.Client{Timeout: 1200 * time.Millisecond}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	_ = resp.Body.Close()
-	return nil
-}
-
-func fetchMasterServers(timeout time.Duration) ([]multiplayerServerInfo, error) {
-	return fetchMasterServersByCode("", timeout)
-}
-
-func fetchMasterServersByCode(code string, timeout time.Duration) ([]multiplayerServerInfo, error) {
-	if timeout <= 0 {
-		timeout = masterServerListTimeout
-	}
-	baseURL := configuredMasterServerURL()
-	if baseURL == "" {
-		return nil, errors.New("public master server is not configured")
-	}
-	client := &http.Client{Timeout: timeout}
-	endpoint := baseURL + masterapi.ServersPath + "?protocol=" + strconv.Itoa(netplayProtocolVersion)
-	if code = strings.ToUpper(strings.TrimSpace(code)); code != "" {
-		endpoint += "&code=" + url.QueryEscape(code)
-	}
-	resp, err := client.Get(endpoint)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("master list HTTP " + resp.Status)
-	}
-	var result masterapi.ServerListResponse
-	if err := decodeLimitedJSON(resp.Body, masterServerListResponseMax, &result); err != nil {
-		return nil, err
-	}
-	servers := make([]multiplayerServerInfo, 0, len(result.Servers))
-	seen := make(map[string]bool)
-	for _, server := range result.Servers {
-		if server.Protocol != netplayProtocolVersion || server.MaxPlayers <= 0 || server.Players < 0 || server.Players > server.MaxPlayers {
-			continue
-		}
-		address := strings.TrimSpace(server.Address)
-		if _, _, err := net.SplitHostPort(address); err != nil || seen[address] {
-			continue
-		}
-		seen[address] = true
-		name := strings.TrimSpace(server.Name)
-		if name == "" {
-			name = "Gun Mayhem Host"
-		}
-		relayAddress := normalizeRelayAddress(server.RelayAddress)
-		sessionID := strings.TrimSpace(server.SessionID)
-		if sessionID == "" {
-			sessionID = strings.TrimSpace(server.ID)
-		}
-		servers = append(servers, multiplayerServerInfo{
-			ID:                   sessionID,
-			RelayID:              strings.TrimSpace(server.ID),
-			Name:                 name,
-			Sources:              "MASTER",
-			Address:              address,
-			RelayAddress:         relayAddress,
-			Players:              server.Players,
-			MaxPlayers:           server.MaxPlayers,
-			Protocol:             server.Protocol,
-			GameMode:             server.GameMode,
-			Lives:                server.Lives,
-			Rounds:               server.Rounds,
-			Maps:                 server.Maps,
-			PlaylistConfigured:   server.PlaylistConfigured,
-			Crates:               server.Crates,
-			Pickups:              server.Pickups,
-			RuleSummary:          strings.TrimSpace(server.RuleSummary),
-			ChaosEnabled:         server.ChaosEnabled,
-			ChaosEvents:          server.ChaosEvents,
-			ChaosIntervalSeconds: server.ChaosIntervalSeconds,
-		})
-	}
-	sort.Slice(servers, func(i, j int) bool {
-		if servers[i].Full() != servers[j].Full() {
-			return !servers[i].Full()
-		}
-		if servers[i].Name != servers[j].Name {
-			return servers[i].Name < servers[j].Name
-		}
-		return servers[i].Address < servers[j].Address
-	})
-	return servers, nil
-}
-
 func mergeServerLists(lists ...[]multiplayerServerInfo) []multiplayerServerInfo {
 	byKey := make(map[string]multiplayerServerInfo)
 	byID := make(map[string]string)
@@ -693,12 +286,6 @@ func mergeServerLists(lists ...[]multiplayerServerInfo) []multiplayerServerInfo 
 				}
 				if old.ID == "" {
 					old.ID = id
-				}
-				if old.RelayID == "" && server.RelayID != "" {
-					old.RelayID = server.RelayID
-				}
-				if old.RelayAddress == "" && server.RelayAddress != "" {
-					old.RelayAddress = server.RelayAddress
 				}
 				if !old.HasRulePreview() && server.HasRulePreview() {
 					copyServerPreview(&old, server)
@@ -759,7 +346,7 @@ func (g *Game) refreshMultiplayerServers() {
 	if g == nil || g.multiplayerDiscoveryCh != nil {
 		return
 	}
-	ch := make(chan masterServerDiscoveryResult, 2)
+	ch := make(chan serverDiscoveryResult, 2)
 	g.multiplayerDiscoveryCh = ch
 	g.setMultiplayerBrowserStatus("SEARCHING NETWORK...")
 	go func() {
@@ -784,7 +371,7 @@ func (g *Game) refreshMultiplayerServers() {
 		}
 		// Publish LAN/local results immediately. Internet DHT discovery is slower
 		// and must never make a LAN host appear frozen in the browser.
-		ch <- masterServerDiscoveryResult{Servers: servers, Err: lanErr, Done: false}
+		ch <- serverDiscoveryResult{Servers: servers, Err: lanErr, Done: false}
 
 		internetCandidates, dhtErr := discoverGlobalOpenServers(globalDHTLookupTimeout)
 		if len(internetCandidates) > 0 {
@@ -803,7 +390,7 @@ func (g *Game) refreshMultiplayerServers() {
 		if len(servers) == 0 && dhtErr != nil {
 			finalErr = errors.Join(finalErr, dhtErr)
 		}
-		ch <- masterServerDiscoveryResult{Servers: servers, Err: finalErr, DHTErr: dhtErr, Done: true}
+		ch <- serverDiscoveryResult{Servers: servers, Err: finalErr, DHTErr: dhtErr, Done: true}
 	}()
 }
 
@@ -868,4 +455,12 @@ func (g *Game) pollMultiplayerServerBrowser() {
 		}
 	default:
 	}
+}
+
+func defaultPublicServerName() string {
+	host, err := os.Hostname()
+	if err != nil || strings.TrimSpace(host) == "" {
+		return "Gun Mayhem Host"
+	}
+	return strings.TrimSpace(host)
 }

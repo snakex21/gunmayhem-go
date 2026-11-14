@@ -614,15 +614,6 @@ func (p *netplayPeer) close() {
 	}
 }
 
-func (p *netplayPeer) latestInput() PlayerInputState {
-	if p == nil {
-		return PlayerInputState{}
-	}
-	p.inputMu.Lock()
-	defer p.inputMu.Unlock()
-	return unpackNetInput(p.input.newest)
-}
-
 // takeInput returns the input for one host simulation tick (see
 // netInputReplay): every client frame is applied once and in order.
 func (p *netplayPeer) takeInput(now time.Time) PlayerInputState {
@@ -1141,31 +1132,6 @@ func (s *netplaySession) setAllowedRemotePlayers(allowed [5]bool) {
 	}
 }
 
-func (s *netplaySession) peerAddress(playerID int) string {
-	if s == nil || s.mode != netplayHost {
-		return ""
-	}
-	s.peersMu.RLock()
-	defer s.peersMu.RUnlock()
-	if peer := s.peers[playerID]; peer != nil {
-		return peer.addr
-	}
-	return ""
-}
-
-func (s *netplaySession) latestInputFor(playerID int) PlayerInputState {
-	if s == nil || s.mode != netplayHost {
-		return PlayerInputState{}
-	}
-	s.peersMu.RLock()
-	peer := s.peers[playerID]
-	s.peersMu.RUnlock()
-	if peer == nil {
-		return PlayerInputState{}
-	}
-	return peer.latestInput()
-}
-
 // takeInputFor consumes one host tick of a remote player's input.
 func (s *netplaySession) takeInputFor(playerID int) PlayerInputState {
 	if s == nil || s.mode != netplayHost {
@@ -1284,16 +1250,6 @@ func (s *netplaySession) queueState(state netSnapshot) {
 	for _, peer := range peers {
 		peer.queueState(frame)
 	}
-}
-
-// latestState is the newest snapshot received (tests, diagnostics).
-func (s *netplaySession) latestState() (netSnapshot, bool) {
-	if s == nil || !s.hasState.Load() {
-		return netSnapshot{}, false
-	}
-	s.stateMu.RLock()
-	defer s.stateMu.RUnlock()
-	return s.state, true
 }
 
 // nextPlayoutState advances the client's playout buffer by one tick and
@@ -1497,77 +1453,11 @@ func (g *Game) StartNetClient(addr string) error {
 	return nil
 }
 
-func (g *Game) StartNetClientInvite(code string) error {
-	if g == nil {
-		return errors.New("nil game")
-	}
-	invite, err := decodeInviteCode(code)
-	if err != nil {
-		return err
-	}
-	_ = g.CloseNetplay()
-	var failures []string
-	for _, address := range invite.Candidates {
-		s, dialErr := newClientNetplayWithKey(address, invite.SessionKey, 1200*time.Millisecond)
-		if dialErr != nil {
-			failures = append(failures, address+": "+dialErr.Error())
-			continue
-		}
-		if handshakeErr := waitForClientHandshake(s, 2*time.Second); handshakeErr != nil {
-			_ = s.Close()
-			failures = append(failures, address+": "+handshakeErr.Error())
-			continue
-		}
-		g.netplay = s
-		g.onlineSessionVisibility = onlineSessionOpen
-		if invite.InviteOnly {
-			g.onlineSessionVisibility = onlineSessionInviteOnly
-		}
-		return nil
-	}
-
-	// Direct TCP can fail behind CGNAT. The private DHT key is derived from the
-	// invite secret, so only somebody holding the code can discover this host's
-	// UDP/QUIC endpoint. QUIC then uses decentralized hole punching.
-	if p2pAddresses, p2pErr := discoverDHTPeerAddresses(privateHostDHTHash(invite.SessionKey), 7*time.Second); p2pErr == nil {
-		for _, address := range p2pAddresses {
-			conn, dialErr := dialP2PQUIC(address, invite.SessionKey, p2pDialTimeout)
-			if dialErr != nil {
-				failures = append(failures, "P2P "+address+": "+dialErr.Error())
-				continue
-			}
-			s, sessionErr := newClientNetplayFromConnWithKey(conn, "P2P "+address, invite.SessionKey)
-			if sessionErr != nil {
-				_ = conn.Close()
-				failures = append(failures, "P2P "+address+": "+sessionErr.Error())
-				continue
-			}
-			if handshakeErr := waitForClientHandshake(s, 4*time.Second); handshakeErr != nil {
-				_ = s.Close()
-				failures = append(failures, "P2P "+address+": "+handshakeErr.Error())
-				continue
-			}
-			g.netplay = s
-			g.onlineSessionVisibility = onlineSessionOpen
-			if invite.InviteOnly {
-				g.onlineSessionVisibility = onlineSessionInviteOnly
-			}
-			return nil
-		}
-	} else {
-		failures = append(failures, "P2P discovery: "+p2pErr.Error())
-	}
-	if len(failures) == 0 {
-		return errors.New("invite code has no usable address")
-	}
-	return errors.New("could not reach host: " + strings.Join(failures, "; "))
-}
-
 func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr error) {
 	if g == nil {
 		return errors.New("nil game")
 	}
-	networkDiagnostic("JOIN start name=%q source=%q transport=%q address=%s relay=%s", server.Name, server.Sources, server.Transport, server.Address, server.RelayAddress)
+	networkDiagnostic("JOIN start name=%q source=%q transport=%q address=%s", server.Name, server.Sources, server.Transport, server.Address)
 	defer func() {
 		player := 0
 		if g.netplay != nil {
@@ -1632,17 +1522,10 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 		return nil
 	}
 
-	relayID := strings.TrimSpace(server.RelayID)
-	if relayID == "" {
-		relayID = strings.TrimSpace(server.ID)
-	}
 	var directErr error
 	if strings.TrimSpace(server.Address) != "" {
 		directTimeout := 5 * time.Second
-		if strings.TrimSpace(server.RelayAddress) != "" && relayID != "" {
-			directTimeout = 750 * time.Millisecond
-		}
-		networkDiagnostic("JOIN path=direct dial start address=%s timeout=%s relay=%s", server.Address, directTimeout, server.RelayAddress)
+		networkDiagnostic("JOIN path=direct dial start address=%s timeout=%s", server.Address, directTimeout)
 		if s, err := newClientNetplayWithTimeout(server.Address, directTimeout); err == nil {
 			if handshakeErr := waitForClientHandshake(s, netHandshakeTimeout+time.Second); handshakeErr == nil {
 				g.netplay = s
@@ -1657,34 +1540,6 @@ func (g *Game) StartNetClientServer(server multiplayerServerInfo) (finalErr erro
 			networkDiagnostic("JOIN path=direct dial failed address=%s err=%v", server.Address, err)
 			directErr = err
 		}
-	}
-	if strings.TrimSpace(server.RelayAddress) != "" && relayID != "" {
-		networkDiagnostic("JOIN path=relay dial start relay=%s id=%s", server.RelayAddress, relayID)
-		conn, err := dialRelayNetplay(server.RelayAddress, relayID)
-		if err == nil {
-			s, sessionErr := newClientNetplayFromConn(conn, "relay "+server.RelayAddress)
-			if sessionErr == nil {
-				if handshakeErr := waitForClientHandshake(s, netHandshakeTimeout+time.Second); handshakeErr == nil {
-					g.netplay = s
-					networkDiagnostic("JOIN path=relay ready relay=%s player=%d", server.RelayAddress, s.assignedPlayer())
-					return nil
-				} else {
-					networkDiagnostic("JOIN path=relay handshake failed relay=%s err=%v", server.RelayAddress, handshakeErr)
-					sessionErr = handshakeErr
-					_ = s.Close()
-				}
-			} else {
-				networkDiagnostic("JOIN path=relay session failed relay=%s err=%v", server.RelayAddress, sessionErr)
-			}
-			_ = conn.Close()
-			err = sessionErr
-		} else {
-			networkDiagnostic("JOIN path=relay dial failed relay=%s err=%v", server.RelayAddress, err)
-		}
-		if directErr != nil {
-			return fmt.Errorf("direct connection failed: %v; relay failed: %w", directErr, err)
-		}
-		return fmt.Errorf("relay failed: %w", err)
 	}
 	if directErr != nil {
 		networkDiagnostic("JOIN all paths failed address=%s directErr=%v", server.Address, directErr)
@@ -1707,10 +1562,6 @@ func (g *Game) CloseNetplay() error {
 	g.netSFXSeq = 0
 	g.netClientSFXPending = nil
 	g.netSFXPending = nil
-	if g.serverAdvertiser != nil {
-		_ = g.serverAdvertiser.Close()
-		g.serverAdvertiser = nil
-	}
 	if g.localServerAdvertiser != nil {
 		_ = g.localServerAdvertiser.Close()
 		g.localServerAdvertiser = nil
@@ -1719,10 +1570,6 @@ func (g *Game) CloseNetplay() error {
 		_ = g.lanDiscoveryResponder.Close()
 		g.lanDiscoveryResponder = nil
 	}
-	if g.globalDHTAdvertiser != nil {
-		_ = g.globalDHTAdvertiser.Close()
-		g.globalDHTAdvertiser = nil
-	}
 	if g.p2pHost != nil {
 		_ = g.p2pHost.Close()
 		g.p2pHost = nil
@@ -1730,10 +1577,6 @@ func (g *Game) CloseNetplay() error {
 	if g.cloudflareTunnel != nil {
 		_ = g.cloudflareTunnel.Close()
 		g.cloudflareTunnel = nil
-	}
-	if g.natPortMapper != nil {
-		_ = g.natPortMapper.Close()
-		g.natPortMapper = nil
 	}
 	if g.netplay == nil {
 		return nil
@@ -1751,54 +1594,11 @@ func (g *Game) NetplayStatus() string {
 	s := g.netplay
 	switch s.mode {
 	case netplayHost:
-		public := ""
-		if g.serverAdvertiser != nil {
-			registered, addr, regErr := g.serverAdvertiser.Status()
-			switch {
-			case registered && addr != "":
-				public = " | public: " + addr
-			case regErr != nil:
-				public = " | master offline"
-			default:
-				public = " | registering..."
-			}
-		}
-		if g.natPortMapper != nil {
-			done, mapped, method, _, externalPort, _ := g.natPortMapper.Status()
-			switch {
-			case mapped:
-				public += fmt.Sprintf(" | router: %s/%d", method, externalPort)
-			case !done:
-				public += " | opening router..."
-			default:
-				public += " | auto port mapping unavailable"
-			}
-		}
-		if g.globalDHTAdvertiser != nil {
-			ready, port, dhtErr := g.globalDHTAdvertiser.Status()
-			switch {
-			case ready:
-				public += fmt.Sprintf(" | global DHT:%d", port)
-			case dhtErr != nil:
-				public += " | global DHT unavailable"
-			default:
-				public += " | global DHT publishing..."
-			}
-		}
-		if g.serverAdvertiser != nil {
-			configured, ready, _ := g.serverAdvertiser.RelayStatus()
-			switch {
-			case ready:
-				public += " | relay ready"
-			case configured:
-				public += " | relay connecting..."
-			}
-		}
 		count := s.connectedCount()
 		if count > 0 {
-			return fmt.Sprintf("hosting - players %d/%d%s", count+1, maxOnlinePlayers, public)
+			return fmt.Sprintf("hosting - players %d/%d", count+1, maxOnlinePlayers)
 		}
-		return "hosting - waiting for players" + public
+		return "hosting - waiting for players"
 	case netplayClient:
 		if s.connected() {
 			if s.hasState.Load() {

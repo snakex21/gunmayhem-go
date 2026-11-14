@@ -268,12 +268,10 @@ type Game struct {
 	multiplayerServers        []multiplayerServerInfo
 	multiplayerServerScroll   int
 	multiplayerSelectedServer int
-	multiplayerDiscoveryCh    chan masterServerDiscoveryResult
+	multiplayerDiscoveryCh    chan serverDiscoveryResult
 	multiplayerDiscoveryDone  bool
-	serverAdvertiser          *masterServerAdvertiser
 	localServerAdvertiser     *localServerAdvertiser
 	lanDiscoveryResponder     *lanDiscoveryResponder
-	globalDHTAdvertiser       *globalDHTAdvertiser
 	p2pHost                   *p2pQUICHost
 	cloudflareTunnel          *cloudflareQuickTunnel
 	pendingNetJoin            *pendingNetJoin // async join in progress (online_ux.go)
@@ -282,7 +280,6 @@ type Game struct {
 	runnableUnfocused         bool   // last value passed to ebiten.SetRunnableOnUnfocused
 	netDisconnectNotice       string // why the last online session ended (net_session_ux.go)
 	netDisconnectNoticeUntil  time.Time
-	natPortMapper             *natPortMapper
 	onlineSessionVisibility   int // OPEN vs INVITE CODE
 	onlineSessionScope        int // LAN vs INTERNET+LAN
 	onlineSessionKey          string

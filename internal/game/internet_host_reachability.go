@@ -3,7 +3,6 @@ package game
 import (
 	"fmt"
 	"net"
-	"net/netip"
 	"strings"
 	"time"
 )
@@ -13,7 +12,6 @@ import (
 type hostInternetReachability struct {
 	DirectAddress      string
 	DirectMethod       string
-	MappingDone        bool
 	P2PReady           bool
 	P2PEndpoint        string
 	P2PErr             error
@@ -43,22 +41,6 @@ func (g *Game) currentHostInternetReachability() hostInternetReachability {
 	if address := publicInterfaceAddress(port, true); address != "" {
 		status.DirectAddress = address
 		status.DirectMethod = "IPv6"
-	}
-
-	if g.natPortMapper != nil {
-		done, mapped, method, externalIP, externalPort, _ := g.natPortMapper.Status()
-		status.MappingDone = done
-		if status.DirectAddress == "" && mapped && externalPort > 0 {
-			if ip, err := netip.ParseAddr(strings.TrimSpace(externalIP)); err == nil && isInternetRoutableAddr(ip.Unmap()) {
-				status.DirectAddress = net.JoinHostPort(ip.Unmap().String(), fmt.Sprint(externalPort))
-				status.DirectMethod = strings.TrimSpace(method)
-				if status.DirectMethod == "" {
-					status.DirectMethod = "port mapping"
-				}
-			}
-		}
-	} else {
-		status.MappingDone = true
 	}
 
 	// A host directly assigned a public IPv4 address does not need UPnP.
@@ -133,27 +115,10 @@ func (s hostInternetReachability) openSessionLabel() string {
 	if s.P2PReady {
 		return "P2P READY - DIRECT HOSTING UNAVAILABLE (NAT / CGNAT) - VISIBLE IN SERVER BROWSER"
 	}
-	if !s.MappingDone && s.P2PErr == nil {
-		return "CHECKING INTERNET REACHABILITY..."
-	}
 	if s.P2PErr != nil {
 		return "DIRECT HOSTING UNAVAILABLE (NAT / CGNAT) - P2P RETRYING..."
 	}
 	return "P2P STARTING - DIRECT HOSTING UNAVAILABLE - PUBLISHING RENDEZVOUS..."
-}
-
-func directServerAddresses(server multiplayerServerInfo) []string {
-	seen := make(map[string]bool)
-	out := make([]string, 0, 2)
-	for _, address := range []string{server.DirectAddress, server.Address} {
-		address = strings.TrimSpace(address)
-		if address == "" || seen[address] {
-			continue
-		}
-		seen[address] = true
-		out = append(out, address)
-	}
-	return out
 }
 
 func tryDirectClientSession(address, sessionKey string, timeout time.Duration) (*netplaySession, error) {

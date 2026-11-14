@@ -5,10 +5,6 @@ go 1.26.2
 require (
 	github.com/fxamacker/cbor/v2 v2.9.3
 	github.com/hajimehoshi/ebiten/v2 v2.9.10
-	github.com/hashicorp/yamux v0.1.2
-	github.com/huin/goupnp v1.3.0
-	github.com/jackpal/gateway v1.2.0
-	github.com/jackpal/go-nat-pmp v1.0.2
 	github.com/quic-go/quic-go v0.61.0
 	golang.org/x/image v0.43.0
 	golang.org/x/net v0.56.0

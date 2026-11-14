@@ -29,7 +29,6 @@ const (
 	onlineSessionScopeInternet
 )
 
-const inviteCodePrefix = "GM16-"
 const shortOpenCodePrefix = "GM-"
 
 var inviteCodeEncoding = base32.StdEncoding.WithPadding(base32.NoPadding)
@@ -74,31 +73,10 @@ type inviteCandidate struct {
 	Port uint16
 }
 
-type decodedInviteCode struct {
-	InviteOnly bool
-	SessionKey string
-	Candidates []string
-}
-
-// encodeShortOpenCode packs an OPEN server's IPv4 address and network port into
-// ten Base32 characters. Unlike an invite code it deliberately carries no
-// session secret, so it must never be used to authorize INVITE ONLY sessions.
-func encodeShortOpenCode(addr netip.Addr, port uint16) (string, error) {
-	addr = addr.Unmap()
-	if !addr.Is4() || port == 0 {
-		return "", errors.New("short server code requires IPv4 and a TCP port")
-	}
-	raw := make([]byte, 6)
-	ip := addr.As4()
-	copy(raw[:4], ip[:])
-	binary.BigEndian.PutUint16(raw[4:], port)
-	return shortOpenCodePrefix + inviteCodeEncoding.EncodeToString(raw), nil
-}
-
 func decodeShortOpenCode(code string) (string, error) {
 	code = strings.ToUpper(strings.TrimSpace(code))
 	code = strings.ReplaceAll(code, " ", "")
-	if !strings.HasPrefix(code, shortOpenCodePrefix) || strings.HasPrefix(code, inviteCodePrefix) {
+	if !strings.HasPrefix(code, shortOpenCodePrefix) {
 		return "", errors.New("not a short Gun Mayhem server code")
 	}
 	encoded := strings.TrimPrefix(code, shortOpenCodePrefix)
@@ -123,13 +101,6 @@ func newOnlineSessionKey() (string, error) {
 		return "", err
 	}
 	return inviteCodeEncoding.EncodeToString(raw[:]), nil
-}
-
-func onlineSessionKeyEqual(a, b string) bool {
-	if a == "" || b == "" || len(a) != len(b) {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 
 func newOnlineAuthChallenge() (string, error) {
@@ -248,41 +219,6 @@ func inviteCandidateScore(addr netip.Addr) int {
 	}
 }
 
-func selectHostInviteCandidates(in []inviteCandidate) []inviteCandidate {
-	in = uniqueInviteCandidates(in, 8)
-	selected := make([]inviteCandidate, 0, 2)
-	for _, c := range in {
-		if isInternetRoutableAddr(c.Addr) {
-			selected = append(selected, c)
-			break
-		}
-	}
-	for _, c := range in {
-		if c.Addr.IsPrivate() {
-			selected = append(selected, c)
-			break
-		}
-	}
-	if len(selected) < 2 {
-		for _, c := range in {
-			duplicate := false
-			for _, chosen := range selected {
-				if chosen == c {
-					duplicate = true
-					break
-				}
-			}
-			if !duplicate {
-				selected = append(selected, c)
-			}
-			if len(selected) == 2 {
-				break
-			}
-		}
-	}
-	return uniqueInviteCandidates(selected, 2)
-}
-
 func uniqueInviteCandidates(in []inviteCandidate, maxCount int) []inviteCandidate {
 	seen := make(map[string]bool)
 	out := make([]inviteCandidate, 0, min(len(in), maxCount))
@@ -301,53 +237,6 @@ func uniqueInviteCandidates(in []inviteCandidate, maxCount int) []inviteCandidat
 		}
 	}
 	return out
-}
-
-func (g *Game) currentHostInviteCode() (code string, internetReady bool, ready bool) {
-	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost || g.onlineSessionKey == "" {
-		return "", false, false
-	}
-	tcpAddr, ok := g.netplay.listener.Addr().(*net.TCPAddr)
-	if !ok || tcpAddr.Port <= 0 {
-		return "", false, false
-	}
-
-	candidates := localInviteCandidates(tcpAddr.Port)
-	mapperDone := true
-	if g.natPortMapper != nil {
-		done, mapped, _, externalIP, externalPort, _ := g.natPortMapper.Status()
-		mapperDone = done
-		if mapped && externalPort > 0 {
-			if parsed, err := netip.ParseAddr(strings.TrimSpace(externalIP)); err == nil {
-				parsed = parsed.Unmap()
-				if isInternetRoutableAddr(parsed) {
-					public := inviteCandidate{Addr: parsed, Port: uint16(externalPort)}
-					candidates = append([]inviteCandidate{public}, candidates...)
-					internetReady = true
-				}
-			}
-		}
-	}
-	for _, c := range candidates {
-		if isInternetRoutableAddr(c.Addr) {
-			internetReady = true
-		}
-	}
-	// Do not put the QUIC/DHT-observed UDP endpoint into the direct candidate
-	// list. Invite candidates are attempted as TCP first. Treating that UDP port
-	// as TCP could displace the valid UPnP/NAT-PMP TCP mapping and made invite
-	// codes fail whenever a client's VPN blocked DHT. QUIC still remains the
-	// fallback below StartNetClientInvite's direct TCP attempts.
-	candidates = selectHostInviteCandidates(candidates)
-	if len(candidates) == 0 {
-		return "", false, mapperDone
-	}
-	code, err := encodeInviteCode(g.onlineSessionVisibility == onlineSessionInviteOnly, g.onlineSessionKey, candidates)
-	if err != nil {
-		return "", internetReady, mapperDone
-	}
-	_ = mapperDone // TCP mapping is optional now; the code can use DHT/QUIC P2P.
-	return code, internetReady, true
 }
 
 func (g *Game) currentHostShortOpenCode() (string, bool) {
@@ -425,7 +314,7 @@ func (g *Game) StartNetClientShortOpenCode(code string) error {
 	if len(encoded) == 6 {
 		// Six-character GM- codes are INVITE ONLY rendezvous codes. Public OPEN
 		// sessions are discovered in the server browser and are never resolved
-		// through the master server by code.
+		// by code.
 		if !validDecentralizedOpenCode(encoded) {
 			return errors.New("invalid invite session code")
 		}
@@ -438,20 +327,6 @@ func (g *Game) StartNetClientShortOpenCode(code string) error {
 				return nil
 			} else {
 				failures = append(failures, "LAN "+server.Address+": "+err.Error())
-			}
-		}
-		if configuredMasterServerURL() != "" {
-			masterServers, masterErr := fetchMasterServersByCode(encoded, 2500*time.Millisecond)
-			networkDiagnostic("JOIN CODE master lookup code=%s candidates=%v err=%v", encoded, serverAddressesForDiagnostic(masterServers), masterErr)
-			for _, server := range masterServers {
-				if err := g.startNetClientCodeServer(server, authKey); err == nil {
-					return nil
-				} else {
-					failures = append(failures, "MASTER "+server.Address+": "+err.Error())
-				}
-			}
-			if masterErr != nil {
-				failures = append(failures, "MASTER: "+masterErr.Error())
 			}
 		}
 		peers, dhtErr := discoverDHTPeerAddresses(decentralizedOpenCodeDHTHash(encoded), 12*time.Second)
@@ -514,9 +389,6 @@ func (g *Game) startNetClientCodeServer(server multiplayerServerInfo, sessionKey
 	var directErr error
 	if strings.TrimSpace(server.Address) != "" {
 		timeout := 3 * time.Second
-		if strings.TrimSpace(server.RelayAddress) != "" {
-			timeout = 750 * time.Millisecond
-		}
 		if s, err := newClientNetplayWithKey(server.Address, sessionKey, timeout); err == nil {
 			if err := waitForClientHandshake(s, 4*time.Second); err == nil {
 				g.netplay = s
@@ -530,131 +402,8 @@ func (g *Game) startNetClientCodeServer(server multiplayerServerInfo, sessionKey
 		}
 	}
 
-	relayID := strings.TrimSpace(server.RelayID)
-	if relayID == "" {
-		relayID = strings.TrimSpace(server.ID)
-	}
-	if strings.TrimSpace(server.RelayAddress) != "" && relayID != "" {
-		conn, err := dialRelayNetplay(server.RelayAddress, relayID)
-		if err == nil {
-			s, sessionErr := newClientNetplayFromConnWithKey(conn, "relay code "+server.RelayAddress, sessionKey)
-			if sessionErr == nil {
-				if handshakeErr := waitForClientHandshake(s, 4*time.Second); handshakeErr == nil {
-					g.netplay = s
-					return nil
-				} else {
-					sessionErr = handshakeErr
-					_ = s.Close()
-				}
-			}
-			_ = conn.Close()
-			err = sessionErr
-		}
-		if directErr != nil {
-			return fmt.Errorf("direct connection failed: %v; relay failed: %w", directErr, err)
-		}
-		return fmt.Errorf("relay failed: %w", err)
-	}
 	if directErr != nil {
 		return directErr
 	}
 	return errors.New("session has no usable network route")
-}
-
-func encodeInviteCode(inviteOnly bool, sessionKey string, candidates []inviteCandidate) (string, error) {
-	key, err := decodeOnlineSessionKey(sessionKey)
-	if err != nil {
-		return "", err
-	}
-	candidates = uniqueInviteCandidates(candidates, 2)
-	if len(candidates) == 0 {
-		return "", errors.New("invite code has no network address")
-	}
-	payload := make([]byte, 0, 48)
-	flags := byte(0)
-	if inviteOnly {
-		flags |= 1
-	}
-	payload = append(payload, 1, flags)
-	payload = append(payload, key[:]...)
-	payload = append(payload, byte(len(candidates)))
-	for _, c := range candidates {
-		if c.Addr.Is4() {
-			payload = append(payload, 4)
-			v := c.Addr.As4()
-			payload = append(payload, v[:]...)
-		} else if c.Addr.Is6() {
-			payload = append(payload, 6)
-			v := c.Addr.As16()
-			payload = append(payload, v[:]...)
-		} else {
-			return "", errors.New("unsupported invite address")
-		}
-		var port [2]byte
-		binary.BigEndian.PutUint16(port[:], c.Port)
-		payload = append(payload, port[:]...)
-	}
-	return inviteCodePrefix + inviteCodeEncoding.EncodeToString(payload), nil
-}
-
-func decodeInviteCode(code string) (decodedInviteCode, error) {
-	code = strings.ToUpper(strings.TrimSpace(code))
-	code = strings.ReplaceAll(code, " ", "")
-	if !strings.HasPrefix(code, inviteCodePrefix) {
-		return decodedInviteCode{}, errors.New("not a Gun Mayhem invite code")
-	}
-	raw, err := inviteCodeEncoding.DecodeString(strings.TrimPrefix(code, inviteCodePrefix))
-	if err != nil || len(raw) < 20 {
-		return decodedInviteCode{}, errors.New("invalid invite code")
-	}
-	if raw[0] != 1 || raw[1]&^byte(1) != 0 {
-		return decodedInviteCode{}, errors.New("unsupported invite code version")
-	}
-	flags := raw[1]
-	var key [16]byte
-	copy(key[:], raw[2:18])
-	count := int(raw[18])
-	if count <= 0 || count > 2 {
-		return decodedInviteCode{}, errors.New("invalid invite candidate count")
-	}
-	pos := 19
-	out := decodedInviteCode{InviteOnly: flags&1 != 0, SessionKey: inviteCodeEncoding.EncodeToString(key[:])}
-	for i := 0; i < count; i++ {
-		if pos >= len(raw) {
-			return decodedInviteCode{}, errors.New("truncated invite code")
-		}
-		family := raw[pos]
-		pos++
-		var addr netip.Addr
-		switch family {
-		case 4:
-			if pos+4+2 > len(raw) {
-				return decodedInviteCode{}, errors.New("truncated IPv4 invite")
-			}
-			var v [4]byte
-			copy(v[:], raw[pos:pos+4])
-			addr = netip.AddrFrom4(v)
-			pos += 4
-		case 6:
-			if pos+16+2 > len(raw) {
-				return decodedInviteCode{}, errors.New("truncated IPv6 invite")
-			}
-			var v [16]byte
-			copy(v[:], raw[pos:pos+16])
-			addr = netip.AddrFrom16(v)
-			pos += 16
-		default:
-			return decodedInviteCode{}, errors.New("invalid invite address family")
-		}
-		port := binary.BigEndian.Uint16(raw[pos : pos+2])
-		pos += 2
-		if port == 0 || !addr.IsValid() || addr.IsUnspecified() || addr.IsMulticast() {
-			return decodedInviteCode{}, errors.New("invalid invite address")
-		}
-		out.Candidates = append(out.Candidates, net.JoinHostPort(addr.String(), fmt.Sprint(port)))
-	}
-	if pos != len(raw) {
-		return decodedInviteCode{}, errors.New("invalid trailing invite data")
-	}
-	return out, nil
 }

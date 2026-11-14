@@ -306,10 +306,6 @@ type p2pQUICHost struct {
 	lastErr         error
 }
 
-func startP2PQUICHost(session *netplaySession, visibility int, sessionKey string) (*p2pQUICHost, error) {
-	return startP2PQUICHostWithTunnel(session, visibility, sessionKey, nil)
-}
-
 func startP2PQUICHostWithTunnel(session *netplaySession, visibility int, sessionKey string, tunnel *cloudflareQuickTunnel) (*p2pQUICHost, error) {
 	if session == nil || session.mode != netplayHost || strings.TrimSpace(sessionKey) == "" {
 		return nil, errors.New("invalid P2P host configuration")
@@ -987,17 +983,6 @@ func dialP2PQUIC(hostAddress, sessionKey string, timeout time.Duration) (net.Con
 			return nil, fmt.Errorf("P2P hole punch failed: %w", ctx.Err())
 		}
 	}
-}
-
-func discoverSingleDHTPeer(hash [20]byte, timeout time.Duration) (string, error) {
-	peers, err := discoverDHTPeerAddresses(hash, timeout)
-	if len(peers) > 0 {
-		return peers[0], nil
-	}
-	if err != nil {
-		return "", err
-	}
-	return "", errors.New("DHT peer not found")
 }
 
 func discoverDHTPeerAddresses(hash [20]byte, timeout time.Duration) ([]string, error) {

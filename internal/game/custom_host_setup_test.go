@@ -54,8 +54,8 @@ func TestLANOpenHostAdvertisesOnlyLocally(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer g.CloseNetplay()
-	if g.p2pHost != nil || g.natPortMapper != nil || g.serverAdvertiser != nil {
-		t.Fatalf("LAN OPEN unexpectedly started Internet services: p2p=%v nat=%v master=%v", g.p2pHost != nil, g.natPortMapper != nil, g.serverAdvertiser != nil)
+	if g.p2pHost != nil || g.cloudflareTunnel != nil {
+		t.Fatalf("LAN OPEN unexpectedly started Internet services: p2p=%v tunnel=%v", g.p2pHost != nil, g.cloudflareTunnel != nil)
 	}
 	if g.localServerAdvertiser == nil || g.lanDiscoveryResponder == nil {
 		t.Fatal("LAN OPEN did not advertise on local browser/discovery")
@@ -72,7 +72,7 @@ func TestLANInviteHostIsPrivateAndCodeReachable(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer g.CloseNetplay()
-	if g.p2pHost != nil || g.natPortMapper != nil || g.serverAdvertiser != nil {
+	if g.p2pHost != nil || g.cloudflareTunnel != nil {
 		t.Fatal("LAN INVITE unexpectedly started Internet services")
 	}
 	if g.localServerAdvertiser != nil || g.lanDiscoveryResponder == nil {
@@ -93,7 +93,7 @@ func TestInternetInviteStaysOffOpenBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer g.CloseNetplay()
-	if g.localServerAdvertiser != nil || g.lanDiscoveryResponder == nil || g.serverAdvertiser != nil {
+	if g.localServerAdvertiser != nil || g.lanDiscoveryResponder == nil {
 		t.Fatal("INTERNET INVITE leaked onto an OPEN browser")
 	}
 	if !g.netplay.inviteOnly {

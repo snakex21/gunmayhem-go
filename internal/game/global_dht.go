@@ -66,20 +66,6 @@ var globalDHTBootstrap = []string{
 	"dht.anacrolix.link:42069",
 }
 
-type globalDHTAdvertiser struct {
-	closed atomic.Bool
-	stop   chan struct{}
-	done   chan struct{}
-
-	internalPort int
-	mapper       *natPortMapper
-
-	mu      sync.RWMutex
-	lastErr error
-	ready   bool
-	port    int
-}
-
 type dhtLiteClient struct {
 	conn   *net.UDPConn
 	mux    *p2pPacketMux
@@ -114,91 +100,6 @@ type dhtLiteGetPeers struct {
 	Peers    []string
 	Token    []byte
 	Observed string
-}
-
-func startGlobalDHTAdvertiser(internalPort int, mapper *natPortMapper) *globalDHTAdvertiser {
-	a := &globalDHTAdvertiser{
-		internalPort: internalPort,
-		mapper:       mapper,
-		stop:         make(chan struct{}),
-		done:         make(chan struct{}),
-	}
-	go a.loop()
-	return a
-}
-
-func (a *globalDHTAdvertiser) loop() {
-	defer close(a.done)
-	if a == nil || a.internalPort <= 0 || a.internalPort > 65535 {
-		if a != nil {
-			a.setStatus(false, 0, errors.New("invalid DHT game port"))
-		}
-		return
-	}
-
-	if a.mapper != nil {
-		a.mapper.Wait(natDiscoveryTimeout + time.Second)
-	}
-	port, ok := dhtReachableGamePort(a.internalPort, a.mapper)
-	if !ok {
-		a.setStatus(false, 0, errors.New("internet-reachable gameplay port unavailable"))
-		return
-	}
-
-	retryDelay := 10 * time.Second
-	for {
-		ctx, cancel := context.WithTimeout(context.Background(), globalDHTLookupTimeout)
-		err := announceGlobalOpenSession(ctx, port)
-		cancel()
-		next := globalDHTAnnounceEvery
-		if err != nil {
-			a.setStatus(false, port, err)
-			next = retryDelay
-			retryDelay *= 2
-			if retryDelay > 2*time.Minute {
-				retryDelay = 2 * time.Minute
-			}
-		} else {
-			a.setStatus(true, port, nil)
-			retryDelay = 10 * time.Second
-		}
-		timer := time.NewTimer(next)
-		select {
-		case <-timer.C:
-		case <-a.stop:
-			if !timer.Stop() {
-				select {
-				case <-timer.C:
-				default:
-				}
-			}
-			return
-		}
-	}
-}
-
-func dhtReachableGamePort(internalPort int, mapper *natPortMapper) (int, bool) {
-	if internalPort <= 0 || internalPort > 65535 {
-		return 0, false
-	}
-	if mapper != nil {
-		_, mapped, _, externalIP, externalPort, _ := mapper.Status()
-		if mapped && externalPort > 0 && externalPort <= 65535 {
-			externalIP = strings.TrimSpace(externalIP)
-			if externalIP == "" {
-				return externalPort, true
-			}
-			if parsed, err := netip.ParseAddr(externalIP); err == nil && isInternetRoutableAddr(parsed.Unmap()) {
-				return externalPort, true
-			}
-		}
-	}
-	for _, candidate := range localInviteCandidates(internalPort) {
-		if isInternetRoutableAddr(candidate.Addr) {
-			return internalPort, true
-		}
-	}
-	return 0, false
 }
 
 func newDHTLiteClient() (*dhtLiteClient, error) {
@@ -610,22 +511,6 @@ func dhtDistanceLess(a, b, target [20]byte) bool {
 	return false
 }
 
-func announceGlobalOpenSession(ctx context.Context, port int) error {
-	return announceDHTPeer(ctx, globalOpenDHTInfoHashAt(time.Now()), port)
-}
-
-func announceDHTPeer(ctx context.Context, infoHash [20]byte, port int) error {
-	if port <= 0 || port > 65535 {
-		return errors.New("invalid global DHT announce port")
-	}
-	client, err := newDHTLiteClient()
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-	return announceDHTPeerWithClient(ctx, client, infoHash, port, false)
-}
-
 func announceDHTPeerWithClient(ctx context.Context, client *dhtLiteClient, infoHash [20]byte, port int, impliedPort bool) error {
 	_, err := announceDHTPeerWithClientObserved(ctx, client, infoHash, port, impliedPort)
 	return err
@@ -931,34 +816,6 @@ func verifyGlobalOpenServers(candidates []multiplayerServerInfo, timeout time.Du
 		}
 	}
 	return out
-}
-
-func (a *globalDHTAdvertiser) setStatus(ready bool, port int, err error) {
-	if a == nil {
-		return
-	}
-	a.mu.Lock()
-	a.ready = ready
-	a.port = port
-	a.lastErr = err
-	a.mu.Unlock()
-}
-
-func (a *globalDHTAdvertiser) Status() (ready bool, port int, err error) {
-	if a == nil {
-		return false, 0, nil
-	}
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-	return a.ready, a.port, a.lastErr
-}
-
-func (a *globalDHTAdvertiser) Close() error {
-	if a == nil || a.closed.Swap(true) {
-		return nil
-	}
-	close(a.stop)
-	return nil
 }
 
 func parseCompactDHTNodes(raw []byte) []dhtLiteNode {

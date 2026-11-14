@@ -91,7 +91,7 @@ func normalizePastedJoinInput(raw string) string {
 	}
 	// Most specific prefix first: GMT1- and GM16- do not contain "GM-". The
 	// prefix must start the word or follow a separator such as "code:".
-	for _, prefix := range []string{cloudflareInviteCodePrefix, inviteCodePrefix, shortOpenCodePrefix} {
+	for _, prefix := range []string{cloudflareInviteCodePrefix, shortOpenCodePrefix} {
 		if pick != "" {
 			break
 		}
@@ -186,19 +186,6 @@ func (g *Game) copyHostInviteCode() bool {
 	return true
 }
 
-// hostJoinCodeLabelWithCopyHint is the host code label plus copy affordance or
-// recent copy feedback.
-func (g *Game) hostJoinCodeLabelWithCopyHint() string {
-	label := g.currentHostDisplayJoinCodeLabel()
-	if g.inviteCopyFeedback != "" && time.Now().Before(g.inviteCopyFeedbackUntil) {
-		return label + "   >> " + g.inviteCopyFeedback
-	}
-	if code, ready := g.currentHostDisplayJoinCode(); ready && code != "" {
-		return label + "   [CTRL+C / CLICK: COPY]"
-	}
-	return label
-}
-
 // ---------------------------------------------------------------------------
 // Asynchronous join
 
@@ -225,8 +212,6 @@ func (g *Game) startNetClientFromInput(address string) error {
 	switch {
 	case strings.HasPrefix(upper, cloudflareInviteCodePrefix):
 		return g.StartNetClientCloudflareInvite(address)
-	case strings.HasPrefix(upper, inviteCodePrefix):
-		return g.StartNetClientInvite(address)
 	case strings.HasPrefix(upper, shortOpenCodePrefix):
 		return g.StartNetClientShortOpenCode(address)
 	case strings.Contains(strings.ToLower(address), cloudflareTunnelHostSuffix):

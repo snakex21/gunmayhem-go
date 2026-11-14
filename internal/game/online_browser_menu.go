@@ -236,7 +236,7 @@ func (g *Game) buildOnlineBrowser(ctx *uiCtx) {
 	ctx.Badge(Rect{X: uiMargin + uiMeasure(true, uiSizeTitle, "ONLINE") + 14, Y: 31, W: 44, H: 22}, "NET", uiNetBlue)
 	ctx.Label(g.onlineBrowserStatusText(), true, uiSizeBody, uiTextMuted, onlineBrowserRefreshRect.X-16, 50, uiAlignRight)
 	if ctx.Button("ob.refresh", onlineBrowserRefreshRect, "REFRESH", uiButtonOpts{Size: uiSizeBody,
-		InfoTitle: "REFRESH", InfoBody: "Search the LAN, the master server and the DHT again."}) {
+		InfoTitle: "REFRESH", InfoBody: "Search the LAN and the Internet server list (DHT) again."}) {
 		g.activateCustomNetworkHit(menuHitCustomNetworkRefresh)
 	}
 
@@ -332,7 +332,7 @@ func (g *Game) buildOnlineBrowserList(ctx *uiCtx) {
 
 	if len(g.multiplayerServers) == 0 {
 		if ctx.drawing() {
-			title, body := "SEARCHING FOR SESSIONS...", "Looking on your LAN, the master server and the DHT."
+			title, body := "SEARCHING FOR SESSIONS...", "Looking on your LAN and the Internet server list (DHT)."
 			if g.multiplayerDiscoveryDone && g.multiplayerDiscoveryCh == nil {
 				title, body = "NO OPEN SESSIONS", "Nobody is hosting an open session right now. Join with an invite code below, or host your own session."
 			}
