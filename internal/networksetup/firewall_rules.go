@@ -14,9 +14,11 @@ const (
 )
 
 const (
-	ruleDiscovery      = "Gun Mayhem LAN Discovery"
-	ruleGameplay       = "Gun Mayhem LAN Gameplay"
-	ruleDHT            = "Gun Mayhem P2P DHT UDP 7777"
+	ruleDiscovery = "Gun Mayhem LAN Discovery"
+	ruleGameplay  = "Gun Mayhem LAN Gameplay"
+	// ruleObsoleteDHT was created by unreleased v0.16 Internet test builds.
+	// Hosting no longer listens on a public UDP port, so the rule is removed.
+	ruleObsoleteDHT    = "Gun Mayhem P2P DHT UDP 7777"
 	ruleCloudflareTCP  = "Gun Mayhem Cloudflare TCP 7844"
 	ruleCloudflareUDP  = "Gun Mayhem Cloudflare UDP 7844"
 	ruleCloudflareHTTP = "Gun Mayhem Cloudflare Health HTTPS 443"
@@ -30,11 +32,21 @@ type firewallRule struct {
 	remotePort int
 	program    string
 	remoteIP   string
+	// profile is the netsh profile list. Empty means "any".
+	profile string
 }
+
+// obsoleteFirewallRules are deleted when the helper runs. They must not exist
+// for the configuration to be considered current.
+var obsoleteFirewallRules = []string{ruleObsoleteDHT}
 
 // firewallRules returns the complete, intentionally narrow set of rules used
 // by the Windows launcher. The executable and cloudflared paths are resolved
 // from the running package rather than from a build-time path.
+//
+// Inbound access exists only for LAN (LocalSubnet). Internet hosting goes
+// through cloudflared, which connects outbound and reaches the game over
+// loopback, so INTERNET + INVITE CODE needs no inbound rule at all.
 func firewallRules(executablePath string) []firewallRule {
 	executablePath = filepath.Clean(executablePath)
 	cloudflaredPath := filepath.Join(filepath.Dir(executablePath), "cloudflared.exe")
@@ -55,14 +67,6 @@ func firewallRules(executablePath string) []firewallRule {
 			localPort: lanGameplayPort,
 			program:   executablePath,
 			remoteIP:  "LocalSubnet",
-		},
-		{
-			name:      ruleDHT,
-			direction: "in",
-			protocol:  "UDP",
-			localPort: lanGameplayPort,
-			program:   executablePath,
-			remoteIP:  "any",
 		},
 		{
 			name:       ruleCloudflareTCP,
@@ -112,7 +116,14 @@ func (rule firewallRule) addArgs() []string {
 	if rule.remoteIP != "" {
 		args = append(args, "remoteip="+rule.remoteIP)
 	}
-	return append(args, "profile=any", "enable=yes")
+	if rule.direction == "in" {
+		args = append(args, "edge=no")
+	}
+	profile := rule.profile
+	if profile == "" {
+		profile = "any"
+	}
+	return append(args, "profile="+profile, "enable=yes")
 }
 
 func firewallAddArgs(rule firewallRule) []string {

@@ -11,7 +11,7 @@ func TestFirewallRulesUseCurrentPathsAndNarrowPorts(t *testing.T) {
 	executablePath := filepath.Join("package", "GunMayhem-Windows-x64", "GunMayhem.exe")
 	cloudflaredPath := filepath.Join(filepath.Dir(executablePath), "cloudflared.exe")
 	rules := firewallRules(executablePath)
-	if got, want := len(rules), 6; got != want {
+	if got, want := len(rules), 5; got != want {
 		t.Fatalf("firewallRules returned %d rules, want %d", got, want)
 	}
 
@@ -26,7 +26,6 @@ func TestFirewallRulesUseCurrentPathsAndNarrowPorts(t *testing.T) {
 	}{
 		{name: ruleDiscovery, direction: "in", protocol: "UDP", localPort: lanDiscoveryPort, program: executablePath, remoteIP: "LocalSubnet"},
 		{name: ruleGameplay, direction: "in", protocol: "TCP", localPort: lanGameplayPort, program: executablePath, remoteIP: "LocalSubnet"},
-		{name: ruleDHT, direction: "in", protocol: "UDP", localPort: lanGameplayPort, program: executablePath, remoteIP: "any"},
 		{name: ruleCloudflareTCP, direction: "out", protocol: "TCP", remotePort: cloudflareTunnelPort, program: cloudflaredPath, remoteIP: "any"},
 		{name: ruleCloudflareUDP, direction: "out", protocol: "UDP", remotePort: cloudflareTunnelPort, program: cloudflaredPath, remoteIP: "any"},
 		{name: ruleCloudflareHTTP, direction: "out", protocol: "TCP", remotePort: cloudflareHealthPort, program: executablePath, remoteIP: "any"},
@@ -80,6 +79,14 @@ func TestFirewallRulesUseCurrentPathsAndNarrowPorts(t *testing.T) {
 		if got.remoteIP != "" && !hasArg("remoteip="+got.remoteIP) {
 			t.Errorf("rule %q is missing remoteip=%s: %s", want.name, got.remoteIP, joinedArgs)
 		}
+		if got.direction == "in" {
+			if got.remoteIP != "LocalSubnet" {
+				t.Errorf("inbound rule %q must be limited to LocalSubnet: %s", want.name, joinedArgs)
+			}
+			if !hasArg("edge=no") {
+				t.Errorf("inbound rule %q must disable edge traversal: %s", want.name, joinedArgs)
+			}
+		}
 		if strings.Contains(strings.ToLower(joinedArgs), "localport=any") ||
 			strings.Contains(strings.ToLower(joinedArgs), "remoteport=any") {
 			t.Errorf("rule %q unexpectedly allows all ports: %s", want.name, joinedArgs)
@@ -103,5 +110,25 @@ func TestFirewallOutputHasProgramRejectsStalePath(t *testing.T) {
 	prefixOutput := []byte("Program: " + currentPath + ".old\r\n")
 	if firewallOutputHasProgram(prefixOutput, currentPath) {
 		t.Fatal("path prefix was incorrectly accepted")
+	}
+}
+
+func TestFirewallRulesHaveNoPublicInboundRule(t *testing.T) {
+	for _, rule := range firewallRules(filepath.Join("pkg", "GunMayhem.exe")) {
+		if rule.name == ruleObsoleteDHT {
+			t.Fatalf("obsolete public UDP rule %q is still created", rule.name)
+		}
+		if rule.direction == "in" && rule.remoteIP != "LocalSubnet" {
+			t.Fatalf("inbound rule %q accepts remoteip=%q; Internet hosting must not need inbound access", rule.name, rule.remoteIP)
+		}
+	}
+	found := false
+	for _, name := range obsoleteFirewallRules {
+		if name == ruleObsoleteDHT {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("obsolete DHT rule is not scheduled for removal")
 	}
 }

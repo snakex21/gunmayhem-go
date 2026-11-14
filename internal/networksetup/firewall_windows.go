@@ -40,7 +40,20 @@ func firewallConfigured(executablePath string) bool {
 			return false
 		}
 	}
+	for _, name := range obsoleteFirewallRules {
+		if firewallRuleNamePresent(name) {
+			return false
+		}
+	}
 	return true
+}
+
+// firewallRuleNamePresent reports whether netsh lists any rule with this
+// name. netsh exits non-zero when no rule matches.
+func firewallRuleNamePresent(name string) bool {
+	cmd := exec.Command("netsh", firewallShowArgs(name)...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	return cmd.Run() == nil
 }
 
 func firewallRuleExists(rule firewallRule) bool {
@@ -57,6 +70,11 @@ func configureFirewall() error {
 	executablePath, err := os.Executable()
 	if err != nil {
 		return err
+	}
+	for _, name := range obsoleteFirewallRules {
+		deleteCmd := exec.Command("netsh", firewallDeleteArgs(name)...)
+		deleteCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		_ = deleteCmd.Run()
 	}
 	for _, rule := range firewallRules(executablePath) {
 		if err := replaceRule(rule); err != nil {
