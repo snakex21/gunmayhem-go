@@ -193,7 +193,7 @@ const setupAbilityButtonX = 103.0
 // drawSetupAbilityDescription explains the selected ability under the grid.
 func drawSetupAbilityDescription(dst *ebiten.Image, ability int, localY, alpha float64) {
 	text := abilityName(ability) + ": " + abilityDescription(ability)
-	lines := wrapAbilityText(text, 9.5, 186)
+	lines := wrapTextToWidth(text, 186, func(s string) float64 { return measureMenuText(menuFontCondensed, 9.5, s) })
 	for i, line := range lines {
 		if i >= 3 {
 			break
@@ -201,41 +201,6 @@ func drawSetupAbilityDescription(dst *ebiten.Image, ability int, localY, alpha f
 		drawSourceMenuText(dst, line, menuFontCondensed, 9.5,
 			color.NRGBA{R: 0xe0, G: 0xe0, B: 0xe0, A: uint8(255 * alpha)}, 7, localY+718+float64(i)*12)
 	}
-}
-
-// wrapAbilityText greedily wraps text to maxW pixels of the condensed font.
-func wrapAbilityText(text string, size, maxW float64) []string {
-	var lines []string
-	line := ""
-	word := ""
-	flush := func() {
-		if word == "" {
-			return
-		}
-		candidate := word
-		if line != "" {
-			candidate = line + " " + word
-		}
-		if line != "" && measureMenuText(menuFontCondensed, size, candidate) > maxW {
-			lines = append(lines, line)
-			line = word
-		} else {
-			line = candidate
-		}
-		word = ""
-	}
-	for _, r := range text {
-		if r == ' ' {
-			flush()
-			continue
-		}
-		word += string(r)
-	}
-	flush()
-	if line != "" {
-		lines = append(lines, line)
-	}
-	return lines
 }
 
 // drawSetupCardAbilitySummary shows the chosen ability next to the GRENADE

@@ -93,14 +93,7 @@ func (g *Game) aimHimarsStrikes(p *Player, fired []Bullet) {
 		life := fall + himarsMarkerLingerTicks
 		g.extraHazardMarkers = append(g.extraHazardMarkers, HazardMarker{
 			Kind: hazardMarkerStrike, X: b.X, Y: landingY,
-			Life: life, MaxLife: life, Drop: himarsMarkerLingerTicks + minInt(8, fall),
+			Life: life, MaxLife: life, Drop: himarsMarkerLingerTicks + min(8, fall),
 		})
 	}
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

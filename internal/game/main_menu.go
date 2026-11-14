@@ -8,7 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// Main menu, rebuilt with the Mayhem UI kit (ui_kit.go): mode tiles over the
+// Main menu, rebuilt with the Mayhem UI kit (ui_kit_*.go): mode tiles over the
 // dimmed arena backdrop, with the original Gun Mayhem logo cropped from the
 // Flash main menu (Symbol 28) as the nod to the source game.
 

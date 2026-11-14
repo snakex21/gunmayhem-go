@@ -3,7 +3,7 @@ package game
 import "image/color"
 
 // Mayhem UI theme: the single source of colours, type sizes and layout grid
-// for screens built with the UI kit (ui_kit.go). "Ink + paper": dark page,
+// for screens built with the UI kit (ui_kit_*.go). "Ink + paper": dark page,
 // light cards, one orange for action/selection/focus. Blue is reserved for the
 // small online/network badge and is never a whole-screen theme.
 var (

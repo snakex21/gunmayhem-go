@@ -9,7 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-// Options, rebuilt with the Mayhem UI kit (ui_kit.go): tabs GAME / DISPLAY /
+// Options, rebuilt with the Mayhem UI kit (ui_kit_*.go): tabs GAME / DISPLAY /
 // AUDIO / CONTROLS. One build function serves the update and draw passes, so
 // every control's drawn rect is also its hit rect.
 
