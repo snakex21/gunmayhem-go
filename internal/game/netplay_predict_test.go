@@ -518,3 +518,38 @@ func TestPredictionAdoptsHostKnockback(t *testing.T) {
 		}
 	}
 }
+
+// On LAN the host often acknowledges the newest input already (ack ==
+// latest). The continuation of the previous prediction still needs the frames
+// after prevSeq, so a small correction must be smoothed, not shown at once.
+func TestPredictSmoothsWhenHostAcksNewestInput(t *testing.T) {
+	env := predictTestEnv()
+	right := PlayerInputState{Right: true}
+	var pr netPredictor
+	base := predictTestPlayer()
+	pr.record(1, right)
+	first, _ := pr.predict(base, 1, 0, 1, env)
+
+	pr.record(2, right)
+	base2 := base
+	predictStep(&base2, right, &env)
+	predictStep(&base2, right, &env)
+	base2.X -= 6
+	got, ok := pr.predict(base2, 2, 2, 2, env) // ack == latest
+	if !ok {
+		t.Fatal("no prediction")
+	}
+	cont := first
+	predictStep(&cont, right, &env)
+	if math.Abs(got.X-cont.X) > 1e-6 {
+		t.Fatalf("correction with ack==latest jumped: drawn %.3f, continuation %.3f", got.X, cont.X)
+	}
+	if pr.stats.lastError < 5.9 || pr.stats.lastError > 6.1 {
+		t.Fatalf("error stats %+v", pr.stats)
+	}
+	for _, in := range pr.log {
+		if in.seq <= 1 {
+			t.Fatalf("log kept frames up to min(ack, prevSeq): %+v", pr.log)
+		}
+	}
+}

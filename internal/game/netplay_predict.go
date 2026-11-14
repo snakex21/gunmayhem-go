@@ -174,9 +174,17 @@ func (p *netPredictor) predict(base Player, baseTick, ack, latest uint32, env ne
 		p.reset()
 		return base, false
 	}
-	// Inputs the host has simulated are no longer needed.
+	// Inputs the host has simulated are no longer needed, except those the
+	// previous prediction has not been continued through yet: when the host
+	// acknowledges everything (ack == latest, common on LAN) the continuation
+	// below still replays (prevSeq, latest] to measure the correction, and
+	// without those frames a small correction would show unsmoothed.
+	keepAfter := ack
+	if p.have && p.prevSeq < keepAfter {
+		keepAfter = p.prevSeq
+	}
 	drop := 0
-	for drop < len(p.log) && p.log[drop].seq <= ack {
+	for drop < len(p.log) && p.log[drop].seq <= keepAfter {
 		drop++
 	}
 	if drop > 0 {
