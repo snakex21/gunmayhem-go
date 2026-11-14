@@ -171,7 +171,9 @@ The rest of the arsenal is only in the mystery box.
 | Gun | Price |
 | --- | --- |
 | FIFTY EIGHT | 350 |
+| Baseball Bat (melee, +16 damage per hit) | 450 |
 | SNAKE | 500 |
+| Leaf Blower (pushes zombies, no damage; bots never buy it) | 700 |
 | SHORT SMG | 800 |
 | SAWED OFF SHOTGUN | 900 |
 | MAFIA SMG | 1000 |
@@ -218,6 +220,7 @@ yours.
 | ANCHOR | 900 |
 | HEAVY | 1000 |
 | KEVLAR | 1000 |
+| BALLISTIC SHIELD (claws into it: half damage) | 1100 |
 | SHIELD | 1250 |
 
 **Supplies.**
@@ -248,7 +251,8 @@ around wave 6-8, and the minigun later. All purchase rules are in one function,
 * Only the player who rolled can take the weapon (DOWN again). The weapon
   comes with spare magazines.
 * The pool is every non-pistol weapon of the arsenal, including the developed
-  ones, but not the Portal Gun.
+  ones (the harpoon and the leaf blower too), but not the Portal Gun and not
+  the bat (it is sold in the shop).
 * After 4-8 rolls, a roll comes up "BYE BYE". The 950 is refunded, and the box
   moves to another spot after 3 s. On a multi-zone map the new spot can be in
   any unlocked zone; only players in the box's zone can use it.

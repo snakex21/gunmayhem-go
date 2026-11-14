@@ -43,9 +43,9 @@ func proceduralWeaponRaster(number int) *SourceRaster {
 	var r *SourceRaster
 	switch number {
 	case weaponBaseballBat:
-		r = &SourceRaster{Image: makeBaseballBatArt(), Bounds: Rect{X: -batGripX, Y: -batGripY, W: batArtW, H: batArtH}}
+		r = &SourceRaster{Image: makeBaseballBatArt(1), Bounds: Rect{X: -batGripX, Y: -batGripY, W: batArtW, H: batArtH}}
 	case weaponLeafBlower:
-		r = &SourceRaster{Image: makeLeafBlowerArt(), Bounds: Rect{X: -blowerGripX, Y: -blowerGripY, W: blowerArtW, H: blowerArtH}}
+		r = &SourceRaster{Image: makeLeafBlowerArt(1), Bounds: Rect{X: -blowerGripX, Y: -blowerGripY, W: blowerArtW, H: blowerArtH}}
 	}
 	arsenal2WeaponArt[number] = r
 	return r
@@ -58,9 +58,41 @@ func strokePolygon(dst *ebiten.Image, pts [][2]float64, width float32, clr color
 	}
 }
 
+// artPen draws the procedural weapon art at k times its gameplay size (k=1
+// for gameplay, larger for crisp menu / gun library thumbnails).
+type artPen struct {
+	dst *ebiten.Image
+	k   float64
+}
+
+func (a artPen) pts(pts [][2]float64) [][2]float64 {
+	out := make([][2]float64, len(pts))
+	for i, p := range pts {
+		out[i] = [2]float64{p[0] * a.k, p[1] * a.k}
+	}
+	return out
+}
+func (a artPen) poly(pts [][2]float64, c color.NRGBA) { fillPolygon(a.dst, a.pts(pts), c) }
+func (a artPen) outline(pts [][2]float64, w float64, c color.NRGBA) {
+	strokePolygon(a.dst, a.pts(pts), float32(w*a.k), c)
+}
+func (a artPen) rect(x, y, w, h float64, c color.NRGBA) {
+	vector.DrawFilledRect(a.dst, float32(x*a.k), float32(y*a.k), float32(w*a.k), float32(h*a.k), c, true)
+}
+func (a artPen) circle(x, y, r float64, c color.NRGBA) {
+	vector.DrawFilledCircle(a.dst, float32(x*a.k), float32(y*a.k), float32(r*a.k), c, true)
+}
+func (a artPen) ring(x, y, r, w float64, c color.NRGBA) {
+	vector.StrokeCircle(a.dst, float32(x*a.k), float32(y*a.k), float32(r*a.k), float32(w*a.k), c, true)
+}
+func (a artPen) line(x0, y0, x1, y1, w float64, c color.NRGBA) {
+	vector.StrokeLine(a.dst, float32(x0*a.k), float32(y0*a.k), float32(x1*a.k), float32(y1*a.k), float32(w*a.k), c, true)
+}
+
 // makeBaseballBatArt: a wooden bat, knob left, barrel right, taped handle.
-func makeBaseballBatArt() *ebiten.Image {
-	img := ebiten.NewImage(batArtW, batArtH)
+func makeBaseballBatArt(k float64) *ebiten.Image {
+	img := ebiten.NewImage(int(math.Ceil(batArtW*k)), int(math.Ceil(batArtH*k)))
+	a := artPen{img, k}
 	cy := float64(batArtH) / 2
 	outline := color.NRGBA{R: 0x3b, G: 0x24, B: 0x12, A: 0xff}
 	wood := color.NRGBA{R: 0xd8, G: 0xa1, B: 0x5c, A: 0xff}
@@ -71,62 +103,84 @@ func makeBaseballBatArt() *ebiten.Image {
 		top := [][2]float64{{7, cy - 2.4 - grow}, {30, cy - 2.6 - grow}, {56, cy - 5.0 - grow}, {71, cy - 5.6 - grow}}
 		pts := append([][2]float64(nil), top...)
 		for i := 1; i < 8; i++ { // round cap
-			a := -math.Pi/2 + float64(i)/8*math.Pi
-			pts = append(pts, [2]float64{71 + math.Cos(a)*(5.6+grow), cy + math.Sin(a)*(5.6+grow)})
+			ang := -math.Pi/2 + float64(i)/8*math.Pi
+			pts = append(pts, [2]float64{71 + math.Cos(ang)*(5.6+grow), cy + math.Sin(ang)*(5.6+grow)})
 		}
 		for i := len(top) - 1; i >= 0; i-- {
 			pts = append(pts, [2]float64{top[i][0], 2*cy - top[i][1]})
 		}
 		return pts
 	}
-	fillPolygon(img, body(1.2), outline)
-	vector.DrawFilledCircle(img, 5.2, float32(cy), 4.4, outline, true)
-	fillPolygon(img, body(0), wood)
-	vector.DrawFilledCircle(img, 5.2, float32(cy), 3.2, wood, true)
+	a.poly(body(1.2), outline)
+	a.circle(5.2, cy, 4.4, outline)
+	a.poly(body(0), wood)
+	a.circle(5.2, cy, 3.2, wood)
 	// Grain along the barrel and a highlight stripe on top.
-	vector.StrokeLine(img, 34, float32(cy+1.2), 68, float32(cy+2.4), 1, grain, true)
-	vector.StrokeLine(img, 44, float32(cy-0.6), 70, float32(cy-0.4), 0.8, grain, true)
-	vector.StrokeLine(img, 33, float32(cy-2.0), 70, float32(cy-4.2), 1.2, shine, true)
+	a.line(34, cy+1.2, 68, cy+2.4, 1, grain)
+	a.line(44, cy-0.6, 70, cy-0.4, 0.8, grain)
+	a.line(33, cy-2.0, 70, cy-4.2, 1.2, shine)
 	// Grip tape.
-	vector.DrawFilledRect(img, 8, float32(cy-2.4), 18, 4.8, tape, true)
+	a.rect(8, cy-2.4, 18, 4.8, tape)
 	for x := 9.0; x < 26; x += 3.5 {
-		vector.StrokeLine(img, float32(x), float32(cy+2.2), float32(x+2.2), float32(cy-2.2), 0.8, color.NRGBA{R: 0x5a, G: 0x5a, B: 0x60, A: 0xff}, true)
+		a.line(x, cy+2.2, x+2.2, cy-2.2, 0.8, color.NRGBA{R: 0x5a, G: 0x5a, B: 0x60, A: 0xff})
 	}
 	return img
 }
 
 // makeLeafBlowerArt: a handheld blower held like a gun: orange fan housing
 // over a pistol grip, fuel tank behind, a straight tube with a flared nozzle.
-func makeLeafBlowerArt() *ebiten.Image {
-	img := ebiten.NewImage(blowerArtW, blowerArtH)
+func makeLeafBlowerArt(k float64) *ebiten.Image {
+	img := ebiten.NewImage(int(math.Ceil(blowerArtW*k)), int(math.Ceil(blowerArtH*k)))
+	a := artPen{img, k}
 	outline := color.NRGBA{R: 0x1d, G: 0x1d, B: 0x20, A: 0xff}
 	orange := color.NRGBA{R: 0xf0, G: 0x84, B: 0x1e, A: 0xff}
 	orangeDark := color.NRGBA{R: 0xa8, G: 0x52, B: 0x0c, A: 0xff}
 	tube := color.NRGBA{R: 0x4b, G: 0x4f, B: 0x55, A: 0xff}
 	tubeShine := color.NRGBA{R: 0x8a, G: 0x90, B: 0x98, A: 0xff}
 	// Fuel tank behind the housing.
-	vector.DrawFilledRect(img, 0.5, 7.5, 13, 15, outline, true)
-	vector.DrawFilledRect(img, 1.5, 8.5, 11, 13, color.NRGBA{R: 0x33, G: 0x34, B: 0x38, A: 0xff}, true)
-	vector.DrawFilledRect(img, 3, 6, 5, 3, orange, true)
+	a.rect(0.5, 7.5, 13, 15, outline)
+	a.rect(1.5, 8.5, 11, 13, color.NRGBA{R: 0x33, G: 0x34, B: 0x38, A: 0xff})
+	a.rect(3, 6, 5, 3, orange)
 	// Pistol grip.
-	fillPolygon(img, [][2]float64{{13.5, 19}, {22, 19}, {20.5, 33}, {14, 33}}, outline)
-	fillPolygon(img, [][2]float64{{14.8, 20}, {20.8, 20}, {19.6, 32}, {15.2, 32}}, color.NRGBA{R: 0x2e, G: 0x2e, B: 0x31, A: 0xff})
-	vector.StrokeLine(img, 21, 22, 24, 26, 1.4, outline, true) // trigger
+	a.poly([][2]float64{{13.5, 19}, {22, 19}, {20.5, 33}, {14, 33}}, outline)
+	a.poly([][2]float64{{14.8, 20}, {20.8, 20}, {19.6, 32}, {15.2, 32}}, color.NRGBA{R: 0x2e, G: 0x2e, B: 0x31, A: 0xff})
+	a.line(21, 22, 24, 26, 1.4, outline) // trigger
 	// Tube with a joint ring, then the flared nozzle.
-	vector.DrawFilledRect(img, 26, 8.5, 41, 9, outline, true)
-	vector.DrawFilledRect(img, 27, 9.5, 39, 7, tube, true)
-	vector.StrokeLine(img, 28, 11, 66, 11, 1.2, tubeShine, true)
-	vector.DrawFilledRect(img, 27, 8, 3.5, 10, outline, true)
+	a.rect(26, 8.5, 41, 9, outline)
+	a.rect(27, 9.5, 39, 7, tube)
+	a.line(28, 11, 66, 11, 1.2, tubeShine)
+	a.rect(27, 8, 3.5, 10, outline)
 	nozzle := [][2]float64{{64, 8}, {76.5, 5.5}, {76.5, 20.5}, {64, 18}}
-	fillPolygon(img, nozzle, orange)
-	strokePolygon(img, nozzle, 1.2, outline)
+	a.poly(nozzle, orange)
+	a.outline(nozzle, 1.2, outline)
 	// Fan housing.
-	vector.DrawFilledCircle(img, 19, 13, 12, outline, true)
-	vector.DrawFilledCircle(img, 19, 13, 10.8, orange, true)
-	vector.StrokeCircle(img, 19, 13, 7, 1.4, orangeDark, true)
-	vector.DrawFilledCircle(img, 19, 13, 2.6, outline, true)
-	vector.StrokeLine(img, 13, 6, 25, 6, 1.1, color.NRGBA{R: 0xff, G: 0xc0, B: 0x7a, A: 0xff}, true)
+	a.circle(19, 13, 12, outline)
+	a.circle(19, 13, 10.8, orange)
+	a.ring(19, 13, 7, 1.4, orangeDark)
+	a.circle(19, 13, 2.6, outline)
+	a.line(13, 6, 25, 6, 1.1, color.NRGBA{R: 0xff, G: 0xc0, B: 0x7a, A: 0xff})
 	return img
+}
+
+// proceduralWeaponThumb is a 3x copy of the art for menus and the gun
+// library (the gameplay raster would look blocky when scaled up there).
+func proceduralWeaponThumb(number int) *SourceRaster {
+	const k = 3
+	arsenal2ArtMu.Lock()
+	defer arsenal2ArtMu.Unlock()
+	key := -number
+	if r, ok := arsenal2WeaponArt[key]; ok {
+		return r
+	}
+	var r *SourceRaster
+	switch number {
+	case weaponBaseballBat:
+		r = &SourceRaster{Image: makeBaseballBatArt(k), Bounds: Rect{X: -batGripX * k, Y: -batGripY * k, W: batArtW * k, H: batArtH * k}}
+	case weaponLeafBlower:
+		r = &SourceRaster{Image: makeLeafBlowerArt(k), Bounds: Rect{X: -blowerGripX * k, Y: -blowerGripY * k, W: blowerArtW * k, H: blowerArtH * k}}
+	}
+	arsenal2WeaponArt[key] = r
+	return r
 }
 
 // ---------------------------------------------------------------------------
@@ -277,15 +331,22 @@ func (g *Game) drawLeafBlowerGust(screen *ebiten.Image, p *Player) {
 	ox, oy, f := blowerNozzle(p)
 	fade := float64(p.BlowerTime) / blowerVisualTicks
 	phase := p.ShotsFired
-	for i := 0; i < 11; i++ {
-		d := float64((phase*17 + i*41) % int(blowerRange))
-		spread := math.Sin(float64(i)*1.7+0.4) * (blowerNearHalfWidth*0.7 + d*blowerHalfAngleTan*0.8)
+	// A faint air cone, brighter at the nozzle.
+	for k := 0; k < 3; k++ {
+		d := blowerRange * (0.45 + 0.27*float64(k))
+		half := blowerNearHalfWidth*0.6 + d*blowerHalfAngleTan*0.85
+		cone := [][2]float64{{ox, oy - 7}, {ox + d*f, oy - half}, {ox + d*f, oy + half}, {ox, oy + 7}}
+		fillPolygon(screen, cone, color.NRGBA{R: 0xe8, G: 0xf4, B: 0xff, A: uint8(26 * fade)})
+	}
+	for i := 0; i < 14; i++ {
+		d := float64((phase*19 + i*37) % int(blowerRange))
+		spread := math.Sin(float64(i)*1.7+0.4) * (blowerNearHalfWidth*0.55 + d*blowerHalfAngleTan*0.8)
 		x0 := ox + d*f
 		y0 := oy + spread
-		ln := 14 + 8*(1-d/blowerRange)
-		a := uint8(150 * (1 - d/blowerRange) * fade)
-		vector.StrokeLine(screen, float32(x0), float32(y0), float32(x0+ln*f), float32(y0+spread*0.06), 1.4,
-			color.NRGBA{R: 0xe8, G: 0xf2, B: 0xff, A: a}, true)
+		ln := 18 + 14*(1-d/blowerRange)
+		a := uint8(220 * (1 - 0.7*d/blowerRange) * fade)
+		vector.StrokeLine(screen, float32(x0), float32(y0), float32(x0+ln*f), float32(y0+spread*0.08), 2,
+			color.NRGBA{R: 0xf4, G: 0xfa, B: 0xff, A: a}, true)
 	}
 	leaf := []color.NRGBA{{R: 0xd8, G: 0x8a, B: 0x2a, A: 0xff}, {R: 0x8a, G: 0xb0, B: 0x3a, A: 0xff}, {R: 0xc0, G: 0x4a, B: 0x22, A: 0xff}}
 	for i := 0; i < 4; i++ {
@@ -298,7 +359,7 @@ func (g *Game) drawLeafBlowerGust(screen *ebiten.Image, p *Player) {
 		pts := make([][2]float64, 0, 8)
 		for k := 0; k < 8; k++ {
 			a := float64(k) / 8 * 2 * math.Pi
-			px, py := math.Cos(a)*4, math.Sin(a)*2
+			px, py := math.Cos(a)*5.5, math.Sin(a)*2.6
 			pts = append(pts, [2]float64{cx + px*math.Cos(ang) - py*math.Sin(ang), cy + px*math.Sin(ang) + py*math.Cos(ang)})
 		}
 		fillPolygon(screen, pts, c)

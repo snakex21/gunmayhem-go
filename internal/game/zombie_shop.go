@@ -153,8 +153,11 @@ func buildZombieShop() {
 			continue
 		}
 		info := "Weapon + spare magazines."
-		if d := weaponArsenal2Description(gn.number); d != "" {
-			info = d
+		switch gn.number {
+		case weaponBaseballBat:
+			info = "Melee bat: big knockback, one-hits early walkers."
+		case weaponLeafBlower:
+			info = "Blows zombies off ledges. No damage. Refuel = ammo."
 		}
 		add(zombieShopItem{Tab: zombieTabGuns, Kind: zombieItemWeapon, Value: gn.number, Price: gn.price,
 			Name: def.DisplayName(), Info: info})

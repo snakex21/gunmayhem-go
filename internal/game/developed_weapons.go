@@ -355,6 +355,7 @@ func init() {
 	developedWeaponSpecs[145] = bar
 
 	addArsenal2Weapons()
+	applyDevelopedIdentityTweaks()
 }
 
 func addDevelopedWeapon(def WeaponDef, spec DevelopedWeaponSpec) {

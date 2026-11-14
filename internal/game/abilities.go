@@ -206,7 +206,7 @@ func abilityDescription(n int) string {
 	case abilityKevlar:
 		return "-25% bullet knockback. A bit slower."
 	case abilityBallisticShield:
-		return "Riot shield, always up: front bullets push only 22%. Two-handed guns or akimbo sling it on your back. Slower, lower jump."
+		return "Riot shield, always up: front bullets push only 22%. Two-handed guns or akimbo move it to your back. Slower, lower jump."
 	case abilityRandom:
 		return "A random ability every match."
 	}

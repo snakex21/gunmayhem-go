@@ -172,6 +172,9 @@ func (g *Game) setupSelectionRaster(editor, number int) *SourceRaster {
 		if raster := g.assets.StarterGunFrames[number]; raster != nil {
 			return raster
 		}
+		if proceduralWeapon(number) {
+			return proceduralWeaponThumb(number)
+		}
 		return g.assets.WeaponFrame(number, 0)
 	case customEditEyes:
 		if source, ok := gm2EyeSourceNumber(number); ok {

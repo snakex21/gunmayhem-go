@@ -327,12 +327,12 @@ func (g *Game) drawOrganizedGunLibraryFooter(screen *ebiten.Image, category Deve
 		drawSourceMenuText(screen, stat, menuFontCondensedExtraBold, 13, color.White, 210+float64(i%2)*185, 512+float64(i/2)*27)
 	}
 	if desc := weaponArsenal2Description(g.gunLibrarySelected); desc != "" {
-		lines := wrapTextToWidth(desc, 160, func(s string) float64 { return measureMenuText(menuFontCondensed, 10, s) })
+		lines := wrapTextToWidth(desc, 172, func(s string) float64 { return measureMenuText(menuFontCondensed, 12, s) })
 		for i, line := range lines {
 			if i >= 6 {
 				break
 			}
-			drawSourceMenuText(screen, line, menuFontCondensed, 10, color.NRGBA{R: 0xff, G: 0xcc, B: 0x66, A: 0xff}, 585, 478+float64(i)*13)
+			drawSourceMenuText(screen, line, menuFontCondensed, 12, color.NRGBA{R: 0xff, G: 0xcc, B: 0x66, A: 0xff}, 572, 474+float64(i)*16)
 		}
 	}
 	test := Rect{X: 756, Y: 514, W: 108, H: 44}

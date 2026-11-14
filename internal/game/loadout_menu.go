@@ -283,7 +283,7 @@ func (g *Game) loadoutGearChoices(slot int) []loadoutChoice {
 		case a == abilityKevlar:
 			body += " Gear: a vest over your shirt."
 		case a == abilityBallisticShield:
-			body += " Gear: carried in the off hand (or on the back); your hat stays."
+			body += " Your hat stays."
 		}
 		out = append(out, loadoutChoice{
 			id: fmt.Sprintf("lo.ability.%d", a), label: abilityName(a), selected: cfg.Ability == a,
@@ -361,6 +361,9 @@ func weaponShotsPerSecond(def WeaponDef) float64 {
 }
 
 func weaponFireModeLabel(n int) string {
+	if isMeleeWeapon(n) {
+		return "MELEE  /  BATS GRENADES BACK"
+	}
 	if spec, ok := developedWeaponSpec(n); ok && spec.FireMode == DevelopedFireAuto {
 		return "FULL AUTO"
 	}
@@ -578,7 +581,8 @@ func (g *Game) drawLoadoutInfo(ctx *uiCtx, slot int, info *loadoutChoice) {
 	maxRounds, maxRate, maxPush := loadoutWeaponMaxima()
 	rounds := fmt.Sprint(def.Bullets)
 	roundsV := float64(def.Bullets) / maxRounds
-	if def.Bullets >= 9999 {
+	if def.Bullets >= 9999 || isMeleeWeapon(info.gun) {
+		// A starter bat never breaks (crate bats do, see arsenal2_defs.go).
 		rounds, roundsV = "INF", 1
 	}
 	rate := weaponShotsPerSecond(def)

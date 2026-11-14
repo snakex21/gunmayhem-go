@@ -153,6 +153,9 @@ func (g *Game) drawGunLibraryInteractions(screen *ebiten.Image) {
 }
 
 func (g *Game) gunLibraryRaster(number int) *SourceRaster {
+	if proceduralWeapon(number) {
+		return proceduralWeaponThumb(number)
+	}
 	if number >= 87 {
 		return g.assets.WeaponFrame(number, 0)
 	}

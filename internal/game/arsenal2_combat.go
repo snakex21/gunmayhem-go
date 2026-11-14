@@ -44,8 +44,8 @@ func shiftAkimboShot(p *Player, offHand bool, shots []Bullet, flashes []MuzzleFl
 
 // Off-hand gun offset (world px at scale 1) for AKIMBO shots and art.
 const (
-	akimboOffHandBack = 7.0
-	akimboOffHandDrop = 6.0
+	akimboOffHandBack = 5.0
+	akimboOffHandDrop = 8.0
 )
 
 func fireMeleeSwing(p *Player) {
