@@ -248,9 +248,9 @@ func (p *Player) clearArsenal2State() {
 func (p *Player) tickArsenal2Timers() {
 	if p.AkimboTime > 0 {
 		p.AkimboTime--
-		if p.AkimboTime == 0 {
-			p.AkimboHand = 0
-		}
+	}
+	if !akimboActive(p) {
+		p.AkimboHand = 0
 	}
 	if p.ShieldGearSpark > 0 {
 		p.ShieldGearSpark--

@@ -588,6 +588,7 @@ func (g *Game) simulateArenaTick(primary bool) {
 				// Pylon Man's currently spawned helper named `double`.
 				g.killCampaignDouble()
 			}
+			g.dropHarpoonRopesOf(p.ID)
 			g.appendSourceKillFeed(p)
 			g.applyCustomRespawnWeapon(p)
 			if p.LastDeathBy > 0 && p.LastDeathBy != p.ID {
@@ -664,9 +665,9 @@ func (g *Game) simulateArenaTick(primary bool) {
 	if g.deflectShieldBullets(targets) > 0 {
 		g.playSourceSFX("bolt1.wav", false)
 	}
+	shieldSparksBefore := countBallisticShieldSparks(targets)
 	// Bat swings and leaf blower gusts (arsenal2_combat.go).
 	g.applyArsenal2Hits(targets)
-	shieldSparksBefore := countBallisticShieldSparks(targets)
 	g.zombieBulletScratch = g.zombieBulletsAlive(g.zombieBulletScratch)
 	updateBullets(runtimeArena, g.bullets, targets, &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
 	g.markZombieHeadshots(g.zombieBulletScratch)

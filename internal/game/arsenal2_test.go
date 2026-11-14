@@ -432,8 +432,13 @@ func TestAkimboTimingAndShieldInteraction(t *testing.T) {
 	if len(g.bullets) != 2 || p.Weapon.Bullets != ammo-1 {
 		t.Fatalf("akimbo pair: bullets=%d ammo %d->%d", len(g.bullets), ammo, p.Weapon.Bullets)
 	}
-	if g.bullets[1].Y <= g.bullets[0].Y-4+akimboOffHandDrop-1 && g.bullets[1].X >= g.bullets[0].X {
+	// Source bullets carry +-3 px of vertical jitter: the off-hand drop (8)
+	// still shows, and the off-hand gun sits behind the main one.
+	if dy := g.bullets[1].Y - g.bullets[0].Y; dy < akimboOffHandDrop-6 || g.bullets[1].X != g.bullets[0].X-akimboOffHandBack {
 		t.Fatalf("off-hand shot not offset: %+v %+v", g.bullets[0], g.bullets[1])
+	}
+	if p.AkimboHand != 0 {
+		t.Fatalf("hands did not alternate back: %d", p.AkimboHand)
 	}
 	// A two-handed pickup suspends it (the timer keeps running).
 	p.EquipWeapon(10)

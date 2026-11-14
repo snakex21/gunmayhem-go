@@ -75,6 +75,9 @@ type CampaignEnemy struct {
 
 	// Host-only bookkeeping (unexported: never on the wire).
 	preVX, preVY float64
+	// windVX/VY: leaf blower push this tick (arsenal2): it moves the enemy
+	// but is not a hit (no flash, no credit, no HP).
+	windVX, windVY float64
 	preHits      int
 	creditTimer  int
 	finished     bool
@@ -452,6 +455,7 @@ func (g *Game) beginCampaignEnemyHitPhase() {
 			continue
 		}
 		e.preVX, e.preVY = e.Body.VX, e.Body.VY
+		e.windVX, e.windVY = 0, 0
 		e.preHits = e.Body.HitNumber
 	}
 }
@@ -466,7 +470,9 @@ func (g *Game) endCampaignEnemyHitPhase(arena Map) {
 		if hits < 0 {
 			hits = 0
 		}
-		impulse := math.Hypot(b.VX-e.preVX, b.VY-e.preVY)
+		scale := abilityKnockbackScale(b)
+		impulse := math.Hypot(b.VX-e.preVX-e.windVX*scale, b.VY-e.preVY-e.windVY*scale)
+		e.windVX, e.windVY = 0, 0
 		if hits > 0 || impulse > 0.5 {
 			e.HitFlash = 6
 			e.creditTimer = campaignEnemyCreditFrames

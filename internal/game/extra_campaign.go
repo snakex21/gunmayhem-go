@@ -138,9 +138,9 @@ var extraCampaignMissions = [extraCampaignMissionCount]extraCampaignMission{
 	{MapNumber: 10, PlayerLives: 6, Crates: true, Powerups: false, Mode: "OLD-SCHOOL SQUAD", Briefing: "Slow weapons, powerful single hits.", Enemies: []extraCampaignEnemy{
 		xe(3, "Musketeer", 6, 7, 31, 182, 0, 5), xe(4, "Ranger", 2, 3, 15, 177, 3, 5),
 	}},
-	{MapNumber: 7, PlayerLives: 7, Crates: true, Powerups: true, Mode: "JUGGERNAUT DUEL", Briefing: "A blast-shielded harpoon boss hunts you.", Enemies: []extraCampaignEnemy{
-		// A harpoon hit is extremely strong, so the duel is built around dodging
-		// deliberate shots instead of enduring automatic one-shot reloads.
+	{MapNumber: 7, PlayerLives: 7, Crates: true, Powerups: true, Mode: "JUGGERNAUT DUEL", Briefing: "A blast-shielded harpoon boss reels you in over the gaps.", Enemies: []extraCampaignEnemy{
+		// The harpoon reels its victim in (arsenal2_combat.go), so the duel is
+		// built around dodging deliberate shots near the gaps.
 		xe(3, "Juggernaut", 10, 14, 42, 179, 6, 13).withShotDelay(75).asBoss(&extraCampaignBoss{Title: "JUGGERNAUT", KnockbackScale: 0.65, Phases: []extraCampaignBossPhase{
 			{Lives: 8, Banner: "ARMOR CRACKED", KnockbackScale: 0.8, MoveScale: 1.1},
 			{Lives: 4, Banner: "ENRAGED", KnockbackScale: 0.95, MoveScale: 1.25, ShotDelay: 55},

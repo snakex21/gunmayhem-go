@@ -1214,6 +1214,7 @@ func (p *Player) EquipWeapon(number int) {
 		return
 	}
 	p.Weapon = NewWeapon(number)
+	p.AkimboHand = 0 // a new gun always starts on the main hand
 	// The attached gun's first frame calls adjustrof() after getgun() returns.
 	// That leaves waittime at ROF-2 for ordinary guns (or -10 for pistols),
 	// so a freshly picked-up weapon needs only the source's short startup delay

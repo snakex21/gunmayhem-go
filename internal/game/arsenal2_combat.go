@@ -85,7 +85,7 @@ func (g *Game) applyArsenal2Hits(targets []*Player) {
 		if p.BlowerPulse {
 			p.BlowerPulse = false
 			if p.Active {
-				g.applyLeafBlower(p, targets)
+				g.applyLeafBlower(p, targets, double)
 			}
 		}
 	}
@@ -122,9 +122,14 @@ func (g *Game) applyMeleeSwing(p *Player, targets []*Player, double bool) {
 	if double {
 		power *= 2
 	}
+	s := playerRenderScale(p) / 0.8
 	for _, t := range targets {
 		if !arsenal2CanAffect(p, t) || !rectsOverlap(box, t.Hitbox()) {
 			continue
+		}
+		ts := playerRenderScale(t) / 0.8
+		if !arsenal2LineClear(g.arena, p.X, p.Y-35*s, t.X, t.Y-35*ts) {
+			continue // never through a platform
 		}
 		push := power
 		if t.ShieldTime == 0 && t.DamageMulti > 0 {
@@ -136,6 +141,13 @@ func (g *Game) applyMeleeSwing(p *Player, targets []*Player, double bool) {
 		if ballisticShieldCovers(t, f, 0) {
 			push *= batShieldScale
 			t.ShieldGearSpark = ballisticShieldSparkFrames
+		}
+		if e := g.campaignEnemyForBody(t); e != nil && e.shieldUp() && f*float64(e.Body.Facing) < 0 {
+			// The shield-bearer's riot plate takes the swing: half push, no
+			// hit (no HP loss).
+			t.VX += push * batShieldScale * f
+			e.ShieldSpark = 8
+			continue
 		}
 		t.VX += push * f
 		t.VY -= batLift
@@ -213,7 +225,7 @@ func blowerPushAt(k float64) float64 {
 	return blowerPushFar + (blowerPushNear-blowerPushFar)*k
 }
 
-func (g *Game) applyLeafBlower(p *Player, targets []*Player) {
+func (g *Game) applyLeafBlower(p *Player, targets []*Player, double bool) {
 	ox, oy, f := blowerNozzle(p)
 	owner := p.scoreOwnerID()
 	for _, t := range targets {
@@ -222,10 +234,16 @@ func (g *Game) applyLeafBlower(p *Player, targets []*Player) {
 		}
 		s := playerRenderScale(t) / 0.8
 		k, ok := blowerConeFactor(ox, oy, f, t.X, t.Y-35*s, 26*s)
-		if !ok {
+		if !ok || !arsenal2LineClear(g.arena, ox, oy, t.X, t.Y-35*s) {
 			continue
 		}
 		push := blowerPushAt(k)
+		if double {
+			push *= 2 // DOUBLE KNOCKBACK modifier
+		}
+		if e := g.campaignEnemyForBody(t); e != nil && e.shieldUp() && f*float64(e.Body.Facing) < 0 {
+			push *= batShieldScale // the riot plate catches the wind
+		}
 		if t.ShieldTime == 0 && t.DamageMulti > 0 {
 			push *= t.DamageMulti
 		}
@@ -243,6 +261,10 @@ func (g *Game) applyLeafBlower(p *Player, targets []*Player) {
 			z.windVX += dvx
 			z.windVY += dvy
 		}
+		if e := g.campaignEnemyForBody(t); e != nil {
+			e.windVX += dvx
+			e.windVY += dvy
+		}
 	}
 	for i := range g.grenades {
 		gr := &g.grenades[i]
@@ -250,7 +272,7 @@ func (g *Game) applyLeafBlower(p *Player, targets []*Player) {
 			continue
 		}
 		k, ok := blowerConeFactor(ox, oy, f, gr.X, gr.Y, 6)
-		if !ok {
+		if !ok || !arsenal2LineClear(g.arena, ox, oy, gr.X, gr.Y) {
 			continue
 		}
 		w := 0.4 + 0.6*k
@@ -266,7 +288,7 @@ func (g *Game) applyLeafBlower(p *Player, targets []*Player) {
 			continue
 		}
 		k, ok := blowerConeFactor(ox, oy, f, b.X, b.Y, 10)
-		if !ok {
+		if !ok || !arsenal2LineClear(g.arena, ox, oy, b.X, b.Y) {
 			continue
 		}
 		if b.DevelopedProjectile == DevelopedProjectileGrenade {
@@ -314,6 +336,9 @@ func reflectProjectile(b *Bullet, by *Player) {
 
 // harpoonShooter finds the player at the shooter end of the rope.
 func harpoonShooter(b *Bullet, players []*Player) *Player {
+	if b.ShooterID < 0 {
+		return nil // the shooter died: the rope was cut
+	}
 	var owner *Player
 	for _, p := range players {
 		if p == nil || !p.Active {
@@ -355,7 +380,7 @@ func hitPlayerWithHarpoon(b *Bullet, t *Player, players []*Player) {
 	if shooter != nil {
 		dx := shooter.X - t.X
 		dir := sign(dx)
-		t.VX += dir * harpoonPullImpulse(math.Abs(dx)) * mult
+		t.VX += dir * harpoonPullImpulse(math.Abs(dx)) * mult * harpoonReelScale(b)
 		lift := harpoonLift
 		if climb := t.Y - shooter.Y; climb > 40 {
 			lift += math.Min(harpoonClimbMax, climb*0.04)
@@ -401,4 +426,56 @@ func (g *Game) zombieClawPlayer(t *Player, damage int, pushX, lift float64, atta
 		t.ShieldGearSpark = ballisticShieldSparkFrames
 	}
 	return g.zombieHurtPlayer(t, damage, pushX, lift, attackerID)
+}
+
+// harpoonReelScale: the reel follows the hook's firepower relative to the
+// catalog value, so the DOUBLE KNOCKBACK modifier and campaign FirepowerMulti
+// scale the pull like they scale every bullet.
+func harpoonReelScale(b *Bullet) float64 {
+	if b == nil || b.Firepower <= 0 {
+		return 1
+	}
+	return math.Max(0.25, math.Min(4, b.Firepower/harpoonDirectPush))
+}
+
+// arsenal2LineClear: no platform between the two points (bat and blower
+// never act through level geometry).
+func arsenal2LineClear(arena Map, x0, y0, x1, y1 float64) bool {
+	for _, r := range arena.Platforms {
+		if segmentIntersectsRect(x0, y0, x1, y1, r) {
+			return false
+		}
+	}
+	return true
+}
+
+// campaignEnemyForBody maps a hit target back to its campaign enemy.
+func (g *Game) campaignEnemyForBody(t *Player) *CampaignEnemy {
+	if g == nil || t == nil {
+		return nil
+	}
+	for _, e := range g.campaignEnemies {
+		if e != nil && &e.Body == t {
+			return e
+		}
+	}
+	return nil
+}
+
+// dropHarpoonRopesOf cuts every rope of a shooter who just died: hooked
+// victims lose their tether and harpoons in flight no longer reel.
+func (g *Game) dropHarpoonRopesOf(shooterID int) {
+	if g == nil || shooterID == 0 {
+		return
+	}
+	for _, t := range g.hitTargets() {
+		if t != nil && t.HarpoonTetherID == shooterID {
+			t.HarpoonTether, t.HarpoonTetherID = 0, 0
+		}
+	}
+	for i := range g.bullets {
+		if b := &g.bullets[i]; b.DevelopedProjectile == DevelopedProjectileHarpoon && b.ShooterID == shooterID {
+			b.ShooterID = -1
+		}
+	}
 }

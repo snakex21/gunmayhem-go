@@ -103,7 +103,7 @@ func aiDecideBlower(p *Player, g *Game, target *Player) {
 	shoot := false
 	if target != nil {
 		s := playerRenderScale(target) / 0.8
-		if _, ok := blowerConeFactor(ox, oy, f, target.X, target.Y-35*s, 26*s); ok {
+		if _, ok := blowerConeFactor(ox, oy, f, target.X, target.Y-35*s, 26*s); ok && arsenal2LineClear(g.arena, ox, oy, target.X, target.Y-35*s) {
 			shoot = true
 		}
 	}
@@ -113,7 +113,7 @@ func aiDecideBlower(p *Player, g *Game, target *Player) {
 		if gr.Dead || gr.OwnerID == owner {
 			continue
 		}
-		if _, ok := blowerConeFactor(ox, oy, f, gr.X, gr.Y, 6); ok {
+		if _, ok := blowerConeFactor(ox, oy, f, gr.X, gr.Y, 6); ok && arsenal2LineClear(g.arena, ox, oy, gr.X, gr.Y) {
 			shoot = true
 		}
 	}
@@ -122,7 +122,7 @@ func aiDecideBlower(p *Player, g *Game, target *Player) {
 		if b.Dead || b.OwnerID == owner || !arsenal2Deflectable(b) || b.VX*f >= 0 {
 			continue
 		}
-		if _, ok := blowerConeFactor(ox, oy, f, b.X, b.Y, 10); ok {
+		if _, ok := blowerConeFactor(ox, oy, f, b.X, b.Y, 10); ok && arsenal2LineClear(g.arena, ox, oy, b.X, b.Y) {
 			shoot = true
 		}
 	}

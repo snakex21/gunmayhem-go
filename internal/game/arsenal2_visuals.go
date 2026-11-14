@@ -387,7 +387,17 @@ func (g *Game) drawHarpoonRopes(screen *ebiten.Image) {
 		}
 		drawRopeCurve(screen, g.worldX(sx), g.worldY(sy), g.worldX(b.X-16*tail), g.worldY(b.Y), 0.06, rope, dark, 1)
 	}
-	for _, t := range g.players {
+	hooked := g.players
+	if len(g.campaignEnemies) > 0 {
+		// Campaign enemy bodies (shield-bearers) can be hooked too.
+		hooked = append([]*Player(nil), g.players...)
+		for _, e := range g.campaignEnemies {
+			if e != nil && !e.Dead {
+				hooked = append(hooked, &e.Body)
+			}
+		}
+	}
+	for _, t := range hooked {
 		if t == nil || !t.Active || t.HarpoonTether <= 0 {
 			continue
 		}

@@ -217,6 +217,9 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 	p.VX -= recoil * float64(p.Facing)
 	offHand := akimboActive(p) && p.AkimboHand == 1
 	bulletsBefore, flashesBefore := len(*bullets), len(*flashes)
+	// AKIMBO: a source handgun fired while its shot timeline still plays does
+	// not restart the timeline, so it ejects its own casing here.
+	akimboMidTimeline := akimboActive(p) && !developed && w.Frame != 1
 
 	mini := p.MiniMulti
 	if mini <= 0 {
@@ -397,6 +400,9 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 	if akimboActive(p) {
 		// The off-hand gun fires from a little behind and below the main one.
 		shiftAkimboShot(p, offHand, (*bullets)[bulletsBefore:], (*flashes)[flashesBefore:])
+		if akimboMidTimeline {
+			spawnWeaponShell(p, w, 1, shells)
+		}
 		p.AkimboHand = 1 - p.AkimboHand
 	}
 
@@ -869,12 +875,8 @@ func updateInstagibBullet(arena Map, b *Bullet, players []*Player, instatrails *
 			push *= p.DamageMulti
 		}
 		push *= kevlarBulletKnockbackMultiplier(p)
-		// A BALLISTIC SHIELD (arsenal2) stops the de-materializer bolt too.
-		shieldBlocked := ballisticShieldCovers(p, b.VX, b.VY)
-		if shieldBlocked {
-			push *= ballisticShieldBulletScale
-			p.ShieldGearSpark = ballisticShieldSparkFrames
-		}
+		// The de-materializer is deliberately NOT stopped by a BALLISTIC
+		// SHIELD: its instagib kill stays an instagib kill.
 		p.VX += push
 		p.HitNumber++
 		p.HitTimer = 0
@@ -885,9 +887,7 @@ func updateInstagibBullet(arena Map, b *Bullet, players []*Player, instatrails *
 		// victim's Symbol688 `instagib` child; that timeline runs for 60 frames
 		// and only then executes _parent.SELFDESTRUCT(). The target remains fully
 		// active during the countdown.
-		if !shieldBlocked {
-			p.startInstagibTimeline()
-		}
+		p.startInstagibTimeline()
 		b.Dead = true
 		return
 	}

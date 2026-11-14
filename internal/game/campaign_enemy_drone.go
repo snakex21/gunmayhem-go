@@ -74,6 +74,7 @@ func (g *Game) updateDrone(e *CampaignEnemy, arena Map) {
 	if b.FireContactCooldown > 0 {
 		b.FireContactCooldown--
 	}
+	b.tickArsenal2Timers() // harpoon rope, shield spark
 	// Drones have no panic (no input to take over): fire only scorches them
 	// briefly, so the burn is capped and its jolts rattle the rotors.
 	if b.BurnTime > droneBurnMaxFrames {
