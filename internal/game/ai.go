@@ -439,11 +439,14 @@ func decideAIController(p *Player, g *Game) {
 			}
 		}
 	}
+	// Developed: bots charge and throw their throwable (ai_throw.go).
+	aiDecideThrow(p, g)
 	aiApplyFlashAvoid(p)
 	aiBlindedBehaviour(p, g.arena.Platforms)
 	aiUseAbility(p, g)
 	applyExtraCampaignAIFireCadence(p, g)
-	// Original playerAI never sets KEYNADE=true.
+	// Original playerAI never sets KEYNADE=true; aiDecideThrow (developed)
+	// does, through the same AIGrenade input.
 }
 
 // applyExtraCampaignAIFireCadence gives single-shot campaign weapons a

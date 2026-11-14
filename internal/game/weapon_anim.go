@@ -102,35 +102,121 @@ func sourceWeaponAnim(number int) WeaponAnimSource {
 		return anim
 	}
 	if spec, ok := developedWeaponSpec(number); ok {
-		// Generated 87+ sprites are authored horizontally around their grip.
-		// Source weapons have different baked-in registration angles, so copying
-		// their large +/-60 degree values would stand these sprites almost upright.
-		// Keep the same idle idea with a small, natural tilt instead.
-		switch spec.Category {
-		case DevelopedCategoryPistol:
-			return WeaponAnimSource{IdleRotate: 12}
-		case DevelopedCategorySMG:
-			return WeaponAnimSource{IdleRotate: 8}
-		case DevelopedCategoryRifle:
-			return WeaponAnimSource{IdleRotate: -8}
-		case DevelopedCategoryLMG:
-			return WeaponAnimSource{IdleRotate: -6}
-		case DevelopedCategorySniper:
-			return WeaponAnimSource{IdleRotate: -7}
-		case DevelopedCategoryShotgun:
-			return WeaponAnimSource{IdleRotate: -8}
-		case DevelopedCategoryLauncher:
-			return WeaponAnimSource{IdleRotate: -4}
-		case DevelopedCategorySpecial:
-			switch number {
-			case 178: // the bow is already vertical in its source sprite
-				return WeaponAnimSource{}
-			case 180, 181: // nail gun and flare gun are held like handguns
-				return WeaponAnimSource{IdleRotate: 10}
-			default:
-				return WeaponAnimSource{IdleRotate: -5}
-			}
-		}
+		anim := developedWeaponKick(number, spec)
+		anim.IdleRotate = developedWeaponIdleRotate(number, spec)
+		return anim
 	}
 	return WeaponAnimSource{}
+}
+
+// developedWeaponIdleRotate: generated 87+ sprites are authored horizontally
+// around their grip. Source weapons have different baked-in registration
+// angles, so copying their large +/-60 degree values would stand these
+// sprites almost upright. Keep the same idle idea with a small, natural tilt.
+func developedWeaponIdleRotate(number int, spec DevelopedWeaponSpec) float64 {
+	switch spec.Category {
+	case DevelopedCategoryPistol:
+		return 12
+	case DevelopedCategorySMG:
+		return 8
+	case DevelopedCategoryRifle:
+		return -8
+	case DevelopedCategoryLMG:
+		return -6
+	case DevelopedCategorySniper:
+		return -7
+	case DevelopedCategoryShotgun:
+		return -8
+	case DevelopedCategoryLauncher:
+		return -4
+	case DevelopedCategorySpecial:
+		switch number {
+		case 178: // the bow is already vertical in its source sprite
+			return 0
+		case 180, 181: // nail gun and flare gun are held like handguns
+			return 10
+		default:
+			return -5
+		}
+	}
+	return 0
+}
+
+// developedWeaponKick is the shot kick of a developed weapon: Blowback is the
+// muzzle rise (gun rotation) and Pushback pulls both hands back, exactly the
+// fields fireWeaponRound applies to source guns; updateSourceVisualState then
+// eases the gun back. Unlike the idle tilt these are deltas from the shooting
+// pose (rotation 0 for every weapon), so the source values carry over
+// directly. Values are the per-class medians of weaponAnimCatalog 1-86:
+//
+//	handguns 1-3,5,8: 30/0 (Glock 3: 20/0), revolvers 4,6: 30/10, 40/20
+//	SMGs 12,19,21-28,30-32,67-71: 10/3
+//	assault rifles 10,20,29,56,58-63,72-76: 7/10; semi mini14 (17): 8/12
+//	machine guns 57,64-66: 7/10
+//	bolt snipers 11,16,33-38,79-81: 10/30; semi snipers 14,39-42,77,78: 8/15
+//	pump/lever shotguns 13,45,48-50,53,84: 20/30; semi/auto 15,46,47,51,52,82,83,85,86: 8-10/15-20
+//
+// Launchers and most specials have no source class; their values are
+// estimates in the same range (heavy tubes push back more than they rise).
+// The visual fields are ordinary synced Player state, so online clients see
+// the kick without any protocol change.
+func developedWeaponKick(number int, spec DevelopedWeaponSpec) WeaponAnimSource {
+	switch number {
+	case 111, 112, 231, 190: // magnum revolvers, Howdah: SNAKE-like
+		return WeaponAnimSource{Blowback: 40, Pushback: 20}
+	case 99: // Glock 18C machine pistol: SINE PISTOL (Glock)
+		return WeaponAnimSource{Blowback: 20}
+	case 177: // crossbow: semi sniper class
+		return WeaponAnimSource{Blowback: 8, Pushback: 15}
+	case 178: // compound bow: string release, no powder kick
+		return WeaponAnimSource{Pushback: 6}
+	case 179, 182: // harpoon gun, musket: single heavy shot, bolt sniper class
+		return WeaponAnimSource{Blowback: 10, Pushback: 30}
+	case 180, 189: // nail gun, portal gun: light SMG-like tap
+		return WeaponAnimSource{Blowback: 10, Pushback: 3}
+	case 181: // flare gun: handgun
+		return WeaponAnimSource{Blowback: 30}
+	case 185: // energy rifle (full auto): assault rifle class
+		return WeaponAnimSource{Blowback: 7, Pushback: 10}
+	case 187, 188:
+		// Flamethrowers fire every frame, so any rise would be a constant
+		// tilt; a small steady brace reads as the stream's push instead.
+		return WeaponAnimSource{Pushback: 2}
+	}
+	switch spec.Category {
+	case DevelopedCategoryPistol:
+		return WeaponAnimSource{Blowback: 30}
+	case DevelopedCategorySMG:
+		return WeaponAnimSource{Blowback: 10, Pushback: 3}
+	case DevelopedCategoryRifle:
+		if spec.FireMode == DevelopedFireSemi {
+			return WeaponAnimSource{Blowback: 8, Pushback: 12}
+		}
+		return WeaponAnimSource{Blowback: 7, Pushback: 10}
+	case DevelopedCategoryLMG:
+		return WeaponAnimSource{Blowback: 7, Pushback: 10}
+	case DevelopedCategorySniper:
+		if developedManualAction(number) {
+			return WeaponAnimSource{Blowback: 10, Pushback: 30}
+		}
+		return WeaponAnimSource{Blowback: 8, Pushback: 15}
+	case DevelopedCategoryShotgun:
+		if developedManualAction(number) {
+			return WeaponAnimSource{Blowback: 20, Pushback: 30}
+		}
+		return WeaponAnimSource{Blowback: 10, Pushback: 20}
+	case DevelopedCategoryLauncher:
+		if spec.Projectile == DevelopedProjectileGrenade {
+			return WeaponAnimSource{Blowback: 12, Pushback: 20}
+		}
+		return WeaponAnimSource{Blowback: 5, Pushback: 25}
+	}
+	return WeaponAnimSource{}
+}
+
+// developedManualAction marks bolt/lever/pump/break-action guns: in the
+// source those are the slow (ROF >= 18) snipers and shotguns.
+func developedManualAction(number int) bool {
+	def, ok := WeaponByNumber(number)
+	return ok && def.ROF >= 18
 }

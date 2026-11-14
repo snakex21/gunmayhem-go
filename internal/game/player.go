@@ -193,8 +193,19 @@ type Player struct {
 	AIFakeDoubleTime int     `cbor:",omitempty"`
 	AIFlashAvoid     int     `cbor:",omitempty"` // frames left facing away from a live flashbang
 	AIFlashAvoidDir  int     `cbor:",omitempty"`
-	DamageMulti      float64 `cbor:",omitempty"`
-	FirepowerMulti   float64 `cbor:",omitempty"`
+	// Bot throwables (ai_throw.go). Host-only like every AI* field: the bot
+	// throws through AIGrenade, the same input path as a held throw key.
+	AIThrowPower      float64 `cbor:",omitempty"` // > 0 while charging: release at this power
+	AIThrowCooldown   int     `cbor:",omitempty"`
+	AIThrowCheck      int     `cbor:",omitempty"` // frames until the next throw evaluation
+	AIThrowTargetID   int     `cbor:",omitempty"` // flashbang victim to push in on
+	AIThrowCampID     int     `cbor:",omitempty"`
+	AIThrowCampX      float64 `cbor:",omitempty"`
+	AIThrowCampY      float64 `cbor:",omitempty"`
+	AIThrowCampFrames int     `cbor:",omitempty"`
+
+	DamageMulti    float64 `cbor:",omitempty"`
+	FirepowerMulti float64 `cbor:",omitempty"`
 	// AIShotDelay is a data-driven trigger pause (frames) for campaign bots
 	// holding their mission weapon (extra_campaign.go ShotDelay). Host-only
 	// like every AI* field.

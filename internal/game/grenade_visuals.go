@@ -19,38 +19,21 @@ const grenadeMaxPower = 14.0
 // grenadePreviewPoint is one sampled position of the predicted throw.
 type grenadePreviewPoint struct{ X, Y float64 }
 
-// grenadeThrowPreview predicts the flight of a grenade released now, using the
-// same spawn point, launch velocity and gravity as updateGrenadeInput /
-// updateGrenades. It stops at the first platform top the grenade would land
-// on (landed=true) or after maxSteps frames.
+// grenadeThrowPreview predicts the flight of a grenade released now. It is
+// the shared throw simulator (simulateThrow: the real spawn point, launch
+// velocity, gravity, bounce and fuse code of updateGrenades) cut at the first
+// platform contact (landed=true), at detonation, or after maxSteps frames.
 func grenadeThrowPreview(arena Map, p *Player, maxSteps int) ([]grenadePreviewPoint, bool) {
-	facing := float64(p.Facing)
-	if facing == 0 {
-		facing = 1
+	res := simulateGrenade(arena, throwSpawnGrenade(p.X, p.Y, p.Facing, p.GrenadePower, p.ThrowableType), true)
+	points := res.Path
+	landed := false
+	if res.LandIndex >= 0 && res.LandIndex < maxSteps {
+		points = points[:res.LandIndex+1]
+		landed = true
+	} else if len(points) > maxSteps {
+		points = points[:maxSteps]
 	}
-	x, y := p.X+30*facing, p.Y-35
-	vx, vy := facing*p.GrenadePower, -p.GrenadePower
-	points := make([]grenadePreviewPoint, 0, maxSteps)
-	for step := 0; step < maxSteps; step++ {
-		if vy < 24 {
-			vy += arena.Gravity + 0.12
-		}
-		nx, ny := x+vx, y+vy
-		if vy > 0 {
-			for _, r := range arena.Platforms {
-				if r.ContainsX(nx) && y+8 <= r.Y && ny+8 >= r.Y {
-					points = append(points, grenadePreviewPoint{nx, r.Y - 8})
-					return points, true
-				}
-			}
-		}
-		x, y = nx, ny
-		points = append(points, grenadePreviewPoint{x, y})
-		if y > 900 {
-			break
-		}
-	}
-	return points, false
+	return points, landed
 }
 
 func (g *Game) drawGrenadeChargeIndicators(screen *ebiten.Image) {

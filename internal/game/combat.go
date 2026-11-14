@@ -59,6 +59,12 @@ type Bullet struct {
 	TrailFrame  int
 	VisualScale float64
 	Dead        bool
+
+	// FlameSweepBack (host-only): a flame spawned at the flamethrower nozzle
+	// also sweeps this many px back toward the shooter on its first step, so
+	// point-blank targets between the old +23 origin and the nozzle are still
+	// hit (developedFlameStart).
+	FlameSweepBack float64 `net:"-"`
 }
 
 type InstagibTrailEffect struct {
@@ -257,6 +263,8 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 					IgniteFrames: spec.IgniteFrames,
 				}
 				if spec.Projectile == DevelopedProjectileFlame {
+					b.X, b.Y, b.Lifetime, b.FlameSweepBack = developedFlameStart(p, w, spec, mini)
+					b.Y += spread
 					b.VY = (rand.Float64()*2 - 1) * 2.1
 					b.VisualScale = .78 + rand.Float64()*.42
 				}
@@ -313,6 +321,7 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 		if w.Def.Number == 182 || w.Def.Number == 193 {
 			appendMusketSmoke(flashes, flashX, flashY, facing)
 		}
+		spawnDevelopedCasing(p, w, spec, shells)
 	} else {
 		switch {
 		case w.Def.Number == 55:
@@ -491,12 +500,21 @@ func updateDevelopedProjectile(arena Map, b *Bullet, players []*Player, explosio
 
 	previousX, previousY := b.X, b.Y
 	nextX, nextY := b.X+b.VX, b.Y+b.VY
+	sweepX := previousX
+	if b.FlameSweepBack > 0 {
+		facing := float64(b.Facing)
+		if facing == 0 {
+			facing = 1
+		}
+		sweepX -= b.FlameSweepBack * facing
+		b.FlameSweepBack = 0
+	}
 	if b.DevelopedProjectile == DevelopedProjectilePortal {
 		if hitPortalPlayerAlongSegment(b, previousX, previousY, nextX, nextY, players, portals) {
 			return
 		}
 	} else {
-		if hitDevelopedPlayerAlongSegment(arena, b, previousX, previousY, nextX, nextY, players, explosions, blast) {
+		if hitDevelopedPlayerAlongSegment(arena, b, sweepX, previousY, nextX, nextY, players, explosions, blast) {
 			return
 		}
 	}

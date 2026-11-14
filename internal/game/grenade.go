@@ -160,16 +160,10 @@ func updateGrenadeInput(p *Player, grenades *[]Grenade) {
 		if rand.Intn(2) == 0 {
 			rot = -rot
 		}
-		*grenades = append(*grenades, Grenade{
-			X:        p.X + 30*float64(p.Facing),
-			Y:        p.Y - 35,
-			VX:       float64(p.Facing) * p.GrenadePower,
-			VY:       -p.GrenadePower,
-			Rotation: float64(p.Facing) * 50,
-			RotSpeed: rot,
-			OwnerID:  p.scoreOwnerID(),
-			Type:     normalizedThrowableType(p.ThrowableType),
-		})
+		thrown := throwSpawnGrenade(p.X, p.Y, p.Facing, p.GrenadePower, p.ThrowableType)
+		thrown.RotSpeed = rot
+		thrown.OwnerID = p.scoreOwnerID()
+		*grenades = append(*grenades, thrown)
 		p.Grenades--
 		// Throw follow-through: the off hand snaps forward and the regular
 		// pose easing in updateSourceVisualState swings it back over the next
@@ -217,73 +211,7 @@ func updateGrenadesWithAreas(arena Map, grenades []Grenade, players []*Player, e
 			continue
 		}
 
-		if !g.HitGround {
-			g.Rotation += g.RotSpeed
-		} else if math.Abs(90-g.Rotation) < math.Abs(-90-g.Rotation) {
-			g.Rotation += (90 - g.Rotation) / 5
-		} else {
-			g.Rotation += (-90 - g.Rotation) / 5
-		}
-
-		if g.VY < 24 {
-			g.VY += arena.Gravity + 0.12
-		}
-		// Source spawns fx_dynamite at the grenade's tip before moving the
-		// grenade itself this frame.
-		dirX := math.Cos((g.Rotation-90)*math.Pi/180) * 25
-		dirY := math.Sin((g.Rotation-90)*math.Pi/180) * 25
-		if normalizedThrowableType(g.Type) == ThrowableDynamite {
-			*dynamite = append(*dynamite, newDynamiteEffect(g.X+dirX, g.Y+dirY))
-		}
-		previousX, previousY := g.X, g.Y
-		g.X += g.VX
-		g.Y += g.VY
-
-		if !g.FreePass && g.VY > 0 {
-			for _, r := range arena.Platforms {
-				if !r.ContainsX(g.X) || g.Y+8 < r.Y || g.Y+8-g.VY > r.Y {
-					continue
-				}
-				g.Y -= g.VY
-				for step := 1; step <= 5; step++ {
-					y := g.Y + 8 + float64(step)*(g.VY/5)
-					if r.Contains(g.X, y) {
-						g.Y += g.VY / 5 * float64(step-1)
-						g.RotSpeed *= 0.5
-						g.VX *= 0.6
-						g.VY *= -0.4
-						g.HitGround = true
-						break
-					}
-				}
-				break
-			}
-		}
-
-		insideY := false
-		insideY10 := false
-		for _, r := range arena.Platforms {
-			if r.Contains(g.X, g.Y) {
-				insideY = true
-			}
-			if r.Contains(g.X, g.Y+10) {
-				insideY10 = true
-			}
-			if insideY && insideY10 {
-				break
-			}
-		}
-		// Exact source order:
-		// 1) clear freepass only when neither _Y nor _Y+10 hits ground,
-		// 2) set freepass only when _Y itself hits ground.
-		// Using (_Y || _Y+10) for step 2 lets the grenade enter a platform
-		// several pixels too far before collisions resume.
-		if !insideY && !insideY10 {
-			g.FreePass = false
-		}
-		if insideY && !g.FreePass {
-			g.FreePass = true
-		}
+		previousX, previousY := stepGrenadeFlight(arena, g, dynamite)
 
 		g.Fuse++
 		profile := throwableProfileFor(g.Type)
@@ -295,20 +223,8 @@ func updateGrenadesWithAreas(arena Map, grenades []Grenade, players []*Player, e
 			// Game.updateAIFlashbangAwareness.)
 			aiFleeGrenade(arena, g.X, g.Y, players)
 		}
-		impact := false
-		if profile.ImpactDetonate {
-			impact = g.HitGround
-			// A fast Molotov should not tunnel through a thin platform between
-			// frames. Break it on the first platform top crossed while descending.
-			if !impact {
-				if impactX, impactY, ok := molotovTopImpact(arena, previousX, previousY, g.X, g.Y); ok {
-					g.X, g.Y = impactX, impactY
-					g.HitGround = true
-					impact = true
-				}
-			}
-		}
-		if g.Fuse > profile.Fuse || impact {
+		goesOff, impact := grenadeGoesOff(arena, g, profile, previousX, previousY)
+		if goesOff {
 			switch profile.Behavior {
 			case throwableBehaviorShock:
 				g.Dead = true
@@ -356,10 +272,191 @@ func updateGrenadesWithAreas(arena Map, grenades []Grenade, players []*Player, e
 			continue
 		}
 
-		if g.Y >= 900 || g.X < -500 || g.X > 1400 {
+		if grenadeOffMap(g) {
 			g.Dead = true
 		}
 	}
+}
+
+// stepGrenadeFlight advances one live throwable by one frame of flight: spin,
+// gravity, movement, the platform bounce and the free-pass flag, in the exact
+// source order. It returns the position before this frame's move (needed for
+// the Molotov top-crossing test). dynamite may be nil (no spark particles):
+// the throw simulator (simulateThrow) runs this same code headlessly.
+func stepGrenadeFlight(arena Map, g *Grenade, dynamite *[]DynamiteEffect) (previousX, previousY float64) {
+	if !g.HitGround {
+		g.Rotation += g.RotSpeed
+	} else if math.Abs(90-g.Rotation) < math.Abs(-90-g.Rotation) {
+		g.Rotation += (90 - g.Rotation) / 5
+	} else {
+		g.Rotation += (-90 - g.Rotation) / 5
+	}
+
+	if g.VY < 24 {
+		g.VY += arena.Gravity + 0.12
+	}
+	// Source spawns fx_dynamite at the grenade's tip before moving the
+	// grenade itself this frame.
+	dirX := math.Cos((g.Rotation-90)*math.Pi/180) * 25
+	dirY := math.Sin((g.Rotation-90)*math.Pi/180) * 25
+	if dynamite != nil && normalizedThrowableType(g.Type) == ThrowableDynamite {
+		*dynamite = append(*dynamite, newDynamiteEffect(g.X+dirX, g.Y+dirY))
+	}
+	previousX, previousY = g.X, g.Y
+	g.X += g.VX
+	g.Y += g.VY
+
+	if !g.FreePass && g.VY > 0 {
+		for _, r := range arena.Platforms {
+			if !r.ContainsX(g.X) || g.Y+8 < r.Y || g.Y+8-g.VY > r.Y {
+				continue
+			}
+			g.Y -= g.VY
+			for step := 1; step <= 5; step++ {
+				y := g.Y + 8 + float64(step)*(g.VY/5)
+				if r.Contains(g.X, y) {
+					g.Y += g.VY / 5 * float64(step-1)
+					g.RotSpeed *= 0.5
+					g.VX *= 0.6
+					g.VY *= -0.4
+					g.HitGround = true
+					break
+				}
+			}
+			break
+		}
+	}
+
+	insideY := false
+	insideY10 := false
+	for _, r := range arena.Platforms {
+		if r.Contains(g.X, g.Y) {
+			insideY = true
+		}
+		if r.Contains(g.X, g.Y+10) {
+			insideY10 = true
+		}
+		if insideY && insideY10 {
+			break
+		}
+	}
+	// Exact source order:
+	// 1) clear freepass only when neither _Y nor _Y+10 hits ground,
+	// 2) set freepass only when _Y itself hits ground.
+	// Using (_Y || _Y+10) for step 2 lets the grenade enter a platform
+	// several pixels too far before collisions resume.
+	if !insideY && !insideY10 {
+		g.FreePass = false
+	}
+	if insideY && !g.FreePass {
+		g.FreePass = true
+	}
+	return previousX, previousY
+}
+
+// grenadeGoesOff runs after the fuse tick: it reports whether the throwable
+// detonates this frame and whether that is an impact (Molotov) rather than
+// the fuse running out. A Molotov crossing a platform top is snapped onto it.
+func grenadeGoesOff(arena Map, g *Grenade, profile throwableProfile, previousX, previousY float64) (goesOff, impact bool) {
+	if profile.ImpactDetonate {
+		impact = g.HitGround
+		// A fast Molotov should not tunnel through a thin platform between
+		// frames. Break it on the first platform top crossed while descending.
+		if !impact {
+			if impactX, impactY, ok := molotovTopImpact(arena, previousX, previousY, g.X, g.Y); ok {
+				g.X, g.Y = impactX, impactY
+				g.HitGround = true
+				impact = true
+			}
+		}
+	}
+	return g.Fuse > profile.Fuse || impact, impact
+}
+
+// grenadeOffMap is the source cleanup bound for a lost throwable.
+func grenadeOffMap(g *Grenade) bool {
+	return g.Y >= 900 || g.X < -500 || g.X > 1400
+}
+
+// throwSpawnGrenade is the throwable updateGrenadeInput releases from a
+// player standing at (x, y) facing `facing` with the given charge.
+func throwSpawnGrenade(x, y float64, facing int, power float64, kind int) Grenade {
+	if facing == 0 {
+		facing = 1
+	}
+	return Grenade{
+		X:        x + 30*float64(facing),
+		Y:        y - 35,
+		VX:       float64(facing) * power,
+		VY:       -power,
+		Rotation: float64(facing) * 50,
+		Type:     normalizedThrowableType(kind),
+	}
+}
+
+// throwSimMaxFrames bounds a simulated flight; every fuse is far shorter.
+const throwSimMaxFrames = 400
+
+// throwSimResult is the predicted outcome of one throw.
+type throwSimResult struct {
+	// X, Y is where the throwable goes off: the grenade position on its
+	// detonation frame (the blast / cloud / flash origin), for a Molotov the
+	// break point after the top-crossing snap or the surface it falls to.
+	X, Y float64
+	// Frames from the release frame (inclusive) until it goes off.
+	Frames int
+	// Landed: it touched a platform before going off.
+	Landed bool
+	// OK is false when the throwable is lost off the map or a Molotov
+	// fizzles with no surface below; X/Y then hold the last position.
+	OK bool
+	// Path holds the position after every simulated frame (only filled when
+	// requested), and LandIndex the index of the first ground contact (-1).
+	Path      []grenadePreviewPoint
+	LandIndex int
+}
+
+// simulateThrow predicts a throw released by a player at (x, y). It runs the
+// exact flight/fuse code of updateGrenadesWithAreas (stepGrenadeFlight and
+// grenadeGoesOff) without touching any game state. Portals are ignored.
+func simulateThrow(arena Map, x, y float64, facing int, power float64, kind int) throwSimResult {
+	return simulateGrenade(arena, throwSpawnGrenade(x, y, facing, power, kind), false)
+}
+
+// simulateGrenade advances a copy of g until it goes off or is lost. A thrown
+// grenade receives its first update on its release frame, so frame 1 here is
+// that frame.
+func simulateGrenade(arena Map, g Grenade, withPath bool) throwSimResult {
+	res := throwSimResult{LandIndex: -1}
+	profile := throwableProfileFor(g.Type)
+	for frame := 1; frame <= throwSimMaxFrames; frame++ {
+		previousX, previousY := stepGrenadeFlight(arena, &g, nil)
+		g.Fuse++
+		goesOff, impact := grenadeGoesOff(arena, &g, profile, previousX, previousY)
+		if withPath {
+			res.Path = append(res.Path, grenadePreviewPoint{g.X, g.Y})
+		}
+		if g.HitGround && res.LandIndex < 0 {
+			res.LandIndex = frame - 1
+			res.Landed = true
+		}
+		res.X, res.Y, res.Frames = g.X, g.Y, frame
+		if goesOff {
+			res.OK = true
+			if profile.Behavior == throwableBehaviorIgnite && !impact {
+				surfaceY, ok := molotovSurfaceBelow(arena, g.X, g.Y, molotovTimeoutDrop)
+				res.OK = ok
+				if ok {
+					res.Y = surfaceY
+				}
+			}
+			return res
+		}
+		if grenadeOffMap(&g) {
+			return res
+		}
+	}
+	return res
 }
 
 func grenadeBlastAxis(center, edge, distance, radius float64) float64 {
