@@ -1,0 +1,211 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1869" itemID="6a84a180-000003c2" lastModified="1787077012">
+     <timeline>
+          <DOMTimeline name="Symbol 1869">
+               <layers>
+                    <DOMLayer name="Script Layer" color="#e4d37b">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script>function damage(firepower)
+{
+   hp -= firepower;
+   if(hp &lt;= 0)
+   {
+      KILL();
+   }
+}
+function KILL()
+{
+   i = 0;
+   while(i &lt; _parent.activeplayers.length)
+   {
+      if(_parent.activeplayers[i] == this)
+      {
+         _parent.activeplayers.splice(i,1);
+      }
+      i++;
+   }
+   i = 0;
+   while(i &lt; _root.activeplayers.length)
+   {
+      if(_root.activeplayers[i] == this)
+      {
+         _root.activeplayers.splice(i,1);
+      }
+      i++;
+   }
+   _X = actualx;
+   _Y = actualy;
+   _root.CP("fx_ex6",_X,_Y - 20,0);
+   i = 0;
+   while(i &lt; 3)
+   {
+      _root.CP("fx_ex5",_X,_Y - 20,0);
+      i++;
+   }
+   i = 0;
+   while(i &lt; 3)
+   {
+      _root.CP("fx_ex3",_X,_Y - 20,0);
+      i++;
+   }
+   j = 0;
+   while(j &lt; 3)
+   {
+      _root.CP("fx_spark",_X,_Y,0,0);
+      j++;
+   }
+   _root.explodesound();
+   this.swapDepths(1);
+   removeMovieClip(this);
+   delete this.onEnterFrame;
+}
+hp = 50;
+facing = 1;
+actualx = _X + _parent._parent._x;
+actualy = _Y + _parent._parent._y;
+if(actualx &gt; _root.ground._x + _root.ground.platform._x + _root.ground.platform._width / 2)
+{
+   facing = -1;
+   _xscale = -100;
+   targettext._xscale = -100;
+}
+istarget = true;
+_name = "target" + _root.activeplayers.length;
+_parent.activeplayers[_parent.activeplayers.length] = this;
+_root.activeplayers[_root.activeplayers.length] = this;
+_xscale = 5 * facing;
+_yscale = 5;
+phase = 0;
+this.onEnterFrame = function()
+{
+   if(phase == 0)
+   {
+      phase = 1;
+      i = 0;
+      while(i &lt; 5)
+      {
+         _root.CP("fx_ex5_2",actualx,actualy - 20,0);
+         i++;
+      }
+   }
+   else if(phase == 1)
+   {
+      _xscale = _xscale + (110 * facing - _xscale) / 3;
+      _yscale = _yscale + (110 - _yscale) / 3;
+      if(Math.abs(_xscale) &gt;= 105)
+      {
+         phase = 2;
+      }
+   }
+   else if(phase == 2)
+   {
+      _xscale = _xscale + (95 * facing - _xscale) / 4;
+      _yscale = _yscale + (95 - _yscale) / 4;
+      if(Math.abs(_xscale) &lt;= 100)
+      {
+         _xscale = 100 * facing;
+         _yscale = 100;
+         phase = 3;
+         delete this.onEnterFrame;
+      }
+   }
+};
+</script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 2" color="#33ed7d">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1868" name="targettext" centerPoint3DX="29.25" centerPoint3DY="-76.4">
+                                             <matrix>
+                                                  <Matrix tx="0.5" ty="-93.35"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                             <filters>
+                                                  <GlowFilter blurX="4" blurY="4" color="#000000" quality="1" strength="3"/>
+                                             </filters>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 3" color="#57aee6">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 1865" name="anim" centerPoint3DX="41.2" centerPoint3DY="-3.35">
+                                             <matrix>
+                                                  <Matrix tx="1.5" ty="-38.45"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 4" color="#e753b4">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#666666" alpha="1.0"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="2">
+                                                       <SolidColor color="#5b5b5b" alpha="1.0"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes>
+                                                  <StrokeStyle index="1">
+                                                       <SolidStroke weight="1.0" scaleMode="normal">
+                                                            <fill>
+                                                                 <SolidColor color="#000000"/>
+                                                            </fill>
+                                                       </SolidStroke>
+                                                  </StrokeStyle>
+                                             </strokes>
+                                             <edges>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="1" edges="! -34 172| 431 -78| 431 -183"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! 431 -183| 426 -183"/>
+                                                  <Edge fillStyle0="1" fillStyle1="2" strokeStyle="1" edges="! 426 -183| -39 42"/>
+                                                  <Edge fillStyle0="1" fillStyle1="1" strokeStyle="1" edges="! -39 42| -39 172"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="0" edges="! -39 172| -34 172"/>
+                                                  <Edge fillStyle0="1" fillStyle1="0" strokeStyle="1" edges="! -554 -126| -544 -13| -39 172"/>
+                                                  <Edge fillStyle0="2" fillStyle1="0" strokeStyle="1" edges="! 426 -183| -24 -318| -554 -126"/>
+                                                  <Edge fillStyle0="2" fillStyle1="1" strokeStyle="1" edges="! -554 -126| -39 42"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+                    <DOMLayer name="Layer 5" color="#eeafff" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMSymbolInstance libraryItemName="Symbol 817" name="frame" centerPoint3DX="23.5" centerPoint3DY="-3.9">
+                                             <matrix>
+                                                  <Matrix tx="-1.5" ty="-38.9" a="1.0" d="0.9071197509765625"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

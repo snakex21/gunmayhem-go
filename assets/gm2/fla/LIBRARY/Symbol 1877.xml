@@ -1,0 +1,32 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1877" itemID="6a84a180-000003c7" lastModified="1787077012">
+     <timeline>
+          <DOMTimeline name="Symbol 1877">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#7dad5b" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#333333"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 15184 2880| 10455 2880| 10455 2400| 15184 2400| 15184 2880"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 15897 7680| 1999 7680| 1999 7200| 15897 7200| 15897 7680"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 14378 6080| 12014 6080| 12014 5600| 14378 5600| 14378 6080"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 17603 4480| 219 4480| 219 4000| 17603 4000| 17603 4480"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 7472 2880| 2894 2880| 2894 2400| 7472 2400| 7472 2880"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 3601 6080| 3601 5600| 5895 5600| 5895 6080| 3601 6080"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>

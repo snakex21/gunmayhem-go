@@ -258,6 +258,29 @@ func mustInfo(d fs.DirEntry) fs.FileInfo {
 	return i
 }
 
+// siblingGM2Root is the unpacked GM2/FFDec export kept next to the
+// repository for development. It is only needed to refresh assets/gm2.
+func siblingGM2Root(root string) string {
+	return filepath.Join(filepath.Dir(root), "gun mayhem 2")
+}
+
+// importGM2Assets refreshes the tracked, curated assets/gm2 subset from the
+// sibling GM2 export: go run ./scripts/package_portable.go -import-gm2
+func importGM2Assets(root string) {
+	gm2Root := siblingGM2Root(root)
+	if _, err := os.Stat(gm2Root); err != nil {
+		panic("GM2 source tree not found next to gunmayhem-go: " + gm2Root)
+	}
+	dst := filepath.Join(root, "assets", "gm2")
+	if err := os.RemoveAll(dst); err != nil {
+		panic(err)
+	}
+	if err := copyGM2RuntimeAssets(gm2Root, dst); err != nil {
+		panic(err)
+	}
+	fmt.Println("Imported curated GM2 runtime assets into", dst)
+}
+
 func main() {
 	root, err := os.Getwd()
 	if err != nil {
@@ -265,6 +288,10 @@ func main() {
 	}
 	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
 		panic("run from gunmayhem-go root")
+	}
+	if len(os.Args) > 1 && os.Args[1] == "-import-gm2" {
+		importGM2Assets(root)
+		return
 	}
 
 	outRoot := filepath.Join(root, "build", "GunMayhem-Windows-x64")
@@ -293,15 +320,19 @@ func main() {
 			panic(fmt.Errorf("required licence file missing from package: %s", licence))
 		}
 	}
-	// Keep the unpacked GM2/FFDec source beside the repository for development,
-	// but never ship that source tree. Curate only the exact runtime sprites,
-	// previews and transitive XFL metadata needed by maps, weapons and cosmetics.
-	gm2Root := filepath.Join(filepath.Dir(root), "gun mayhem 2")
-	if _, err := os.Stat(gm2Root); err != nil {
-		panic("GM2 source tree not found next to gunmayhem-go: " + gm2Root)
-	}
-	if err := copyGM2RuntimeAssets(gm2Root, filepath.Join(outRoot, "assets", "gm2")); err != nil {
-		panic(err)
+	// The curated GM2 runtime subset (exact sprites, previews and transitive
+	// XFL metadata for maps, weapons and cosmetics) is tracked in assets/gm2
+	// and was copied with assets/ above. Only when it is missing, curate it
+	// from the unpacked GM2/FFDec export next to the repository. That source
+	// tree itself is never shipped.
+	if _, err := os.Stat(filepath.Join(root, "assets", "gm2", "fla", "LIBRARY")); err != nil {
+		gm2Root := siblingGM2Root(root)
+		if _, err := os.Stat(gm2Root); err != nil {
+			panic("assets/gm2 is missing and the GM2 source tree was not found next to gunmayhem-go: " + gm2Root)
+		}
+		if err := copyGM2RuntimeAssets(gm2Root, filepath.Join(outRoot, "assets", "gm2")); err != nil {
+			panic(err)
+		}
 	}
 	if err := copyFile(filepath.Join(root, "MULTIPLAYER.md"), filepath.Join(outRoot, "MULTIPLAYER.md")); err != nil {
 		panic(err)

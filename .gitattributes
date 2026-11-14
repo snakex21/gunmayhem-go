@@ -14,3 +14,4 @@
 *.sqlite binary
 *.swf binary
 *.exe binary
+*.jpg binary

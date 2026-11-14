@@ -463,10 +463,10 @@ func findOriginalPathIn(namespace string, parts ...string) (string, error) {
 			if strings.EqualFold(filepath.Base(dir), "assets") && namespace == "" {
 				candidates = append(candidates, append([]string{dir}, parts...))
 			}
-			// During GM2 import development, allow the separately unpacked FFDec
-			// tree next to gunmayhem-go to act as a read-only fallback. Packaged
-			// builds still prefer assets/gm2 first; once a GM2 asset is curated
-			// into the runtime tree this fallback is no longer involved.
+			// assets/gm2 (tracked in the repository and shipped in the package)
+			// is always tried first. The separately unpacked FFDec tree next to
+			// gunmayhem-go stays a read-only development fallback for GM2 files
+			// that are not part of the curated runtime subset.
 			if namespace == "gm2" {
 				candidates = append(candidates, append([]string{dir, "gun mayhem 2"}, parts...))
 			}

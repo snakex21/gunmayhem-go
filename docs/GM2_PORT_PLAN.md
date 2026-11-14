@@ -138,7 +138,7 @@ Completed on `main`:
 - GM2 XFL/raster lookup has its own namespace and cache keys, so equal `Symbol N` names cannot collide with GM1.
 - Weapons 67..86 are in the shared Go weapon catalog with source-exact ROF, firepower, recoil, ammo, shotgun count, weight, shell/flash positions, hand/shoot pose, blowback/pushback/idle rotation and GM2 `gunsound()` mappings.
 - Local source tests verify all twenty definitions against the separately unpacked GM2 ActionScript and verify their first-frame PNG, XFL bounds and timeline.
-- During import development `assets/gm2` is preferred, with the separately unpacked sibling `gun mayhem 2` tree accepted as a read-only fallback. Custom Game only enables the 10..86 GM2 crate pool when those render assets are available; otherwise it safely falls back to the GM1 pool.
+- The curated GM2 runtime subset is tracked in the repository under `assets/gm2` (refresh it with `go run ./scripts/package_portable.go -import-gm2`); the separately unpacked sibling `gun mayhem 2` tree is only a read-only development fallback. Custom Game only enables the 10..86 GM2 crate pool when those render assets are available; otherwise it safely falls back to the GM1 pool.
 - GM2 maps 1..21 are parsed from `Symbol 1940` into globally unique runtime IDs 101..121. Geometry, spawn/crate bounds, lowest bounds and the map-13 low-gravity override are source-tested. Scene layers use GM2 `Symbol 1642` / `1690` / `1835` and are kept in the GM2 namespace.
 - Developed Custom Game map selection now has a GM1/GM2 selector. The GM2 side exposes maps 1..21 plus source selectors 22 (`Random (new maps)` -> 1..9) and 23 (`Random (all maps)` -> 1..21).
 
@@ -147,8 +147,8 @@ Completed on `main`:
 1. ~~Keep GM1 behavior frozen/covered by existing source tests.~~
 2. ~~Add GM2 save state (16 campaign missions + seven challenge records) without changing GM1 progress.~~
 3. ~~Add versioned GM2 asset resolver; never flatten GM1 and GM2 XFL symbol namespaces.~~
-4. **In progress:** weapons 67..86 are behaviorally integrated; curate/package their runtime files under `assets/gm2` so a fresh clone no longer needs the local unpacked-source fallback.
-5. **In progress:** GM2 map geometry, scene layers and the developed GM1/GM2 Custom Game selector are integrated; remaining work is source-specific map FX and packaging the required GM2 runtime files under `assets/gm2`.
+4. **Done:** weapons 67..86 are behaviorally integrated and their runtime files are tracked under `assets/gm2`, so a fresh clone builds and packages without the unpacked source.
+5. **In progress:** GM2 map geometry, scene layers and the developed GM1/GM2 Custom Game selector are integrated; remaining work is source-specific map FX (the required GM2 runtime files are tracked under `assets/gm2`).
 6. Add GM2-only modes, starting with Gun Game Reversed and Jetpacks after full source tracing.
 7. Port the GM2 campaign as a separate campaign selector/set.
 8. Port seven challenges and their timing/medal UI.

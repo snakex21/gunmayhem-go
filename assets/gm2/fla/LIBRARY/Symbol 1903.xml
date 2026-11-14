@@ -1,0 +1,34 @@
+<DOMSymbolItem xmlns="http://ns.adobe.com/xfl/2008/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Symbol 1903" itemID="6a84a180-000003d2" lastModified="1787077012">
+     <timeline>
+          <DOMTimeline name="Symbol 1903">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#947696" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape isFloating="true">
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#333333"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <strokes/>
+                                             <edges>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 16936 2820| 12458 2820| 12458 2340| 16936 2340| 16936 2820"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 15388 7620| 10622 7620| 10622 7140| 15388 7140| 15388 7620"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 17909 6020| 12498 6020| 12498 5540| 17909 5540| 17909 6020"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 14024 4420| 3784 4420| 3784 3940| 14024 3940| 14024 4420"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 7302 7620| 2436 7620| 2436 7140| 7302 7140| 7302 7620"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 5326 2820| 977 2820| 977 2340| 5326 2340| 5326 2820"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 5374 6020| -256 6020| -256 5540| 5374 5540| 5374 6020"/>
+                                                  <Edge fillStyle0="0" fillStyle1="1" strokeStyle="0" edges="! 11000 9220| 6668 9220| 6668 8740| 11000 8740| 11000 9220"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timeline>
+</DOMSymbolItem>
