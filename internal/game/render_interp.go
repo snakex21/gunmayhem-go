@@ -78,6 +78,9 @@ type renderInterpState struct {
 	drawPlayerPtrs                    []*Player
 	drawEnemies                       []CampaignEnemy
 	drawEnemyPtrs                     []*CampaignEnemy
+	zombies                           []renderSample
+	drawZombies                       []Zombie
+	drawZombiePtrs                    []*Zombie
 	drawBullets                       []Bullet
 	drawShells                        []Shell
 	drawGrenades                      []Grenade
@@ -91,6 +94,12 @@ type renderInterpState struct {
 
 func samplePlayer(p *Player) renderSample {
 	return renderSample{x: p.X, y: p.Y, vx: p.VX, vy: p.VY, key: p.ID, serial: p.DeathSerial, double: p.IsDouble, active: p.Active}
+}
+
+// sampleZombie: zombies are matched by ID; rising and dead zombies are not
+// interpolated (they do not move, or play their own death animation).
+func sampleZombie(z *Zombie) renderSample {
+	return renderSample{x: z.X, y: z.Y, vx: z.VX, vy: z.VY, key: z.ID, active: !z.Dead && z.State != zombieStateRising}
 }
 
 func sampleBullet(b *Bullet) renderSample {
@@ -157,6 +166,14 @@ func (g *Game) captureRenderPrev(now time.Time) {
 			s := samplePlayer(&e.Body)
 			s.active = !e.Dead
 			r.enemies = append(r.enemies, s)
+		}
+	}
+	r.zombies = r.zombies[:0]
+	if g.zombie != nil {
+		for _, z := range g.zombie.zombies {
+			if z != nil {
+				r.zombies = append(r.zombies, sampleZombie(z))
+			}
 		}
 	}
 	r.bullets = captureRenderSamples(r.bullets, g.bullets, sampleBullet)
@@ -360,6 +377,35 @@ func (g *Game) beginRenderInterpolation(now time.Time) func() {
 		g.campaignEnemies = r.drawEnemyPtrs
 	}
 
+	// Zombies: matched by ID, snapped on teleports (re-spawn of a stuck
+	// zombie) exactly like players.
+	var zombies []*Zombie
+	if g.zombie != nil && len(g.zombie.zombies) > 0 {
+		zombies = g.zombie.zombies
+		r.drawZombies = r.drawZombies[:0]
+		for _, z := range zombies {
+			if z != nil {
+				r.drawZombies = append(r.drawZombies, *z)
+			}
+		}
+		r.drawZombiePtrs = r.drawZombiePtrs[:0]
+		for i := range r.drawZombies {
+			z := &r.drawZombies[i]
+			cur := sampleZombie(z)
+			for _, prev := range r.zombies {
+				if prev.key == cur.key {
+					if renderPlayerContinues(prev, cur) {
+						z.X = lerpRender(prev.x, cur.x, alpha)
+						z.Y = lerpRender(prev.y, cur.y, alpha)
+					}
+					break
+				}
+			}
+			r.drawZombiePtrs = append(r.drawZombiePtrs, z)
+		}
+		g.zombie.zombies = r.drawZombiePtrs
+	}
+
 	r.drawBullets = interpolateRenderList(r.drawBullets, bullets, r.bullets, sampleBullet,
 		func(b *Bullet, x, y, rot float64) { b.X, b.Y, b.Rotation = x, y, rot }, alpha, false, &r.scratch)
 	g.bullets = r.drawBullets
@@ -391,6 +437,9 @@ func (g *Game) beginRenderInterpolation(now time.Time) func() {
 	}
 
 	return func() {
+		if zombies != nil && g.zombie != nil {
+			g.zombie.zombies = zombies
+		}
 		g.players, g.campaignEnemies = players, enemies
 		g.bullets, g.shells, g.grenades = bullets, shells, grenades
 		g.blastFX, g.jetThrustFX, g.dropPackFX, g.dynamiteFX, g.crates = blasts, jets, drops, dynamite, crates

@@ -54,7 +54,7 @@ func prepareAITarget(p *Player, g *Game) {
 	// Original activeplayers order, with PLAYERNUMBER rather than movie-clip
 	// identity. A Double has the owner's PLAYERNUMBER and therefore is skipped
 	// by its owner/other helper with that same player number.
-	for _, other := range g.players {
+	for _, other := range g.aiTargetPool() {
 		if !other.Active || other.Team == p.Team || other.scoreOwnerID() == p.scoreOwnerID() {
 			continue
 		}
@@ -85,7 +85,7 @@ func prepareAITarget(p *Player, g *Game) {
 		// Full retarget happened on the same frame the current enemy became
 		// invisible. Keep searching from the last visible coordinates instead of
 		// silently forgetting the opponent (and therefore never blind-firing).
-		for _, other := range g.players {
+		for _, other := range g.aiTargetPool() {
 			if other.ID != previousTargetID || !other.Active || !g.aiTargetConcealed(p, other) || g.aiCanDetect(p, other) {
 				continue
 			}
@@ -159,7 +159,7 @@ func refreshSourceAITarget(p *Player, g *Game) bool {
 	}
 	switch p.AITargetKind {
 	case aiTargetPlayer:
-		for _, other := range g.players {
+		for _, other := range g.aiTargetPool() {
 			if other.ID != p.AITargetPlayerID || !other.Active {
 				continue
 			}
@@ -527,7 +527,7 @@ func sourceAITargetPlayer(p *Player, g *Game) *Player {
 	if !p.AITargetValid || p.AITargetKind != aiTargetPlayer {
 		return nil
 	}
-	for _, other := range g.players {
+	for _, other := range g.aiTargetPool() {
 		if other.ID == p.AITargetPlayerID && other.Active && g.aiCanDetect(p, other) {
 			return other
 		}

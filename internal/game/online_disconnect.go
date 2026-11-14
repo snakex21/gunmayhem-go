@@ -73,7 +73,8 @@ func (g *Game) returnOnlineHostToLobbyIfAlone() bool {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost {
 		return false
 	}
-	if g.screen != screenGameplay || !g.onlineMatchSetup || g.onlineActiveParticipantCount() >= 2 {
+	if g.screen != screenGameplay || !g.onlineMatchSetup || g.onlineActiveParticipantCount() >= 2 || g.zombie != nil {
+		// A zombie co-op match goes on with whoever is left.
 		return false
 	}
 

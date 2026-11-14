@@ -30,6 +30,7 @@ func (g *Game) returnToOnlineServerBrowser() {
 	_ = g.CloseNetplay()
 	g.customOnlineMode = true
 	g.onlineMatchSetup = false
+	g.onlineZombie = false
 	g.customNetworkOpen = true
 	g.customHostSetupOpen = false
 	g.multiplayerFocus = false

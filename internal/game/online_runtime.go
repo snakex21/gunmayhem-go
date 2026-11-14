@@ -68,12 +68,21 @@ func (g *Game) updateNetplayPublicProbeInfo() {
 		PlaylistConfigured:   g.customSeriesPlaylistConfigured,
 		Crates:               g.CrateON,
 		Pickups:              g.PowerON,
-		RuleSummary:          g.developedModifierSummary(),
+		RuleSummary:          g.onlineRuleSummary(),
 		ChaosEnabled:         g.customChaosEnabled,
 		ChaosEvents:          g.chaosSelectedCount(),
 		ChaosIntervalSeconds: g.customChaosInterval,
 		DirectAddress:        reachability.DirectAddress,
 	})
+}
+
+// onlineRuleSummary is the browser's rules line (zombie sessions say so).
+func (g *Game) onlineRuleSummary() string {
+	if g.onlineZombie {
+		cfg := g.zombieSetup
+		return "ZOMBIE CO-OP - " + zombieModeLabels[min(max(cfg.Mode, 0), zombieModeCount-1)] + " - " + zombieArenaByIndex(cfg.Arena).Name
+	}
+	return g.developedModifierSummary()
 }
 
 func (g *Game) onlineActiveParticipantCount() int {
@@ -153,7 +162,10 @@ func (g *Game) syncOnlineGameplayPlayers() {
 			for _, p := range g.players {
 				if p != nil && p.ID == id && !p.IsDouble {
 					cfg := g.customPlayers[id-1]
-					g.applyOnlineConfigToPlayer(p, cfg)
+					if g.zombie == nil {
+						// A zombie match keeps bought gear and throwables.
+						g.applyOnlineConfigToPlayer(p, cfg)
+					}
 					p.AI = cfg.Type == 2
 					p.RemoteControlled = cfg.Type == 1 && id != 1
 					break
@@ -161,7 +173,11 @@ func (g *Game) syncOnlineGameplayPlayers() {
 			}
 			continue
 		}
-		g.players = append(g.players, g.newOnlinePlayer(id))
+		p := g.newOnlinePlayer(id)
+		g.players = append(g.players, p)
+		if g.zombie != nil {
+			g.zombieJoinPlayer(p)
+		}
 	}
 }
 

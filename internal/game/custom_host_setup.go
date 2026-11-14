@@ -20,6 +20,7 @@ func (g *Game) activateCustomHostSetupHit(hit int) {
 			g.setCustomV2Page(customPageGame)
 			g.multiplayerMessage = "SESSION SETTINGS UNCHANGED"
 		} else {
+			g.onlineZombie = false
 			g.multiplayerMessage = "CHOOSE A SESSION OR CREATE ONE"
 		}
 	case menuHitCustomHostScopeLAN:

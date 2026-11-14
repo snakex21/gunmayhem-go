@@ -332,6 +332,11 @@ func validateNetMessageForHost(msg netWireMessage) error {
 			return errors.New("authentication fields are only allowed during handshake")
 		}
 		return nil
+	case netMessageZombie:
+		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
+			return errors.New("authentication fields are only allowed during handshake")
+		}
+		return validateNetZombieRequests(msg.ZombieReqs)
 	default:
 		return errors.New("client sent forbidden netplay message type")
 	}
@@ -420,6 +425,9 @@ func validateNetSnapshot(s netSnapshot) error {
 		if len(cfg.Name) > 96 || !utf8.ValidString(cfg.Name) || !isSelectableAbility(cfg.Ability) {
 			return errors.New("invalid online player config in host snapshot")
 		}
+	}
+	if err := validateZombieSnapshot(s); err != nil {
+		return err
 	}
 	if s.CustomSeriesRounds != 0 && (s.CustomSeriesRounds < customSeriesMinRounds || s.CustomSeriesRounds > customSeriesMaxRounds) {
 		return errors.New("invalid custom series length in host snapshot")

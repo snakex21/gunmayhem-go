@@ -99,6 +99,8 @@ var netSnapshotListCaps = []netListCap{
 	{"life fx", 64, func(s *netSnapshot, m int) int { return trimNetList(&s.LifeBlingFX, m) }},
 	{"campaign enemies", 32, func(s *netSnapshot, m int) int { return trimNetList(&s.CampaignEnemies, m) }},
 	{"hazard markers", 32, func(s *netSnapshot, m int) int { return trimNetList(&s.HazardMarkers, m) }},
+	{"zombies", zombieSnapshotCap, func(s *netSnapshot, m int) int { return trimNetList(&s.Zombies, m) }},
+	{"zombie pops", zombiePopCap, func(s *netSnapshot, m int) int { return trimNetList(&s.ZombiePops, m) }},
 	{"sfx events", netRecentSFXLimit, func(s *netSnapshot, m int) int { return trimNetList(&s.SFXEvents, m) }},
 }
 

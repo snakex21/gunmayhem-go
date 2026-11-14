@@ -16,8 +16,9 @@ import (
 
 const (
 	// 19: compact streamed snapshots, per-frame input history, heartbeat,
-	// game version in the handshake.
-	netplayProtocolVersion = 21
+	// game version in the handshake. 21: input acks. 22: zombie mode
+	// (snapshot lists Zombies / ZombiePops, ZombieHUD, netMessageZombie).
+	netplayProtocolVersion = 22
 	maxOnlinePlayers       = 4
 )
 
@@ -115,6 +116,9 @@ type netWireMessage struct {
 	// State: one DEFLATE-stream chunk of a compact snapshot (netsnapshot_wire.go).
 	Payload    []byte `cbor:",omitempty"`
 	PayloadLen int    `cbor:",omitempty"`
+
+	// Zombie shop requests (protocol 22, zombie_net.go).
+	ZombieReqs []netZombieReq `cbor:",omitempty"`
 }
 
 // netSnapshot is deliberately a render-complete snapshot of the authoritative
@@ -152,6 +156,14 @@ type netSnapshot struct {
 	// future online co-op campaign rendering correctly with no extra work.
 	CampaignEnemies []CampaignEnemy `cbor:",omitempty"`
 	HazardMarkers   []HazardMarker  `cbor:",omitempty"`
+	// Zombie mode (protocol 22, zombie_net.go). Zombies carry no physics
+	// body; the HUD value holds waves, points, HP and the mystery box.
+	Zombies          []Zombie    `cbor:",omitempty"`
+	ZombiePops       []ZombiePop `cbor:",omitempty"`
+	ZombieHUD        ZombieHUD   `cbor:",omitempty"`
+	OnlineZombie     bool        `cbor:",omitempty"`
+	ZombieSetupMode  int         `cbor:",omitempty"`
+	ZombieSetupArena int         `cbor:",omitempty"`
 	// SFXEvents travel in the per-peer envelope so a dropped snapshot never
 	// drops a sound (netsnapshot_wire.go).
 	SFXEvents []netSFXEvent `cbor:",omitempty" net:"-"`
@@ -245,6 +257,10 @@ type netplayPeer struct {
 	config        CustomPlayerConfig
 	hasConfig     atomic.Bool
 	postGameReady atomic.Bool
+
+	zombieMu   sync.Mutex
+	zombieSeen uint32
+	zombieReqs []netZombieReq
 
 	stateSend chan *netHostFrame
 	pongSend  chan int64

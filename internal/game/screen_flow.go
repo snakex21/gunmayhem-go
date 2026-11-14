@@ -184,6 +184,11 @@ func (g *Game) updatePause() {
 			g.paused = false
 		case pauseHitExit:
 			g.paused = false
+			if g.zombieSimulating() {
+				// Leaving a zombie match ends it: results (and the record).
+				g.finishZombieMatch()
+				return
+			}
 			if !g.campaignMode && !g.gototest && g.customSeriesRound > 0 {
 				g.abortCustomSeriesToSetup()
 				return
@@ -305,7 +310,7 @@ func (g *Game) updateMatchInteractions() {
 
 	// Player/AI source clips handle the last survivor differently in campaign.
 	if !g.TeamGame && !g.teamGameWin && !g.GameWin && len(active) == 1 && g.GameMode != SourceGameModeSurvival && !(g.campaignSetGM2 && g.campaignLevel == 1) &&
-		g.campaignEnemiesRemaining() == 0 {
+		g.campaignEnemiesRemaining() == 0 && g.zombie == nil {
 		winner := active[0]
 		if g.campaignMode && winner.AI {
 			// playerAI: campaign loss sets teamgamewin and attaches fx_campaignlose.

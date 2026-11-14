@@ -194,6 +194,11 @@ func (g *Game) onlineLobbyStart() {
 	if !g.onlineLobbyIsHost() {
 		return
 	}
+	if g.onlineZombie {
+		// Zombie co-op: the host may start alone; guests join in progress.
+		g.startZombieMatch()
+		return
+	}
 	if g.onlineActiveParticipantCount() < 2 {
 		g.multiplayerMessage = "WAITING FOR ANOTHER PLAYER OR AI BOT"
 		return
@@ -247,6 +252,9 @@ func (g *Game) buildOnlineLobby(ctx *uiCtx) {
 	client := g.onlineLobbyIsClient()
 	ctx.Header("LOBBY", g.onlineLobbyBreadcrumb())
 	ctx.Badge(Rect{X: uiMargin + uiMeasure(true, uiSizeTitle, "LOBBY") + 14, Y: 31, W: 44, H: 22}, "NET", uiNetBlue)
+	if g.onlineZombie {
+		ctx.Badge(Rect{X: uiMargin + uiMeasure(true, uiSizeTitle, "LOBBY") + 64, Y: 31, W: 70, H: 22}, "ZOMBIE", zombieTagColor)
+	}
 
 	tab := g.onlineLobbyTab()
 	if t := ctx.TabBar("on.tabs", onlineLobbyTabBarRect, onlineLobbyTabLabels, tab); t != tab {
@@ -258,13 +266,16 @@ func (g *Game) buildOnlineLobby(ctx *uiCtx) {
 	switch tab {
 	case onlineLobbyTabSession:
 		g.buildOnlineSessionTab(ctx)
-	case onlineLobbyTabMatch:
+	case onlineLobbyTabMatch, onlineLobbyTabMaps:
 		ctx.readOnly = readOnly
-		g.buildCustomLocalMatch(ctx, true)
-		ctx.readOnly = false
-	case onlineLobbyTabMaps:
-		ctx.readOnly = readOnly
-		g.buildCustomLocalMaps(ctx)
+		switch {
+		case g.onlineZombie:
+			g.buildZombieOnlineSettings(ctx)
+		case tab == onlineLobbyTabMatch:
+			g.buildCustomLocalMatch(ctx, true)
+		default:
+			g.buildCustomLocalMaps(ctx)
+		}
 		ctx.readOnly = false
 	default:
 		g.buildOnlinePlayers(ctx)
@@ -293,7 +304,7 @@ func (g *Game) buildOnlineLobby(ctx *uiCtx) {
 	}
 	if host {
 		startInfo := "Start the match with everyone in the lobby."
-		waiting := g.onlineActiveParticipantCount() < 2
+		waiting := g.onlineActiveParticipantCount() < 2 && !g.onlineZombie
 		if waiting {
 			startInfo = "Waiting for another player or an AI bot."
 		}

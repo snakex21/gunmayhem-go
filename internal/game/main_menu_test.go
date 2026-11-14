@@ -54,15 +54,19 @@ func TestMainMenuTilesOpenTheirScreens(t *testing.T) {
 	}
 }
 
-func TestMainMenuZombieTileIsComingSoon(t *testing.T) {
+func TestMainMenuZombieTileOpensSetup(t *testing.T) {
 	g := newMainMenuGame()
 	it, ok := g.mainMenuUI.item("main.zombie")
-	if !ok || !it.disabled {
-		t.Fatalf("zombie tile missing or enabled: %+v ok=%v", it, ok)
+	if !ok || it.disabled || !it.focusable {
+		t.Fatalf("zombie tile missing or disabled: %+v ok=%v", it, ok)
 	}
+	g.onlineZombie = true
 	mainMenuClick(g, mainTileZombieRect.X+40, mainTileZombieRect.Y+40)
-	if g.fadeActive {
-		t.Fatal("the COMING SOON tile started something")
+	if !g.fadeActive || g.fadeTarget != screenZombieSetup {
+		t.Fatalf("ZOMBIE tile: fade=%v target=%d", g.fadeActive, g.fadeTarget)
+	}
+	if g.onlineZombie || g.zombieSetup.Slots[0] != 1 {
+		t.Fatalf("setup not reset: online=%v slots=%v", g.onlineZombie, g.zombieSetup.Slots)
 	}
 }
 
@@ -85,12 +89,10 @@ func TestMainMenuKeyboardNavigation(t *testing.T) {
 	if g.mainMenuUI.focus != "main.library" {
 		t.Fatalf("DOWN from campaign=%q", g.mainMenuUI.focus)
 	}
-	// The disabled ZOMBIE tile is skipped by keyboard navigation.
-	for i := 0; i < 8; i++ {
-		mainMenuKey(g, uiInput{Tab: true})
-		if g.mainMenuUI.focus == "main.zombie" {
-			t.Fatal("keyboard focus landed on the disabled ZOMBIE tile")
-		}
+	// The ZOMBIE tile is right of GUN LIBRARY and reachable by keyboard.
+	mainMenuKey(g, uiInput{Right: true})
+	if g.mainMenuUI.focus != "main.zombie" {
+		t.Fatalf("RIGHT from library=%q want main.zombie", g.mainMenuUI.focus)
 	}
 	for g.mainMenuUI.focus != "main.library" {
 		mainMenuKey(g, uiInput{Tab: true})

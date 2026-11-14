@@ -60,6 +60,16 @@ type SaveData struct {
 	GM2CampaignLevels   [16]int                        `json:"gm2_campaign_levels"`
 	GM2Challenges       [7]GM2ChallengeProgress        `json:"gm2_challenges"`
 	ExtraCampaignLevels [extraCampaignMissionCount]int `json:"extra_campaign_levels"`
+	// ZombieRecords: best wave / score per "<arena id>/<mode>" (zombie_menu.go).
+	ZombieRecords map[string]ZombieRecord `json:"zombie_records,omitempty"`
+}
+
+// ZombieRecord is the best result of one zombie arena and mode.
+type ZombieRecord struct {
+	BestWave  int `json:"best_wave"`
+	BestScore int `json:"best_score"`
+	Wins      int `json:"wins"`
+	Games     int `json:"games"`
 }
 
 func DefaultAppConfig() AppConfig {
@@ -319,6 +329,11 @@ func normalizeSave(save SaveData) SaveData {
 			save.ExtraCampaignLevels[i+1] = 1
 		}
 	}
+	for key, rec := range save.ZombieRecords {
+		if key == "" || len(key) > 64 || rec.BestWave < 0 || rec.BestScore < 0 || rec.Wins < 0 || rec.Games < 0 {
+			delete(save.ZombieRecords, key)
+		}
+	}
 	for i, challenge := range save.GM2Challenges {
 		if challenge.Medal < 0 || challenge.Medal > 3 {
 			save.GM2Challenges[i].Medal = 0
@@ -421,6 +436,10 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.gm2CampaignLevels = save.GM2CampaignLevels
 	g.gm2Challenges = save.GM2Challenges
 	g.extraCampaignLevels = normalizeExtraCampaignLevels(save.ExtraCampaignLevels)
+	g.zombieRecords = make(map[string]ZombieRecord, len(save.ZombieRecords))
+	for k, v := range save.ZombieRecords {
+		g.zombieRecords[k] = v
+	}
 	setSourceRenderQuality(g.quality)
 	g.startAutomaticUpdateCheck()
 	return g
@@ -511,6 +530,7 @@ func (g *Game) currentSaveData() SaveData {
 		GM2CampaignLevels:   g.gm2CampaignLevels,
 		GM2Challenges:       g.gm2Challenges,
 		ExtraCampaignLevels: g.extraCampaignLevels,
+		ZombieRecords:       g.zombieRecords,
 	}
 }
 

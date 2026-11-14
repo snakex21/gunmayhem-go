@@ -295,6 +295,8 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 			peer.hasConfig.Store(true)
 		case netMessagePostGameReady:
 			peer.postGameReady.Store(msg.Ready)
+		case netMessageZombie:
+			peer.receiveZombieRequests(msg.ZombieReqs)
 		case netMessageAck:
 			if msg.Tick > peer.ackTick.Load() && msg.Tick <= peer.sentTick.Load() {
 				peer.ackTick.Store(msg.Tick)
@@ -584,6 +586,12 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		LifeBlingFX:                    append([]LifeBlingEffect(nil), g.lifeBlingFX...),
 		CampaignEnemies:                g.campaignEnemySnapshot(),
 		HazardMarkers:                  append([]HazardMarker(nil), g.extraHazardMarkers...),
+		Zombies:                        g.zombieSnapshot(),
+		ZombiePops:                     g.zombiePopSnapshot(),
+		ZombieHUD:                      g.zombieHUDSnapshot(),
+		OnlineZombie:                   g.onlineZombie,
+		ZombieSetupMode:                g.zombieSetup.Mode,
+		ZombieSetupArena:               g.zombieSetup.Arena,
 		SFXEvents:                      append([]netSFXEvent(nil), g.netSFXPending...),
 		MapFXFrame:                     g.mapFXFrame,
 		CameraX:                        g.cameraX,

@@ -74,6 +74,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawCrates(screen)
 	g.drawPowerups(screen)
 	g.drawTestGunPickup(screen)
+	g.drawZombieWorld(screen)
 	for _, p := range g.players {
 		if p.Active {
 			drawP := *p
@@ -100,13 +101,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// so off-screen indicators sit above gameplay/map FX but below the HUD.
 	g.drawPlayerArrows(screen)
 	g.drawCampaignEnemyArrows(screen)
-	if !g.GameWin {
+	if g.zombieActive() {
+		g.drawZombieHUD(screen)
+	} else if !g.GameWin {
 		g.drawHUD(screen)
 		g.drawExtraCampaignHazardHUD(screen)
 		g.drawExtraCampaignBossHUD(screen)
 		g.drawChaosHUD(screen)
 	}
 	g.drawViewerBlindWhiteout(screen)
+	g.drawZombieShops(screen)
 	g.drawGameplayInteractions(screen)
 	g.drawNetPingOverlay(screen)
 	g.drawNetDebugOverlay(screen)
@@ -125,7 +129,7 @@ func (g *Game) netClientNeedsWaitingScreen() bool {
 	switch g.screen {
 	case screenMultiplayerLobby, screenCustomGame:
 		return false
-	case screenGameplay, screenPostGame, screenSeriesSummary:
+	case screenGameplay, screenPostGame, screenSeriesSummary, screenZombieResults:
 		return !g.netplay.hasState.Load()
 	default:
 		return true

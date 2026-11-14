@@ -170,6 +170,8 @@ func encodeNetMessage(msg netWireMessage) ([]byte, error) {
 		view = netWireProbeMsg{Type: msg.Type, Protocol: msg.Protocol}
 	case netMessageProbeReply:
 		view = netWireProbeReplyMsg{Type: msg.Type, Protocol: msg.Protocol, Probe: msg.Probe}
+	case netMessageZombie:
+		view = netWireZombieMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, ZombieReqs: msg.ZombieReqs}
 	}
 	payload, err := netCBOREnc.Marshal(view)
 	if err != nil {

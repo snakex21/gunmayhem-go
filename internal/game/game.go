@@ -170,6 +170,14 @@ type Game struct {
 	bossBanner          string
 	bossBannerFrame     int
 
+	// ZOMBIE mode (zombie_*.go). zombie is nil outside a zombie match.
+	zombie              *zombieMatch
+	zombieSetup         zombieSetupConfig
+	zombieUI            uiState
+	zombieRecords       map[string]ZombieRecord
+	onlineZombie        bool // the online session in the lobby is a zombie co-op session
+	zombieBulletScratch []int
+
 	// arenagamedata2 defaults used by the source Options screen.
 	musicOn                 bool
 	soundOn                 bool
@@ -382,6 +390,8 @@ func New() *Game {
 		onlineOnlyWeapon:          10,
 		onlinePerksEnabled:        true,
 		onlinePowerupsEnabled:     true,
+		zombieSetup:               defaultZombieSetup(),
+		zombieRecords:             make(map[string]ZombieRecord),
 	}
 	// arenagamedata3 defaults from root frame2: levels 1 and 2 available,
 	// levels 3..10 locked. All 57 guns start unlocked except the twenty
@@ -469,6 +479,12 @@ func (g *Game) Update() error {
 			g.players[1].AITargetTimer = 40
 		}
 	}
+
+	// ZOMBIE: guests' shop requests, the local shop panels, then input masks
+	// and the mystery box (DOWN) before the players move.
+	g.processZombieRequests()
+	g.updateZombieShopUI()
+	g.updateZombiePreInput()
 
 	chaosKnockback := beginAbilityKnockbackWindow(g.players)
 	g.updateChaosMode()
@@ -601,12 +617,15 @@ func (g *Game) Update() error {
 	// phase; their shoves sit in the players' knockback window.
 	enemyKnockback := beginAbilityKnockbackWindow(g.players)
 	g.updateCampaignEnemies(runtimeArena)
+	g.updateZombies(runtimeArena)
 	endAbilityKnockbackWindow(g.players, enemyKnockback, true)
+	g.updateZombieBlasts()
 	g.updateExtraCampaignBosses()
 	// targets = players + living enemy bodies: every hit source below sees
 	// both through the same code paths and knockback windows.
 	targets := g.hitTargets()
 	g.beginCampaignEnemyHitPhase()
+	g.beginZombieHitPhase()
 
 	hitsBefore := 0
 	for _, p := range targets {
@@ -617,7 +636,9 @@ func (g *Game) Update() error {
 	if g.deflectShieldBullets(targets) > 0 {
 		g.playSourceSFX("bolt1.wav", false)
 	}
+	g.zombieBulletScratch = g.zombieBulletsAlive(g.zombieBulletScratch)
 	updateBullets(runtimeArena, g.bullets, targets, &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
+	g.markZombieHeadshots(g.zombieBulletScratch)
 	shieldBroke := endAbilityKnockbackWindow(targets, bulletKnockback, true)
 	if len(g.blastFX) > projectileBlastBefore {
 		g.playRandomExplosionSound()
@@ -680,6 +701,7 @@ func (g *Game) Update() error {
 		shieldBroke = true
 	}
 	g.endCampaignEnemyHitPhase(runtimeArena)
+	g.endZombieHitPhase()
 	if shieldBroke {
 		g.playSourceSFX("emp.wav", true)
 	}
@@ -759,6 +781,7 @@ func (g *Game) Update() error {
 	g.killfeeds = compactKillFeeds(g.killfeeds)
 	g.crates = compactCrates(g.crates)
 	g.powerups = compactPowerups(g.powerups)
+	g.updateZombieMatch()
 	g.updateMatchInteractions()
 	return nil
 }
@@ -820,6 +843,9 @@ func (g *Game) resetArenaState() {
 	g.extraWindDir, g.extraWindTime = 0, 0
 	g.bossBanner, g.bossBannerFrame = "", 0
 	g.resetCampaignEnemies()
+	// A new arena state ends any zombie match (startZombieMatch creates its
+	// match after this reset).
+	g.zombie = nil
 	if m := g.activeExtraCampaignMission(); m != nil {
 		g.setupCampaignEnemyWaves(m.Units)
 	}

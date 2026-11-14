@@ -24,6 +24,8 @@ const (
 	screenGameplay
 	_ // was screenMultiplayer (legacy menu, removed); keeps wire values stable
 	screenMultiplayerLobby
+	screenZombieSetup   // zombie_menu.go
+	screenZombieResults // zombie_menu.go
 )
 
 // Symbol1309 is one 2700px-wide menu strip. The source script moves the whole
@@ -74,6 +76,10 @@ func (g *Game) updateMenu() error {
 	case screenMultiplayerLobby:
 		// Retired UI compatibility: never show the standalone lobby again.
 		g.openOnlineCustomSlots("SESSION ACTIVE - WAITING FOR PLAYER / ADD AI")
+	case screenZombieSetup:
+		g.updateZombieSetupMenu()
+	case screenZombieResults:
+		g.updateZombieResultsMenu()
 	}
 	return nil
 }
@@ -349,6 +355,10 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 		g.drawCustomGameMenu(screen)
 	case screenSeriesSummary:
 		g.drawSeriesSummary(screen)
+	case screenZombieSetup:
+		g.drawZombieSetupMenu(screen)
+	case screenZombieResults:
+		g.drawZombieResultsMenu(screen)
 	case screenPostGame:
 		if !g.drawPostGameScreen(screen) {
 			// Flattened Symbol1019 is fallback-only because it contains baked

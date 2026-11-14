@@ -166,17 +166,18 @@ func (g *Game) campaignEnemiesRemaining() int {
 // hitTargets is g.players plus every living enemy body: the list handed to
 // the shared hit code (bullets, explosions, gas, flash, fire, hazards).
 func (g *Game) hitTargets() []*Player {
-	if len(g.campaignEnemies) == 0 {
+	if len(g.campaignEnemies) == 0 && !g.zombieHasBodies() {
 		return g.players
 	}
-	out := make([]*Player, 0, len(g.players)+len(g.campaignEnemies))
+	out := make([]*Player, 0, len(g.players)+len(g.campaignEnemies)+zombieMaxActive)
 	out = append(out, g.players...)
 	for _, e := range g.campaignEnemies {
 		if e.alive() {
 			out = append(out, &e.Body)
 		}
 	}
-	return out
+	// Zombie bodies (zombie_mode.go) take every hit the same way.
+	return g.appendZombieBodies(out)
 }
 
 func (g *Game) campaignEnemyByID(id int) *CampaignEnemy {

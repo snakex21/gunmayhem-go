@@ -495,6 +495,10 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 	g.lifeBlingFX = append(g.lifeBlingFX[:0], state.LifeBlingFX...)
 	g.applyCampaignEnemySnapshot(state.CampaignEnemies)
 	g.extraHazardMarkers = append(g.extraHazardMarkers[:0], state.HazardMarkers...)
+	g.applyZombieSnapshot(&state)
+	g.onlineZombie = state.OnlineZombie
+	g.zombieSetup.Mode = state.ZombieSetupMode
+	g.zombieSetup.Arena = state.ZombieSetupArena
 	g.mapFXFrame = state.MapFXFrame
 	g.cameraX = state.CameraX
 	g.cameraY = state.CameraY
@@ -645,7 +649,13 @@ func (g *Game) updateNetClient() error {
 		g.sendOnlineLocalConfigIfChanged()
 		return nil
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) { // Leave the remote session outside Custom Game.
+	if g.screen == screenZombieResults {
+		g.updateZombieResultsMenu()
+		return nil
+	}
+	// A guest's own zombie shop owns the keys while it is open (ESC closes it).
+	zombieShop := g.screen == screenGameplay && g.updateZombieGuestShop()
+	if !zombieShop && inpututil.IsKeyJustPressed(ebiten.KeyEscape) { // Leave the remote session outside Custom Game.
 		_ = g.CloseNetplay()
 		g.screen = screenCustomGame
 		g.customOnlineMode = true
@@ -658,6 +668,10 @@ func (g *Game) updateNetClient() error {
 	g.sendOnlineLocalConfigIfChanged()
 	if g.screen == screenGameplay {
 		input := netClientInputForFocus(capturePlayerInput(g.controlConfigs[0]), ebiten.IsFocused())
+		if zombieShop {
+			input = PlayerInputState{} // the host masks it too
+		}
+		g.sendZombieRequests()
 		if seq, ok := g.netplay.queueInput(input); ok {
 			g.netPredict.record(seq, input)
 			g.applyNetPrediction(seq)

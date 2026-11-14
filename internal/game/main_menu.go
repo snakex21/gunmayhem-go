@@ -113,10 +113,14 @@ func (g *Game) buildMainMenu(ctx *uiCtx) {
 		g.mainMenuSelectSound()
 		g.beginFade(screenGunLibrary, fadePurposeScreen)
 	}
-	ctx.ModeTile("main.zombie", mainTileZombieRect, "ZOMBIE", uiModeTileOpts{
-		Disabled: true, Tag: "COMING SOON", Subtitle: "Waves of enemies",
-		InfoTitle: "ZOMBIE", InfoBody: "Coming soon.",
-	})
+	if ctx.ModeTile("main.zombie", mainTileZombieRect, "ZOMBIE", uiModeTileOpts{
+		Tag: "CO-OP", TagFill: zombieTagColor, Subtitle: "Survive the waves, 1-4 players",
+		InfoTitle: "ZOMBIE", InfoBody: "Co-op survival against waves of zombies: points, shop, mystery box. Local or online.",
+		Art: g.drawMainZombieArt,
+	}) {
+		g.mainMenuSelectSound()
+		g.openZombieSetup()
+	}
 
 	if ctx.Button("main.credits", mainCreditsRect, "CREDITS", uiButtonOpts{Size: uiSizeBody}) {
 		g.mainMenuSelectSound()
