@@ -47,7 +47,7 @@ func (g *Game) drawCustomMapButtons(screen *ebiten.Image) {
 		{2, 429.3, "Dessert Duel"},
 		{1, 458.35, "No Name"},
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	lx := float64(mx) - g.customMenuX
 	ly := float64(my)
 	for _, row := range rows {

@@ -156,7 +156,7 @@ func (g *Game) updateMultiplayerMenu() {
 		return
 	}
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	x, y := float64(mx), float64(my)
 	g.updateMultiplayerServerScroll(x, y)
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {

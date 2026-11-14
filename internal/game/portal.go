@@ -39,21 +39,12 @@ func placePortalFromSegment(portals *[]Portal, b *Bullet, x0, y0, x1, y1 float64
 			break
 		}
 	}
-	dLeft := math.Abs(hitX - surface.X)
-	dRight := math.Abs(surface.X + surface.W - hitX)
-	dTop := math.Abs(hitY - surface.Y)
-	dBottom := math.Abs(surface.Y + surface.H - hitY)
-	nx, ny := -1.0, 0.0
-	best := dLeft
-	if dRight < best {
-		best, nx, ny = dRight, 1, 0
-	}
-	if dTop < best {
-		best, nx, ny = dTop, 0, -1
-	}
-	if dBottom < best {
-		nx, ny = 0, 1
-	}
+	// Portals only ever open on platform tops. A side or underside portal at
+	// the arena edge turned every Portal Gun hit into a one-hit ring-out (the
+	// victim was thrown out sideways past the edge), so a shot that strikes a
+	// side or the underside snaps to the top of that platform instead.
+	nx, ny := 0.0, -1.0
+	hitX, hitY = portalTopX(surface, hitX), surface.Y
 	// Keep the portal just outside the solid rectangle, so crossing is detected
 	// before ordinary platform collision resolves the player.
 	hitX += nx * 3
@@ -83,9 +74,6 @@ func placePortalOnNearestSurface(portals *[]Portal, b *Bullet, arena Map) bool {
 	if portals == nil || b == nil || len(arena.Platforms) == 0 {
 		return false
 	}
-	clamp := func(value, low, high float64) float64 {
-		return math.Max(low, math.Min(high, value))
-	}
 	type candidate struct {
 		x, y, nx, ny, distance float64
 	}
@@ -97,10 +85,8 @@ func placePortalOnNearestSurface(portals *[]Portal, b *Bullet, arena Map) bool {
 		}
 	}
 	for _, surface := range arena.Platforms {
-		consider(surface.X, clamp(b.Y, surface.Y, surface.Y+surface.H), -1, 0)
-		consider(surface.X+surface.W, clamp(b.Y, surface.Y, surface.Y+surface.H), 1, 0)
-		consider(clamp(b.X, surface.X, surface.X+surface.W), surface.Y, 0, -1)
-		consider(clamp(b.X, surface.X, surface.X+surface.W), surface.Y+surface.H, 0, 1)
+		// Tops only (see placePortalFromSegment).
+		consider(portalTopX(surface, b.X), surface.Y, 0, -1)
 	}
 	if best.distance == math.MaxFloat64 {
 		return false
@@ -115,6 +101,62 @@ func placePortalOnNearestSurface(portals *[]Portal, b *Bullet, arena Map) bool {
 		OwnerID: b.OwnerID, Color: colorID, Active: true,
 	})
 	return true
+}
+
+// portalTopInset keeps a portal this far inside the ends of its platform.
+const portalTopInset = 20.0
+
+// portalTopX clamps x onto the top of surface, portalTopInset inside its ends
+// (the middle of a platform narrower than two insets).
+func portalTopX(surface Rect, x float64) float64 {
+	if surface.W <= 2*portalTopInset {
+		return surface.X + surface.W/2
+	}
+	return math.Max(surface.X+portalTopInset, math.Min(surface.X+surface.W-portalTopInset, x))
+}
+
+// portalUnpairedPush is the Portal Gun's pulse when its owner has no
+// complete portal pair (or the victim is shielded).
+const portalUnpairedPush = 20.0
+
+// portalShielded: the shield powerup or a SHIELD ability that still has its
+// block (or spent it this very tick) stops the teleport-hit.
+func portalShielded(p *Player) bool {
+	if p == nil {
+		return false
+	}
+	if p.ShieldTime > 0 || abilityShieldReady(p) {
+		return true
+	}
+	return p.AbilityNumber == abilityShield && p.AbilityShieldUsed && p.AbilityShieldBreak == shieldBreakFrames
+}
+
+// portalOwnerHoldsGun reports whether some living player (or body) scoring
+// as ownerID still holds the Portal Gun.
+func portalOwnerHoldsGun(ownerID int, players []*Player) bool {
+	for _, p := range players {
+		if p == nil || !p.Active || p.scoreOwnerID() != ownerID {
+			continue
+		}
+		if spec, ok := developedWeaponSpec(p.Weapon.Def.Number); ok && spec.Projectile == DevelopedProjectilePortal {
+			return true
+		}
+	}
+	return false
+}
+
+// prunePortals removes the portals of every owner who no longer holds the
+// Portal Gun (it ran empty, was swapped for another weapon, or the owner
+// died), so abandoned portals cannot linger as death traps. Round reset
+// clears all portals separately.
+func prunePortals(portals []Portal, players []*Player) []Portal {
+	out := portals[:0]
+	for _, portal := range portals {
+		if portalOwnerHoldsGun(portal.OwnerID, players) {
+			out = append(out, portal)
+		}
+	}
+	return out
 }
 
 func portalPair(portals []Portal, entry Portal) (Portal, bool) {
@@ -163,7 +205,8 @@ func portalCombatHit(b *Bullet, target *Player, portals *[]Portal) {
 		available = *portals
 	}
 	entry := Portal{OwnerID: b.OwnerID, Color: b.PortalColor, Active: true}
-	if exit, ok := portalPair(available, entry); ok {
+	exit, paired := portalPair(available, entry)
+	if paired && !portalShielded(target) {
 		target.X = exit.X + exit.NormalX*58
 		target.Y = exit.Y + 28 + exit.NormalY*58
 		target.VX = exit.NormalX * 19
@@ -177,8 +220,17 @@ func portalCombatHit(b *Bullet, target *Player, portals *[]Portal) {
 		if direction == 0 {
 			direction = 1
 		}
-		target.VX += 24 * float64(direction)
-		target.VY -= 8
+		// A shielded victim is never teleported: the shield powerup takes a
+		// fifth of the pulse, and the SHIELD ability's knockback window
+		// blocks it outright.
+		push := portalUnpairedPush
+		lift := 8.0
+		if target.ShieldTime > 0 {
+			push *= 0.2
+			lift *= 0.2
+		}
+		target.VX += push * float64(direction)
+		target.VY -= lift
 	}
 	target.HitNumber++
 	target.HitTimer = 0

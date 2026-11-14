@@ -376,13 +376,26 @@ func (g *Game) drawPlayerSetupCardMasked(screen *ebiten.Image, cfg CustomPlayerC
 	}
 
 	if cfg.Type == 0 {
-		drawSourceMenuText(clip, "SLOT EMPTY", menuFontCondensed, 15.95,
-			color.NRGBA{R: 0xff, A: uint8(255 * alpha)}, 25.15, localY-386)
-		drawSourceMenuText(clip, "HUMAN PLAYER", menuFontCondensed, 15.9,
-			color.NRGBA{A: uint8(255 * alpha)}, 42, localY-252.55)
+		// B6: the empty-slot state used to be bare red/black text floating on
+		// the dark page with no card. Draw a Mayhem UI slot card; the buttons
+		// sit exactly on the source HUMAN/AI hit rects (customPlayerSetupHitAt,
+		// campaignPlayerHitAt: Symbol806 x1.0775 at card (20, y-254.95/-220.95)).
+		top := localY - 400
+		uiFillRound(clip, Rect{X: 2, Y: top + 2, W: 196, H: 396}, 8, uiWithAlpha(uiInk700, alpha))
+		uiText(clip, "SLOT EMPTY", true, uiSizeSection, uiWithAlpha(uiTextLight, alpha), 18, top+30, uiAlignLeft)
+		hint := "Add a player to join."
+		if campaign {
+			hint = "Add player 2 to play co-op."
+		}
+		uiText(clip, hint, false, uiSizeHint, uiWithAlpha(uiTextMuted, alpha), 18, top+56, uiAlignLeft)
+		buttonW := customPlayerTypeButtonLocal.W * 1.0775146484375
+		human := Rect{X: 20, Y: localY - 254.95, W: buttonW, H: customPlayerTypeButtonLocal.H}
+		uiFillRound(clip, human, 4, uiWithAlpha(uiOrange, alpha))
+		uiTextIn(clip, "HUMAN PLAYER", true, uiSizeBody, uiWithAlpha(uiTextDark, alpha), human, uiAlignCenter, 6)
 		if !campaign {
-			drawSourceMenuText(clip, "AI PLAYER", menuFontCondensed, 15.9,
-				color.NRGBA{A: uint8(255 * alpha)}, 42, localY-218.55)
+			ai := Rect{X: 20, Y: localY - 220.95, W: buttonW, H: customPlayerTypeButtonLocal.H}
+			uiFillRound(clip, ai, 4, uiWithAlpha(uiPaper, alpha))
+			uiTextIn(clip, "AI PLAYER", true, uiSizeBody, uiWithAlpha(uiTextDark, alpha), ai, uiAlignCenter, 6)
 		}
 	} else if editor == 0 {
 		// The FFDec card has the source preloader text baked into this area.

@@ -603,7 +603,7 @@ func (g *Game) drawCustomModifiersOverlay(screen *ebiten.Image) {
 	drawSourceMenuText(screen, "Pick modifiers manually. Conflicting choices are switched off automatically.", menuFontCondensed, 14.5,
 		color.NRGBA{R: 0xc9, G: 0xcd, B: 0xd3, A: 0xff}, 24, 58)
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	hoverHint := "Hover a modifier to see what it changes."
 	for i, spec := range customModifierSpecs {
 		r := customModifierRect(i)

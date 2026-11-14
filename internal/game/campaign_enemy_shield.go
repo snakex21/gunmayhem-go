@@ -7,7 +7,7 @@ import "math"
 // shield. Bullets that hit the shield from the front are deflected with a
 // spark and almost no push. Shots from behind, steep shots from above,
 // explosions, shock gas and fire work normally. A flashbang or tear gas makes
-// him lower the shield for a moment. Up close he shoves; at range he fires a
+// him lower the shield for a moment; catching fire makes him drop it and panic. Up close he shoves; at range he fires a
 // pistol past the shield edge.
 
 const (
@@ -118,7 +118,8 @@ func (g *Game) updateShieldBearer(e *CampaignEnemy, arena Map) {
 		return
 	}
 	// Flashbang or tear gas: the bearer lowers the shield to rub his eyes.
-	if b.BlindTime > 0 || b.TearGasTime > 0 {
+	// Burning: he drops it to beat out the flames (and panics like anyone).
+	if b.BlindTime > 0 || b.TearGasTime > 0 || b.BurnTime > 0 {
 		e.ShieldDown = shieldBearerLowerFrames
 	} else if e.ShieldDown > 0 {
 		e.ShieldDown--

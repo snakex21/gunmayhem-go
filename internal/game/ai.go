@@ -412,6 +412,7 @@ func decideAIController(p *Player, g *Game) {
 		p.AILockUp--
 	}
 	aiAvoidFire(p, g.arena.Platforms, g.firePatches)
+	aiHandleBurning(p, g)
 	aiAvoidGasClouds(p, g.arena.Platforms, g.areaEffects)
 
 	if targetPlayer != nil && targetPlayer.Y < p.Y+20 && targetPlayer.Y > p.Y-80 {

@@ -71,7 +71,7 @@ func (g *Game) initCustomPlayerSetup() {
 // Symbol1302.onEnterFrame: slide0 -> originy+400 (500), slide1 -> originy
 // (100), each with half-distance easing and integer rounding.
 func (g *Game) updateCustomPlayerCards() {
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	mouseX, mouseY := float64(mx), float64(my)
 	for i := range g.customPlayers {
 		target := 100.0

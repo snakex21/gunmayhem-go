@@ -154,7 +154,7 @@ func mainMenuHitAt(x, y float64) int {
 }
 
 func (g *Game) updateMainMenu() {
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	hit := mainMenuHitAt(float64(mx), float64(my))
 	if g.updateNoticeVisible() && g.updateRuntime.phase != updatePhaseDownloading && mainUpdateNoticeRect.Contains(float64(mx), float64(my)) {
 		hit = menuHitMainUpdate
@@ -198,7 +198,7 @@ func (g *Game) updateSecondaryMenu() {
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 		return
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	hit := menuHitNone
 	switch g.screen {
 	case screenCredits:
@@ -226,7 +226,7 @@ func (g *Game) updatePostGameMenu() {
 		return
 	}
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	r := sourceMenuHitRect(campaignBackLocal, 638.15, 532.1, 1.86492919921875, 1.0372772216796875)
 	hit := menuHitNone
 	if r.Contains(float64(mx), float64(my)) {
@@ -316,7 +316,7 @@ func (g *Game) updateCustomGameMenu() {
 		return
 	}
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	if g.updateCustomSessionInput(float64(mx), float64(my)) {
 		return
 	}
@@ -643,12 +643,9 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 			g.drawSecondaryMenuFallback(screen, "GUN LIBRARY")
 		}
 	case screenOptions:
-		if g.assets.OptionsMenu != nil {
-			drawSourceRaster(screen, g.assets.OptionsMenu, 0, 0, 1, 1, 1)
-			g.drawOptionsInteractions(screen)
-		} else {
-			g.drawSecondaryMenuFallback(screen, "OPTIONS")
-		}
+		// Mayhem UI Options (options_menu.go) replaces the flattened Flash
+		// OptionsMenu raster and its patched-over controls.
+		g.drawOptionsMenu(screen)
 	case screenCredits:
 		if g.assets.CreditsMenu != nil {
 			drawSourceRaster(screen, g.assets.CreditsMenu, 0, 0, 1, 1, 1)
@@ -718,7 +715,7 @@ func drawMenuDebugRect(dst *ebiten.Image, r Rect) {
 }
 
 func (g *Game) drawMenuDebug(screen *ebiten.Image) {
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	hit := menuHitNone
 	if g.screen == screenMainMenu {
 		placements := [...]struct {

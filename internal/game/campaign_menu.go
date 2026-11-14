@@ -102,7 +102,7 @@ func (g *Game) updateCampaignMenu() {
 	// only active on the mission-slider phase so it cannot interfere with the
 	// original player/detail controls.
 	if g.campaignPhase == 1 {
-		mx, my := ebiten.CursorPosition()
+		mx, my := g.cursorPos()
 		tabHit := campaignSetHitAt(float64(mx), float64(my))
 		if tabHit != campaignHitNone {
 			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
@@ -146,7 +146,7 @@ func (g *Game) updateCampaignMenu() {
 		g.updateCampaignPlayerCards()
 		g.updateCampaignNameInput()
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	if g.campaignPhase == 1 {
 		// Symbol948.onEnterFrame phase1 edge-scroll physics.
 		if my > 100 && my < 510 {
@@ -255,7 +255,7 @@ func (g *Game) updateCampaignMenu() {
 func (g *Game) updateCampaignUnlockPopup() {
 	// Symbol947 frame-specific popup consumes interaction and disables all
 	// slider panel hand cursors until Continue is released.
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	continueRect := sourceMenuHitRect(campaignContinueLocal, 344.85, 356.1, 1.3468017578125, 1.25)
 	hit := campaignHitNone
 	if continueRect.Contains(float64(mx), float64(my)) {
@@ -319,7 +319,7 @@ func (g *Game) drawCampaignMenu(screen *ebiten.Image) {
 		if g.campaignPhase == 3 {
 			drawSourceRaster(screen, g.assets.CampaignStartButton, 469.1, 522.15, 1, 1, a)
 			drawSourceMenuText(screen, "Start Level", menuFontCondensedExtraBold, 31.95,
-				color.Black, 593.15, 529.0)
+				uiWithAlpha(uiTextLight, a), 593.15, 529.0) // B6: was black on dark red
 		}
 	}
 

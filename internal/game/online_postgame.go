@@ -96,7 +96,7 @@ func (g *Game) updateOnlineHostPostGame() {
 		return
 	}
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	r := sourceMenuHitRect(campaignBackLocal, 638.15, 532.1, 1.86492919921875, 1.0372772216796875)
 	hit := menuHitNone
 	if r.Contains(float64(mx), float64(my)) && !g.localPostGameReady() {
@@ -149,7 +149,7 @@ func (g *Game) updateOnlineClientPostGame() {
 		g.beginMultiplayerServerBrowser()
 		return
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	r := sourceMenuHitRect(campaignBackLocal, 638.15, 532.1, 1.86492919921875, 1.0372772216796875)
 	hit := menuHitNone
 	if r.Contains(float64(mx), float64(my)) && !g.localPostGameReady() {

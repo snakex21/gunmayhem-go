@@ -165,7 +165,7 @@ func (g *Game) updateGM2CampaignMenu() {
 		return
 	}
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	x, y := float64(mx), float64(my)
 	hit := campaignHitNone
 	if g.campaignPhase == 1 {
@@ -282,7 +282,7 @@ func (g *Game) drawGM2CampaignMenu(screen *ebiten.Image) {
 			if g.campaignPhase == 3 {
 				drawSourceRaster(screen, g.assets.CampaignStartButton, 469.1, 522.15, 1, 1, a)
 				drawSourceMenuText(screen, "Start Mission", menuFontCondensedExtraBold, 30,
-					color.NRGBA{A: uint8(255 * a)}, 580, 529)
+					uiWithAlpha(uiTextLight, a), 580, 529) // B6: was black on dark red
 			}
 		}
 		return

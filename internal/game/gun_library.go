@@ -183,7 +183,7 @@ func (g *Game) updateGunLibraryMenu() {
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 		return
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	x, y := float64(mx), float64(my)
 	backRect := Rect{X: 690, Y: 16, W: 174, H: 48}
 	testRect := Rect{X: 756, Y: 514, W: 108, H: 44}

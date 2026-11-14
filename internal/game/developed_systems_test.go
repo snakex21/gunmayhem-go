@@ -58,7 +58,7 @@ func TestPortalProjectileFallbackAlwaysPlacesOnMapSurface(t *testing.T) {
 func TestPortalGunCombatHitKnocksEnemyWithoutPair(t *testing.T) {
 	target := &Player{ID: 2, Active: true, Team: 2, X: 20, Y: 0, PlayerScale: .8, DamageMulti: 1}
 	b := &Bullet{DevelopedProjectile: DevelopedProjectilePortal, X: 0, Y: -20, VX: 28, OwnerID: 1, Team: 1, Facing: 1, PortalColor: PortalBlue}
-	if !hitPortalPlayerAlongSegment(b, 0, -20, 28, -20, []*Player{target}, nil) || !b.Dead || target.VX < 24 || target.VY >= 0 {
+	if !hitPortalPlayerAlongSegment(b, 0, -20, 28, -20, []*Player{target}, nil) || !b.Dead || target.VX < portalUnpairedPush || target.VY >= 0 {
 		t.Fatalf("unpaired portal combat hit failed: bullet=%+v target=%+v", b, target)
 	}
 }
@@ -82,7 +82,8 @@ func TestOldFlameCanBurnItsOwnerForTimedSelfDamage(t *testing.T) {
 		X:                   0, Y: -20, Firepower: 1.5, OwnerID: 1, Team: 1, Facing: 1,
 		Time: 5, IgniteFrames: 150, VisualScale: 1,
 	}
-	if !hitPlayerWithFlame(b, []*Player{p}) || p.BurnTime != 150 {
+	// Flamethrower burns last burnFlamethrowerScale of IgniteFrames.
+	if !hitPlayerWithFlame(b, []*Player{p}) || p.BurnTime != flamethrowerIgniteFrames(150) {
 		t.Fatalf("self flame did not start timed burn: bullet=%+v player=%+v", b, p)
 	}
 }
@@ -143,7 +144,7 @@ func TestFlamethrowerContactIsContinuousHeatNotBulletHose(t *testing.T) {
 			t.Fatalf("flame contact %d missed target", i)
 		}
 	}
-	if p.BurnTime != 100 || p.VX < 8 || p.VX > 10 || p.FireContactCooldown == 0 {
+	if p.BurnTime != flamethrowerIgniteFrames(100) || p.VX < 8 || p.VX > 10 || p.FireContactCooldown == 0 {
 		t.Fatalf("continuous flame contact balance wrong: burn=%d vx=%.2f cooldown=%d", p.BurnTime, p.VX, p.FireContactCooldown)
 	}
 }

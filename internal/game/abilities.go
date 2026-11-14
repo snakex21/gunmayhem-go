@@ -44,7 +44,7 @@ const (
 	legacyPerkKevlar         = 17
 )
 
-// Tunables. Frames are 60 Hz simulation ticks.
+// Tunables. Frames are simulation ticks (30 TPS, main.go SetTPS(30)).
 const (
 	dashSpeed          = 17.0 // horizontal velocity set by a dash (run top speed is ~9)
 	dashAirLift        = 2.0  // an air dash cancels falling and lifts slightly
@@ -478,6 +478,7 @@ type abilityKnockbackState struct {
 	burnTick        int
 	instagibFrame   int
 	instagibPlaying bool
+	burnPanic       burnPanicSnapshot
 }
 
 // abilityWindowNeeded skips the bookkeeping when nobody has an ability that
@@ -511,6 +512,7 @@ func beginAbilityKnockbackWindow(players []*Player) []abilityKnockbackState {
 			vx: p.VX, vy: p.VY, hitNumber: p.HitNumber, lastHitBy: p.LastHitBy, hitByGrenade: p.HitByGrenade,
 			burnTime: p.BurnTime, burnPower: p.BurnPower, burnOwnerID: p.BurnOwnerID, burnDirection: p.BurnDirection,
 			burnTick: p.BurnTick, instagibFrame: p.InstagibFrame, instagibPlaying: p.InstagibPlaying,
+			burnPanic: p.burnPanicSnapshot(),
 		}
 	}
 	return out
@@ -579,6 +581,7 @@ func restoreAbilityKnockbackState(p *Player, b abilityKnockbackState) {
 	p.HitByGrenade = b.hitByGrenade
 	p.BurnTime, p.BurnPower, p.BurnOwnerID = b.burnTime, b.burnPower, b.burnOwnerID
 	p.BurnDirection, p.BurnTick = b.burnDirection, b.burnTick
+	p.restoreBurnPanic(b.burnPanic)
 	p.InstagibFrame, p.InstagibPlaying = b.instagibFrame, b.instagibPlaying
 }
 

@@ -1,17 +1,33 @@
 package game
 
 import (
+	"fmt"
 	"testing"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func TestOptionsControlHitboxesMatchSymbol972(t *testing.T) {
-	// P1 panel is Symbol972 at (50,83.85), key1 at local (55.15,101.7).
-	p, i, ok := optionsControlHitAt(50+55.15+10, 83.85+101.7+10)
-	if !ok || p != 0 || i != 0 { t.Fatalf("P1 up hit p=%d i=%d ok=%v", p, i, ok) }
-	// P4 bomb: panel x700, key6 local (78.85,247.2).
-	p, i, ok = optionsControlHitAt(700+78.85+10, 83.85+247.2+10)
-	if !ok || p != 3 || i != 5 { t.Fatalf("P4 bomb hit p=%d i=%d ok=%v", p, i, ok) }
+// Every player's seven key buttons (incl. ABILITY) are hit at their drawn rect
+// and registered in the kit with the same geometry.
+func TestOptionsControlKeyButtonsHitTheirBinding(t *testing.T) {
+	g := New()
+	g.optionsTab = optionsTabControls
+	g.runOptionsUpdate(uiInput{})
+	for p := 0; p < 4; p++ {
+		for i := range optionControlLabels {
+			r := optionsControlKeyRect(p, i)
+			gp, gi, ok := optionsControlHitAt(r.X+r.W/2, r.Y+r.H/2)
+			if !ok || gp != p || gi != i {
+				t.Fatalf("key p%d i%d hit p=%d i=%d ok=%v", p, i, gp, gi, ok)
+			}
+			it, found := g.optionsUI.item(fmt.Sprintf("opt.key.%d.%d", p, i))
+			if !found || it.rect != r {
+				t.Fatalf("key p%d i%d registered=%v rect=%+v want %+v", p, i, found, it.rect, r)
+			}
+		}
+	}
+	if _, _, ok := optionsControlHitAt(5, 5); ok {
+		t.Fatal("hit outside the key buttons")
+	}
 }
 
 func TestOptionsValidVKMatchesSourceSubset(t *testing.T) {

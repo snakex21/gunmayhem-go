@@ -166,7 +166,7 @@ func (g *Game) updateInviteCodeClipboard() {
 	copyRequested := isClipboardModifierPressed() && inpututil.IsKeyJustPressed(ebiten.KeyC)
 	if !copyRequested && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
 		g.screen == screenCustomGame && !g.customNetworkOpen && g.customPage == customPagePlayers {
-		mx, my := ebiten.CursorPosition()
+		mx, my := g.cursorPos()
 		copyRequested = customV2JoinCodeBarRect.Contains(float64(mx), float64(my))
 	}
 	if copyRequested {

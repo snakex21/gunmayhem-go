@@ -134,7 +134,7 @@ func (g *Game) drawCustomModeButtons(screen *ebiten.Image) {
 		{SourceGameModeGunGame, 357.25, 359.25, "Gun Game"},
 		{SourceGameModeInstagib, 423.1, 425.1, "1 Hit 1 Kill"},
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	lx := float64(mx) - g.customMenuX
 	ly := float64(my)
 	for _, row := range rows {

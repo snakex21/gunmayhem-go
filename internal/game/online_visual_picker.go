@@ -512,14 +512,14 @@ func (g *Game) drawOnlineCharacterChoice(dst *ebiten.Image, picker, choice int, 
 		if choice == 2 {
 			label = "TEAM B"
 		}
-		drawSourceMenuText(dst, label, menuFontTwCen, 25, color.NRGBA{A: 0xff}, r.X+25, r.Y+r.H/2-12)
+		drawSourceMenuText(dst, label, menuFontTwCen, 25, uiTextLight, r.X+25, r.Y+r.H/2-12)
 	}
 	drawSourceMenuText(dst, fmt.Sprintf("%d", choice), menuFontCondensedExtraBold, 11, color.NRGBA{R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff}, r.X+7, r.Y+r.H-18)
 }
 
 func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 25, 45, 850, 540, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xfb})
-	drawSourceMenuText(screen, onlineVisualPickerTitle(g.onlineVisualPicker), menuFontTwCen, 31, color.NRGBA{A: 0xff}, 70, 66)
+	drawSourceMenuText(screen, onlineVisualPickerTitle(g.onlineVisualPicker), menuFontUIBold, 31, uiTextLight, 70, 66)
 	drawSourceMenuText(screen, "Click the picture you want.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 70, 105)
 
 	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
@@ -597,7 +597,7 @@ func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 			if len(name) > 18 {
 				name = strings.TrimSpace(name[:18])
 			}
-			drawSourceMenuText(screen, name, menuFontCondensed, 10.5, color.NRGBA{A: 0xff}, r.X+72, r.Y+8)
+			drawSourceMenuText(screen, name, menuFontCondensed, 10.5, uiTextLight, r.X+72, r.Y+8)
 			drawSourceMenuText(screen, fmt.Sprintf("#%d", value), menuFontCondensedExtraBold, 10, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, r.X+72, r.Y+25)
 		} else {
 			g.drawOnlineMapThumb(screen, value, Rect{X: r.X + 4, Y: r.Y + 4, W: 100, H: r.H - 8})
@@ -605,7 +605,7 @@ func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 			if len(name) > 21 {
 				name = strings.TrimSpace(name[:21])
 			}
-			drawSourceMenuText(screen, name, menuFontCondensed, 11.5, color.NRGBA{A: 0xff}, r.X+112, r.Y+17)
+			drawSourceMenuText(screen, name, menuFontCondensed, 11.5, uiTextLight, r.X+112, r.Y+17)
 		}
 	}
 
@@ -615,7 +615,7 @@ func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 	if g.onlineVisualPage < g.onlineVisualMaxPage() {
 		drawDevelopedMenuButton(screen, Rect{X: 505, Y: 470, W: 150, H: 42}, "NEXT PAGE")
 	}
-	drawSourceMenuText(screen, fmt.Sprintf("PAGE %d/%d", g.onlineVisualPage+1, g.onlineVisualMaxPage()+1), menuFontTwCen, 14, color.NRGBA{A: 0xff}, 415, 482)
+	drawSourceMenuText(screen, fmt.Sprintf("PAGE %d/%d", g.onlineVisualPage+1, g.onlineVisualMaxPage()+1), menuFontTwCen, 14, uiTextLight, 415, 482)
 	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK")
 }
 
@@ -661,13 +661,13 @@ func (g *Game) drawOnlineCharacterFieldTile(dst *ebiten.Image, field int, cfg Cu
 		} else {
 			value = "A"
 		}
-		drawSourceMenuText(dst, "TEAM "+value, menuFontTwCen, 20, color.NRGBA{A: 0xff}, thumb.X+5, thumb.Y+22)
+		drawSourceMenuText(dst, "TEAM "+value, menuFontTwCen, 20, uiTextLight, thumb.X+5, thumb.Y+22)
 	}
 	if len(value) > 14 {
 		value = strings.TrimSpace(value[:14])
 	}
 	drawSourceMenuText(dst, label, menuFontCondensedExtraBold, 12.5, color.NRGBA{R: 0xff, G: 0x99, A: 0xff}, r.X+10, r.Y+12)
-	drawSourceMenuText(dst, value, menuFontTwCen, 14, color.NRGBA{A: 0xff}, r.X+10, r.Y+40)
+	drawSourceMenuText(dst, value, menuFontTwCen, 14, uiTextLight, r.X+10, r.Y+40)
 }
 
 func (g *Game) drawOnlineCharacterMini(dst *ebiten.Image, r Rect, cfg CustomPlayerConfig) {
@@ -698,7 +698,7 @@ func (g *Game) drawOnlineMapModeTile(dst *ebiten.Image, mode int, r Rect) {
 		g.drawOnlineMapThumb(dst, 1, left)
 		g.drawOnlineMapThumb(dst, gm2MapID(1), right)
 	}
-	drawSourceMenuText(dst, onlineMapRotationLabel(mode), menuFontCondensedExtraBold, 11.5, color.NRGBA{A: 0xff}, r.X+7, r.Y+49)
+	drawSourceMenuText(dst, onlineMapRotationLabel(mode), menuFontCondensedExtraBold, 11.5, uiTextLight, r.X+7, r.Y+49)
 }
 
 func (g *Game) drawOnlineWeaponModeTile(dst *ebiten.Image, mode int, r Rect) {
@@ -715,7 +715,7 @@ func (g *Game) drawOnlineWeaponModeTile(dst *ebiten.Image, mode int, r Rect) {
 		g.drawOnlineWeaponThumb(dst, 1, inner)
 		g.drawOnlineWeaponThumb(dst, 10, Rect{X: inner.X + 42, Y: inner.Y, W: inner.W, H: inner.H})
 	}
-	drawSourceMenuText(dst, onlineWeaponModeLabel(mode), menuFontCondensedExtraBold, 11.5, color.NRGBA{A: 0xff}, r.X+90, r.Y+25)
+	drawSourceMenuText(dst, onlineWeaponModeLabel(mode), menuFontCondensedExtraBold, 11.5, uiTextLight, r.X+90, r.Y+25)
 }
 
 // drawOnlineAbilityChoice is one tile of the online ABILITY / GEAR picker:

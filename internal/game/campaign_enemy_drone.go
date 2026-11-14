@@ -74,6 +74,12 @@ func (g *Game) updateDrone(e *CampaignEnemy, arena Map) {
 	if b.FireContactCooldown > 0 {
 		b.FireContactCooldown--
 	}
+	// Drones have no panic (no input to take over): fire only scorches them
+	// briefly, so the burn is capped and its jolts rattle the rotors.
+	if b.BurnTime > droneBurnMaxFrames {
+		b.BurnTime = droneBurnMaxFrames
+	}
+	b.BurnPanicTime = 0
 	b.updateBurning()
 	b.advanceInstagibTimeline()
 	if b.KillSelf {

@@ -137,8 +137,8 @@ func init() {
 	// (originals max 70+3, Tankgewehr 92) and the KS-23 point-blank load (112).
 	addLauncher(87, "RPG-7", "rpg7", 28, 42, 10, 1, DevelopedProjectileRocket, 17, 0, 190, 120)
 	addLauncher(88, "PIAT", "piat", 60, 44, 10, 2, DevelopedProjectileArcRocket, 12, 0.55, 205, 95)
-	addLauncher(89, "FGM-148 Javelin", "javelin", 45, 48, 10, 1, DevelopedProjectileTopAttack, 14, 0, 225, 98)
-	addLauncher(90, "HIMARS Strike", "himars_strike", 70, 55, 2, 1, DevelopedProjectileStrike, 24, 0, 285, 110)
+	addLauncher(89, "FGM-148 Javelin", "javelin", 45, 48, 10, 1, DevelopedProjectileTopAttack, 14, 0, 225, 90)
+	addLauncher(90, "HIMARS Strike", "himars_strike", 70, 55, 2, 1, DevelopedProjectileStrike, himarsStrikeFallSpeed, 0, 285, 110)
 
 	// Modern rifles requested for the expansion.
 	addRifle(91, "Remington ACR", "remington_acr", 4, 23, .65, 30, DevelopedFireAuto)
@@ -255,21 +255,22 @@ func init() {
 	// Deliberately unusual weapons: useful for making the expansion feel like
 	// Gun Mayhem instead of just a catalogue of near-identical rifles.
 	addSpecialProjectile(177, "Crossbow", "crossbow", 18, 40, 3, 6, DevelopedProjectileBolt, 20, .16)
-	addSpecialProjectile(178, "Compound Bow", "compound_bow", 16, 34, 2, 8, DevelopedProjectileBolt, 18, .28)
+	addSpecialProjectile(178, "Compound Bow", "compound_bow", 16, 37, 2, 8, DevelopedProjectileBolt, 18, .28)
 	addSpecialProjectile(179, "Harpoon Gun", "harpoon_gun", 28, 78, 8, 1, DevelopedProjectileBolt, 22, .06)
-	addSpecialProjectile(180, "Nail Gun", "nail_gun", 3, 11, .25, 40, DevelopedProjectileBolt, 23, .03)
-	addSpecialProjectile(181, "Flare Gun", "flare_gun", 30, 26, 3, 3, DevelopedProjectileFlare, 14, .20)
+	addSpecialProjectile(180, "Nail Gun", "nail_gun", 3, 12, .25, 40, DevelopedProjectileBolt, 23, .03)
+	addSpecialProjectile(181, "Flare Gun", "flare_gun", 30, 30, 3, 4, DevelopedProjectileFlare, 14, .20)
 	addSpecialProjectile(182, "Musket", "musket", 38, 64, 10, 1, DevelopedProjectileBullet, 30, 0)
 	addShotgun(183, "Single-Shot Sawed-Off", "single_sawedoff", 44, 11.0, 10.0, 2, 8)
 	addGrenadeLauncher(184, "Improvised Grenade Launcher", "improvised_launcher", 45, 38, 9, 2, 11)
-	addSpecialProjectile(185, "Energy Rifle", "energy_rifle", 5, 31, .2, 24, DevelopedProjectileEnergy, 34, 0)
+	addSpecialProjectile(185, "Energy Rifle", "energy_rifle", 5, 26, .2, 24, DevelopedProjectileEnergy, 34, 0)
 	addSniper(186, "Carcano M91/38", "carcano_m91_38", 25, 55, 6.5, 6, DevelopedFireSemi)
 
 	// Developed special weapons. Flamethrowers use short-lived flame particles;
 	// the Portal Gun alternates a blue/orange surface portal for its owner.
 	// A flame particle is emitted every tick, so its direct push must be much
 	// lower than a conventional bullet. Most of the readable impact comes from
-	// the short lingering burn instead of stacking full-strength hits at 60 Hz.
+	// the short lingering burn instead of stacking full-strength hits every
+	// 30 Hz tick.
 	addFlamethrower(187, "M2 Flamethrower", "m2_flamethrower", 1, 1.45, .18, 220, 13, 100)
 	addFlamethrower(188, "Flammenwerfer 35", "flammenwerfer35", 1, 1.8, .22, 190, 12, 115)
 	addPortalGun(189, "Portal Gun", "portal_gun")
@@ -285,7 +286,7 @@ func init() {
 	})
 	addSniper(191, "Gewehr 98", "gewehr98", 25, 58, 7, 5, DevelopedFireSemi)
 	addSniper(192, "Tankgewehr M1918", "tankgewehr_m1918", 60, 92, 10, 1, DevelopedFireSemi)
-	addSniper(193, "Martini-Henry", "martini_henry", 32, 68, 10, 1, DevelopedFireSemi)
+	addSniper(193, "Martini-Henry", "martini_henry", 32, 68, 10, 3, DevelopedFireSemi)
 	addSMG(194, "MP 18", "mp18", 6, 23, .8, 32, DevelopedFireAuto)
 	addSMG(195, "MP 28", "mp28", 5, 19, .75, 32, DevelopedFireAuto)
 	addSMG(196, "Erma EMP", "erma_emp", 5, 19, .7, 32, DevelopedFireAuto)

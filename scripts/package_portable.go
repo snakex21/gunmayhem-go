@@ -42,6 +42,21 @@ var gm2RuntimePreviewFiles = []string{
 	"1186.jpg", "1189.jpg", "1192.jpg", "1195.jpg",
 }
 
+var requiredLicenceFiles = []string{
+	filepath.Join("assets", "fonts", "BarlowCondensed-OFL.txt"),
+}
+
+// packageVersion is the build version build.bat passes in (GUNMAYHEM_VERSION,
+// else the VERSION it resolved), so MULTIPLAYER_TEST.txt matches the exe.
+func packageVersion() string {
+	for _, key := range []string{"GUNMAYHEM_VERSION", "VERSION"} {
+		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+			return v
+		}
+	}
+	return "dev"
+}
+
 func copyFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
@@ -271,6 +286,13 @@ func main() {
 	if err := copyDir(filepath.Join(root, "assets"), filepath.Join(outRoot, "assets")); err != nil {
 		panic(err)
 	}
+	// The UI font (Barlow Condensed) is embedded in GunMayhem.exe; its SIL OFL
+	// licence must ship beside the binary.
+	for _, licence := range requiredLicenceFiles {
+		if info, err := os.Stat(filepath.Join(outRoot, licence)); err != nil || info.Size() == 0 {
+			panic(fmt.Errorf("required licence file missing from package: %s", licence))
+		}
+	}
 	// Keep the unpacked GM2/FFDec source beside the repository for development,
 	// but never ship that source tree. Curate only the exact runtime sprites,
 	// previews and transitive XFL metadata needed by maps, weapons and cosmetics.
@@ -324,7 +346,9 @@ PLIKI:
 - data/network.log - log diagnostyczny multiplayera,
 - MULTIPLAYER.md - dokladniejszy opis multiplayera.
 
-Wersja paczki: v0.16.0 / Windows x64, LAN + eksperymentalny Internet Quick Tunnel.
+- assets/fonts/BarlowCondensed-OFL.txt - licencja SIL OFL czcionki interfejsu.
+
+Wersja paczki: `+packageVersion()+` / Windows x64, LAN + eksperymentalny Internet Quick Tunnel.
 `) + "\r\n"
 	if err := os.WriteFile(filepath.Join(outRoot, "MULTIPLAYER_TEST.txt"), []byte(instructions), 0o644); err != nil {
 		panic(err)

@@ -623,9 +623,9 @@ func spawnMolotovFire(arena Map, g *Grenade, players []*Player, patches *[]FireP
 		if p.X < g.X {
 			dir = -1
 		}
+		// BLAST SHIELD halves the burn inside igniteWithPower and the shove here.
 		frames, shove, lift := 165, 5.5, 2.8
 		if p.PerkNumber == 6 {
-			frames = int(float64(frames) * molotovBlastShield)
 			shove *= molotovBlastShield
 			lift *= molotovBlastShield
 		}
@@ -686,9 +686,9 @@ func updateFirePatches(patches []FirePatch, players []*Player) {
 		dir := fireEjectDirection(p, patches, source)
 		frames, power, push, lift := 125, 18.0, 5.5, 4.2
 		if p.PerkNumber == 6 {
-			// BLAST SHIELD halves Molotov fire (shorter burn, half the contact
-			// pop). Shield powerup immunity is handled by igniteWithPower.
-			frames = int(float64(frames) * molotovBlastShield)
+			// BLAST SHIELD halves Molotov fire: the burn (and its panic jolts)
+			// inside igniteWithPower, the contact pop here. Shield powerup
+			// immunity is handled by igniteWithPower.
 			push *= molotovBlastShield
 			lift *= molotovBlastShield
 		}

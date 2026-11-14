@@ -205,6 +205,11 @@ func (g *Game) customV2HitAt(x, y float64) int {
 				return menuHitCustomV2TabPlayers
 			}
 		}
+		// B2: the host's RULES overlay (map rotation, weapon rule, blocklists)
+		// is reachable from every wizard step.
+		if customSessionRulesRect.Contains(x, y) {
+			return menuHitCustomSessionRules
+		}
 	}
 	switch {
 	case customV2BackRect.Contains(x, y):
@@ -324,6 +329,11 @@ func (g *Game) activateCustomV2Hit(hit int) {
 	case hit == menuHitCustomSessionOnline:
 		g.customOnlineMode = true
 		g.returnToOnlineServerBrowser()
+	case hit == menuHitCustomSessionRules:
+		if g.customOnlineMode && g.netplay != nil && g.netplay.mode == netplayHost {
+			g.onlineRulesOpen = true
+			g.menuPressed = menuHitNone
+		}
 	case hit == menuHitCustomV2TabSession:
 		if g.customOnlineMode && g.netplay != nil && g.netplay.mode == netplayHost {
 			g.backToOnlineSessionSetupFromWizard()
@@ -496,7 +506,7 @@ func (g *Game) updateCustomV2MapThumbPreload() {
 
 func (g *Game) updateCustomGameV2() {
 	g.updateCustomWarning()
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	x, y := float64(mx), float64(my)
 
 	if g.customNetworkOpen {
@@ -710,6 +720,11 @@ func (g *Game) drawCustomV2OnlineShell(screen *ebiten.Image) {
 			state = 1
 		}
 		drawOnlineWizardStep(screen, customV2OnlineStepRects[i], fmt.Sprintf("%d", i+1), labels[i], state)
+	}
+
+	if g.netplay != nil && g.netplay.mode == netplayHost {
+		// B2: the RULES button only used to exist on the retired local shell.
+		drawCustomSessionButton(screen, customSessionRulesRect, "RULES", g.customOnlineRulesOverlayActive(), true)
 	}
 
 	ebitenutil.DrawRect(screen, customV2BackRect.X, customV2BackRect.Y, customV2BackRect.W, customV2BackRect.H,
@@ -973,5 +988,12 @@ func (g *Game) drawCustomGameV2(screen *ebiten.Image) {
 	if g.customRulesOpen {
 		g.customMenuX = customPageTargetX(customPageGame)
 		g.drawCustomModifiersOverlay(screen)
+	}
+	// B2: online rules, blocklists, character editor and pickers take input
+	// whenever one is open (updateCustomGameV2), so they must also be drawn,
+	// on top of the page they cover.
+	if g.customOnlineRulesOverlayActive() {
+		uiFillRect(screen, Rect{W: ScreenWidth, H: ScreenHeight}, uiScrim)
+		g.drawMultiplayerLobby(screen)
 	}
 }

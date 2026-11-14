@@ -39,7 +39,7 @@ func (g *Game) updateCreditsMenu() {
 		g.beginFade(screenMainMenu, fadePurposeScreen)
 		return
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	hit := creditsHitAt(float64(mx), float64(my))
 
 	// Source credit links are onPress, while Back is onRelease.

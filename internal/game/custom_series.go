@@ -164,7 +164,7 @@ func (g *Game) updateSeriesSummaryMenu() {
 		}
 		return
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	button := Rect{X: 615, Y: 525, W: 240, H: 48}
 	hit := menuHitNone
 	if button.Contains(float64(mx), float64(my)) {

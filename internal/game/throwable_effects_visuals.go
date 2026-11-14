@@ -249,6 +249,7 @@ func (g *Game) drawPlayerSilhouette(screen *ebiten.Image, drawP *Player, r, gr, 
 // drawPlayerStatusEffects: blinded players other than this screen's viewer
 // get a white bubble and a white-hot sprite; coughing players emit puffs.
 func (g *Game) drawPlayerStatusEffects(screen *ebiten.Image) {
+	g.drawBurningPanicAll(screen)
 	viewer := g.viewerPlayerID()
 	for _, p := range g.players {
 		if p == nil || !p.Active {
@@ -334,6 +335,8 @@ func (g *Game) drawHUDStatusEffects(screen *ebiten.Image, p *Player, x, y float6
 		ebitenutil.DrawRect(screen, barX, y+26, barW, 9, color.NRGBA{A: 0xb0})
 		ebitenutil.DrawRect(screen, barX+1, y+27, (barW-2)*frac, 7, color.NRGBA{R: 0xff, G: 0xff, B: 0xe0, A: 0xff})
 		drawSourceHUDText(screen, "BLINDED", 9, color.NRGBA{R: 0x22, G: 0x22, B: 0x22, A: 0xff}, barX+3, y+25)
+	} else if p.BurnTime > 0 {
+		drawHUDBurning(screen, p, x, y)
 	} else if p.TearGasTime > 0 {
 		frac := float64(p.TearGasTime) / tearGasLingerFrames
 		ebitenutil.DrawRect(screen, barX, y+26, barW, 7, color.NRGBA{A: 0xa0})

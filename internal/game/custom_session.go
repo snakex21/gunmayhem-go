@@ -440,9 +440,8 @@ func (g *Game) drawCustomSessionControls(screen *ebiten.Image) {
 		g.drawCustomNetworkPanel(screen)
 		return
 	}
-	if g.customOnlineRulesOverlayActive() {
-		g.drawMultiplayerLobby(screen)
-	}
+	// The online rules/picker overlays are drawn last by drawCustomGameV2, on
+	// top of the page content (drawing them here put them underneath it).
 }
 
 func (g *Game) customOnlineRulesOverlayActive() bool {
@@ -708,7 +707,7 @@ func (g *Game) removeOnlineCustomSlot(slot int) {
 func (g *Game) updateOnlineClientCustomGame() {
 	g.customOnlineMode = true
 	g.onlineMatchSetup = true
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	id := g.onlineLocalPlayerID()
 	if id < 2 || id > maxOnlinePlayers {
 		return

@@ -157,7 +157,7 @@ func TestLateDevelopedWeaponMechanicsMatchTheirModels(t *testing.T) {
 		pellets  int
 	}{
 		192: {DevelopedCategorySniper, DevelopedFireSemi, 1, 0},
-		193: {DevelopedCategorySniper, DevelopedFireSemi, 1, 0},
+		193: {DevelopedCategorySniper, DevelopedFireSemi, 3, 0}, // breech-loader: 3 rounds per pickup
 		198: {DevelopedCategoryLMG, DevelopedFireBurst2, 50, 0},
 		204: {DevelopedCategoryShotgun, DevelopedFireSemi, 5, 7},
 		213: {DevelopedCategoryRifle, DevelopedFireBurst3, 45, 0},
@@ -504,12 +504,13 @@ func TestFlamethrowerBurnKeepsPushingAfterStreamStops(t *testing.T) {
 	target := &Player{ID: 2, Active: true, DamageMulti: 1}
 	target.igniteWithPower(1, 1, 60, 4.2)
 	// Remove the direct-hit impulse. Everything observed below must come from
-	// the lingering fire status, with no additional projectile or ignition.
+	// the lingering fire status (burning panic jolts, burn_panic.go), with no
+	// additional projectile or ignition.
 	target.VX, target.VY = 0, 0
 	for i := 0; i < 20; i++ {
 		target.updateBurning()
 	}
-	if target.BurnTime != 40 || target.VX < 4 || target.VY > -2 || target.LastHitBy != 1 || target.HitNumber < 2 {
+	if target.BurnTime != 40 || target.VX == 0 || target.VY >= 0 || target.LastHitBy != 1 || target.HitNumber < 2 {
 		t.Fatalf("lingering flamethrower burn did not push: burn=%d vx=%.2f vy=%.2f hits=%d owner=%d", target.BurnTime, target.VX, target.VY, target.HitNumber, target.LastHitBy)
 	}
 }

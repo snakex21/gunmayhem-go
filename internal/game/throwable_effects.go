@@ -536,6 +536,9 @@ func aimDisturbanceDegrees(p *Player, smokePenalty bool) float64 {
 	if p != nil && p.TearGasTime > 0 {
 		deg += tearGasSpreadDeg
 	}
+	if p != nil && p.BurnTime > 0 {
+		deg += burnAimShakeDegrees // burning panic: shaky hands
+	}
 	if smokePenalty {
 		deg += smokeSpreadDegrees
 	}

@@ -64,7 +64,7 @@ func (g *Game) initCampaignPlayerSetup() {
 }
 
 func (g *Game) updateCampaignPlayerCards() {
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	mouseX, mouseY := float64(mx), float64(my)
 	for i := range g.campaignPlayers {
 		target := 100.0

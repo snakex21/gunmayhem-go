@@ -181,13 +181,34 @@ type Game struct {
 	loudnessEQ              bool
 	allowCheats             bool
 	quality                 int
-	optionsPressed          int
-	optionsDraggingSlider   int
 	audio                   *sourceAudioEngine
 	audioStarted            bool
 	controlConfigs          [4]Controls
 	optionsKeyCapturePlayer int
 	optionsKeyCaptureIndex  int
+	optionsTab              int
+	optionsUI               uiState
+	uiLastCursorX           float64
+	uiLastCursorY           float64
+
+	// Local display settings (ui_display.go). Presentation only: never part of
+	// the simulation, the netplay snapshot or the host's authority.
+	displayScaling     int
+	displayFilter      int
+	displayVSync       bool
+	displayScreenShake bool
+	displayPowerSave   bool
+	displayMonitor     int
+	displayCustomW     int
+	displayCustomH     int
+	finalGeoValid      bool
+	finalEbitenGeo     ebiten.GeoM
+	finalGeo           ebiten.GeoM
+	shakeX             float64
+	shakeTick          int64
+	shakeSeen          []shakeBlastKey
+	powerSaveDrawn     bool
+	powerSaveTick      int64
 
 	gunLibrarySelected          int
 	gunLibraryPressed           int
@@ -325,6 +346,10 @@ func New() *Game {
 		musicVolume:               1,
 		soundVolume:               1,
 		quality:                   2,
+		displayVSync:              true,
+		displayScreenShake:        true,
+		windowedWidth:             ScreenWidth,
+		windowedHeight:            ScreenHeight,
 		audio:                     newSourceAudioEngine(),
 		multiplayerAddress:        "127.0.0.1:7777",
 		multiplayerSessionName:    "My Gun Mayhem Game",
@@ -604,6 +629,8 @@ func (g *Game) Update() error {
 	if endAbilityKnockbackWindow(targets, blastKnockback, true) {
 		shieldBroke = true
 	}
+	// Portals expire once their owner no longer holds the Portal Gun.
+	g.portals = prunePortals(g.portals, targets)
 	updatePortalTravel(g.portals, g.players, g.grenades)
 	if grenadeVX != nil {
 		for i, p := range targets {
@@ -930,6 +957,8 @@ func (g *Game) updatePlayerWeapon(p *Player) {
 			ammoBefore = p.Weapon.Bullets
 		}
 		updateWeapon(p, &g.bullets, &g.shells, &g.flashes)
+		// HIMARS: drop on the nearest enemy ahead and mark the landing point.
+		g.aimHimarsStrikes(p, g.bullets[bulletsBefore:])
 		// Flashbang blindness and smoke throw this frame's shots off.
 		g.applyAimDisturbance(p, g.bullets[bulletsBefore:])
 		if g.customModifierActive(customModifierNoReload) && p.ShotsFired > shotsBefore && ammoBefore <= 1 {
@@ -945,7 +974,7 @@ func (g *Game) updatePlayerWeapon(p *Player) {
 		playSound := true
 		if spec, ok := developedWeaponSpec(weaponBefore); ok && spec.Projectile == DevelopedProjectileFlame {
 			// The flame loop is built from overlapping short bursts. Starting a
-			// new PCM clip every 60 Hz tick would stack six copies and clip.
+			// new PCM clip every (30 Hz) tick would stack six copies and clip.
 			playSound = p.ShotsFired%6 == 1
 		}
 		if playSound {
@@ -1015,6 +1044,9 @@ func (g *Game) worldX(x float64) float64 { return x + g.cameraX }
 func (g *Game) worldY(y float64) float64 { return y + g.cameraY }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.powerSaveSkipDraw() {
+		return
+	}
 	setSourceRenderQuality(g.quality)
 	// Start desktop audio only after Ebitengine has entered its real draw loop;
 	// unit tests construct Game values without opening an audio device.
@@ -1039,6 +1071,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	g.assets.EnsureGameplay()
 	g.assets.EnsureScene(g.arena.Number)
+	g.updateScreenShake()
 
 	// Symbol 1391 source order/matrices: scene1 (0,0), scene2 (0,0),
 	// gameplay, foreground (51.1,192.6). SourceRaster preserves each child
@@ -1237,8 +1270,13 @@ func (g *Game) drawCombat(screen *ebiten.Image) {
 			drawSourceRasterRot(screen, g.assets.DynamiteFX, g.worldX(fx.X), g.worldY(fx.Y), fx.Scale, fx.Scale, fx.Rotation, fx.Alpha)
 		}
 	}
+	particles := g.renderProfile().blastParticles
 	for _, fx := range g.blastFX {
 		if fx.Dead || fx.Alpha <= 0.01 {
+			continue
+		}
+		if !particles && blastKindIsQualityParticle(fx.Kind) {
+			// QUALITY LOW: the original skipped these optional particles.
 			continue
 		}
 		if raster := g.assets.ExplosionFX[fx.Kind]; raster != nil {

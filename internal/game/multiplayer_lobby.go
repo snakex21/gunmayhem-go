@@ -30,9 +30,11 @@ const (
 
 const (
 	menuHitOnlineCharacterBase = 6400
-	menuHitOnlineBlockBase     = 6600
-	menuHitOnlinePerkBase      = 6800
-	menuHitOnlineAbilityBase   = 6850
+	// The weapon blocklist indexes every weapon (200+), so it needs its own
+	// range: at 6600 index 201+ collided with the perk codes at 6800.
+	menuHitOnlineBlockBase   = 17000
+	menuHitOnlinePerkBase    = 6800
+	menuHitOnlineAbilityBase = 6850
 )
 
 const (
@@ -157,7 +159,7 @@ func (g *Game) updateMultiplayerLobby() {
 		return
 	}
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	x, y := float64(mx), float64(my)
 	var hit int
 	switch {
@@ -453,7 +455,7 @@ func drawLobbySlot(screen *ebiten.Image, r Rect, title, detail, config string, o
 		bg = color.NRGBA{R: 0x55, G: 0x45, B: 0x2d, A: 0xff}
 	}
 	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, bg)
-	drawSourceMenuText(screen, title, menuFontTwCen, 20, color.NRGBA{A: 0xff}, r.X+12, r.Y+10)
+	drawSourceMenuText(screen, title, menuFontTwCen, 20, uiTextLight, r.X+12, r.Y+10)
 	detailColor := color.NRGBA{R: 0xaa, G: 0xaa, B: 0xaa, A: 0xff}
 	if occupied {
 		detailColor = color.NRGBA{R: 0xee, G: 0xee, B: 0xee, A: 0xff}
@@ -524,14 +526,14 @@ func (g *Game) drawMultiplayerLobby(screen *ebiten.Image) {
 	}
 
 	ebitenutil.DrawRect(screen, 25, 45, 850, 540, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf2})
-	drawSourceMenuText(screen, "ONLINE LOBBY", menuFontTwCen, 36, color.NRGBA{A: 0xff}, 55, 62)
+	drawSourceMenuText(screen, "ONLINE LOBBY", menuFontUIBold, 36, uiTextLight, 55, 62)
 
 	count := g.onlineConnectedPlayerCount()
 	role := "CLIENT"
 	if g.multiplayerLobbyIsHost() {
 		role = "HOST"
 	}
-	drawSourceMenuText(screen, fmt.Sprintf("%s   PLAYERS %d/%d   JOIN-IN-PROGRESS ON", role, count, maxOnlinePlayers), menuFontCondensedExtraBold, 16, color.NRGBA{A: 0xff}, 55, 102)
+	drawSourceMenuText(screen, fmt.Sprintf("%s   PLAYERS %d/%d   JOIN-IN-PROGRESS ON", role, count, maxOnlinePlayers), menuFontCondensedExtraBold, 16, uiTextLight, 55, 102)
 
 	localID := g.onlineLocalPlayerID()
 	positions := [4]Rect{
@@ -581,9 +583,9 @@ func (g *Game) drawMultiplayerLobby(screen *ebiten.Image) {
 		}
 	}
 
-	drawSourceMenuText(screen, "LIVE MATCH SETTINGS", menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 55, 360)
-	drawSourceMenuText(screen, fmt.Sprintf("MODE %d   LIVES %d   MAP %s", g.customMode, g.customLives, g.onlineMapSummary()), menuFontCondensed, 14, color.NRGBA{A: 0xff}, 55, 386)
-	drawSourceMenuText(screen, g.onlineRulesSummary(), menuFontCondensed, 13.5, color.NRGBA{A: 0xff}, 55, 410)
+	drawSourceMenuText(screen, "LIVE MATCH SETTINGS", menuFontCondensedExtraBold, 15, uiTextLight, 55, 360)
+	drawSourceMenuText(screen, fmt.Sprintf("MODE %d   LIVES %d   MAP %s", g.customMode, g.customLives, g.onlineMapSummary()), menuFontCondensed, 14, uiTextLight, 55, 386)
+	drawSourceMenuText(screen, g.onlineRulesSummary(), menuFontCondensed, 13.5, uiTextLight, 55, 410)
 	drawSourceMenuText(screen, "Host settings are mirrored live to every connected player.", menuFontCondensed, 12.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 55, 438)
 	if g.multiplayerLobbyIsHost() {
 		sessionName := g.multiplayerSessionName
@@ -614,7 +616,7 @@ func (g *Game) drawMultiplayerLobby(screen *ebiten.Image) {
 				color.NRGBA{R: 0xb7, G: 0xbc, B: 0xc4, A: 0xff}, 612, 511)
 		}
 	} else {
-		drawSourceMenuText(screen, "WAITING FOR HOST", menuFontCondensedExtraBold, 14, color.NRGBA{A: 0xff}, 650, 542)
+		drawSourceMenuText(screen, "WAITING FOR HOST", menuFontCondensedExtraBold, 14, uiTextLight, 650, 542)
 	}
 }
 
@@ -622,12 +624,12 @@ func (g *Game) drawOnlineCharacterEditor(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 25, 45, 850, 540, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf8})
 	id := g.onlineLocalPlayerID()
 	if id < 1 || id > 4 {
-		drawSourceMenuText(screen, "WAITING FOR PLAYER SLOT...", menuFontTwCen, 28, color.NRGBA{A: 0xff}, 170, 250)
+		drawSourceMenuText(screen, "WAITING FOR PLAYER SLOT...", menuFontTwCen, 28, uiTextLight, 170, 250)
 		drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK")
 		return
 	}
 	cfg := g.customPlayers[id-1]
-	drawSourceMenuText(screen, fmt.Sprintf("PLAYER %d - CHARACTER", id), menuFontTwCen, 32, color.NRGBA{A: 0xff}, 55, 65)
+	drawSourceMenuText(screen, fmt.Sprintf("PLAYER %d - CHARACTER", id), menuFontUIBold, 32, uiTextLight, 55, 65)
 	drawSourceMenuText(screen, "Click a picture to open the visual selector.", menuFontCondensed, 13.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 405, 100)
 
 	preview := ebiten.NewImage(300, 360)
@@ -640,20 +642,20 @@ func (g *Game) drawOnlineCharacterEditor(screen *ebiten.Image) {
 	for field := 0; field < onlineCharFieldCount; field++ {
 		g.drawOnlineCharacterFieldTile(screen, field, cfg)
 	}
-	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO LOBBY")
+	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO SETUP")
 }
 
 func (g *Game) drawOnlineRules(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 25, 45, 850, 540, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf8})
-	drawSourceMenuText(screen, "ONLINE MATCH RULES", menuFontTwCen, 31, color.NRGBA{A: 0xff}, 60, 62)
+	drawSourceMenuText(screen, "ONLINE MATCH RULES", menuFontUIBold, 31, uiTextLight, 60, 62)
 	drawSourceMenuText(screen, "Choose by clicking the pictures. Changes are mirrored live.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 60, 101)
 
-	drawSourceMenuText(screen, "MAP ROTATION", menuFontCondensedExtraBold, 13, color.NRGBA{A: 0xff}, 60, 112)
+	drawSourceMenuText(screen, "MAP ROTATION", menuFontCondensedExtraBold, 13, uiTextLight, 60, 112)
 	for mode := 0; mode < 4; mode++ {
 		g.drawOnlineMapModeTile(screen, mode, Rect{X: 60 + float64(mode)*195, Y: 125, W: 180, H: 72})
 	}
 
-	drawSourceMenuText(screen, "WEAPON RULE", menuFontCondensedExtraBold, 13, color.NRGBA{A: 0xff}, 80, 207)
+	drawSourceMenuText(screen, "WEAPON RULE", menuFontCondensedExtraBold, 13, uiTextLight, 80, 207)
 	for mode := 0; mode < 3; mode++ {
 		g.drawOnlineWeaponModeTile(screen, mode, Rect{X: 80 + float64(mode)*250, Y: 220, W: 230, H: 70})
 	}
@@ -663,7 +665,7 @@ func (g *Game) drawOnlineRules(screen *ebiten.Image) {
 		drawOnlineSelectedFrame(screen, r, false)
 		g.drawOnlineMapThumb(screen, g.customMap, Rect{X: r.X + 5, Y: r.Y + 5, W: 105, H: r.H - 10})
 		drawSourceMenuText(screen, "FIXED MAP", menuFontCondensedExtraBold, 11.5, color.NRGBA{R: 0xff, G: 0x99, A: 0xff}, r.X+122, r.Y+10)
-		drawSourceMenuText(screen, onlineMapNumberLabel(g.customMap), menuFontTwCen, 13.5, color.NRGBA{A: 0xff}, r.X+122, r.Y+31)
+		drawSourceMenuText(screen, onlineMapNumberLabel(g.customMap), menuFontTwCen, 13.5, uiTextLight, r.X+122, r.Y+31)
 	}
 
 	if g.onlineWeaponMode == onlineWeaponsOnlyOne {
@@ -671,7 +673,7 @@ func (g *Game) drawOnlineRules(screen *ebiten.Image) {
 		drawOnlineSelectedFrame(screen, r, false)
 		g.drawOnlineWeaponThumb(screen, g.onlineOnlyWeapon, Rect{X: r.X + 5, Y: r.Y + 5, W: 105, H: r.H - 10})
 		drawSourceMenuText(screen, "ONLY WEAPON", menuFontCondensedExtraBold, 11.5, color.NRGBA{R: 0xff, G: 0x99, A: 0xff}, r.X+122, r.Y+10)
-		drawSourceMenuText(screen, weaponDisplayName(g.onlineOnlyWeapon), menuFontTwCen, 13, color.NRGBA{A: 0xff}, r.X+122, r.Y+31)
+		drawSourceMenuText(screen, weaponDisplayName(g.onlineOnlyWeapon), menuFontTwCen, 13, uiTextLight, r.X+122, r.Y+31)
 	} else if g.onlineWeaponMode == onlineWeaponsBlocklist {
 		drawDevelopedMenuButton(screen, Rect{X: 460, Y: 305, W: 360, H: 65}, fmt.Sprintf("WEAPON BLOCKLIST  %d BLOCKED", g.blockedOnlineWeaponCount()))
 	}
@@ -689,12 +691,12 @@ func (g *Game) drawOnlineRules(screen *ebiten.Image) {
 	drawDevelopedMenuButton(screen, Rect{X: 315, Y: 390, W: 220, H: 52}, power)
 	drawDevelopedMenuButton(screen, Rect{X: 550, Y: 390, W: 270, H: 52}, fmt.Sprintf("PERK/ABILITY BLOCKLIST %d", g.blockedOnlinePerkCount()+g.blockedOnlineAbilityCount()))
 	drawSourceMenuText(screen, "Selected tiles are outlined in orange.", menuFontCondensed, 12, color.NRGBA{R: 0xaa, G: 0xaa, B: 0xaa, A: 0xff}, 80, 461)
-	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO LOBBY")
+	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO SETUP")
 }
 
 func (g *Game) drawOnlineBlocklist(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 25, 45, 850, 540, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf8})
-	drawSourceMenuText(screen, "WEAPON BLOCKLIST", menuFontTwCen, 30, color.NRGBA{A: 0xff}, 80, 65)
+	drawSourceMenuText(screen, "WEAPON BLOCKLIST", menuFontUIBold, 30, uiTextLight, 80, 65)
 	drawSourceMenuText(screen, "Click a weapon to allow/block it. Dark red = blocked.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 80, 102)
 
 	weapons := onlineAllWeaponNumbers()
@@ -715,24 +717,24 @@ func (g *Game) drawOnlineBlocklist(screen *ebiten.Image) {
 		if len(name) > 16 {
 			name = strings.TrimSpace(name[:16])
 		}
-		drawSourceMenuText(screen, name, menuFontCondensed, 10.5, color.NRGBA{A: 0xff}, r.X+66, r.Y+7)
+		drawSourceMenuText(screen, name, menuFontCondensed, 10.5, uiTextLight, r.X+66, r.Y+7)
 		drawSourceMenuText(screen, fmt.Sprintf("#%d", n), menuFontCondensedExtraBold, 9.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, r.X+66, r.Y+23)
 	}
 
 	drawDevelopedMenuButton(screen, Rect{X: 230, Y: 470, W: 150, H: 42}, "PREV PAGE")
-	drawSourceMenuText(screen, fmt.Sprintf("PAGE %d/%d", g.onlineBlocklistPage+1, g.onlineBlocklistMaxPage()+1), menuFontTwCen, 15, color.NRGBA{A: 0xff}, 410, 481)
+	drawSourceMenuText(screen, fmt.Sprintf("PAGE %d/%d", g.onlineBlocklistPage+1, g.onlineBlocklistMaxPage()+1), menuFontTwCen, 15, uiTextLight, 410, 481)
 	drawDevelopedMenuButton(screen, Rect{X: 520, Y: 470, W: 150, H: 42}, "NEXT PAGE")
 	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO RULES")
 }
 
 func (g *Game) drawOnlinePerkBlocklist(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 25, 45, 850, 540, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf8})
-	drawSourceMenuText(screen, "PERK / ABILITY BLOCKLIST", menuFontTwCen, 30, color.NRGBA{A: 0xff}, 170, 70)
+	drawSourceMenuText(screen, "PERK / ABILITY BLOCKLIST", menuFontUIBold, 30, uiTextLight, 170, 70)
 	drawSourceMenuText(screen, "Click a perk or ability to allow/block it. Blocked ones cannot be used by any player.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 170, 104)
 
 	blocked := color.NRGBA{R: 0x65, G: 0x2e, B: 0x2e, A: 0xff}
 	allowed := color.NRGBA{R: 0x46, G: 0x4d, B: 0x57, A: 0xff}
-	drawSourceMenuText(screen, "PERKS", menuFontCondensedExtraBold, 13, color.NRGBA{A: 0xff}, 40, 124)
+	drawSourceMenuText(screen, "PERKS", menuFontCondensedExtraBold, 13, uiTextLight, 40, 124)
 	for i, perk := range selectablePerkNumbers() {
 		r := onlinePerkBlocklistRect(i)
 		clr := allowed
@@ -741,11 +743,11 @@ func (g *Game) drawOnlinePerkBlocklist(screen *ebiten.Image) {
 		}
 		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, clr)
 		drawSetupPerkThumb(screen, perk, Rect{X: r.X + 3, Y: r.Y + 3, W: 62, H: r.H - 6}, 1)
-		drawSourceMenuText(screen, onlinePerkName(perk), menuFontTwCen, 11.5, color.NRGBA{A: 0xff}, r.X+66, r.Y+12)
+		drawSourceMenuText(screen, onlinePerkName(perk), menuFontTwCen, 11.5, uiTextLight, r.X+66, r.Y+12)
 		drawSourceMenuText(screen, fmt.Sprintf("#%d", perk), menuFontCondensedExtraBold, 9.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, r.X+66, r.Y+30)
 	}
 
-	drawSourceMenuText(screen, "ABILITIES / GEAR", menuFontCondensedExtraBold, 13, color.NRGBA{A: 0xff}, 40, 282)
+	drawSourceMenuText(screen, "ABILITIES / GEAR", menuFontCondensedExtraBold, 13, uiTextLight, 40, 282)
 	for i, ability := range realAbilityNumbers() {
 		r := onlineAbilityBlocklistRect(i)
 		clr := allowed
@@ -754,10 +756,10 @@ func (g *Game) drawOnlinePerkBlocklist(screen *ebiten.Image) {
 		}
 		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, clr)
 		drawAbilityIcon(screen, ability, r.X+20, r.Y+r.H/2, 11, 1)
-		drawSourceMenuText(screen, abilityName(ability), menuFontTwCen, 12, color.NRGBA{A: 0xff}, r.X+38, r.Y+r.H/2-8)
+		drawSourceMenuText(screen, abilityName(ability), menuFontTwCen, 12, uiTextLight, r.X+38, r.Y+r.H/2-8)
 	}
 
-	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d PERKS, %d ABILITIES", g.blockedOnlinePerkCount(), g.blockedOnlineAbilityCount()), menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 40, 535)
+	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d PERKS, %d ABILITIES", g.blockedOnlinePerkCount(), g.blockedOnlineAbilityCount()), menuFontCondensedExtraBold, 15, uiTextLight, 40, 535)
 	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO RULES")
 }
 

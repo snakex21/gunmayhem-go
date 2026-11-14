@@ -27,8 +27,11 @@ const (
 	menuHitPlayerHatPageBase    = 7000
 	menuHitPlayerTeamBase       = 7100
 	menuHitPlayerColorBase      = 7200
-	menuHitPlayerCustomGunBase  = 8000
-	menuHitPlayerThrowableBase  = 16000
+	// B1: was 8000, whose 8000-8927 range overlapped the mode options (8001-8007),
+	// modifiers (8200+) and chaos (8700+). Every family now owns a disjoint
+	// range, see TestCustomGameHitCodesAreUnique.
+	menuHitPlayerCustomGunBase = 30000
+	menuHitPlayerThrowableBase = 16000
 )
 
 type customSelectionItem struct {

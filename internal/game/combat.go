@@ -51,6 +51,9 @@ type Bullet struct {
 	Lifetime            int
 	IgniteFrames        int
 	PortalColor         int
+	// GuidanceLost: a Javelin in its terminal phase (or one that lost its
+	// target) no longer steers; it only falls.
+	GuidanceLost bool `cbor:",omitempty"`
 
 	Time        int
 	Alpha       float64
@@ -554,6 +557,10 @@ func updateJavelinGuidance(b *Bullet, players []*Player) {
 		b.VY += .42
 		return
 	}
+	if b.GuidanceLost {
+		b.VY += .35
+		return
+	}
 
 	var target *Player
 	bestDistance := math.MaxFloat64
@@ -587,13 +594,29 @@ func updateJavelinGuidance(b *Bullet, players []*Player) {
 	if distance < 1 {
 		return
 	}
-	const guidedSpeed = 20.0
-	desiredVX := dx / distance * guidedSpeed
-	desiredVY := dy / distance * guidedSpeed
+	if distance < javelinTerminalDistance && b.Time > javelinTerminalMinTime {
+		// Terminal phase: the seeker commits to its current line, so a target
+		// that zigzags or jumps at the last moment can still dodge.
+		b.GuidanceLost = true
+		b.VY += .35
+		return
+	}
+	desiredVX := dx / distance * javelinGuidedSpeed
+	desiredVY := dy / distance * javelinGuidedSpeed
 	// Smooth steering preserves the top-attack arc instead of snapping.
-	b.VX += (desiredVX - b.VX) * .22
-	b.VY += (desiredVY - b.VY) * .22
+	b.VX += (desiredVX - b.VX) * javelinSteerRate
+	b.VY += (desiredVY - b.VY) * javelinSteerRate
 }
+
+// Javelin guidance tuning (30 TPS ticks). Speed 18 / steer .16 with a
+// terminal phase inside 130 px keeps standing and running targets hit, while
+// zigzagging or jumping targets can dodge it at medium and long range.
+const (
+	javelinGuidedSpeed      = 18.0
+	javelinSteerRate        = .16
+	javelinTerminalDistance = 130.0
+	javelinTerminalMinTime  = 16
+)
 
 func hitDevelopedPlayerAlongSegment(arena Map, b *Bullet, x0, y0, x1, y1 float64, players []*Player, explosions *[]Explosion, blast *[]BlastEffect) bool {
 	distance := math.Max(math.Abs(x1-x0), math.Abs(y1-y0))
@@ -703,6 +726,12 @@ func explodeDevelopedProjectileWithDirectHit(b *Bullet, direct *Player, players 
 			}
 			p.VX += dir * push
 			p.VY -= push * 0.15
+		} else if b.DevelopedProjectile == DevelopedProjectileStrike && p.scoreOwnerID() != b.OwnerID && b.Facing != 0 {
+			// A HIMARS strike always pushes its victims along the shooter's
+			// facing, so one landing just in front of a target can never pull
+			// it back toward the shooter.
+			p.VX += float64(b.Facing) * math.Abs(math.Cos(angle)) * push
+			p.VY += math.Sin(angle) * push * 0.7
 		} else {
 			p.VX += math.Cos(angle) * push
 			p.VY += math.Sin(angle) * push * 0.7
@@ -846,11 +875,14 @@ func hitPlayerWithFlame(b *Bullet, players []*Player) bool {
 		}
 		wasBurning := p.BurnTime > 0
 		burnPower := math.Max(16, b.Firepower*12)
-		p.igniteWithPower(b.OwnerID, b.Facing, b.IgniteFrames, burnPower)
+		// Flamethrower burns are shorter than Molotov / flare burns so the
+		// panic they cause cannot dominate (burnFlamethrowerScale).
+		p.igniteWithPower(b.OwnerID, b.Facing, flamethrowerIgniteFrames(b.IgniteFrames), burnPower)
 		// A flamethrower is a continuous pressure stream, not sixty tiny bullets
 		// per second. Contact refreshes the burn and periodically gives a real
-		// knockback pulse; the per-player fire cooldown prevents 60 Hz stacking.
-		p.applyFireContactKnockback(b.OwnerID, b.Facing, 6.0, 2.2, 7)
+		// knockback pulse; the per-player fire cooldown prevents per-tick
+		// stacking (flamethrowerContact* in burn_panic.go).
+		p.applyFireContactKnockback(b.OwnerID, b.Facing, flamethrowerContactPush, flamethrowerContactLift, flamethrowerContactCooldown)
 		p.LastHitBy = b.OwnerID
 		p.HitByGrenade = false
 		if p.AISpecial == sourceAISpecialGM2Invisible {

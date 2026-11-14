@@ -168,7 +168,7 @@ func pauseHitAt(x, y float64) int {
 }
 
 func (g *Game) updatePause() {
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	hit := pauseHitAt(float64(mx), float64(my))
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		g.pausePressed = hit

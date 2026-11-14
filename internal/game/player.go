@@ -86,6 +86,18 @@ type Player struct {
 	BurnDirection       int         `cbor:",omitempty"`
 	BurnTick            int         `cbor:",omitempty"`
 	BurnPower           float64     `cbor:",omitempty"`
+	// Burning panic (burn_panic.go). BurnMax (HUD bar reference) and the
+	// panic run state (flailing visuals) are synced; the RNG, timers and
+	// pat-down counters are host-only simulation state.
+	BurnMax             int         `cbor:",omitempty"`
+	BurnPanicTime       int         `cbor:",omitempty"` // > 0 while input is overridden
+	BurnPanicDir        int         `cbor:",omitempty"`
+	BurnRNG             uint32      `cbor:",omitempty" net:"-"`
+	BurnJoltTimer       int         `cbor:",omitempty" net:"-"`
+	BurnPanicTimer      int         `cbor:",omitempty" net:"-"` // frames until the next panic run
+	BurnPatDowns        int         `cbor:",omitempty" net:"-"`
+	BurnPatCooldown     int         `cbor:",omitempty" net:"-"`
+	BurnIgnitions       int         `cbor:",omitempty" net:"-"`
 	FireContactCooldown int         `cbor:",omitempty"`
 	PortalNextColor     int         `cbor:",omitempty"`
 	PortalCooldown      int         `cbor:",omitempty"`
@@ -386,6 +398,8 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 	}
 
 	left, right, up, down := p.movementInput()
+	// Burning panic: short windows where the character runs on its own.
+	left, right = p.burnPanicInput(left, right)
 	abilityKey := p.abilityPressed()
 	abilityEdge := abilityKey && !p.AbilityKeyHeld
 	p.AbilityKeyHeld = abilityKey
@@ -424,6 +438,7 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 
 	if up && !p.JumpHeld && p.JumpNum > 0 {
 		p.JumpHeld = true
+		p.burnPatDown() // jumping while burning pats the fire down
 		p.JumpNum--
 		if p.JumpNum == 1 {
 			p.VY = -jumpPower
@@ -559,9 +574,14 @@ func (p *Player) igniteWithPower(ownerID, direction, frames int, power float64) 
 	if power > p.BurnPower {
 		p.BurnPower = power
 	}
+	// BLAST SHIELD halves every burn (Molotov, flare, flamethrower).
+	frames = burnFramesFor(p, frames)
 	wasBurning := p.BurnTime > 0
 	if frames > p.BurnTime {
 		p.BurnTime = frames
+	}
+	if !wasBurning || p.BurnTime > p.BurnMax {
+		p.BurnMax = p.BurnTime
 	}
 	p.BurnOwnerID = ownerID
 	if direction == 0 {
@@ -570,6 +590,7 @@ func (p *Player) igniteWithPower(ownerID, direction, frames int, power float64) 
 	p.BurnDirection = direction
 	if !wasBurning {
 		p.BurnTick = 0
+		p.startBurnPanic()
 		// Make ignition immediately readable in a knockback-based game. Further
 		// pulses are applied by updateBurning for the configured duration.
 		initial := math.Max(1.5, math.Min(4, p.BurnPower*.15))
@@ -604,49 +625,6 @@ func (p *Player) applyFireContactKnockback(ownerID, direction int, horizontal, v
 	}
 	p.FireContactCooldown = cooldown
 	return true
-}
-
-func (p *Player) updateBurning() {
-	if p == nil || p.BurnTime <= 0 || !p.Active {
-		return
-	}
-	if p.ShieldTime > 0 {
-		p.BurnTime -= 3
-		if p.BurnTime <= 0 {
-			p.BurnTime = 0
-			p.BurnPower = 0
-		}
-		return
-	}
-	p.BurnTime--
-	if p.BurnTime <= 0 {
-		p.BurnPower = 0
-		return
-	}
-	p.BurnTick++
-	if p.BurnTick%10 != 0 {
-		return
-	}
-	// Fire damage is knockback in Gun Mayhem. Small deterministic variations
-	// keep the target moving without creating network desync or a stun lock.
-	phase := float64((p.BurnTick/10+p.ID*3)%7-3) * .30
-	direction := p.BurnDirection
-	if direction == 0 {
-		direction = 1
-	}
-	tickPower := math.Max(3.2, math.Min(6, p.BurnPower*.18))
-	if p.DamageMulti > 0 {
-		tickPower *= p.DamageMulti
-	}
-	tickScale := abilityBurnTickScale(p)
-	tickPower *= tickScale
-	phase *= tickScale
-	p.VX += tickPower*float64(direction) + phase
-	p.VY -= tickPower*.38 + math.Abs(phase)*.20
-	p.HitNumber++
-	p.HitTimer = 0
-	p.LastHitBy = p.BurnOwnerID
-	p.HitByGrenade = false
 }
 
 func (p *Player) resolvePlatforms(platforms []Rect) {
@@ -936,11 +914,7 @@ func (p *Player) Kill(m Map) {
 		p.KillSelf = false
 		p.InstagibFrame = 0
 		p.InstagibPlaying = false
-		p.BurnTime = 0
-		p.BurnOwnerID = 0
-		p.BurnDirection = 0
-		p.BurnTick = 0
-		p.BurnPower = 0
+		p.clearBurn()
 		clearBlind(p)
 		p.TearGasTime = 0
 		return
@@ -986,11 +960,7 @@ func (p *Player) Respawn(m Map) {
 	p.HitTimer = 0
 	p.InstagibFrame = 0
 	p.InstagibPlaying = false
-	p.BurnTime = 0
-	p.BurnOwnerID = 0
-	p.BurnDirection = 0
-	p.BurnTick = 0
-	p.BurnPower = 0
+	p.clearBurn()
 	p.FireContactCooldown = 0
 	p.PortalCooldown = 0
 	p.AISearchTime = 0
@@ -1090,19 +1060,30 @@ func (p *Player) advanceLegTimelines(len1, len2 int) {
 			p.LegPlaying1 = true
 			p.LegPlaying2 = true
 		}
-		p.LegFrame1, p.LegPlaying1 = advanceFlashStoppedLoop(p.LegFrame1, p.LegPlaying1, movingFast, len1)
-		p.LegFrame2, p.LegPlaying2 = advanceFlashStoppedLoop(p.LegFrame2, p.LegPlaying2, movingFast, len2)
+		steps := 1
+		if movingFast && p.burnFastLegs() {
+			steps = 2 // burning panic: frantic leg cycle
+		}
+		for i := 0; i < steps; i++ {
+			p.LegFrame1, p.LegPlaying1 = advanceFlashStoppedLoop(p.LegFrame1, p.LegPlaying1, movingFast, len1)
+			p.LegFrame2, p.LegPlaying2 = advanceFlashStoppedLoop(p.LegFrame2, p.LegPlaying2, movingFast, len2)
+			p.updateWalkAnimFromLegs()
+		}
 	}
 
-	// Symbol 189 frame scripts update parent.walkanim.
+	p.updateWalkAnimFromLegs()
+	if !movingFast && p.LegFrame1 == 0 {
+		p.WalkAnim = 0
+	}
+}
+
+// updateWalkAnimFromLegs: Symbol 189 frame scripts update parent.walkanim.
+func (p *Player) updateWalkAnimFromLegs() {
 	if p.LegFrame2 == 5 {
 		p.WalkAnim = 2
 	}
 	if p.LegFrame2 == 14 {
 		p.WalkAnim = 1
-	}
-	if !movingFast && p.LegFrame1 == 0 {
-		p.WalkAnim = 0
 	}
 }
 
@@ -1190,6 +1171,7 @@ func (p *Player) updateSourceVisualState() {
 	} else {
 		p.VisualEyesY = math.Round(eyesTarget)
 	}
+	p.burnFlailPose()
 }
 
 func advanceFlashStoppedLoop(frame int, playing, keepPlaying bool, length int) (int, bool) {

@@ -46,6 +46,12 @@ func TestConfigRoundTrip(t *testing.T) {
 	cfg.SoundVolume = 0
 	cfg.LoudnessEQ = true
 	cfg.Quality = 3
+	cfg.ScalingMode = displayScalingInteger
+	cfg.ScalingFilter = displayFilterSmooth
+	cfg.VSync = false
+	cfg.ScreenShake = false
+	cfg.PowerSave = true
+	cfg.Monitor = 1
 	cfg.Controls[0].Shoot = 90
 	if err := SaveAppConfig(cfg); err != nil {
 		t.Fatal(err)
@@ -215,5 +221,63 @@ func TestLoadV5SaveUnlocksExpandedExtraMissionThirteen(t *testing.T) {
 	}
 	if got.Version != persistenceVersion || got.ExtraCampaignLevels[11] != 2 || got.ExtraCampaignLevels[12] != 1 {
 		t.Fatalf("20-mission EXTRA migration failed: version=%d levels=%v", got.Version, got.ExtraCampaignLevels)
+	}
+}
+
+// Version 7 added the DISPLAY tab. A version 6 file keeps its existing
+// settings and gets the display defaults; out-of-range values are clamped.
+func TestLoadV6ConfigMigratesToDisplaySettings(t *testing.T) {
+	dir := projectTestDir(t)
+	t.Setenv("GUNMAYHEM_DATA_DIR", dir)
+	legacy := `{
+  "version": 6,
+  "window_width": 1350,
+  "window_height": 900,
+  "fullscreen": true,
+  "music_volume": 0.4,
+  "sound_volume": 0.7,
+  "quality": 1,
+  "vsync": false,
+  "scaling_mode": 9
+}`
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(legacy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadAppConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Version != 7 || got.WindowWidth != 1350 || got.WindowHeight != 900 || !got.Fullscreen ||
+		got.MusicVolume != 0.4 || got.SoundVolume != 0.7 || got.Quality != 1 {
+		t.Fatalf("v6 settings lost: %+v", got)
+	}
+	if got.ScalingMode != displayScalingFit || got.ScalingFilter != displayFilterAuto || !got.VSync ||
+		!got.ScreenShake || got.PowerSave || got.Monitor != 0 {
+		t.Fatalf("v6 display defaults: %+v", got)
+	}
+
+	bad := normalizeConfig(AppConfig{Version: 7, ScalingMode: 7, ScalingFilter: -1, Monitor: 99, Quality: 2})
+	if bad.ScalingMode != displayScalingFit || bad.ScalingFilter != displayFilterAuto || bad.Monitor != 0 {
+		t.Fatalf("v7 display values not clamped: %+v", bad)
+	}
+}
+
+func TestNewPersistentAppliesDisplaySettings(t *testing.T) {
+	cfg := DefaultAppConfig()
+	cfg.ScalingMode = displayScalingStretch
+	cfg.ScalingFilter = displayFilterSharp
+	cfg.VSync = false
+	cfg.ScreenShake = false
+	cfg.PowerSave = true
+	g := NewPersistent(cfg, DefaultSaveData())
+	g.persistent = false // no window system in unit tests
+	if g.displayScaling != displayScalingStretch || g.displayFilter != displayFilterSharp || g.displayVSync ||
+		g.displayScreenShake || !g.displayPowerSave {
+		t.Fatalf("display settings not applied: scale=%d filter=%d vsync=%v shake=%v power=%v",
+			g.displayScaling, g.displayFilter, g.displayVSync, g.displayScreenShake, g.displayPowerSave)
+	}
+	got := g.currentAppConfig()
+	if got.ScalingMode != cfg.ScalingMode || got.ScalingFilter != cfg.ScalingFilter || got.VSync || got.ScreenShake || !got.PowerSave {
+		t.Fatalf("display settings not saved back: %+v", got)
 	}
 }

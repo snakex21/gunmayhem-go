@@ -40,7 +40,7 @@ if errorlevel 1 goto :fail
 rem Untagged portable test builds use a valid prerelease version instead of
 rem presenting themselves as DEV BUILD. A release tag or explicit environment
 rem value still takes precedence.
-set "VERSION=v0.16.0"
+set "VERSION=v0.17.0"
 if defined GUNMAYHEM_VERSION set "VERSION=%GUNMAYHEM_VERSION%"
 if not defined GUNMAYHEM_VERSION (
     for /f "delims=" %%V in ('git describe --tags --exact-match 2^>nul') do set "VERSION=%%V"

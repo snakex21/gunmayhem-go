@@ -300,7 +300,7 @@ func (g *Game) drawCustomChaosOverlay(screen *ebiten.Image) {
 	drawModifierButton(screen, all, "SELECT ALL", false)
 	drawModifierButton(screen, clear, "CLEAR", false)
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	hover := 0
 	for i, spec := range chaosEffectSpecs {
 		r := customChaosEffectRect(i)

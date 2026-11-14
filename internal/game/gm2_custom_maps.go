@@ -141,7 +141,7 @@ func (g *Game) drawGM2CustomMapButtons(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, g.customMenuX+clear.X, clear.Y, clear.W, clear.H,
 		color.NRGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xff})
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := g.cursorPos()
 	lx := float64(mx) - g.customMenuX
 	ly := float64(my)
 	for i, row := range gm2CustomMapRows() {

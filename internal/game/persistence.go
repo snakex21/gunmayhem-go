@@ -10,26 +10,33 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const persistenceVersion = 6
+const persistenceVersion = 7
 
 // AppConfig contains machine/user preferences. It is deliberately separate
 // from campaign progress so settings can evolve without touching save data.
 type AppConfig struct {
-	Version             int         `json:"version"`
-	WindowWidth         int         `json:"window_width"`
-	WindowHeight        int         `json:"window_height"`
-	WindowX             int         `json:"window_x"`
-	WindowY             int         `json:"window_y"`
-	WindowPositionSaved bool        `json:"window_position_saved"`
-	Fullscreen          bool        `json:"fullscreen"`
-	MusicOn             bool        `json:"music_on"`
-	SoundOn             bool        `json:"sound_on"`
-	MusicVolume         float64     `json:"music_volume"`
-	SoundVolume         float64     `json:"sound_volume"`
-	LoudnessEQ          bool        `json:"loudness_eq"`
-	AllowCheats         bool        `json:"allow_cheats"`
-	Quality             int         `json:"quality"`
-	Controls            [4]Controls `json:"controls"`
+	Version             int     `json:"version"`
+	WindowWidth         int     `json:"window_width"`
+	WindowHeight        int     `json:"window_height"`
+	WindowX             int     `json:"window_x"`
+	WindowY             int     `json:"window_y"`
+	WindowPositionSaved bool    `json:"window_position_saved"`
+	Fullscreen          bool    `json:"fullscreen"`
+	MusicOn             bool    `json:"music_on"`
+	SoundOn             bool    `json:"sound_on"`
+	MusicVolume         float64 `json:"music_volume"`
+	SoundVolume         float64 `json:"sound_volume"`
+	LoudnessEQ          bool    `json:"loudness_eq"`
+	AllowCheats         bool    `json:"allow_cheats"`
+	Quality             int     `json:"quality"`
+	// Version 7 display settings (local presentation only, see ui_display.go).
+	ScalingMode   int         `json:"scaling_mode"`
+	ScalingFilter int         `json:"scaling_filter"`
+	VSync         bool        `json:"vsync"`
+	ScreenShake   bool        `json:"screen_shake"`
+	PowerSave     bool        `json:"power_save"`
+	Monitor       int         `json:"monitor"`
+	Controls      [4]Controls `json:"controls"`
 }
 
 // GM2ChallengeProgress mirrors arena2gamedata.challenge[i]: medal is 0..3 and
@@ -63,6 +70,8 @@ func DefaultAppConfig() AppConfig {
 		LoudnessEQ:   false,
 		AllowCheats:  false,
 		Quality:      2,
+		VSync:        true,
+		ScreenShake:  true,
 	}
 	for i := range cfg.Controls {
 		cfg.Controls[i] = OriginalControls(i + 1)
@@ -195,7 +204,26 @@ func normalizeConfig(cfg AppConfig) AppConfig {
 			cfg.SoundVolume = 0
 		}
 	}
+	if oldVersion < 7 {
+		// Version 7 added the DISPLAY tab. Older files never stored these, so
+		// they start from the defaults (FIT, AUTO filter, vsync and shake on).
+		cfg.ScalingMode = defaults.ScalingMode
+		cfg.ScalingFilter = defaults.ScalingFilter
+		cfg.VSync = defaults.VSync
+		cfg.ScreenShake = defaults.ScreenShake
+		cfg.PowerSave = defaults.PowerSave
+		cfg.Monitor = defaults.Monitor
+	}
 	cfg.Version = persistenceVersion
+	if cfg.ScalingMode < 0 || cfg.ScalingMode >= displayScalingCount {
+		cfg.ScalingMode = defaults.ScalingMode
+	}
+	if cfg.ScalingFilter < 0 || cfg.ScalingFilter >= displayFilterCount {
+		cfg.ScalingFilter = defaults.ScalingFilter
+	}
+	if cfg.Monitor < 0 || cfg.Monitor > 15 {
+		cfg.Monitor = defaults.Monitor
+	}
 	if cfg.WindowWidth < 480 || cfg.WindowWidth > 7680 {
 		cfg.WindowWidth = defaults.WindowWidth
 	}
@@ -326,11 +354,19 @@ func SaveGameData(save SaveData) error {
 // remains 900x600; only the desktop window changes size.
 func ApplyWindowConfig(cfg AppConfig) {
 	cfg = normalizeConfig(cfg)
+	ebiten.SetWindowSizeLimits(displayMinWindowW, displayMinWindowH, -1, -1)
+	if cfg.Monitor > 0 {
+		if monitors := ebiten.AppendMonitors(nil); cfg.Monitor < len(monitors) {
+			ebiten.SetMonitor(monitors[cfg.Monitor])
+		}
+	}
 	ebiten.SetWindowSize(cfg.WindowWidth, cfg.WindowHeight)
 	if cfg.WindowPositionSaved {
 		ebiten.SetWindowPosition(cfg.WindowX, cfg.WindowY)
 	}
 	ebiten.SetFullscreen(cfg.Fullscreen)
+	ebiten.SetVsyncEnabled(cfg.VSync)
+	ebiten.SetScreenClearedEveryFrame(!cfg.PowerSave)
 }
 
 func NewPersistent(cfg AppConfig, save SaveData) *Game {
@@ -350,6 +386,12 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.loudnessEQ = cfg.LoudnessEQ
 	g.allowCheats = cfg.AllowCheats
 	g.quality = cfg.Quality
+	g.displayScaling = cfg.ScalingMode
+	g.displayFilter = cfg.ScalingFilter
+	g.displayVSync = cfg.VSync
+	g.displayScreenShake = cfg.ScreenShake
+	g.displayPowerSave = cfg.PowerSave
+	g.displayMonitor = cfg.Monitor
 	g.controlConfigs = cfg.Controls
 	g.players[0].Controls = g.controlConfigs[0]
 	g.players[1].Controls = g.controlConfigs[1]
@@ -359,7 +401,6 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.gm2Challenges = save.GM2Challenges
 	g.extraCampaignLevels = normalizeExtraCampaignLevels(save.ExtraCampaignLevels)
 	setSourceRenderQuality(g.quality)
-	ebiten.SetScreenFilterEnabled(g.quality != 1)
 	g.startAutomaticUpdateCheck()
 	return g
 }
@@ -395,6 +436,10 @@ func (g *Game) trackWindowPersistence() {
 		g.windowedX = x
 		g.windowedY = y
 		g.windowPositionSaved = true
+		if g.displayPresetIndex() < 0 {
+			// Remember a dragged size as the Options WINDOW SIZE "CUSTOM" choice.
+			g.displayCustomW, g.displayCustomH = w, h
+		}
 		// Debounce disk writes while the user is actively dragging/resizing.
 		g.windowPersistCountdown = 30
 		return
@@ -416,6 +461,12 @@ func (g *Game) currentAppConfig() AppConfig {
 	cfg.LoudnessEQ = g.loudnessEQ
 	cfg.AllowCheats = g.allowCheats
 	cfg.Quality = g.quality
+	cfg.ScalingMode = g.displayScaling
+	cfg.ScalingFilter = g.displayFilter
+	cfg.VSync = g.displayVSync
+	cfg.ScreenShake = g.displayScreenShake
+	cfg.PowerSave = g.displayPowerSave
+	cfg.Monitor = g.displayMonitor
 	cfg.Controls = g.controlConfigs
 	if g.persistent {
 		g.captureWindowedState()
