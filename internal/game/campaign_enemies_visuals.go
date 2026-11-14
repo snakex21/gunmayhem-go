@@ -278,3 +278,13 @@ func (g *Game) drawCampaignEnemyArrows(screen *ebiten.Image) {
 		drawPlayerArrowDistance(screen, distance, angle)
 	}
 }
+
+// campaignEnemyRopePoint is where a harpoon hook sticks in an enemy (world).
+func campaignEnemyRopePoint(e *CampaignEnemy) (float64, float64) {
+	b := &e.Body
+	switch campaignEnemyKind(e.Kind) {
+	case campaignEnemyDrone:
+		return droneCenter(b)
+	}
+	return b.X, b.Y - 36*playerRenderScale(b)/0.8
+}

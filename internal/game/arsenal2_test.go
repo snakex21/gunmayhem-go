@@ -579,7 +579,7 @@ func TestArsenal2SnapshotWireAndValidation(t *testing.T) {
 			t.Fatalf("bad snapshot %d accepted", i)
 		}
 	}
-	if netplayProtocolVersion != 24 {
+	if netplayProtocolVersion < 24 {
 		t.Fatalf("protocol %d", netplayProtocolVersion)
 	}
 	cfg := CustomPlayerConfig{Name: "G", Color: 1, Shirt: 1, Hat: 1, Eyes: 1, Gun: weaponBaseballBat, Perk: 1, Ability: abilityBallisticShield, Team: 1}

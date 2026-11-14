@@ -582,6 +582,7 @@ func (z *Zombie) syncFromBody() {
 	z.VX, z.VY = b.VX, b.VY
 	z.Facing = b.Facing
 	z.Airborne = b.JumpNum != 2
+	z.HarpoonTether, z.HarpoonTetherID = b.HarpoonTether, b.HarpoonTetherID
 }
 
 func zombieDist(a, b *Player) float64 {

@@ -24,7 +24,7 @@ const (
 	// BlowerTime/HarpoonTether*, Bullet.ShooterID, weapons 232-233 and
 	// projectile kinds Harpoon/Gust, ability 13, powerup kinds 7-8,
 	// OnlineBlockedWeapons/Abilities array sizes).
-	netplayProtocolVersion = 24
+	netplayProtocolVersion = 25
 	maxOnlinePlayers       = 4
 )
 

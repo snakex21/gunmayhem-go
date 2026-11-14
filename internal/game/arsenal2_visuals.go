@@ -401,21 +401,43 @@ func (g *Game) drawHarpoonRopes(screen *ebiten.Image) {
 		if t == nil || !t.Active || t.HarpoonTether <= 0 {
 			continue
 		}
-		shooter := g.playerByID(t.HarpoonTetherID)
-		if shooter == nil || !shooter.Active {
-			continue
-		}
-		sx, sy := harpoonRopeAnchor(shooter)
 		tx, ty := t.X, t.Y-36*playerRenderScale(t)/0.8
-		a := math.Min(1, float64(t.HarpoonTether)/4)
-		drawRopeCurve(screen, g.worldX(sx), g.worldY(sy), g.worldX(tx), g.worldY(ty), 0.015, rope, dark, a)
-		// The barbed head stuck in the victim.
-		dir := sign(sx - tx)
-		hx, hy := float32(g.worldX(tx)), float32(g.worldY(ty))
-		vector.StrokeLine(screen, hx, hy, hx+float32(dir*9), hy, 2.4, color.NRGBA{R: 0x40, G: 0x44, B: 0x48, A: uint8(255 * a)}, true)
-		vector.StrokeLine(screen, hx+float32(dir*3), hy, hx+float32(dir*7), hy-4, 1.6, color.NRGBA{R: 0x70, G: 0x74, B: 0x78, A: uint8(255 * a)}, true)
-		vector.StrokeLine(screen, hx+float32(dir*3), hy, hx+float32(dir*7), hy+4, 1.6, color.NRGBA{R: 0x70, G: 0x74, B: 0x78, A: uint8(255 * a)}, true)
+		if e := g.campaignEnemyForBody(t); e != nil {
+			tx, ty = campaignEnemyRopePoint(e)
+		}
+		g.drawHookedRope(screen, t.HarpoonTetherID, t.HarpoonTether, tx, ty, rope, dark)
 	}
+	// Zombies (their bodies are host-only: the snapshot carries the rope).
+	if g.zombie != nil {
+		for _, z := range g.zombie.zombies {
+			if z == nil || z.Dead || z.HarpoonTether <= 0 || !g.zombieInView(z.Zone) {
+				continue
+			}
+			scale := z.kind().stats().Scale
+			if scale <= 0 {
+				scale = 1
+			}
+			g.drawHookedRope(screen, z.HarpoonTetherID, z.HarpoonTether, z.X, z.Y-36*scale, rope, dark)
+		}
+	}
+}
+
+// drawHookedRope draws the rope from shooterID's gun to the hook stuck at
+// (tx, ty) (world space).
+func (g *Game) drawHookedRope(screen *ebiten.Image, shooterID, tether int, tx, ty float64, rope, dark color.NRGBA) {
+	shooter := g.playerByID(shooterID)
+	if shooter == nil || !shooter.Active {
+		return
+	}
+	sx, sy := harpoonRopeAnchor(shooter)
+	a := math.Min(1, float64(tether)/4)
+	drawRopeCurve(screen, g.worldX(sx), g.worldY(sy), g.worldX(tx), g.worldY(ty), 0.015, rope, dark, a)
+	// The barbed head stuck in the victim.
+	dir := sign(sx - tx)
+	hx, hy := float32(g.worldX(tx)), float32(g.worldY(ty))
+	vector.StrokeLine(screen, hx, hy, hx+float32(dir*9), hy, 2.4, color.NRGBA{R: 0x40, G: 0x44, B: 0x48, A: uint8(255 * a)}, true)
+	vector.StrokeLine(screen, hx+float32(dir*3), hy, hx+float32(dir*7), hy-4, 1.6, color.NRGBA{R: 0x70, G: 0x74, B: 0x78, A: uint8(255 * a)}, true)
+	vector.StrokeLine(screen, hx+float32(dir*3), hy, hx+float32(dir*7), hy+4, 1.6, color.NRGBA{R: 0x70, G: 0x74, B: 0x78, A: uint8(255 * a)}, true)
 }
 
 // harpoonRopeAnchor is the world point the rope leaves the shooter's gun.

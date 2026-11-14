@@ -42,6 +42,10 @@ type Zombie struct {
 	// DoorPasses counts the doors this zombie came through (render
 	// interpolation snaps on a change).
 	DoorPasses int
+	// HarpoonTether / HarpoonTetherID mirror the body's harpoon rope so a
+	// client can draw it (protocol 25).
+	HarpoonTether   int `cbor:",omitempty"`
+	HarpoonTetherID int `cbor:",omitempty"`
 
 	body         Player
 	preVX, preVY float64
