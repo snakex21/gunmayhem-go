@@ -192,12 +192,18 @@ type Game struct {
 	mainMenuQuitOpen        bool
 	quitRequested           bool
 	customUI                uiState
-	// customCardEditSlot is 1-based: the PLAYERS card that is showing the
-	// classic card editor (phase 4 replaces it with the Loadout screen).
-	customCardEditSlot int
-	setupPreviewImg    *ebiten.Image
-	uiLastCursorX      float64
-	uiLastCursorY      float64
+	// customLoadoutSlot is 1-based: the player whose Loadout screen
+	// (loadout_menu.go) is open over the PLAYERS tab; 0 when closed.
+	customLoadoutSlot         int
+	customLoadoutTab          int
+	customLoadoutPart         int  // CHARACTER tab: colour / hat / shirt / face
+	customLoadoutFocusPending bool // focus the selected tile on the next update
+	customLoadoutReturn       int  // 1-based slot whose EDIT button gets focus back
+	loadoutPreviewImg         *ebiten.Image
+	loadoutThumbs             map[[2]int]*SourceRaster // UI-only tight GM2 cosmetic crops
+	setupPreviewImg           *ebiten.Image
+	uiLastCursorX             float64
+	uiLastCursorY             float64
 
 	// Local display settings (ui_display.go). Presentation only: never part of
 	// the simulation, the netplay snapshot or the host's authority.

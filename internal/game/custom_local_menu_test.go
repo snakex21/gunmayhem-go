@@ -364,127 +364,6 @@ func TestCustomLocalPlayerSlotTypes(t *testing.T) {
 	}
 }
 
-// The PLAYERS card's EDIT LOADOUT still opens the classic card editor (phase 4
-// replaces it). It must sit in the same column, take the mouse only there, and
-// only ever produce codes for its own slot.
-func TestCustomLocalCardEditTransition(t *testing.T) {
-	g := newCustomLocalGame(t)
-	g.setCustomV2Page(customPagePlayers)
-	g.runCustomLocalUpdate(uiInput{})
-	customLocalClickItem(t, g, "cust.p1.edit")
-	if g.customCardEditSlot != 2 {
-		t.Fatalf("EDIT LOADOUT P2 -> edit slot %d", g.customCardEditSlot)
-	}
-	if _, ok := g.customUI.item("cust.p1.edit"); ok {
-		t.Fatal("kit card is still interactive under the classic card")
-	}
-	if _, ok := g.customUI.item("cust.p0.edit"); !ok {
-		t.Fatal("other players' cards must stay usable")
-	}
-
-	cardX := 20.0 + 220
-	gunButton := sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+17.5, g.customCardY[1]+161.7, 0.5387115478515625, 1)
-	x, y := gunButton.X+gunButton.W/2, gunButton.Y+gunButton.H/2
-	if hit := g.customCardEditHitAt(x, y); hit != customEditHit(1, customEditGun) {
-		t.Fatalf("classic HANDGUN button hit=%d", hit)
-	}
-	// The same button of P1's card (not being edited) is not live.
-	if hit := g.customCardEditHitAt(x-220, y); hit != menuHitNone {
-		t.Fatalf("P1's classic card answered while P2 is edited: %d", hit)
-	}
-	customLocalClick(g, x, y)
-	if g.customEditor[1] != customEditGun {
-		t.Fatalf("classic HANDGUN did not open: editor=%d", g.customEditor[1])
-	}
-	if g.customPlayers[0].Gun != 1 || g.customMode != SourceGameModeNormal {
-		t.Fatal("editor click changed something else")
-	}
-
-	// Pick a developed pistol in the slid-up selection grid.
-	g.customCardY[1] = -300
-	picked := 0
-	for _, item := range developedCustomSelectionItems(customEditGun) {
-		if item.Number < 98 {
-			continue
-		}
-		r := item.Rect
-		r.X += cardX
-		r.Y += g.customCardY[1]
-		if r.Y < uiContentTop || r.Y+r.H > uiContentBottom {
-			continue
-		}
-		customLocalClick(g, r.X+r.W/2, r.Y+r.H/2)
-		picked = item.Number
-		break
-	}
-	if picked == 0 {
-		t.Fatal("no developed pistol visible in the classic grid")
-	}
-	if g.customPlayers[1].Gun != picked || g.customEditor[1] != 0 {
-		t.Fatalf("pistol pick: gun=%d want %d editor=%d", g.customPlayers[1].Gun, picked, g.customEditor[1])
-	}
-
-	g.customEditor[1] = customEditPerk
-	customLocalKey(g, uiInput{Esc: true})
-	if g.customEditor[1] != 0 || g.customCardEditSlot != 2 {
-		t.Fatalf("ESC must first close the sub-editor: editor=%d slot=%d", g.customEditor[1], g.customCardEditSlot)
-	}
-	customLocalKey(g, uiInput{Esc: true})
-	if g.customCardEditSlot != 0 || g.fadeActive || g.customPage != customPagePlayers {
-		t.Fatalf("second ESC must only close the editor: slot=%d page=%d", g.customCardEditSlot, g.customPage)
-	}
-
-	customLocalClickItem(t, g, "cust.p1.edit")
-	customLocalClickItem(t, g, "cust.editdone")
-	if g.customCardEditSlot != 0 {
-		t.Fatal("DONE did not close the classic editor")
-	}
-}
-
-func TestCustomLocalCardEditCodesStayInTheirSlot(t *testing.T) {
-	for slot := 0; slot < 4; slot++ {
-		g := newCustomLocalGame(t)
-		g.setCustomV2Page(customPagePlayers)
-		for i := range g.customPlayers {
-			g.customPlayers[i].Type = 1
-			g.customCardY[i] = 100
-		}
-		g.openCustomCardEdit(slot)
-		seen := 0
-		// Sample the edited column only, on an 8 px grid.
-		col := customLocalCardRect(slot)
-		for _, editor := range []int{0, customEditGun, customEditPerk, customEditAbility, customEditThrowable} {
-			g.customEditor[slot] = editor
-			g.customCardY[slot] = 100
-			if editor != 0 {
-				g.customCardY[slot] = -300
-			}
-			for y := col.Y; y < col.Y+col.H; y += 8 {
-				for x := col.X - 16; x < col.X+col.W+16; x += 8 {
-					hit := g.customCardEditHitAt(x, y)
-					if hit == menuHitNone {
-						continue
-					}
-					seen++
-					s, ok := customPlayerEditorHitSlot(hit)
-					if !ok {
-						s, _, ok = decodePlayerSlotHit(hit)
-					}
-					if !ok || s != slot {
-						t.Fatalf("slot %d editor %d: code %d at (%.0f,%.0f) belongs to slot %d (ok=%v)", slot, editor, hit, x, y, s, ok)
-					}
-					if g.activateCustomModeOption(hit) {
-						t.Fatalf("slot %d: code %d is consumed by the match settings", slot, hit)
-					}
-				}
-			}
-		}
-		if seen == 0 {
-			t.Fatalf("slot %d: classic card produced no hits", slot)
-		}
-	}
-}
-
 func TestCustomLocalKitIDsAreUnique(t *testing.T) {
 	g := newCustomLocalGame(t)
 	g.customPlayers[2].Type = 2
@@ -507,9 +386,9 @@ func TestCustomLocalKitIDsAreUnique(t *testing.T) {
 	g.setCustomV2Page(customPageMaps)
 	check("maps gm2")
 	g.setCustomV2Page(customPagePlayers)
-	g.openCustomCardEdit(0)
-	check("players edit")
-	g.closeCustomCardEdit()
+	g.openCustomLoadout(0)
+	check("players loadout")
+	g.closeCustomLoadout()
 	g.setCustomV2Page(customPageGame)
 	g.customRulesOpen = true
 	check("modifiers")

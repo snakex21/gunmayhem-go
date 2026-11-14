@@ -124,6 +124,15 @@ func (g *Game) drawThrowableSetupChoice(dst *ebiten.Image, kind int, r Rect, sel
 		innerH = r.H - 6
 	}
 	inner := Rect{X: r.X + 4, Y: r.Y + 4, W: r.W - 8, H: innerH}
+	g.drawThrowableArt(dst, kind, inner)
+}
+
+// drawThrowableArt fits the throwable's sprite (the original dynamite or the
+// generated grenade art) into inner.
+func (g *Game) drawThrowableArt(dst *ebiten.Image, kind int, inner Rect) {
+	if dst == nil || inner.W <= 0 || inner.H <= 0 || kind < 0 || kind >= throwableTypeCount {
+		return
+	}
 	ensureThrowableVisuals()
 	if kind == ThrowableDynamite {
 		art := throwableDynamiteSetupArt

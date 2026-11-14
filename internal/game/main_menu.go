@@ -58,7 +58,7 @@ func (g *Game) openLocalCustomGame() {
 	g.onlineMatchSetup = false
 	g.customPage = customPageGame
 	g.customMenuX = customPageTargetX(customPageGame)
-	g.customCardEditSlot = 0
+	g.customLoadoutSlot = 0
 	g.customUI.reset()
 	g.beginFade(screenCustomGame, fadePurposeScreen)
 }
@@ -68,7 +68,7 @@ func (g *Game) openLocalCustomGame() {
 func (g *Game) openOnlineFromMainMenu() {
 	g.customPage = customPageGame
 	g.customMenuX = customPageTargetX(customPageGame)
-	g.customCardEditSlot = 0
+	g.customLoadoutSlot = 0
 	g.returnToOnlineServerBrowser()
 	g.beginFade(screenCustomGame, fadePurposeScreen)
 }

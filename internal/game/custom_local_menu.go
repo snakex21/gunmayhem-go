@@ -14,9 +14,8 @@ import (
 // the online host setup shares. The online browser, host setup and online
 // wizard still use custom_game_v2.go / custom_session.go.
 //
-// The per-player loadout editor is still the classic Flash card
-// (custom_player_editor.go): EDIT LOADOUT swaps that player's card for the
-// classic card in the same column, where the legacy hit codes stay valid.
+// EDIT LOADOUT opens the full-screen Loadout screen (loadout_menu.go), which
+// writes through the same player-editor activation codes.
 
 var customLocalTabLabels = []string{"MATCH", "MAPS", "PLAYERS"}
 
@@ -34,7 +33,6 @@ var (
 	customLocalMapPanel     = Rect{X: 336, Y: uiContentTop, W: 544, H: uiContentBottom - uiContentTop}
 	customLocalMapSetRect   = Rect{X: 350, Y: 136, W: 180, H: 34}
 	customLocalApplyAllRect = Rect{X: 666, Y: 136, W: 200, H: 34}
-	customLocalDoneEditRect = Rect{X: 330, Y: uiActionTop, W: 240, H: uiButtonH}
 	customLocalModalRect    = Rect{X: 30, Y: 26, W: 840, H: 548}
 )
 
@@ -66,8 +64,8 @@ func customLocalMapTileRect(i int) Rect {
 	return Rect{X: customLocalMapPanel.X + 14 + float64(col)*(w+8), Y: 182 + float64(row)*(customLocalMapTileH+8), W: w, H: customLocalMapTileH}
 }
 
-// customLocalCardRect is a PLAYERS column; it matches the classic card's
-// column (cardX = 20 + slot*220, 200 wide) so EDIT can swap them in place.
+// customLocalCardRect is a PLAYERS column (the classic card's column,
+// cardX = 20 + slot*220, 200 wide).
 func customLocalCardRect(slot int) Rect {
 	return Rect{X: 20 + float64(slot)*220, Y: uiContentTop, W: 200, H: uiContentBottom - uiContentTop}
 }
@@ -91,8 +89,9 @@ var customLocalTypeActions = [3]int{playerSlotActionHuman, playerSlotActionAI, p
 func (g *Game) updateCustomLocalMenu() {
 	g.updateCustomWarning()
 	// A focused text field owns the keyboard for the whole frame, including
-	// the Enter/Esc that ends the edit (typed Q/E must not switch tabs).
-	textFocus := g.customNameFocus > 0 || g.customLivesFocus
+	// the Enter/Esc that ends the edit (typed Q/E must not switch tabs), so
+	// the filter is decided before the text input can end the edit.
+	textFocus := g.customLocalTextFocus()
 	if g.customPage == customPageGame {
 		g.updateCustomLivesInput()
 	}
@@ -109,11 +108,19 @@ func (g *Game) updateCustomLocalMenu() {
 	g.runCustomLocalUpdate(in)
 }
 
+func (g *Game) customLocalTextFocus() bool { return g.customNameFocus > 0 || g.customLivesFocus }
+
+// customLocalFrameInput applies the text-focus keyboard filter to a frame of
+// input (tests use it to drive typing frames like updateCustomLocalMenu).
+func (g *Game) customLocalFrameInput(in uiInput) uiInput {
+	if g.customLocalTextFocus() {
+		return in.pointerOnly()
+	}
+	return in
+}
+
 // runCustomLocalUpdate is one update pass for a frame of input (tests drive it).
 func (g *Game) runCustomLocalUpdate(in uiInput) {
-	if g.customCardEditSlot > 0 && g.customPage == customPagePlayers && !g.customRulesOpen {
-		g.updateCustomCardEditColumn(in)
-	}
 	ctx := g.customUI.begin(uiPassUpdate, nil, in)
 	g.buildCustomLocal(ctx)
 	ctx.end()
@@ -149,76 +156,6 @@ func (g *Game) customLocalActivate(code int) {
 	}
 }
 
-func (g *Game) closeCustomCardEdit() {
-	if slot := g.customCardEditSlot - 1; slot >= 0 && slot < len(g.customEditor) {
-		g.customEditor[slot] = 0
-	}
-	g.customCardEditSlot = 0
-	g.customNameFocus = 0
-	g.menuPressed = menuHitNone
-}
-
-func (g *Game) openCustomCardEdit(slot int) {
-	if slot < 0 || slot >= len(g.customPlayers) || g.customPlayers[slot].Type == 0 {
-		return
-	}
-	g.closeCustomCardEdit()
-	g.customCardEditSlot = slot + 1
-	g.customCardY[slot] = 100
-}
-
-// ---------------------------------------------------------------------------
-// Classic card editor column (phase 4 replaces it)
-
-// customCardEditHitAt returns the legacy card hit code at (x, y), but only for
-// the card being edited and only inside its column.
-func (g *Game) customCardEditHitAt(x, y float64) int {
-	slot := g.customCardEditSlot - 1
-	if slot < 0 || slot >= len(g.customPlayers) || !customLocalCardRect(slot).Contains(x, y) {
-		return menuHitNone
-	}
-	if hit := g.customPlayerEditorHitAt(x, y); hit != menuHitNone {
-		if s, ok := customPlayerEditorHitSlot(hit); ok && s == slot {
-			return hit
-		}
-		return menuHitNone
-	}
-	if hit := g.customPlayerSetupHitAt(x, y); hit != menuHitNone {
-		if s, _, ok := decodePlayerSlotHit(hit); ok && s == slot {
-			return hit
-		}
-	}
-	return menuHitNone
-}
-
-func (g *Game) activateCustomCardEditHit(hit int) {
-	slot := g.customCardEditSlot - 1
-	if hit == menuHitNone || slot < 0 {
-		return
-	}
-	g.customLocalActivate(hit)
-	if g.customPlayers[slot].Type == 0 {
-		g.closeCustomCardEdit()
-	}
-}
-
-// updateCustomCardEditColumn is the source onRelease flow for the classic
-// card: a press and a release over the same card button.
-func (g *Game) updateCustomCardEditColumn(in uiInput) {
-	hit := g.customCardEditHitAt(in.X, in.Y)
-	if in.Pressed {
-		g.menuPressed = hit
-		return
-	}
-	if in.Released {
-		pressed := g.menuPressed
-		g.menuPressed = menuHitNone
-		if pressed != menuHitNone && pressed == hit {
-			g.activateCustomCardEditHit(hit)
-		}
-	}
-}
-
 // ---------------------------------------------------------------------------
 // Screen
 
@@ -238,10 +175,18 @@ func (g *Game) customLocalBreadcrumb() string {
 
 func (g *Game) buildCustomLocal(ctx *uiCtx) {
 	ctx.Page(0.92)
+	if g.customLoadoutSlot > 0 {
+		if g.loadoutOpen() && !g.customRulesOpen {
+			g.buildCustomLoadout(ctx)
+			return
+		}
+		// The slot was emptied or the page changed under the loadout.
+		g.customLoadoutSlot = 0
+	}
 	ctx.Header("CUSTOM GAME", g.customLocalBreadcrumb())
 	tab := customLocalTabIndex(g.customPage)
 	if t := ctx.TabBar("cust.tabs", customLocalTabBarRect, customLocalTabLabels, tab); t != tab {
-		g.closeCustomCardEdit()
+		g.closeCustomLoadout()
 		g.customLivesFocus = false
 		g.customLocalActivate(customLocalTabCodes[t])
 	}
@@ -267,24 +212,12 @@ func (g *Game) buildCustomLocal(ctx *uiCtx) {
 		return
 	}
 	if ctx.Button("cust.next", uiActionPrimaryRect(220), nextLabel, uiButtonOpts{Kind: uiButtonPrimary, InfoTitle: nextLabel}) {
-		g.closeCustomCardEdit()
+		g.closeCustomLoadout()
 		g.customLivesFocus = false
 		g.customLocalActivate(menuHitCustomV2Start)
 	}
-	editing := g.customCardEditSlot > 0 && g.customPage == customPagePlayers
-	if editing {
-		label := fmt.Sprintf("DONE EDITING P%d", g.customCardEditSlot)
-		if ctx.Button("cust.editdone", customLocalDoneEditRect, label, uiButtonOpts{Kind: uiButtonPaper,
-			InfoTitle: label, InfoBody: "Close the classic card editor."}) {
-			g.closeCustomCardEdit()
-		}
-	}
 
-	hints := []uiKeyHint{{"ESC", "Back"}, {"UP/DOWN", "Move"}, {"LEFT/RIGHT", "Change"}, {"ENTER", "Select"}, {"Q", "Prev tab"}, {"E", "Next tab"}}
-	if editing {
-		hints = []uiKeyHint{{"ESC", "Done"}, {"MOUSE", "Classic card editor"}, {"Q", "Prev tab"}, {"E", "Next tab"}}
-	}
-	ctx.KeyHintBar(hints)
+	ctx.KeyHintBar([]uiKeyHint{{"ESC", "Back"}, {"UP/DOWN", "Move"}, {"LEFT/RIGHT", "Change"}, {"ENTER", "Select"}, {"Q", "Prev tab"}, {"E", "Next tab"}})
 	ctx.Toasts()
 
 	if g.customRulesOpen {
@@ -296,21 +229,12 @@ func (g *Game) buildCustomLocal(ctx *uiCtx) {
 		return
 	}
 	if ctx.Back() {
-		if editing {
-			slot := g.customCardEditSlot - 1
-			if g.customEditor[slot] != 0 {
-				g.customEditor[slot] = 0
-			} else {
-				g.closeCustomCardEdit()
-			}
-			return
-		}
 		g.customLocalBack()
 	}
 }
 
 func (g *Game) customLocalBack() {
-	g.closeCustomCardEdit()
+	g.closeCustomLoadout()
 	g.customLivesFocus = false
 	if g.customPage == customPageGame {
 		g.customUI.reset()
@@ -548,24 +472,13 @@ func customLocalControlsHint(c Controls) string {
 
 func (g *Game) buildCustomLocalPlayers(ctx *uiCtx) {
 	for slot := range g.customPlayers {
-		if g.customCardEditSlot == slot+1 && g.customPlayers[slot].Type != 0 {
-			g.buildCustomLocalCardEditColumn(ctx, slot)
-			continue
-		}
 		g.buildCustomLocalPlayerCard(ctx, slot)
 	}
-}
-
-func (g *Game) buildCustomLocalCardEditColumn(ctx *uiCtx, slot int) {
-	col := customLocalCardRect(slot)
-	ctx.Block(fmt.Sprintf("cust.p%d.classic", slot), col)
-	if !ctx.drawing() {
-		return
+	// Back from the loadout: the keyboard lands on the EDIT button it left.
+	if ret := g.customLoadoutReturn; ret > 0 && ctx.pass == uiPassUpdate {
+		g.customLoadoutReturn = 0
+		ctx.st.focus = fmt.Sprintf("cust.p%d.edit", ret-1)
 	}
-	cardX := col.X
-	g.drawPlayerSetupCardMasked(ctx.dst, g.customPlayers[slot], g.customEditor[slot], slot, cardX, g.customCardY[slot], 1, g.customColorMask[slot], false)
-	uiStrokeRound(ctx.dst, Rect{X: cardX - 3, Y: 97, W: 206, H: 406}, 4, 3, uiOrange)
-	uiText(ctx.dst, fmt.Sprintf("P%d  CLASSIC EDITOR", slot+1), true, uiSizeHint, uiOrange, cardX, 90, uiAlignLeft)
 }
 
 func (g *Game) buildCustomLocalPlayerCard(ctx *uiCtx, slot int) {
@@ -659,8 +572,8 @@ func (g *Game) buildCustomLocalPlayerCard(ctx *uiCtx, slot int) {
 	}
 
 	if ctx.Button(fmt.Sprintf("cust.p%d.edit", slot), Rect{X: x, Y: r.Y + 378, W: w, H: 36}, "EDIT LOADOUT", uiButtonOpts{Size: uiSizeBody,
-		InfoTitle: "EDIT LOADOUT", InfoBody: "Character, colour, handgun, perk, ability and grenade."}) {
-		g.openCustomCardEdit(slot)
+		InfoTitle: "EDIT LOADOUT", InfoBody: "Character, colour, starting weapon, perk, ability / gear and throwable."}) {
+		g.openCustomLoadout(slot)
 	}
 }
 

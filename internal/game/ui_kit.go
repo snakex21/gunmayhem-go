@@ -346,13 +346,19 @@ func (ctx *uiCtx) triggered(id string) bool {
 	return ctx.clicked == id || ctx.activate == id
 }
 
-// FocusInfo returns the info text of the focused (keyboard) or hovered item.
-func (ctx *uiCtx) FocusInfo() (title, body string) {
+// InfoID is the item whose info is shown: the keyboard-focused one, else the
+// hovered one, else the focused one.
+func (ctx *uiCtx) InfoID() string {
 	id := ctx.st.hot
 	if ctx.st.keyboard || id == "" {
 		id = ctx.st.focus
 	}
-	if it, ok := ctx.st.item(id); ok {
+	return id
+}
+
+// FocusInfo returns the info text of the focused (keyboard) or hovered item.
+func (ctx *uiCtx) FocusInfo() (title, body string) {
+	if it, ok := ctx.st.item(ctx.InfoID()); ok {
 		return it.infoTitle, it.infoBody
 	}
 	return "", ""
@@ -943,7 +949,8 @@ type uiTileOpts struct {
 	Art       func(dst *ebiten.Image, inner Rect)
 }
 
-// Tile is an image + label card (guns, perks, maps, missions...).
+// Tile is an image + label card (guns, perks, maps, missions...). An empty
+// label gives the whole tile to the art (colour swatches, hats...).
 func (ctx *uiCtx) Tile(id string, r Rect, label string, o uiTileOpts) bool {
 	ctx.register(uiItem{id: id, rect: r, focusable: true, disabled: o.Disabled, infoTitle: o.InfoTitle, infoBody: o.InfoBody})
 	if ctx.drawing() {
@@ -959,10 +966,15 @@ func (ctx *uiCtx) Tile(id string, r Rect, label string, o uiTileOpts) bool {
 		uiFillRound(ctx.dst, r, 6, uiWithAlpha(fill, alpha))
 		labelH := 22.0
 		inner := Rect{X: r.X + 6, Y: r.Y + 6, W: r.W - 12, H: r.H - labelH - 10}
+		if label == "" {
+			inner = uiInset(r, 4)
+		}
 		if o.Art != nil {
 			o.Art(ctx.dst, inner)
 		}
-		uiTextIn(ctx.dst, label, true, uiSizeHint, uiWithAlpha(uiTextDark, alpha), Rect{X: r.X, Y: r.Y + r.H - labelH - 2, W: r.W, H: labelH}, uiAlignCenter, 4)
+		if label != "" {
+			uiTextIn(ctx.dst, label, true, uiSizeHint, uiWithAlpha(uiTextDark, alpha), Rect{X: r.X, Y: r.Y + r.H - labelH - 2, W: r.W, H: labelH}, uiAlignCenter, 4)
+		}
 		if o.Locked {
 			badge := Rect{X: r.X + r.W - 26, Y: r.Y + 4, W: 22, H: 18}
 			uiFillRound(ctx.dst, badge, 3, uiInk900)
