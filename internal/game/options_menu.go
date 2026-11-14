@@ -31,13 +31,14 @@ var (
 
 // optionsRowRect is setting row i (label left, control right) on the
 // GAME / DISPLAY / AUDIO tabs.
+// The DISPLAY tab has ten rows, so rows are 42 px apart (38 px tall).
 func optionsRowRect(i int) Rect {
-	return Rect{X: uiMargin, Y: uiContentTop + 4 + float64(i)*46, W: 604, H: 40}
+	return Rect{X: uiMargin, Y: uiContentTop + 4 + float64(i)*42, W: 604, H: 38}
 }
 
 func optionsControlRect(i int) Rect {
 	row := optionsRowRect(i)
-	return Rect{X: 232, Y: row.Y + 3, W: 380, H: 34}
+	return Rect{X: 232, Y: row.Y + 3, W: 380, H: 32}
 }
 
 var optionControlLabels = [...]string{"JUMP", "LEFT", "DOWN", "RIGHT", "SHOOT", "BOMB", "ABILITY"}
@@ -326,29 +327,36 @@ func (g *Game) buildOptionsDisplay(ctx *uiCtx) {
 		_ = g.saveConfig()
 	}
 
-	r = g.optionsRow(ctx, 5, "SCREEN SHAKE", "opt.shake")
+	r = g.optionsRow(ctx, 5, "FRAME RATE", "opt.fps")
+	if v := ctx.Segmented("opt.fps", r, displayFrameRateLabels, g.displayFrameRate, false, "FRAME RATE",
+		"How often the picture is drawn. VSYNC follows the monitor (60/144 Hz, no tearing). 60/120/144 cap it with vsync off; UNLIMITED draws as fast as possible. The game itself always runs at 30 ticks per second."); v != g.displayFrameRate {
+		g.setFrameRate(v)
+		_ = g.saveConfig()
+	}
+
+	r = g.optionsRow(ctx, 6, "SMOOTH MOTION", "opt.smooth")
+	if on := ctx.Toggle("opt.smooth", r, g.displaySmoothMotion, false, "SMOOTH MOTION",
+		"Draws moving objects between game ticks, so motion is fluid on 60/120/144 Hz screens instead of stepping 30 times a second. Adds at most one tick (33 ms) of display delay; gameplay and hits are unchanged. Not used with POWER SAVE."); on != g.displaySmoothMotion {
+		g.displaySmoothMotion = on
+		_ = g.saveConfig()
+	}
+
+	r = g.optionsRow(ctx, 7, "SCREEN SHAKE", "opt.shake")
 	if on := ctx.Toggle("opt.shake", r, g.displayScreenShake, false, "SCREEN SHAKE",
 		"Explosions jolt the screen like in the original Flash game. Turn off if it is uncomfortable. Only affects this computer."); on != g.displayScreenShake {
 		g.displayScreenShake = on
 		_ = g.saveConfig()
 	}
 
-	r = g.optionsRow(ctx, 6, "VSYNC", "opt.vsync")
-	if on := ctx.Toggle("opt.vsync", r, g.displayVSync, false, "VSYNC",
-		"Draw in step with the monitor refresh. OFF may tear. The game itself always runs at 30 ticks per second."); on != g.displayVSync {
-		g.setVSync(on)
-		_ = g.saveConfig()
-	}
-
-	r = g.optionsRow(ctx, 7, "POWER SAVE", "opt.power")
+	r = g.optionsRow(ctx, 8, "POWER SAVE", "opt.power")
 	if on := ctx.Toggle("opt.power", r, g.displayPowerSave, false, "POWER SAVE",
-		"Redraw only when the game has advanced (30 frames per second). Saves battery; looks the same because the game runs at 30 ticks."); on != g.displayPowerSave {
+		"Redraw only when the game has advanced (30 frames per second). Saves battery, but turns SMOOTH MOTION off."); on != g.displayPowerSave {
 		g.setPowerSave(on)
 		_ = g.saveConfig()
 	}
 
 	monitors := g.displayMonitors()
-	r = g.optionsRow(ctx, 8, "MONITOR", "opt.monitor")
+	r = g.optionsRow(ctx, 9, "MONITOR", "opt.monitor")
 	monitorLabel := "PRIMARY"
 	if len(monitors) > 0 {
 		i := g.displayMonitor
@@ -556,7 +564,8 @@ func (g *Game) resetDisplaySettings() {
 	g.displayScaling = defaults.ScalingMode
 	g.displayFilter = defaults.ScalingFilter
 	g.displayScreenShake = defaults.ScreenShake
-	g.setVSync(defaults.VSync)
+	g.setFrameRate(defaults.FrameRate)
+	g.displaySmoothMotion = defaults.SmoothMotion
 	g.setPowerSave(defaults.PowerSave)
 	if g.persistent {
 		ebiten.SetFullscreen(false)

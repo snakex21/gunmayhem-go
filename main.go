@@ -71,7 +71,7 @@ func main() {
 		title += " " + updater.CurrentVersion
 	}
 	ebiten.SetWindowTitle(title)
-	ebiten.SetTPS(30)
+	ebiten.SetTPS(game.TicksPerSecond)
 
 	g := game.NewPersistent(cfg, save)
 	if *host {

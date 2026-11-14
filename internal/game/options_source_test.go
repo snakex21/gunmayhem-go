@@ -102,9 +102,14 @@ func TestOptionsDisplayControlsApply(t *testing.T) {
 	if g.displayScreenShake {
 		t.Fatal("screen shake toggle did not switch off")
 	}
-	optionsClick(t, g, "opt.vsync")
-	if g.displayVSync {
-		t.Fatal("vsync toggle did not switch off")
+	fps := optionsItem(t, g, "opt.fps")
+	optionsClickAt(g, fps.rect.X+fps.rect.W*7/10, fps.rect.Y+10)
+	if g.displayFrameRate != displayFrameRate144 {
+		t.Fatalf("frame rate=%d want 144", g.displayFrameRate)
+	}
+	optionsClick(t, g, "opt.smooth")
+	if g.displaySmoothMotion {
+		t.Fatal("smooth motion toggle did not switch off")
 	}
 	optionsClick(t, g, "opt.power")
 	if !g.displayPowerSave {
@@ -113,9 +118,9 @@ func TestOptionsDisplayControlsApply(t *testing.T) {
 
 	g.resetDisplaySettings()
 	if g.quality != 2 || g.displayScaling != displayScalingFit || g.displayFilter != displayFilterAuto ||
-		!g.displayScreenShake || !g.displayVSync || g.displayPowerSave {
-		t.Fatalf("display reset incomplete: q=%d scale=%d filter=%d shake=%v vsync=%v power=%v",
-			g.quality, g.displayScaling, g.displayFilter, g.displayScreenShake, g.displayVSync, g.displayPowerSave)
+		!g.displayScreenShake || g.displayFrameRate != displayFrameRateVSync || !g.displaySmoothMotion || g.displayPowerSave {
+		t.Fatalf("display reset incomplete: q=%d scale=%d filter=%d shake=%v fps=%v smooth=%v power=%v",
+			g.quality, g.displayScaling, g.displayFilter, g.displayScreenShake, g.displayFrameRate, g.displaySmoothMotion, g.displayPowerSave)
 	}
 	setSourceRenderQuality(2)
 }

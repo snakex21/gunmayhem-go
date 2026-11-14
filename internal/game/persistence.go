@@ -10,7 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const persistenceVersion = 7
+const persistenceVersion = 8
 
 // AppConfig contains machine/user preferences. It is deliberately separate
 // from campaign progress so settings can evolve without touching save data.
@@ -30,13 +30,17 @@ type AppConfig struct {
 	AllowCheats         bool    `json:"allow_cheats"`
 	Quality             int     `json:"quality"`
 	// Version 7 display settings (local presentation only, see ui_display.go).
-	ScalingMode   int         `json:"scaling_mode"`
-	ScalingFilter int         `json:"scaling_filter"`
-	VSync         bool        `json:"vsync"`
-	ScreenShake   bool        `json:"screen_shake"`
-	PowerSave     bool        `json:"power_save"`
-	Monitor       int         `json:"monitor"`
-	Controls      [4]Controls `json:"controls"`
+	ScalingMode   int `json:"scaling_mode"`
+	ScalingFilter int `json:"scaling_filter"`
+	// VSync mirrors FrameRate == VSYNC so an older build reading this file
+	// keeps a sensible setting; version 8 reads FrameRate.
+	VSync        bool        `json:"vsync"`
+	FrameRate    int         `json:"frame_rate"`    // version 8: displayFrameRate*
+	SmoothMotion bool        `json:"smooth_motion"` // version 8: render interpolation
+	ScreenShake  bool        `json:"screen_shake"`
+	PowerSave    bool        `json:"power_save"`
+	Monitor      int         `json:"monitor"`
+	Controls     [4]Controls `json:"controls"`
 }
 
 // GM2ChallengeProgress mirrors arena2gamedata.challenge[i]: medal is 0..3 and
@@ -71,6 +75,8 @@ func DefaultAppConfig() AppConfig {
 		AllowCheats:  false,
 		Quality:      2,
 		VSync:        true,
+		FrameRate:    displayFrameRateVSync,
+		SmoothMotion: true,
 		ScreenShake:  true,
 	}
 	for i := range cfg.Controls {
@@ -214,7 +220,21 @@ func normalizeConfig(cfg AppConfig) AppConfig {
 		cfg.PowerSave = defaults.PowerSave
 		cfg.Monitor = defaults.Monitor
 	}
+	if oldVersion < 8 {
+		// Version 8 replaced the VSYNC toggle with FRAME RATE and added
+		// SMOOTH MOTION (on). VSYNC OFF used to mean uncapped.
+		if cfg.VSync {
+			cfg.FrameRate = displayFrameRateVSync
+		} else {
+			cfg.FrameRate = displayFrameRateUnlimited
+		}
+		cfg.SmoothMotion = defaults.SmoothMotion
+	}
 	cfg.Version = persistenceVersion
+	if cfg.FrameRate < 0 || cfg.FrameRate >= displayFrameRateCount {
+		cfg.FrameRate = defaults.FrameRate
+	}
+	cfg.VSync = displayFrameRateVSyncOn(cfg.FrameRate)
 	if cfg.ScalingMode < 0 || cfg.ScalingMode >= displayScalingCount {
 		cfg.ScalingMode = defaults.ScalingMode
 	}
@@ -365,7 +385,7 @@ func ApplyWindowConfig(cfg AppConfig) {
 		ebiten.SetWindowPosition(cfg.WindowX, cfg.WindowY)
 	}
 	ebiten.SetFullscreen(cfg.Fullscreen)
-	ebiten.SetVsyncEnabled(cfg.VSync)
+	ebiten.SetVsyncEnabled(displayFrameRateVSyncOn(cfg.FrameRate))
 	ebiten.SetScreenClearedEveryFrame(!cfg.PowerSave)
 }
 
@@ -388,7 +408,8 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.quality = cfg.Quality
 	g.displayScaling = cfg.ScalingMode
 	g.displayFilter = cfg.ScalingFilter
-	g.displayVSync = cfg.VSync
+	g.displayFrameRate = cfg.FrameRate
+	g.displaySmoothMotion = cfg.SmoothMotion
 	g.displayScreenShake = cfg.ScreenShake
 	g.displayPowerSave = cfg.PowerSave
 	g.displayMonitor = cfg.Monitor
@@ -463,7 +484,9 @@ func (g *Game) currentAppConfig() AppConfig {
 	cfg.Quality = g.quality
 	cfg.ScalingMode = g.displayScaling
 	cfg.ScalingFilter = g.displayFilter
-	cfg.VSync = g.displayVSync
+	cfg.FrameRate = g.displayFrameRate
+	cfg.VSync = displayFrameRateVSyncOn(g.displayFrameRate)
+	cfg.SmoothMotion = g.displaySmoothMotion
 	cfg.ScreenShake = g.displayScreenShake
 	cfg.PowerSave = g.displayPowerSave
 	cfg.Monitor = g.displayMonitor

@@ -214,22 +214,25 @@ type Game struct {
 
 	// Local display settings (ui_display.go). Presentation only: never part of
 	// the simulation, the netplay snapshot or the host's authority.
-	displayScaling     int
-	displayFilter      int
-	displayVSync       bool
-	displayScreenShake bool
-	displayPowerSave   bool
-	displayMonitor     int
-	displayCustomW     int
-	displayCustomH     int
-	finalGeoValid      bool
-	finalEbitenGeo     ebiten.GeoM
-	finalGeo           ebiten.GeoM
-	shakeX             float64
-	shakeTick          int64
-	shakeSeen          []shakeBlastKey
-	powerSaveDrawn     bool
-	powerSaveTick      int64
+	displayScaling      int
+	displayFilter       int
+	displayFrameRate    int  // displayFrameRate* (render_interp.go)
+	displaySmoothMotion bool // render interpolation between ticks
+	displayScreenShake  bool
+	displayPowerSave    bool
+	displayMonitor      int
+	displayCustomW      int
+	displayCustomH      int
+	finalGeoValid       bool
+	finalEbitenGeo      ebiten.GeoM
+	finalGeo            ebiten.GeoM
+	shakeX              float64
+	shakeTick           int64
+	shakeSeen           []shakeBlastKey
+	renderInterp        renderInterpState
+	frameLimiter        frameLimiter
+	powerSaveDrawn      bool
+	powerSaveTick       int64
 
 	gunLibrarySelected          int
 	gunLibraryPressed           int
@@ -362,7 +365,8 @@ func New() *Game {
 		musicVolume:               1,
 		soundVolume:               1,
 		quality:                   2,
-		displayVSync:              true,
+		displayFrameRate:          displayFrameRateVSync,
+		displaySmoothMotion:       true,
 		displayScreenShake:        true,
 		windowedWidth:             ScreenWidth,
 		windowedHeight:            ScreenHeight,
@@ -401,6 +405,8 @@ func (g *Game) Update() error {
 		_ = g.CloseNetplay()
 		return ebiten.Termination
 	}
+	// Render interpolation: remember where everything was before this tick.
+	g.captureRenderPrev(time.Now())
 	g.trackWindowPersistence()
 	g.updateUnfocusedRunPolicy()
 	if g.updatePendingNetJoin() {

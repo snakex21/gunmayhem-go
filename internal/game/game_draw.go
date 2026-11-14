@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.paceFrame()
 	if g.powerSaveSkipDraw() {
 		return
 	}
@@ -36,6 +38,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.assets.EnsureGameplay()
 	g.assets.EnsureScene(g.arena.Number)
 	g.updateScreenShake()
+	// After the shake detector (it keys on tick positions of new blasts):
+	// draw moving objects between the previous and the current tick.
+	defer g.beginRenderInterpolation(time.Now())()
 
 	// Symbol 1391 source order/matrices: scene1 (0,0), scene2 (0,0),
 	// gameplay, foreground (51.1,192.6). SourceRaster preserves each child

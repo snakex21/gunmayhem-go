@@ -49,6 +49,8 @@ func TestConfigRoundTrip(t *testing.T) {
 	cfg.ScalingMode = displayScalingInteger
 	cfg.ScalingFilter = displayFilterSmooth
 	cfg.VSync = false
+	cfg.FrameRate = displayFrameRate144
+	cfg.SmoothMotion = false
 	cfg.ScreenShake = false
 	cfg.PowerSave = true
 	cfg.Monitor = 1
@@ -247,11 +249,12 @@ func TestLoadV6ConfigMigratesToDisplaySettings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Version != 7 || got.WindowWidth != 1350 || got.WindowHeight != 900 || !got.Fullscreen ||
+	if got.Version != persistenceVersion || got.WindowWidth != 1350 || got.WindowHeight != 900 || !got.Fullscreen ||
 		got.MusicVolume != 0.4 || got.SoundVolume != 0.7 || got.Quality != 1 {
 		t.Fatalf("v6 settings lost: %+v", got)
 	}
 	if got.ScalingMode != displayScalingFit || got.ScalingFilter != displayFilterAuto || !got.VSync ||
+		got.FrameRate != displayFrameRateVSync || !got.SmoothMotion ||
 		!got.ScreenShake || got.PowerSave || got.Monitor != 0 {
 		t.Fatalf("v6 display defaults: %+v", got)
 	}
@@ -266,18 +269,41 @@ func TestNewPersistentAppliesDisplaySettings(t *testing.T) {
 	cfg := DefaultAppConfig()
 	cfg.ScalingMode = displayScalingStretch
 	cfg.ScalingFilter = displayFilterSharp
-	cfg.VSync = false
+	cfg.FrameRate = displayFrameRate120
+	cfg.SmoothMotion = false
 	cfg.ScreenShake = false
 	cfg.PowerSave = true
 	g := NewPersistent(cfg, DefaultSaveData())
 	g.persistent = false // no window system in unit tests
-	if g.displayScaling != displayScalingStretch || g.displayFilter != displayFilterSharp || g.displayVSync ||
-		g.displayScreenShake || !g.displayPowerSave {
-		t.Fatalf("display settings not applied: scale=%d filter=%d vsync=%v shake=%v power=%v",
-			g.displayScaling, g.displayFilter, g.displayVSync, g.displayScreenShake, g.displayPowerSave)
+	if g.displayScaling != displayScalingStretch || g.displayFilter != displayFilterSharp || g.displayFrameRate != displayFrameRate120 ||
+		g.displaySmoothMotion || g.displayScreenShake || !g.displayPowerSave {
+		t.Fatalf("display settings not applied: scale=%d filter=%d fps=%v smooth=%v shake=%v power=%v",
+			g.displayScaling, g.displayFilter, g.displayFrameRate, g.displaySmoothMotion, g.displayScreenShake, g.displayPowerSave)
 	}
 	got := g.currentAppConfig()
-	if got.ScalingMode != cfg.ScalingMode || got.ScalingFilter != cfg.ScalingFilter || got.VSync || got.ScreenShake || !got.PowerSave {
+	if got.ScalingMode != cfg.ScalingMode || got.ScalingFilter != cfg.ScalingFilter || got.VSync || got.FrameRate != displayFrameRate120 ||
+		got.SmoothMotion || got.ScreenShake || !got.PowerSave {
 		t.Fatalf("display settings not saved back: %+v", got)
+	}
+}
+
+// Version 8 replaced the VSYNC toggle with FRAME RATE and added SMOOTH MOTION.
+func TestConfigV7MigratesVSyncToFrameRate(t *testing.T) {
+	off := normalizeConfig(AppConfig{Version: 7, VSync: false, Quality: 2})
+	if off.Version != persistenceVersion || off.FrameRate != displayFrameRateUnlimited || off.VSync || !off.SmoothMotion {
+		t.Fatalf("v7 vsync off migrated to %+v", off)
+	}
+	on := normalizeConfig(AppConfig{Version: 7, VSync: true, Quality: 2})
+	if on.FrameRate != displayFrameRateVSync || !on.VSync || !on.SmoothMotion {
+		t.Fatalf("v7 vsync on migrated to %+v", on)
+	}
+	// Version 8 values are kept (SMOOTH MOTION off stays off), and a bad
+	// frame rate falls back to VSYNC.
+	v8 := normalizeConfig(AppConfig{Version: 8, FrameRate: displayFrameRate60, SmoothMotion: false, Quality: 2})
+	if v8.FrameRate != displayFrameRate60 || v8.SmoothMotion || v8.VSync {
+		t.Fatalf("v8 settings changed: %+v", v8)
+	}
+	if bad := normalizeConfig(AppConfig{Version: 8, FrameRate: 42, Quality: 2}); bad.FrameRate != displayFrameRateVSync || !bad.VSync {
+		t.Fatalf("invalid frame rate not reset: %+v", bad)
 	}
 }

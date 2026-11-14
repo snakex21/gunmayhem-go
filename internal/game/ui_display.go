@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -318,10 +319,27 @@ func (g *Game) setFullscreen(on bool) {
 	g.toggleOptionsFullscreen()
 }
 
-func (g *Game) setVSync(on bool) {
-	g.displayVSync = on
+// setFrameRate applies a FRAME RATE choice (displayFrameRate*). VSYNC draws
+// once per monitor refresh; the numeric caps and UNLIMITED turn vsync off.
+// The simulation always runs at TicksPerSecond regardless.
+func (g *Game) setFrameRate(mode int) {
+	if mode < 0 || mode >= displayFrameRateCount {
+		mode = displayFrameRateVSync
+	}
+	g.displayFrameRate = mode
+	g.frameLimiter = frameLimiter{}
 	if g.persistent {
-		ebiten.SetVsyncEnabled(on)
+		ebiten.SetVsyncEnabled(displayFrameRateVSyncOn(mode))
+	}
+}
+
+// paceFrame enforces a numeric FRAME RATE cap (vsync is off then).
+func (g *Game) paceFrame() {
+	if g == nil || !g.persistent {
+		return
+	}
+	if d := g.frameLimiter.delay(time.Now(), displayFrameRateCap(g.displayFrameRate)); d > 0 {
+		time.Sleep(d)
 	}
 }
 

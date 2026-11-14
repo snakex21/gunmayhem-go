@@ -144,7 +144,8 @@ func TestDisplayAndQualitySettingsAreLocalOnly(t *testing.T) {
 		g.displayScaling = s.scaling
 		g.displayFilter = s.filter
 		g.displayScreenShake = !g.displayScreenShake
-		g.displayVSync = !g.displayVSync
+		g.displayFrameRate = (g.displayFrameRate + 1) % displayFrameRateCount
+		g.displaySmoothMotion = !g.displaySmoothMotion
 		// Rendering (incl. the LOW particle cull and shake detection) must not
 		// mutate any simulated or replicated state.
 		g.Draw(screen)
