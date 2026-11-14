@@ -66,7 +66,7 @@ func updateCrates(arena Map, crates []Crate, players []*Player, unlocked []int, 
 			// Source crate clip increments pgsdata[player-1][5] on pickup.
 			p.CratesCollected++
 			if len(unlocked) > 0 {
-				randGun := unlocked[rand.Intn(len(unlocked))]
+				randGun := pickCrateWeapon(unlocked)
 				// Source perk 4: one in three crate pickups becomes the minigun.
 				if p.PerkNumber == 4 && rand.Intn(3) == 0 {
 					randGun = 55
@@ -81,6 +81,47 @@ func updateCrates(arena Map, crates []Crate, players []*Player, unlocked []int, 
 			break
 		}
 	}
+}
+
+// Crate draw weights: a source weapon (1-86) is twice as likely as any one
+// added weapon (87+), which keeps the original arsenal at roughly half of all
+// crate drops even though the added roster is larger.
+const (
+	crateWeightOriginal = 2
+	crateWeightAdded    = 1
+)
+
+func crateWeaponWeight(number int) int {
+	if number >= 1 && number <= 86 {
+		return crateWeightOriginal
+	}
+	return crateWeightAdded
+}
+
+// pickCrateWeapon draws one weapon from pool with crateWeaponWeight. A pool
+// of source weapons only keeps the exact source draw (random(n) over the
+// pool), so GM1/GM2 crate behaviour is unchanged.
+func pickCrateWeapon(pool []int) int {
+	total := 0
+	mixed := false
+	for _, n := range pool {
+		w := crateWeaponWeight(n)
+		total += w
+		if w != crateWeightOriginal {
+			mixed = true
+		}
+	}
+	if !mixed || total <= 0 {
+		return pool[rand.Intn(len(pool))]
+	}
+	r := rand.Intn(total)
+	for _, n := range pool {
+		r -= crateWeaponWeight(n)
+		if r < 0 {
+			return n
+		}
+	}
+	return pool[len(pool)-1]
 }
 
 func transformedLocalRect(r Rect, x, y, sx, sy float64) Rect {

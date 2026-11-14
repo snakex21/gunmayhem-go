@@ -62,7 +62,12 @@ func TestGM2CratePoolMatchesSource(t *testing.T) {
 		t.Fatal("local unpacked GM2 source was found but runtime asset availability check rejected it")
 	}
 	developed := developedCrateWeapons()
-	custom := availableCustomWeaponNumbers()
+	var custom []int
+	for _, n := range availableCustomWeaponNumbers() {
+		if developedCrateEligible(n) {
+			custom = append(custom, n)
+		}
+	}
 	wantLast := 86
 	if len(custom) > 0 {
 		wantLast = custom[len(custom)-1]

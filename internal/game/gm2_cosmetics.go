@@ -276,13 +276,14 @@ func developedHandgunSelectionItems() []customSelectionItem {
 
 func developedThrowableSelectionItems() []customSelectionItem {
 	const (
-		cols   = 2
-		cellW  = 84.0
-		cellH  = 72.0
-		stepX  = 92.0
-		stepY  = 86.0
-		startX = 10.0
-		startY = 430.0
+		// Three columns so all throwables (10 and counting) fit above BACK.
+		cols   = 3
+		cellW  = 59.0
+		cellH  = 70.0
+		stepX  = 62.0
+		stepY  = 76.0
+		startX = 5.0
+		startY = 428.0
 	)
 	out := make([]customSelectionItem, 0, throwableTypeCount)
 	for kind := 0; kind < throwableTypeCount; kind++ {
@@ -305,6 +306,8 @@ func developedCustomSelectionItems(editor int) []customSelectionItem {
 		return developedHandgunSelectionItems()
 	case customEditThrowable:
 		return developedThrowableSelectionItems()
+	case customEditPerk:
+		return developedPerkSelectionItems()
 	case customEditEyes:
 		if gm2CosmeticsAvailable() {
 			return gm2FaceSelectionItems()

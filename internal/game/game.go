@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -22,6 +23,7 @@ type Game struct {
 	flashes          []MuzzleFlash
 	grenades         []Grenade
 	firePatches      []FirePatch
+	areaEffects      []AreaEffect // gas / smoke clouds, flashbang bursts
 	portals          []Portal
 	dynamiteFX       []DynamiteEffect
 	blastFX          []BlastEffect
@@ -216,6 +218,12 @@ type Game struct {
 	globalDHTAdvertiser       *globalDHTAdvertiser
 	p2pHost                   *p2pQUICHost
 	cloudflareTunnel          *cloudflareQuickTunnel
+	pendingNetJoin            *pendingNetJoin // async join in progress (online_ux.go)
+	inviteCopyFeedback        string
+	inviteCopyFeedbackUntil   time.Time
+	runnableUnfocused         bool   // last value passed to ebiten.SetRunnableOnUnfocused
+	netDisconnectNotice       string // why the last online session ended (net_session_ux.go)
+	netDisconnectNoticeUntil  time.Time
 	natPortMapper             *natPortMapper
 	onlineSessionVisibility   int // OPEN vs INVITE CODE
 	onlineSessionScope        int // LAN vs INTERNET+LAN
@@ -238,7 +246,7 @@ type Game struct {
 	onlinePerksEnabled        bool
 	onlinePowerupsEnabled     bool
 	onlineBlockedWeapons      [developedWeaponSlotCount]bool
-	onlineBlockedPerks        [10]bool
+	onlineBlockedPerks        [onlinePerkTableSize]bool
 	postGameReady             [4]bool
 	postGameReadyCountdown    int
 
@@ -334,6 +342,12 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 	g.trackWindowPersistence()
+	g.updateUnfocusedRunPolicy()
+	if g.updatePendingNetJoin() {
+		g.updateUnfocusedRunPolicy()
+		return nil
+	}
+	g.updateInviteCodeClipboard()
 	if g.netplay != nil && g.netplay.mode == netplayClient {
 		if inpututil.IsKeyJustPressed(ebiten.KeyF11) {
 			if !ebiten.IsFullscreen() {
@@ -389,7 +403,8 @@ func (g *Game) Update() error {
 	g.updateChaosMode()
 	g.syncRuntimePlayerRuleModifiers()
 	runtimeArena := g.customRuntimeArena()
-	for _, p := range g.players {
+	weaponFiredInUpdate := make([]bool, len(g.players))
+	for i, p := range g.players {
 		speedBefore := p.SpeedTime
 		miniForTrail := p.MiniTime > 0
 		if g.GameWin {
@@ -406,7 +421,13 @@ func (g *Game) Update() error {
 				}
 				afterPhysics = func() { decideAIController(p, g) }
 			}
-			p.Update(runtimeArena, beforeMove, afterPhysics)
+			// The weapon fires inside the player update, before that frame's
+			// friction, as in the source onEnterFrame (recoil, then vx *= 0.93).
+			fire := func() {
+				weaponFiredInUpdate[i] = true
+				g.updatePlayerWeapon(p)
+			}
+			p.UpdateWithFire(runtimeArena, beforeMove, afterPhysics, fire)
 		}
 		if p.HardLanded {
 			g.playRandomDropSound()
@@ -476,39 +497,12 @@ func (g *Game) Update() error {
 			g.explosions = append(g.explosions, Explosion{X: p.LastDeathX, Y: p.LastDeathY - 20, Life: 18})
 		}
 	}
-	for _, p := range g.players {
+	for i, p := range g.players {
 		if !g.GameWin {
-			ammoBefore := p.Weapon.Bullets
-			weaponBefore := p.Weapon.Def.Number
-			shotsBefore := p.ShotsFired
-			bulletsBefore := len(g.bullets)
-			if g.customModifierActive(customModifierExplosivesOnly) {
-				p.Grenades = 9999
-			} else {
-				if g.customModifierActive(customModifierInfiniteAmmo) {
-					p.Weapon.Bullets = 9999
-					ammoBefore = p.Weapon.Bullets
-				}
-				updateWeapon(p, &g.bullets, &g.shells, &g.flashes)
-				if g.customModifierActive(customModifierNoReload) && p.ShotsFired > shotsBefore && ammoBefore <= 1 {
-					p.EquipWeapon(weaponBefore)
-				}
-				if g.customModifierActive(customModifierDoubleKnockback) {
-					for i := bulletsBefore; i < len(g.bullets); i++ {
-						g.bullets[i].Firepower *= 2
-					}
-				}
-			}
-			if p.Weapon.Bullets < ammoBefore || p.ShotsFired > shotsBefore {
-				playSound := true
-				if spec, ok := developedWeaponSpec(weaponBefore); ok && spec.Projectile == DevelopedProjectileFlame {
-					// The flame loop is built from overlapping short bursts. Starting a
-					// new PCM clip every 60 Hz tick would stack six copies and clip.
-					playSound = p.ShotsFired%6 == 1
-				}
-				if playSound {
-					g.playSourceGunSound(weaponBefore)
-				}
+			if i >= len(weaponFiredInUpdate) || !weaponFiredInUpdate[i] {
+				// The frame ended before the shooting step (death/respawn or an
+				// inactive player): keep the previous post-update firing.
+				g.updatePlayerWeapon(p)
 			}
 			for _, sound := range p.PendingSounds {
 				g.playSourceSFX(sound, false)
@@ -556,8 +550,16 @@ func (g *Game) Update() error {
 			grenadeVY[i] = p.VY
 		}
 	}
-	updateGrenades(runtimeArena, g.grenades, g.players, &g.explosions, &g.dynamiteFX, &g.blastFX, &g.firePatches)
+	firePatchesBefore := len(g.firePatches)
+	areaEffectsBefore := len(g.areaEffects)
+	updateGrenadesWithAreas(runtimeArena, g.grenades, g.players, &g.explosions, &g.dynamiteFX, &g.blastFX, &g.firePatches, &g.areaEffects)
+	if len(g.firePatches) > firePatchesBefore {
+		g.playSourceSFXGain("dev_flame.wav", true, 1.6) // Molotov bottle bursting into flame
+	}
+	g.playAreaEffectSpawnSounds(areaEffectsBefore)
+	g.updateAIFlashbangAwareness()
 	updateFirePatches(g.firePatches, g.players)
+	updateAreaEffects(g.areaEffects, g.players)
 	updatePortalTravel(g.portals, g.players, g.grenades)
 	if grenadeVX != nil {
 		for i, p := range g.players {
@@ -638,6 +640,7 @@ func (g *Game) Update() error {
 	g.flashes = compactFlashes(g.flashes)
 	g.grenades = compactGrenades(g.grenades)
 	g.firePatches = compactFirePatches(g.firePatches)
+	g.areaEffects = compactAreaEffects(g.areaEffects)
 	g.dynamiteFX = compactDynamiteEffects(g.dynamiteFX)
 	g.blastFX = compactBlastEffects(g.blastFX)
 	g.jetThrustFX = compactJetThrustEffects(g.jetThrustFX)
@@ -677,6 +680,7 @@ func (g *Game) resetArenaState() {
 	g.flashes = g.flashes[:0]
 	g.grenades = g.grenades[:0]
 	g.firePatches = g.firePatches[:0]
+	g.areaEffects = g.areaEffects[:0]
 	g.portals = g.portals[:0]
 	g.dynamiteFX = g.dynamiteFX[:0]
 	g.blastFX = g.blastFX[:0]
@@ -846,6 +850,46 @@ func (g *Game) switchMap(delta int) {
 	}
 }
 
+// updatePlayerWeapon runs one player's shooting step for this frame: the
+// trigger/ROF check and FIREBULLET() (with recoil) plus the custom-modifier and
+// gun-sound bookkeeping around it.
+func (g *Game) updatePlayerWeapon(p *Player) {
+	ammoBefore := p.Weapon.Bullets
+	weaponBefore := p.Weapon.Def.Number
+	shotsBefore := p.ShotsFired
+	bulletsBefore := len(g.bullets)
+	if g.customModifierActive(customModifierExplosivesOnly) {
+		p.Grenades = 9999
+	} else {
+		if g.customModifierActive(customModifierInfiniteAmmo) {
+			p.Weapon.Bullets = 9999
+			ammoBefore = p.Weapon.Bullets
+		}
+		updateWeapon(p, &g.bullets, &g.shells, &g.flashes)
+		// Flashbang blindness and smoke throw this frame's shots off.
+		g.applyAimDisturbance(p, g.bullets[bulletsBefore:])
+		if g.customModifierActive(customModifierNoReload) && p.ShotsFired > shotsBefore && ammoBefore <= 1 {
+			p.EquipWeapon(weaponBefore)
+		}
+		if g.customModifierActive(customModifierDoubleKnockback) {
+			for i := bulletsBefore; i < len(g.bullets); i++ {
+				g.bullets[i].Firepower *= 2
+			}
+		}
+	}
+	if p.Weapon.Bullets < ammoBefore || p.ShotsFired > shotsBefore {
+		playSound := true
+		if spec, ok := developedWeaponSpec(weaponBefore); ok && spec.Projectile == DevelopedProjectileFlame {
+			// The flame loop is built from overlapping short bursts. Starting a
+			// new PCM clip every 60 Hz tick would stack six copies and clip.
+			playSound = p.ShotsFired%6 == 1
+		}
+		if playSound {
+			g.playSourceGunSound(weaponBefore)
+		}
+	}
+}
+
 func (g *Game) updateSourceCamera() {
 	active := make([]*Player, 0, 4)
 	for _, p := range g.players {
@@ -924,6 +968,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	if g.screen != screenGameplay {
 		g.drawMenu(screen)
+		g.drawNetPingOverlay(screen)
 		g.drawGlobalFade(screen)
 		return
 	}
@@ -958,6 +1003,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawCombat(screen)
 	g.drawPortals(screen)
 	g.drawFirePatches(screen)
+	g.drawGroundAreaEffects(screen)
 	g.drawCrates(screen)
 	g.drawPowerups(screen)
 	g.drawTestGunPickup(screen)
@@ -972,6 +1018,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.drawPlayer(screen, &drawP)
 		}
 	}
+	g.drawPlayerStatusEffects(screen)
+	g.drawSmokeClouds(screen)
+	g.drawFlashBursts(screen)
+	g.drawGrenadeChargeIndicators(screen)
 	// fx_powerupname and fx_bling are root-attached runtime clips and sit over
 	// the player/world art, before the high-depth HUD/player arrows.
 	g.drawPowerupPickupEffects(screen)
@@ -984,7 +1034,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawExtraCampaignHazardHUD(screen)
 		g.drawChaosHUD(screen)
 	}
+	g.drawViewerBlindWhiteout(screen)
 	g.drawGameplayInteractions(screen)
+	g.drawNetPingOverlay(screen)
 	g.drawGlobalFade(screen)
 }
 
@@ -1181,7 +1233,9 @@ func (g *Game) drawBullet(screen *ebiten.Image, b *Bullet) {
 	}
 	sx := b.TrailWidth / natural
 	rotation := b.Rotation
-	if b.Kind != BulletShotgun && b.Facing < 0 {
+	// Straight tracers keep Rotation 0 unless aim disturbance (blind/smoke)
+	// tilted them; then Rotation is their true flight angle.
+	if b.Kind != BulletShotgun && b.Facing < 0 && b.Rotation == 0 {
 		rotation = 180
 	}
 	drawSourceRasterRot(screen, raster, g.worldX(b.X), g.worldY(b.Y), sx, 1, rotation, b.TrailAlpha*b.Alpha)
@@ -1303,9 +1357,13 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 		g.drawPlayerJetpack(screen, p)
 	}
 	g.drawPlayerBody(screen, p)
+	g.drawPlayerKevlar(screen, p, g.playerTorsoRaster(p))
+	// A head perk (goggles / gas mask) replaces the chosen hat at render time
+	// only; HatNumber and the saved config stay untouched.
+	headgear := playerHeadgearPerk(p)
 	// Source hats 8 and 22 swapDepths with eyes and therefore sit behind the
 	// eye layer; all other player_hat frames stay in front of it.
-	if p.HatNumber == 8 || p.HatNumber == 22 {
+	if headgear == 0 && (p.HatNumber == 8 || p.HatNumber == 22) {
 		g.drawPlayerHat(screen, p)
 	}
 	eyes := g.assets.Eyes
@@ -1320,7 +1378,9 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 		}
 	}
 	drawPlayerPart(screen, eyes, p, 0, p.VisualEyesY)
-	if p.HatNumber != 8 && p.HatNumber != 22 {
+	if headgear != 0 {
+		g.drawPlayerHeadgear(screen, p, headgear, eyes)
+	} else if p.HatNumber != 8 && p.HatNumber != 22 {
 		g.drawPlayerHat(screen, p)
 	}
 

@@ -84,17 +84,35 @@ type cborNetplayCodec struct{}
 // each message down to the fields it actually needs; Decode still targets
 // netWireMessage, so absent fields decode to their zero values as before.
 type netWireInputMsg struct {
-	Type     int              `cbor:",omitempty"`
-	Protocol int              `cbor:",omitempty"`
-	PlayerID int              `cbor:",omitempty"`
-	Input    PlayerInputState `cbor:",omitempty"`
+	Type        int    `cbor:",omitempty"`
+	Protocol    int    `cbor:",omitempty"`
+	PlayerID    int    `cbor:",omitempty"`
+	InputSeq    uint32 `cbor:",omitempty"`
+	InputFrames []byte `cbor:",omitempty"`
 }
 
 type netWireStateMsg struct {
-	Type     int         `cbor:",omitempty"`
-	Protocol int         `cbor:",omitempty"`
-	PlayerID int         `cbor:",omitempty"`
-	State    netSnapshot `cbor:",omitempty"`
+	Type       int    `cbor:",omitempty"`
+	Protocol   int    `cbor:",omitempty"`
+	PlayerID   int    `cbor:",omitempty"`
+	Tick       uint32 `cbor:",omitempty"`
+	Payload    []byte `cbor:",omitempty"`
+	PayloadLen int    `cbor:",omitempty"`
+}
+
+type netWireHeartbeatMsg struct {
+	Type     int    `cbor:",omitempty"`
+	Protocol int    `cbor:",omitempty"`
+	PlayerID int    `cbor:",omitempty"`
+	PingTime int64  `cbor:",omitempty"`
+	Tick     uint32 `cbor:",omitempty"`
+}
+
+type netWireRejectMsg struct {
+	Type        int    `cbor:",omitempty"`
+	Protocol    int    `cbor:",omitempty"`
+	GameVersion string `cbor:",omitempty"`
+	Reason      string `cbor:",omitempty"`
 }
 
 type netWireConfigMsg struct {
@@ -112,11 +130,12 @@ type netWireReadyMsg struct {
 }
 
 type netWireHelloMsg struct {
-	Type      int    `cbor:",omitempty"`
-	Protocol  int    `cbor:",omitempty"`
-	PlayerID  int    `cbor:",omitempty"`
-	Challenge string `cbor:",omitempty"`
-	AuthProof string `cbor:",omitempty"`
+	Type        int    `cbor:",omitempty"`
+	Protocol    int    `cbor:",omitempty"`
+	PlayerID    int    `cbor:",omitempty"`
+	Challenge   string `cbor:",omitempty"`
+	AuthProof   string `cbor:",omitempty"`
+	GameVersion string `cbor:",omitempty"`
 }
 
 type netWireProbeMsg struct {
@@ -134,15 +153,19 @@ func encodeNetMessage(msg netWireMessage) ([]byte, error) {
 	var view any = msg
 	switch msg.Type {
 	case netMessageInput:
-		view = netWireInputMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Input: msg.Input}
+		view = netWireInputMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, InputSeq: msg.InputSeq, InputFrames: msg.InputFrames}
 	case netMessageState:
-		view = netWireStateMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, State: msg.State}
+		view = netWireStateMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Tick: msg.Tick, Payload: msg.Payload, PayloadLen: msg.PayloadLen}
+	case netMessagePing, netMessagePong, netMessageAck:
+		view = netWireHeartbeatMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, PingTime: msg.PingTime, Tick: msg.Tick}
+	case netMessageReject:
+		view = netWireRejectMsg{Type: msg.Type, Protocol: msg.Protocol, GameVersion: msg.GameVersion, Reason: msg.Reason}
 	case netMessagePlayerConfig:
 		view = netWireConfigMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Config: msg.Config}
 	case netMessagePostGameReady:
 		view = netWireReadyMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Ready: msg.Ready}
 	case netMessageHello, netMessageChallenge:
-		view = netWireHelloMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Challenge: msg.Challenge, AuthProof: msg.AuthProof}
+		view = netWireHelloMsg{Type: msg.Type, Protocol: msg.Protocol, PlayerID: msg.PlayerID, Challenge: msg.Challenge, AuthProof: msg.AuthProof, GameVersion: msg.GameVersion}
 	case netMessageProbe:
 		view = netWireProbeMsg{Type: msg.Type, Protocol: msg.Protocol}
 	case netMessageProbeReply:
@@ -168,6 +191,33 @@ func (cborNetplayCodec) Decode(payload []byte, msg *netWireMessage) error {
 		return fmt.Errorf("decode netplay message: %w", err)
 	}
 	return nil
+}
+
+// DecodeLenient ignores unknown fields. It is used only for handshake
+// messages, so a peer running a different build still yields its protocol
+// and game version for a clear "version mismatch" message.
+func (cborNetplayCodec) DecodeLenient(payload []byte, msg *netWireMessage) error {
+	if msg == nil {
+		return errors.New("nil netplay message target")
+	}
+	*msg = netWireMessage{}
+	if err := netCBORDecLenient.Unmarshal(payload, msg); err != nil {
+		return fmt.Errorf("decode netplay message: %w", err)
+	}
+	return nil
+}
+
+type lenientNetplayCodec interface {
+	DecodeLenient([]byte, *netWireMessage) error
+}
+
+type lenientCodecAdapter struct{ netplayCodec }
+
+func (a lenientCodecAdapter) Decode(payload []byte, msg *netWireMessage) error {
+	if l, ok := a.netplayCodec.(lenientNetplayCodec); ok {
+		return l.DecodeLenient(payload, msg)
+	}
+	return a.netplayCodec.Decode(payload, msg)
 }
 
 type netplayStack struct {
@@ -246,6 +296,9 @@ type netplayLink struct {
 	codec   netplayCodec
 	writeMu sync.Mutex
 	closed  atomic.Bool
+
+	bytesIn  atomic.Int64 // framed bytes, for bandwidth diagnostics
+	bytesOut atomic.Int64
 }
 
 // netplayOutbox keeps realtime input separate from control state. A flood of
@@ -256,6 +309,9 @@ type netplayOutbox struct {
 	config  chan netWireMessage
 	ready   chan netWireMessage
 	control chan netWireMessage
+	ping    chan netWireMessage
+	pong    chan netWireMessage
+	ack     chan netWireMessage
 }
 
 func newNetplayOutbox() *netplayOutbox {
@@ -264,6 +320,9 @@ func newNetplayOutbox() *netplayOutbox {
 		config:  make(chan netWireMessage, 1),
 		ready:   make(chan netWireMessage, 1),
 		control: make(chan netWireMessage, 1),
+		ping:    make(chan netWireMessage, 1),
+		pong:    make(chan netWireMessage, 1),
+		ack:     make(chan netWireMessage, 1),
 	}
 }
 
@@ -294,6 +353,12 @@ func (o *netplayOutbox) Push(msg netWireMessage) {
 		queueLatestNetplayMessage(o.config, msg)
 	case netMessagePostGameReady:
 		queueLatestNetplayMessage(o.ready, msg)
+	case netMessagePing:
+		queueLatestNetplayMessage(o.ping, msg)
+	case netMessagePong:
+		queueLatestNetplayMessage(o.pong, msg)
+	case netMessageAck:
+		queueLatestNetplayMessage(o.ack, msg)
 	default:
 		queueLatestNetplayMessage(o.control, msg)
 	}
@@ -310,6 +375,12 @@ func (o *netplayOutbox) Next(stop, sessionDone <-chan struct{}) (netWireMessage,
 		return msg, true
 	case msg := <-o.ready:
 		return msg, true
+	case msg := <-o.pong:
+		return msg, true
+	case msg := <-o.ping:
+		return msg, true
+	case msg := <-o.ack:
+		return msg, true
 	case msg := <-o.input:
 		return msg, true
 	case <-stop:
@@ -323,7 +394,19 @@ func (l *netplayLink) Read(maxFrame int, msg *netWireMessage) error {
 	if l == nil || l.conn == nil || l.closed.Load() {
 		return net.ErrClosed
 	}
-	return readNetFrame(l.conn, l.codec, maxFrame, msg)
+	n, err := readNetFrameN(l.conn, l.codec, maxFrame, msg)
+	l.bytesIn.Add(int64(n))
+	return err
+}
+
+// ReadLenient reads one handshake message, ignoring unknown fields.
+func (l *netplayLink) ReadLenient(maxFrame int, msg *netWireMessage) error {
+	if l == nil || l.conn == nil || l.closed.Load() {
+		return net.ErrClosed
+	}
+	n, err := readNetFrameN(l.conn, lenientCodecAdapter{l.codec}, maxFrame, msg)
+	l.bytesIn.Add(int64(n))
+	return err
 }
 
 func (l *netplayLink) Write(msg netWireMessage, maxFrame int) error {
@@ -335,7 +418,9 @@ func (l *netplayLink) Write(msg netWireMessage, maxFrame int) error {
 	if l.closed.Load() {
 		return net.ErrClosed
 	}
-	return writeNetFrame(l.conn, l.codec, msg, maxFrame)
+	n, err := writeNetFrameN(l.conn, l.codec, msg, maxFrame)
+	l.bytesOut.Add(int64(n))
+	return err
 }
 
 func (l *netplayLink) SetReadDeadline(deadline time.Time) error {

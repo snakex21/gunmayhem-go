@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,7 +18,9 @@ import (
 )
 
 const (
-	netplayProtocolVersion = 18
+	// 19: compact streamed snapshots, per-frame input history, heartbeat,
+	// game version in the handshake.
+	netplayProtocolVersion = 19
 	maxOnlinePlayers       = 4
 )
 
@@ -38,7 +41,29 @@ const (
 	netMessageProbe         = 6
 	netMessageProbeReply    = 7
 	netMessagePostGameReady = 8
+	netMessageReject        = 9  // host -> client, Reason
+	netMessagePing          = 10 // both ways, PingTime
+	netMessagePong          = 11 // both ways, echoes PingTime
+	netMessageAck           = 12 // client -> host, newest received Tick
 )
+
+// netIdleTimeout disconnects a peer that sent nothing (not even a heartbeat)
+// for this long. Both sides send a ping every netPingInterval, which also keeps
+// Cloudflare's ~100 s idle WebSocket timeout from firing.
+var (
+	netIdleTimeoutNS  atomic.Int64 // tests shorten these; see setNetTimingForTest
+	netPingIntervalNS atomic.Int64
+)
+
+func init() {
+	netIdleTimeoutNS.Store(int64(10 * time.Second))
+	netPingIntervalNS.Store(int64(time.Second))
+}
+
+func netIdleTimeout() time.Duration  { return time.Duration(netIdleTimeoutNS.Load()) }
+func netPingInterval() time.Duration { return time.Duration(netPingIntervalNS.Load()) }
+
+var errNetPeerTimeout = errors.New("connection timed out: no data for 10 s")
 
 type netSFXEvent struct {
 	Seq  uint64
@@ -74,10 +99,25 @@ type netWireMessage struct {
 	Challenge string             `cbor:",omitempty"`
 	AuthProof string             `cbor:",omitempty"`
 	Probe     netProbeInfo       `cbor:",omitempty"`
-	Input     PlayerInputState   `cbor:",omitempty"`
 	Config    CustomPlayerConfig `cbor:",omitempty"`
 	Ready     bool               `cbor:",omitempty"`
-	State     netSnapshot        `cbor:",omitempty"`
+
+	// Handshake identity (protocol 19+).
+	GameVersion string `cbor:",omitempty"`
+	Reason      string `cbor:",omitempty"`
+
+	// Heartbeat and flow control.
+	PingTime int64  `cbor:",omitempty"`
+	Tick     uint32 `cbor:",omitempty"`
+
+	// Input: InputFrames are the packed buttons of client frames
+	// InputSeq-len+1 .. InputSeq (oldest first).
+	InputSeq    uint32 `cbor:",omitempty"`
+	InputFrames []byte `cbor:",omitempty"`
+
+	// State: one DEFLATE-stream chunk of a compact snapshot (netsnapshot_wire.go).
+	Payload    []byte `cbor:",omitempty"`
+	PayloadLen int    `cbor:",omitempty"`
 }
 
 // netSnapshot is deliberately a render-complete snapshot of the authoritative
@@ -88,7 +128,8 @@ type netSnapshot struct {
 	// The host sends one of these per game frame over a Cloudflare WSS link, so
 	// the mostly-zero fields were previously pure overhead.
 	Screen int `cbor:",omitempty"`
-	Arena  Map `cbor:",omitempty"`
+	// Arena is sent separately, only when it changes (netsnapshot_wire.go).
+	Arena Map `cbor:",omitempty" net:"-"`
 
 	Players        []Player              `cbor:",omitempty"`
 	Bullets        []Bullet              `cbor:",omitempty"`
@@ -98,6 +139,7 @@ type netSnapshot struct {
 	Flashes        []MuzzleFlash         `cbor:",omitempty"`
 	Grenades       []Grenade             `cbor:",omitempty"`
 	FirePatches    []FirePatch           `cbor:",omitempty"`
+	AreaEffects    []AreaEffect          `cbor:",omitempty"`
 	Portals        []Portal              `cbor:",omitempty"`
 	DynamiteFX     []DynamiteEffect      `cbor:",omitempty"`
 	BlastFX        []BlastEffect         `cbor:",omitempty"`
@@ -109,7 +151,9 @@ type netSnapshot struct {
 	Powerups       []Powerup             `cbor:",omitempty"`
 	PowerupNameFX  []PowerupNameEffect   `cbor:",omitempty"`
 	LifeBlingFX    []LifeBlingEffect     `cbor:",omitempty"`
-	SFXEvents      []netSFXEvent         `cbor:",omitempty"`
+	// SFXEvents travel in the per-peer envelope so a dropped snapshot never
+	// drops a sound (netsnapshot_wire.go).
+	SFXEvents []netSFXEvent `cbor:",omitempty" net:"-"`
 
 	MapFXFrame int     `cbor:",omitempty"`
 	CameraX    float64 `cbor:",omitempty"`
@@ -148,7 +192,7 @@ type netSnapshot struct {
 	OnlinePerksEnabled             bool                           `cbor:",omitempty"`
 	OnlinePowerupsEnabled          bool                           `cbor:",omitempty"`
 	OnlineBlockedWeapons           [developedWeaponSlotCount]bool `cbor:",omitempty"`
-	OnlineBlockedPerks             [10]bool                       `cbor:",omitempty"`
+	OnlineBlockedPerks             [onlinePerkTableSize]bool      `cbor:",omitempty"`
 	PostGameReady                  [4]bool                        `cbor:",omitempty"`
 	PostGameReadyCountdown         int                            `cbor:",omitempty"`
 
@@ -188,14 +232,19 @@ type netplayPeer struct {
 	link     *netplayLink
 	addr     string
 
-	inputMu       sync.RWMutex
-	input         PlayerInputState
+	inputMu       sync.Mutex
+	input         netInputReplay
 	configMu      sync.RWMutex
 	config        CustomPlayerConfig
 	hasConfig     atomic.Bool
 	postGameReady atomic.Bool
 
-	stateSend chan netSnapshot
+	stateSend chan *netHostFrame
+	pongSend  chan int64
+	ackSignal chan struct{}
+	ackTick   atomic.Uint32
+	sentTick  atomic.Uint32
+	rttMillis atomic.Int64
 	done      chan struct{}
 	closed    atomic.Bool
 }
@@ -229,13 +278,24 @@ type netplaySession struct {
 	probeInfo          netProbeInfo
 	publicTunnelURL    string
 
-	stateMu    sync.RWMutex
-	state      netSnapshot
-	hasState   atomic.Bool
-	outbox     *netplayOutbox
-	lastErrMu  sync.RWMutex
-	lastErr    error
-	remoteAddr string
+	stateMu  sync.RWMutex
+	state    netSnapshot
+	hasState atomic.Bool
+
+	// Host: shared per-tick snapshot encoder (game thread).
+	hostEncMu sync.Mutex
+	hostEnc   netHostEncoder
+	// Client: playout buffer, received sounds, input history, ping.
+	playout      netPlayout
+	sfxMu        sync.Mutex
+	sfxPending   []netSFXEvent
+	sfxLastSeq   uint64
+	inputHistory netInputHistory
+	rttMillis    atomic.Int64
+	outbox       *netplayOutbox
+	lastErrMu    sync.RWMutex
+	lastErr      error
+	remoteAddr   string
 }
 
 func (s *netplaySession) setPublicProbeDetails(info netProbeInfo) {
@@ -421,16 +481,32 @@ func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
 		_ = link.Close()
 		return
 	}
+	// reject tells a protocol-19+ client why it was turned away (shown in its
+	// join error) before closing.
+	reject := func(reason, logReason string) {
+		networkDiagnostic("HOST handshake reject remote=%s reason=%s", conn.RemoteAddr(), logReason)
+		if reason != "" {
+			_ = link.Write(netWireMessage{Type: netMessageReject, Protocol: netplayProtocolVersion, GameVersion: netplayGameVersion(), Reason: reason}, maxServerWireFrame)
+		}
+		_ = link.Close()
+	}
 	_ = link.SetReadDeadline(time.Now().Add(netHandshakeTimeout))
-	if err := link.Write(netWireMessage{Type: netMessageChallenge, Protocol: netplayProtocolVersion, Challenge: challenge}, maxServerWireFrame); err != nil {
+	if err := link.Write(netWireMessage{Type: netMessageChallenge, Protocol: netplayProtocolVersion, GameVersion: netplayGameVersion(), Challenge: challenge}, maxServerWireFrame); err != nil {
 		networkDiagnostic("HOST handshake reject remote=%s reason=write_challenge err=%v", conn.RemoteAddr(), err)
 		_ = link.Close()
 		return
 	}
 	var first netWireMessage
-	if err := link.Read(maxClientWireFrame, &first); err != nil {
+	// Lenient: a client from another build may carry fields this build does
+	// not know; decode what we can so it gets a clear version message.
+	if err := link.ReadLenient(maxClientWireFrame, &first); err != nil {
 		networkDiagnostic("HOST handshake reject remote=%s reason=read_hello err=%v", conn.RemoteAddr(), err)
 		_ = link.Close()
+		return
+	}
+	if first.Type == netMessageHello && (first.Protocol != netplayProtocolVersion || first.GameVersion != netplayGameVersion()) {
+		reject(netVersionMismatchMessage(netplayGameVersion(), netRemoteVersionLabel(first.Protocol, first.GameVersion)),
+			fmt.Sprintf("version_mismatch remote=%q protocol=%d", first.GameVersion, first.Protocol))
 		return
 	}
 	if err := validateNetMessageForHost(first); err != nil {
@@ -457,8 +533,7 @@ func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
 		return
 	}
 	if s.inviteOnly && !onlineSessionProofEqual(s.expectedSessionKey, challenge, strings.TrimSpace(first.AuthProof)) {
-		networkDiagnostic("HOST handshake reject remote=%s reason=invite_auth", conn.RemoteAddr())
-		_ = link.Close()
+		reject("wrong or expired invite code", "invite_auth")
 		return
 	}
 	_ = link.SetReadDeadline(time.Time{})
@@ -480,8 +555,7 @@ func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
 	}
 	if playerID == 0 {
 		s.peersMu.Unlock()
-		networkDiagnostic("HOST handshake reject remote=%s reason=no_online_slot", conn.RemoteAddr())
-		_ = link.Close()
+		reject("the game is full", "no_online_slot")
 		return
 	}
 	peer := &netplayPeer{
@@ -489,12 +563,14 @@ func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
 		conn:      conn,
 		link:      link,
 		addr:      conn.RemoteAddr().String(),
-		stateSend: make(chan netSnapshot, 1),
+		stateSend: make(chan *netHostFrame, 1),
+		pongSend:  make(chan int64, 1),
+		ackSignal: make(chan struct{}, 1),
 		done:      make(chan struct{}),
 	}
 	s.peers[playerID] = peer
 	s.peersMu.Unlock()
-	if err := link.Write(netWireMessage{Type: netMessageHello, Protocol: netplayProtocolVersion, PlayerID: playerID}, maxServerWireFrame); err != nil {
+	if err := link.Write(netWireMessage{Type: netMessageHello, Protocol: netplayProtocolVersion, GameVersion: netplayGameVersion(), PlayerID: playerID}, maxServerWireFrame); err != nil {
 		s.peersMu.Lock()
 		if s.peers[playerID] == peer {
 			delete(s.peers, playerID)
@@ -504,7 +580,7 @@ func (s *netplaySession) prepareIncomingConn(conn net.Conn) {
 		_ = link.Close()
 		return
 	}
-	networkDiagnostic("HOST handshake accepted remote=%s player=%d", conn.RemoteAddr(), playerID)
+	networkDiagnostic("HOST handshake accepted remote=%s player=%d version=%q", conn.RemoteAddr(), playerID, first.GameVersion)
 	go s.hostServePeer(peer)
 }
 
@@ -537,26 +613,136 @@ func (p *netplayPeer) latestInput() PlayerInputState {
 	if p == nil {
 		return PlayerInputState{}
 	}
-	p.inputMu.RLock()
-	defer p.inputMu.RUnlock()
-	return p.input
+	p.inputMu.Lock()
+	defer p.inputMu.Unlock()
+	return unpackNetInput(p.input.newest)
 }
 
-func (p *netplayPeer) queueState(state netSnapshot) {
-	if p == nil || p.closed.Load() {
+// takeInput returns the input for one host simulation tick (see
+// netInputReplay): every client frame is applied once and in order.
+func (p *netplayPeer) takeInput(now time.Time) PlayerInputState {
+	if p == nil {
+		return PlayerInputState{}
+	}
+	p.inputMu.Lock()
+	defer p.inputMu.Unlock()
+	return unpackNetInput(p.input.take(now))
+}
+
+// queueState offers the newest frame to the peer's writer. Only the newest
+// frame is kept: a slow peer skips stale snapshots instead of queueing them.
+func (p *netplayPeer) queueState(frame *netHostFrame) {
+	if p == nil || frame == nil || p.closed.Load() {
 		return
 	}
+	signalLatest(p.stateSend, frame)
+}
+
+// signalLatest puts v in a capacity-1 channel, replacing an unread value.
+func signalLatest[T any](ch chan T, v T) {
 	select {
-	case p.stateSend <- state:
+	case ch <- v:
+		return
 	default:
-		select {
-		case <-p.stateSend:
-		default:
+	}
+	select {
+	case <-ch:
+	default:
+	}
+	select {
+	case ch <- v:
+	default:
+	}
+}
+
+func isNetTimeout(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, os.ErrDeadlineExceeded) {
+		return true
+	}
+	var ne net.Error
+	return errors.As(err, &ne) && ne.Timeout()
+}
+
+// recordNetRTT folds one ping round trip into dst (stored as ms+1; 0 means
+// unknown).
+func recordNetRTT(dst *atomic.Int64, sentUnixNano int64) {
+	if dst == nil || sentUnixNano <= 0 {
+		return
+	}
+	rtt := time.Since(time.Unix(0, sentUnixNano)).Milliseconds()
+	if rtt < 0 || rtt > 60000 {
+		return
+	}
+	if old := dst.Load() - 1; old >= 0 {
+		rtt = (old*3 + rtt) / 4
+	}
+	dst.Store(rtt + 1)
+}
+
+func loadNetRTT(src *atomic.Int64) (int64, bool) {
+	v := src.Load()
+	return v - 1, v > 0
+}
+
+func (p *netplayPeer) inflightTicks() int64 {
+	return int64(p.sentTick.Load()) - int64(p.ackTick.Load())
+}
+
+// hostPeerWriteLoop is the only writer for one peer: state, pings and pongs.
+func (s *netplaySession) hostPeerWriteLoop(peer *netplayPeer) {
+	stream := newNetPeerStream()
+	ping := time.NewTicker(netPingInterval())
+	defer ping.Stop()
+	write := func(msg netWireMessage) bool {
+		msg.Protocol = netplayProtocolVersion
+		msg.PlayerID = peer.playerID
+		if err := peer.link.Write(msg, maxServerWireFrame); err != nil {
+			s.setErr(err)
+			peer.close()
+			return false
 		}
+		return true
+	}
+	var pending *netHostFrame
+	for {
 		select {
-		case p.stateSend <- state:
-		default:
+		case frame := <-peer.stateSend:
+			pending = frame
+		case echo := <-peer.pongSend:
+			if !write(netWireMessage{Type: netMessagePong, PingTime: echo}) {
+				return
+			}
+		case <-ping.C:
+			if !write(netWireMessage{Type: netMessagePing, PingTime: time.Now().UnixNano()}) {
+				return
+			}
+		case <-peer.ackSignal:
+		case <-peer.done:
+			return
 		}
+		if pending == nil {
+			continue
+		}
+		// Backpressure that also works through cloudflared, where writes to
+		// the local tunnel process never block: stop sending while too many
+		// snapshots are unacknowledged, then send only the newest one.
+		if peer.sentTick.Load() != 0 && peer.inflightTicks() >= maxNetInflightTicks {
+			continue
+		}
+		payload, rawLen, err := stream.message(pending)
+		if err != nil {
+			s.setErr(err)
+			peer.close()
+			return
+		}
+		if !write(netWireMessage{Type: netMessageState, Tick: pending.tick, Payload: payload, PayloadLen: rawLen}) {
+			return
+		}
+		peer.sentTick.Store(pending.tick)
+		pending = nil
 	}
 }
 
@@ -564,25 +750,18 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 	writerDone := make(chan struct{})
 	go func() {
 		defer close(writerDone)
-		for {
-			select {
-			case state := <-peer.stateSend:
-				if err := peer.link.Write(netWireMessage{Type: netMessageState, Protocol: netplayProtocolVersion, PlayerID: peer.playerID, State: state}, maxServerWireFrame); err != nil {
-					s.setErr(err)
-					peer.close()
-					return
-				}
-			case <-peer.done:
-				return
-			}
-		}
+		s.hostPeerWriteLoop(peer)
 	}()
 
 	var rate netRateGuard
 	var peerReadErr error
 	for !s.closed.Load() && !peer.closed.Load() {
 		var msg netWireMessage
+		_ = peer.link.SetReadDeadline(time.Now().Add(netIdleTimeout()))
 		if err := peer.link.Read(maxClientWireFrame, &msg); err != nil {
+			if isNetTimeout(err) {
+				err = errNetPeerTimeout
+			}
 			peerReadErr = err
 			if !errors.Is(err, net.ErrClosed) && !peer.closed.Load() {
 				s.setErr(err)
@@ -590,20 +769,22 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 			break
 		}
 		if !rate.Allow(time.Now()) {
-			s.setErr(errors.New("remote client exceeded netplay message rate limit"))
+			peerReadErr = errors.New("remote client exceeded netplay message rate limit")
+			s.setErr(peerReadErr)
 			break
 		}
 		if err := validateNetMessageForHost(msg); err != nil || msg.Type == netMessageHello {
 			if err == nil {
 				err = errors.New("unexpected repeated netplay hello")
 			}
+			peerReadErr = err
 			s.setErr(err)
 			break
 		}
 		switch msg.Type {
 		case netMessageInput:
 			peer.inputMu.Lock()
-			peer.input = msg.Input
+			peer.input.receive(msg.InputSeq, msg.InputFrames, time.Now())
 			peer.inputMu.Unlock()
 		case netMessagePlayerConfig:
 			cfg, err := sanitizeRemotePlayerConfig(msg.Config)
@@ -618,6 +799,15 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 			peer.hasConfig.Store(true)
 		case netMessagePostGameReady:
 			peer.postGameReady.Store(msg.Ready)
+		case netMessageAck:
+			if msg.Tick > peer.ackTick.Load() && msg.Tick <= peer.sentTick.Load() {
+				peer.ackTick.Store(msg.Tick)
+			}
+			signalLatest(peer.ackSignal, struct{}{})
+		case netMessagePing:
+			signalLatest(peer.pongSend, msg.PingTime)
+		case netMessagePong:
+			recordNetRTT(&peer.rttMillis, msg.PingTime)
 		}
 	}
 	peer.close()
@@ -638,7 +828,8 @@ func (s *netplaySession) hostServePeer(peer *netplayPeer) {
 	// Without this line a match abort is indistinguishable from a genuine client
 	// disconnect: the guard only reports "fewer than two participants".
 	if removed {
-		networkDiagnostic("HOST peer disconnected player=%d addr=%s err=%v remaining=%v", peer.playerID, peer.addr, peerReadErr, remaining)
+		rtt, _ := loadNetRTT(&peer.rttMillis)
+		networkDiagnostic("HOST peer disconnected player=%d addr=%s err=%v remaining=%v sent=%dB recv=%dB rtt=%dms", peer.playerID, peer.addr, peerReadErr, remaining, peer.link.bytesOut.Load(), peer.link.bytesIn.Load(), rtt)
 	}
 }
 
@@ -650,11 +841,20 @@ func (s *netplaySession) clientRun(link *netplayLink) {
 
 	_ = link.SetReadDeadline(time.Now().Add(netHandshakeTimeout))
 	var challenge netWireMessage
-	if err := link.Read(maxServerWireFrame, &challenge); err != nil || challenge.Type != netMessageChallenge {
-		if err == nil {
-			err = errors.New("invalid host authentication challenge")
-		}
+	if err := link.ReadLenient(maxServerWireFrame, &challenge); err != nil {
 		s.setErr(fmt.Errorf("netplay handshake challenge: %w", err))
+		return
+	}
+	if challenge.Type == netMessageReject {
+		s.setErr(fmt.Errorf("host rejected the connection: %s", sanitizeNetReason(challenge.Reason)))
+		return
+	}
+	if challenge.Type != netMessageChallenge {
+		s.setErr(errors.New("netplay handshake challenge: invalid host authentication challenge"))
+		return
+	}
+	if challenge.Protocol != netplayProtocolVersion || challenge.GameVersion != netplayGameVersion() {
+		s.setErr(errors.New(netVersionMismatchMessage(netRemoteVersionLabel(challenge.Protocol, challenge.GameVersion), netplayGameVersion())))
 		return
 	}
 	if err := validateNetMessageForClient(challenge); err != nil {
@@ -671,17 +871,22 @@ func (s *netplaySession) clientRun(link *netplayLink) {
 			return
 		}
 	}
-	if err := link.Write(netWireMessage{Type: netMessageHello, Protocol: netplayProtocolVersion, AuthProof: proof}, maxClientWireFrame); err != nil {
+	if err := link.Write(netWireMessage{Type: netMessageHello, Protocol: netplayProtocolVersion, GameVersion: netplayGameVersion(), AuthProof: proof}, maxClientWireFrame); err != nil {
 		s.setErr(fmt.Errorf("netplay handshake response: %w", err))
 		return
 	}
 
 	var hello netWireMessage
-	if err := link.Read(maxServerWireFrame, &hello); err != nil || hello.Type != netMessageHello {
-		if err == nil {
-			err = errors.New("host rejected the connection")
-		}
+	if err := link.ReadLenient(maxServerWireFrame, &hello); err != nil {
 		s.setErr(fmt.Errorf("netplay handshake acceptance: %w", err))
+		return
+	}
+	if hello.Type == netMessageReject {
+		s.setErr(fmt.Errorf("host rejected the connection: %s", sanitizeNetReason(hello.Reason)))
+		return
+	}
+	if hello.Type != netMessageHello {
+		s.setErr(errors.New("netplay handshake acceptance: host rejected the connection"))
 		return
 	}
 	if err := validateNetMessageForClient(hello); err != nil || hello.PlayerID < 2 || hello.PlayerID > maxOnlinePlayers {
@@ -693,7 +898,6 @@ func (s *netplaySession) clientRun(link *netplayLink) {
 	}
 	s.assignedPlayerID.Store(int32(hello.PlayerID))
 	s.ready.Store(true)
-	_ = link.SetReadDeadline(time.Time{})
 
 	stopWriter := make(chan struct{})
 	writerDone := make(chan struct{})
@@ -701,36 +905,121 @@ func (s *netplaySession) clientRun(link *netplayLink) {
 		defer close(writerDone)
 		s.clientWriteLoop(link, stopWriter)
 	}()
+	go s.clientPingLoop(stopWriter)
 	s.clientReadLoop(link)
 	close(stopWriter)
 	_ = link.Close()
 	<-writerDone
 }
 
-func (s *netplaySession) clientReadLoop(link *netplayLink) {
-	for !s.closed.Load() {
-		var msg netWireMessage
-		if err := link.Read(maxServerWireFrame, &msg); err != nil {
-			s.setErr(fmt.Errorf("receive host message: %w", err))
+func (s *netplaySession) clientPingLoop(stop <-chan struct{}) {
+	ticker := time.NewTicker(netPingInterval())
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			s.outbox.Push(netWireMessage{Type: netMessagePing, PingTime: time.Now().UnixNano()})
+		case <-stop:
+			return
+		case <-s.done:
 			return
 		}
-		if err := validateNetMessageForClient(msg); err != nil || msg.Type != netMessageState {
-			if err == nil {
-				err = errors.New("unexpected host message")
+	}
+}
+
+// maxInvalidNetSnapshots: a client drops an individual invalid snapshot and
+// keeps the connection; only a host that keeps sending them is disconnected.
+const maxInvalidNetSnapshots = 30
+
+func (s *netplaySession) clientReadLoop(link *netplayLink) {
+	stream := newNetClientStream()
+	invalid := 0
+	for !s.closed.Load() {
+		var msg netWireMessage
+		_ = link.SetReadDeadline(time.Now().Add(netIdleTimeout()))
+		if err := link.Read(maxServerWireFrame, &msg); err != nil {
+			if isNetTimeout(err) {
+				s.setErr(fmt.Errorf("lost connection to host: %w", errNetPeerTimeout))
+			} else {
+				s.setErr(fmt.Errorf("receive host message: %w", err))
 			}
+			return
+		}
+		if err := validateNetMessageForClient(msg); err != nil {
 			s.setErr(err)
 			s.ready.Store(false)
 			return
 		}
-		if err := validateNetSnapshot(msg.State); err != nil {
-			s.setErr(err)
+		switch msg.Type {
+		case netMessageReject:
+			s.setErr(fmt.Errorf("host closed the connection: %s", sanitizeNetReason(msg.Reason)))
+			return
+		case netMessagePing:
+			s.outbox.Push(netWireMessage{Type: netMessagePong, PingTime: msg.PingTime})
+		case netMessagePong:
+			recordNetRTT(&s.rttMillis, msg.PingTime)
+		case netMessageState:
+			decoded, err := stream.decode(msg.Payload, msg.PayloadLen)
+			if err != nil {
+				// The compression stream cannot resynchronise after a bad chunk.
+				s.setErr(fmt.Errorf("host snapshot: %w", err))
+				return
+			}
+			s.outbox.Push(netWireMessage{Type: netMessageAck, Tick: decoded.tick})
+			s.queueClientSFX(decoded.sfx)
+			if trimmed := trimNetSnapshotLists(&decoded.state); len(trimmed) > 0 {
+				networkDiagnostic("CLIENT trimmed oversized host snapshot tick=%d lists=%v", decoded.tick, trimmed)
+			}
+			if err := validateNetSnapshot(decoded.state); err != nil {
+				invalid++
+				networkDiagnostic("CLIENT dropped invalid host snapshot tick=%d count=%d err=%v", decoded.tick, invalid, err)
+				if invalid >= maxInvalidNetSnapshots {
+					s.setErr(fmt.Errorf("host keeps sending invalid snapshots: %w", err))
+					return
+				}
+				continue
+			}
+			invalid = 0
+			s.playout.push(decoded.tick, decoded.state)
+			s.stateMu.Lock()
+			s.state = decoded.state
+			s.stateMu.Unlock()
+			s.hasState.Store(true)
+		default:
+			s.setErr(errors.New("unexpected host message"))
+			s.ready.Store(false)
 			return
 		}
-		s.stateMu.Lock()
-		s.state = msg.State
-		s.stateMu.Unlock()
-		s.hasState.Store(true)
 	}
+}
+
+func (s *netplaySession) queueClientSFX(events []netSFXEvent) {
+	if len(events) == 0 {
+		return
+	}
+	s.sfxMu.Lock()
+	defer s.sfxMu.Unlock()
+	for _, ev := range events {
+		if ev.Seq <= s.sfxLastSeq {
+			continue
+		}
+		s.sfxLastSeq = ev.Seq
+		s.sfxPending = append(s.sfxPending, ev)
+	}
+	if len(s.sfxPending) > netRecentSFXLimit {
+		s.sfxPending = s.sfxPending[len(s.sfxPending)-netRecentSFXLimit:]
+	}
+}
+
+func (s *netplaySession) drainClientSFX() []netSFXEvent {
+	if s == nil {
+		return nil
+	}
+	s.sfxMu.Lock()
+	defer s.sfxMu.Unlock()
+	out := s.sfxPending
+	s.sfxPending = nil
+	return out
 }
 
 func (s *netplaySession) clientWriteLoop(link *netplayLink, stop <-chan struct{}) {
@@ -872,6 +1161,39 @@ func (s *netplaySession) latestInputFor(playerID int) PlayerInputState {
 	return peer.latestInput()
 }
 
+// takeInputFor consumes one host tick of a remote player's input.
+func (s *netplaySession) takeInputFor(playerID int) PlayerInputState {
+	if s == nil || s.mode != netplayHost {
+		return PlayerInputState{}
+	}
+	s.peersMu.RLock()
+	peer := s.peers[playerID]
+	s.peersMu.RUnlock()
+	return peer.takeInput(time.Now())
+}
+
+// peerRTTMillis reports the measured round trip to a remote player.
+func (s *netplaySession) peerRTTMillis(playerID int) (int64, bool) {
+	if s == nil || s.mode != netplayHost {
+		return 0, false
+	}
+	s.peersMu.RLock()
+	peer := s.peers[playerID]
+	s.peersMu.RUnlock()
+	if peer == nil {
+		return 0, false
+	}
+	return loadNetRTT(&peer.rttMillis)
+}
+
+// hostRTTMillis reports the client's measured round trip to the host.
+func (s *netplaySession) hostRTTMillis() (int64, bool) {
+	if s == nil || s.mode != netplayClient {
+		return 0, false
+	}
+	return loadNetRTT(&s.rttMillis)
+}
+
 func (s *netplaySession) queueClientMessage(msg netWireMessage) {
 	if s == nil || s.closed.Load() || s.mode != netplayClient || !s.connected() || s.outbox == nil {
 		return
@@ -879,8 +1201,14 @@ func (s *netplaySession) queueClientMessage(msg netWireMessage) {
 	s.outbox.Push(msg)
 }
 
+// queueInput records one client frame of input. Call it exactly once per
+// client update during gameplay: the host replays frames one per tick.
 func (s *netplaySession) queueInput(input PlayerInputState) {
-	s.queueClientMessage(netWireMessage{Type: netMessageInput, Input: input})
+	if s == nil || s.closed.Load() || s.mode != netplayClient || !s.connected() || s.outbox == nil {
+		return
+	}
+	seq, frames := s.inputHistory.record(input)
+	s.outbox.Push(netWireMessage{Type: netMessageInput, InputSeq: seq, InputFrames: frames})
 }
 
 func (s *netplaySession) queuePlayerConfig(cfg CustomPlayerConfig) {
@@ -932,10 +1260,16 @@ func (s *netplaySession) latestConfigFor(playerID int) (CustomPlayerConfig, bool
 	return peer.config, true
 }
 
+// queueState encodes the snapshot once (on the caller's goroutine, so no live
+// game state is shared with the writers) and offers the bytes to every peer.
+// state must be a copy owned by the caller (makeNetSnapshot builds one).
 func (s *netplaySession) queueState(state netSnapshot) {
 	if s == nil || s.closed.Load() || s.mode != netplayHost {
 		return
 	}
+	s.hostEncMu.Lock()
+	frame := s.hostEnc.encode(state)
+	s.hostEncMu.Unlock()
 	s.peersMu.RLock()
 	peers := make([]*netplayPeer, 0, len(s.peers))
 	for _, peer := range s.peers {
@@ -943,10 +1277,11 @@ func (s *netplaySession) queueState(state netSnapshot) {
 	}
 	s.peersMu.RUnlock()
 	for _, peer := range peers {
-		peer.queueState(state)
+		peer.queueState(frame)
 	}
 }
 
+// latestState is the newest snapshot received (tests, diagnostics).
 func (s *netplaySession) latestState() (netSnapshot, bool) {
 	if s == nil || !s.hasState.Load() {
 		return netSnapshot{}, false
@@ -954,6 +1289,15 @@ func (s *netplaySession) latestState() (netSnapshot, bool) {
 	s.stateMu.RLock()
 	defer s.stateMu.RUnlock()
 	return s.state, true
+}
+
+// nextPlayoutState advances the client's playout buffer by one tick and
+// returns the (possibly interpolated) snapshot to render.
+func (s *netplaySession) nextPlayoutState() (netSnapshot, bool) {
+	if s == nil || !s.hasState.Load() {
+		return netSnapshot{}, false
+	}
+	return s.playout.next()
 }
 
 func (s *netplaySession) Close() error {
@@ -1348,6 +1692,7 @@ func (g *Game) CloseNetplay() error {
 	if g == nil {
 		return nil
 	}
+	g.cancelPendingNetJoin()
 	if g.serverAdvertiser != nil {
 		_ = g.serverAdvertiser.Close()
 		g.serverAdvertiser = nil
@@ -1443,6 +1788,9 @@ func (g *Game) NetplayStatus() string {
 	case netplayClient:
 		if s.connected() {
 			if s.hasState.Load() {
+				if rtt, ok := s.hostRTTMillis(); ok {
+					return fmt.Sprintf("connected to %s - ping %d ms", s.remoteAddr, rtt)
+				}
 				return "connected to " + s.remoteAddr
 			}
 			return "connected - waiting for host game"
@@ -1489,7 +1837,7 @@ func (g *Game) applyHostRemoteInput() {
 		}
 		if cfg.Type == 1 && connected[p.ID] {
 			p.RemoteControlled = true
-			p.RemoteInput = g.netplay.latestInputFor(p.ID)
+			p.RemoteInput = g.netplay.takeInputFor(p.ID)
 			p.AI = false
 			continue
 		}
@@ -1522,6 +1870,7 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		Flashes:                        append([]MuzzleFlash(nil), g.flashes...),
 		Grenades:                       append([]Grenade(nil), g.grenades...),
 		FirePatches:                    append([]FirePatch(nil), g.firePatches...),
+		AreaEffects:                    append([]AreaEffect(nil), g.areaEffects...),
 		Portals:                        append([]Portal(nil), g.portals...),
 		DynamiteFX:                     append([]DynamiteEffect(nil), g.dynamiteFX...),
 		BlastFX:                        append([]BlastEffect(nil), g.blastFX...),
@@ -1644,6 +1993,7 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 	g.flashes = append(g.flashes[:0], state.Flashes...)
 	g.grenades = append(g.grenades[:0], state.Grenades...)
 	g.firePatches = append(g.firePatches[:0], state.FirePatches...)
+	g.areaEffects = append(g.areaEffects[:0], state.AreaEffects...)
 	g.portals = append(g.portals[:0], state.Portals...)
 	g.dynamiteFX = append(g.dynamiteFX[:0], state.DynamiteFX...)
 	g.blastFX = append(g.blastFX[:0], state.BlastFX...)
@@ -1769,18 +2119,21 @@ func (g *Game) updateNetClient() error {
 		return nil
 	}
 	if !g.netplay.connected() && g.netplay.LastError() != nil {
+		reason := g.netplay.LastError()
 		_ = g.CloseNetplay()
 		g.screen = screenCustomGame
 		g.customOnlineMode = true
 		g.onlineMatchSetup = false
 		g.customNetworkOpen = true
-		g.multiplayerMessage = "HOST DISCONNECTED"
 		g.beginMultiplayerServerBrowser()
+		g.setNetDisconnectNotice("HOST DISCONNECTED: " + friendlyNetError(reason))
+		networkDiagnostic("CLIENT disconnected err=%v", reason)
 		return nil
 	}
-	if state, ok := g.netplay.latestState(); ok {
+	if state, ok := g.netplay.nextPlayoutState(); ok {
 		g.applyNetSnapshot(state)
 	}
+	g.netClientSFXPending = append(g.netClientSFXPending, g.netplay.drainClientSFX()...)
 	if g.screen == screenMultiplayerLobby {
 		// Compatibility with snapshots from the retired standalone lobby.
 		// Online waiting/setup now always uses the unified Custom Game SLOTS page.
@@ -1813,7 +2166,7 @@ func (g *Game) updateNetClient() error {
 	}
 	g.sendOnlineLocalConfigIfChanged()
 	if g.screen == screenGameplay {
-		g.netplay.queueInput(capturePlayerInput(g.controlConfigs[0]))
+		g.netplay.queueInput(netClientInputForFocus(capturePlayerInput(g.controlConfigs[0]), ebiten.IsFocused()))
 	}
 	return nil
 }

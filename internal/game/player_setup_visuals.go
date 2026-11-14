@@ -187,17 +187,23 @@ func drawSetupPerkThumb(dst *ebiten.Image, number int, r Rect, alpha float64) {
 		1: {"NO", "PERKS"}, 2: {"SPEED+"}, 3: {"JUMP+"},
 		4: {"MINI", "GUN"}, 5: {"NO", "RECOIL"}, 6: {"BLAST", "SHIELD"},
 		7: {"EXTRA", "AMMO"}, 8: {"EXTRA", "NADES"}, 9: {"GUN", "SPAWN"},
+		perkFlashGoggles: {"FLASH", "GOGGLES"}, perkThermalGoggles: {"THERMAL", "GOGGLES"},
+		perkGasMask: {"GAS", "MASK"}, perkKevlar: {"KEVLAR"},
 	}
 	colors := map[int]color.NRGBA{
-		1: {R: 0xff, G: 0xff, B: 0xff, A: uint8(255 * alpha)},
-		2: {R: 0x33, G: 0xcc, B: 0x00, A: uint8(255 * alpha)},
-		3: {R: 0xff, G: 0x33, B: 0x99, A: uint8(255 * alpha)},
-		4: {R: 0x66, G: 0x66, B: 0x66, A: uint8(255 * alpha)},
-		5: {R: 0xff, G: 0xcc, B: 0x66, A: uint8(255 * alpha)},
-		6: {R: 0x00, G: 0x66, B: 0xff, A: uint8(255 * alpha)},
-		7: {R: 0xff, G: 0x99, B: 0x00, A: uint8(255 * alpha)},
-		8: {R: 0xff, G: 0x33, B: 0x00, A: uint8(255 * alpha)},
-		9: {R: 0x99, G: 0xff, B: 0x00, A: uint8(255 * alpha)},
+		1:                  {R: 0xff, G: 0xff, B: 0xff, A: uint8(255 * alpha)},
+		2:                  {R: 0x33, G: 0xcc, B: 0x00, A: uint8(255 * alpha)},
+		3:                  {R: 0xff, G: 0x33, B: 0x99, A: uint8(255 * alpha)},
+		4:                  {R: 0x66, G: 0x66, B: 0x66, A: uint8(255 * alpha)},
+		5:                  {R: 0xff, G: 0xcc, B: 0x66, A: uint8(255 * alpha)},
+		6:                  {R: 0x00, G: 0x66, B: 0xff, A: uint8(255 * alpha)},
+		7:                  {R: 0xff, G: 0x99, B: 0x00, A: uint8(255 * alpha)},
+		8:                  {R: 0xff, G: 0x33, B: 0x00, A: uint8(255 * alpha)},
+		9:                  {R: 0x99, G: 0xff, B: 0x00, A: uint8(255 * alpha)},
+		perkFlashGoggles:   {R: 0xff, G: 0xff, B: 0xcc, A: uint8(255 * alpha)},
+		perkThermalGoggles: {R: 0x33, G: 0xff, B: 0x66, A: uint8(255 * alpha)},
+		perkGasMask:        {R: 0xcc, G: 0xdd, B: 0x44, A: uint8(255 * alpha)},
+		perkKevlar:         {R: 0x88, G: 0x99, B: 0x66, A: uint8(255 * alpha)},
 	}
 	lines := labels[number]
 	if len(lines) == 0 {
@@ -209,6 +215,9 @@ func drawSetupPerkThumb(dst *ebiten.Image, number int, r Rect, alpha float64) {
 		x := r.X + 5
 		y := r.Y + r.H/2 - float64(len(lines))*7 + float64(i)*14
 		drawSourceMenuText(dst, line, menuFontCondensedExtraBold, fontSize, clr, x, y)
+	}
+	if number > 9 {
+		drawPerkGearIcon(dst, number, r.X+r.W-13, r.Y+11, alpha)
 	}
 }
 

@@ -24,7 +24,7 @@ func campaignThrowableChoiceHit(slot, kind int) int {
 	if kind < 0 || kind >= throwableTypeCount {
 		return campaignHitNone
 	}
-	return campaignPlayerHitThrowable + slot*10 + kind + 1
+	return campaignPlayerHitThrowable + slot*throwableHitStride + kind + 1
 }
 
 func campaignDevelopedGunHit(slot, number int) int {
@@ -80,7 +80,7 @@ func (g *Game) campaignSelectionUnlocked(editor, number int) bool {
 	if g.campaignSetExtra && editor == customEditPerk {
 		// EXTRA is the expanded campaign: every real perk tile (1..9) is
 		// available from its player setup, independently of GM1 progress.
-		return number >= 1 && number <= 9
+		return isSelectablePerk(number)
 	}
 	return g.customSelectionUnlocked(editor, number)
 }
@@ -157,9 +157,9 @@ func (g *Game) campaignPlayerHitAt(x, y float64) int {
 }
 
 func (g *Game) activateCampaignPlayerHit(hit int) bool {
-	if hit >= campaignPlayerHitThrowable && hit < campaignPlayerHitThrowable+20 {
+	if hit >= campaignPlayerHitThrowable && hit < campaignPlayerHitThrowable+2*throwableHitStride {
 		v := hit - campaignPlayerHitThrowable
-		slot, action := v/10, v%10
+		slot, action := v/throwableHitStride, v%throwableHitStride
 		kind := action - 1
 		if slot < 2 && kind >= 0 && kind < throwableTypeCount {
 			g.campaignPlayers[slot].Throwable = kind

@@ -146,11 +146,13 @@ func (g *Game) organizedGunLibraryThrowableTab() bool {
 
 func organizedThrowableLibraryCardRect(kind int) Rect {
 	kind = normalizedThrowableType(kind)
+	// Four columns x three rows: room for 12 throwables above the
+	// SELECTED THROWABLE panel at y=408.
 	return Rect{
-		X: 30 + float64(kind%3)*290,
-		Y: 128 + float64(kind/3)*132,
-		W: 260,
-		H: 112,
+		X: 24 + float64(kind%4)*214,
+		Y: 126 + float64(kind/4)*94,
+		W: 204,
+		H: 88,
 	}
 }
 
@@ -326,26 +328,25 @@ func (g *Game) drawOrganizedThrowableLibrary(screen *ebiten.Image) {
 		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, border)
 		ebitenutil.DrawRect(screen, r.X+3, r.Y+3, r.W-6, r.H-6, color.NRGBA{R: 0xeb, G: 0xeb, B: 0xeb, A: 0xff})
 		if kind == ThrowableDynamite {
-			drawGunLibraryCleanThumb(screen, g.assets.Grenade, r.X+52, r.Y+54, 76, 70, 1, 0)
+			drawGunLibraryCleanThumb(screen, g.assets.Grenade, r.X+36, r.Y+44, 56, 60, 1, 0)
 		} else if img := throwableImages[kind]; img != nil {
 			w, h := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
-			scale := math.Min(72/w, 70/h)
+			scale := math.Min(56/w, 62/h)
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(-w/2, -h/2)
 			op.GeoM.Scale(scale, scale)
-			op.GeoM.Translate(r.X+52, r.Y+54)
+			op.GeoM.Translate(r.X+36, r.Y+44)
 			screen.DrawImage(img, op)
 		}
 		profile := throwableProfiles[kind]
-		drawSourceMenuText(screen, profile.Name, menuFontTwCen, 16, color.Black, r.X+95, r.Y+17)
-		drawSourceMenuText(screen, "FUSE  "+strconv.Itoa(profile.Fuse), menuFontCondensedExtraBold, 11, color.Black, r.X+95, r.Y+49)
-		drawSourceMenuText(screen, "RADIUS  "+strconv.Itoa(int(profile.Radius)), menuFontCondensedExtraBold, 11, color.Black, r.X+95, r.Y+67)
-		push := int(math.Round(profile.HorizontalPush))
-		label := "PUSH  " + strconv.Itoa(push)
-		if kind == ThrowableMolotov {
-			label = "BURNING AREA"
+		drawSourceMenuText(screen, profile.Name, menuFontTwCen, 14, color.Black, r.X+70, r.Y+10)
+		drawSourceMenuText(screen, "FUSE  "+strconv.Itoa(profile.Fuse), menuFontCondensedExtraBold, 10, color.Black, r.X+70, r.Y+34)
+		drawSourceMenuText(screen, "RADIUS  "+strconv.Itoa(int(profile.Radius)), menuFontCondensedExtraBold, 10, color.Black, r.X+70, r.Y+49)
+		label := throwableBehaviorLabel(kind)
+		if profile.Behavior == throwableBehaviorExplode {
+			label = "PUSH  " + strconv.Itoa(int(math.Round(profile.HorizontalPush)))
 		}
-		drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 11, color.Black, r.X+95, r.Y+85)
+		drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 9, color.Black, r.X+70, r.Y+64)
 	}
 
 	ebitenutil.DrawRect(screen, 18, 408, 864, 174, panel)

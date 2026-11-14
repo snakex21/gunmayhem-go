@@ -190,7 +190,7 @@ func (g *Game) updateMultiplayerLobby() {
 		g.sendOnlineLocalConfigIfChanged()
 		return
 	}
-	if activated >= menuHitOnlinePerkBase && activated < menuHitOnlinePerkBase+10 && g.onlinePerkBlocklistOpen {
+	if activated >= menuHitOnlinePerkBase && activated < menuHitOnlinePerkBase+onlinePerkTableSize && g.onlinePerkBlocklistOpen {
 		perk := activated - menuHitOnlinePerkBase
 		if perk >= 1 && perk < len(g.onlineBlockedPerks) {
 			g.onlineBlockedPerks[perk] = !g.onlineBlockedPerks[perk]
@@ -321,7 +321,7 @@ func (g *Game) adjustOnlineCharacter(field, delta int) {
 	case onlineCharGun:
 		cfg.Gun = stepStarterHandgun(cfg.Gun, delta)
 	case onlineCharPerk:
-		cfg.Perk = wrapOnlineValue(cfg.Perk, 1, 9, delta)
+		cfg.Perk = stepSelectablePerk(cfg.Perk, delta)
 	case onlineCharTeam:
 		cfg.Team = wrapOnlineValue(cfg.Team, 1, 2, delta)
 	}
@@ -419,11 +419,8 @@ func (g *Game) onlinePerkBlocklistHitAt(x, y float64) int {
 	if onlineOverlayBackRect.Contains(x, y) {
 		return menuHitOnlineOverlayBack
 	}
-	for perk := 1; perk <= 9; perk++ {
-		i := perk - 1
-		col := i % 3
-		row := i / 3
-		r := Rect{X: 170 + float64(col)*190, Y: 165 + float64(row)*85, W: 175, H: 65}
+	for i, perk := range selectablePerkNumbers() {
+		r := onlinePerkBlocklistRect(i)
 		if r.Contains(x, y) {
 			return menuHitOnlinePerkBase + perk
 		}
@@ -588,7 +585,7 @@ func (g *Game) drawMultiplayerLobby(screen *ebiten.Image) {
 		modeText := scopeText + " / " + accessText
 		drawSourceMenuText(screen, "SESSION: "+sessionName+"   "+modeText, menuFontCondensedExtraBold, 12.5, color.NRGBA{R: 0xff, G: 0xa0, B: 0x24, A: 0xff}, 55, 466)
 		// OPEN hosts advertise browser status; only INVITE ONLY hosts expose a code.
-		drawSourceMenuText(screen, g.currentHostDisplayJoinCodeLabel(), menuFontCondensed, 9.5, color.White, 55, 490)
+		drawWrappedMenuText(screen, g.hostJoinCodeLabelWithCopyHint(), menuFontCondensed, 9.5, color.White, 55, 490, 540, 11, 2, nil)
 	}
 
 	drawDevelopedMenuButton(screen, multiplayerLobbyLeaveRect, "LEAVE")
@@ -716,11 +713,8 @@ func (g *Game) drawOnlinePerkBlocklist(screen *ebiten.Image) {
 	drawSourceMenuText(screen, "PERK / ABILITY BLOCKLIST", menuFontTwCen, 30, color.NRGBA{A: 0xff}, 170, 70)
 	drawSourceMenuText(screen, "Click a perk to allow/block it. Blocked perks cannot be used by any player.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 170, 112)
 
-	for perk := 1; perk <= 9; perk++ {
-		i := perk - 1
-		col := i % 3
-		row := i / 3
-		r := Rect{X: 170 + float64(col)*190, Y: 165 + float64(row)*85, W: 175, H: 65}
+	for i, perk := range selectablePerkNumbers() {
+		r := onlinePerkBlocklistRect(i)
 		clr := color.NRGBA{R: 0x46, G: 0x4d, B: 0x57, A: 0xff}
 		if perk < len(g.onlineBlockedPerks) && g.onlineBlockedPerks[perk] {
 			clr = color.NRGBA{R: 0x65, G: 0x2e, B: 0x2e, A: 0xff}
@@ -731,6 +725,13 @@ func (g *Game) drawOnlinePerkBlocklist(screen *ebiten.Image) {
 		drawSourceMenuText(screen, fmt.Sprintf("#%d", perk), menuFontCondensedExtraBold, 9.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, r.X+78, r.Y+39)
 	}
 
-	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d / 9", g.blockedOnlinePerkCount()), menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 170, 445)
+	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d / %d", g.blockedOnlinePerkCount(), len(selectablePerkNumbers())), menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 40, 535)
 	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO RULES")
+}
+
+// onlinePerkBlocklistRect lays the selectable perks out in four columns.
+func onlinePerkBlocklistRect(i int) Rect {
+	col := i % 4
+	row := i / 4
+	return Rect{X: 60 + float64(col)*200, Y: 150 + float64(row)*82, W: 185, H: 66}
 }

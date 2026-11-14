@@ -2,6 +2,7 @@ package game
 
 import (
 	"image/color"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -100,7 +101,7 @@ func (g *Game) createConfiguredOnlineSession() {
 		g.customHostAccess = access
 	}
 	if err := g.StartNetHostConfig(":7777", scope, access); err != nil {
-		g.multiplayerMessage = "HOST ERROR: " + err.Error()
+		g.reportNetError("HOST ERROR", err)
 		return
 	}
 	g.customOnlineMode = true
@@ -196,5 +197,9 @@ func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
 	} else {
 		drawDevelopedMenuButton(screen, customHostBackRect, backLabel)
 		drawDevelopedMenuButton(screen, customHostCreateRect, applyLabel)
+	}
+	if strings.HasPrefix(g.multiplayerMessage, "HOST ERROR") {
+		drawWrappedMenuText(screen, g.multiplayerMessage, menuFontCondensed, 11, color.NRGBA{R: 0xff, G: 0x9a, B: 0x8a, A: 0xff},
+			80, 556, 740, 13, 3, nil)
 	}
 }

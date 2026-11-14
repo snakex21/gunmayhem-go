@@ -88,6 +88,13 @@ type Player struct {
 	FireContactCooldown int         `cbor:",omitempty"`
 	PortalNextColor     int         `cbor:",omitempty"`
 	PortalCooldown      int         `cbor:",omitempty"`
+	// Flashbang blindness (throwable_effects.go). Synced to clients so each
+	// one can white out its own screen.
+	BlindTime     int     `cbor:",omitempty"`
+	BlindMax      int     `cbor:",omitempty"`
+	BlindStrength float64 `cbor:",omitempty"`
+	// Tear gas coughing: slower, lower jumps, worse aim while > 0.
+	TearGasTime int `cbor:",omitempty"`
 
 	// Developed Custom Game modifiers. Zero multipliers mean the original 1x
 	// behavior so source/campaign players are unchanged unless a rule enables
@@ -168,6 +175,8 @@ type Player struct {
 	AIPrevX          float64 `cbor:",omitempty"`
 	AISpecial        int     `cbor:",omitempty"`
 	AIFakeDoubleTime int     `cbor:",omitempty"`
+	AIFlashAvoid     int     `cbor:",omitempty"` // frames left facing away from a live flashbang
+	AIFlashAvoidDir  int     `cbor:",omitempty"`
 	DamageMulti      float64 `cbor:",omitempty"`
 	FirepowerMulti   float64 `cbor:",omitempty"`
 
@@ -286,6 +295,16 @@ func (p *Player) scoreOwnerID() int {
 }
 
 func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
+	p.UpdateWithFire(m, beforeMove, afterPhysics, nil)
+}
+
+// UpdateWithFire is Update with the shooting step placed where the
+// DefineSprite_697 / playerAI onEnterFrame has it: after the movement keys and
+// before `vx *= _root.friction`. The shot's `vx -= recoil * facing` is therefore
+// damped by the same frame's friction, exactly like the original. fire is not
+// called when the frame ends early (inactive, death or expired double); the
+// caller must then fire after the update, as before.
+func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 	if !p.Active {
 		return
 	}
@@ -332,8 +351,8 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 	if jumpMultiplier <= 0 {
 		jumpMultiplier = 1
 	}
-	moveSpeed := MoveSpeed * moveMultiplier
-	jumpPower := JumpPower * jumpMultiplier
+	moveSpeed := MoveSpeed * moveMultiplier * tearGasMoveMultiplier(p) * kevlarMoveMultiplier(p)
+	jumpPower := JumpPower * jumpMultiplier * tearGasJumpMultiplier(p) * kevlarJumpMultiplier(p)
 	if p.SpeedTime >= 0 {
 		moveSpeed *= 2
 	}
@@ -433,6 +452,9 @@ func (p *Player) Update(m Map, beforeMove, afterPhysics func()) {
 		}
 	}
 
+	if fire != nil {
+		fire()
+	}
 	p.VX *= Friction
 	if p.VY > 30 {
 		p.VY = 30
@@ -763,6 +785,15 @@ func (p *Player) updatePowerupTimers() {
 	if p.PortalCooldown > 0 {
 		p.PortalCooldown--
 	}
+	if p.TearGasTime > 0 {
+		p.TearGasTime--
+	}
+	if p.BlindTime > 0 {
+		p.BlindTime--
+		if p.BlindTime == 0 {
+			clearBlind(p)
+		}
+	}
 	if p.InvisibleTime > 0 {
 		p.InvisibleTime--
 		p.Alpha -= 0.1
@@ -848,6 +879,8 @@ func (p *Player) Kill(m Map) {
 		p.BurnDirection = 0
 		p.BurnTick = 0
 		p.BurnPower = 0
+		clearBlind(p)
+		p.TearGasTime = 0
 		return
 	}
 	p.Respawn(m)
@@ -901,7 +934,10 @@ func (p *Player) Respawn(m Map) {
 	p.AISearchTime = 0
 	p.AISearchPlayerID = 0
 	p.AIFireCadence = 0
+	p.AIFlashAvoid = 0
 	p.CheapTimer = 0
+	clearBlind(p)
+	p.TearGasTime = 0
 
 	p.Grenades = 3
 	if p.PerkNumber == 8 {

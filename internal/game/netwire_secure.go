@@ -30,9 +30,31 @@ const (
 )
 
 var (
-	netCBORDec = mustNetCBORDecMode()
-	netCBOREnc = mustNetCBOREncMode()
+	netCBORDec        = mustNetCBORDecMode()
+	netCBORDecLenient = mustNetCBORDecModeLenient()
+	netCBOREnc        = mustNetCBOREncMode()
 )
+
+func mustNetCBORDecModeLenient() cbor.DecMode {
+	mode, err := (cbor.DecOptions{
+		DupMapKey:         cbor.DupMapKeyEnforcedAPF,
+		MaxNestedLevels:   16,
+		MaxArrayElements:  16384,
+		MaxMapPairs:       256,
+		IndefLength:       cbor.IndefLengthForbidden,
+		TagsMd:            cbor.TagsForbidden,
+		UTF8:              cbor.UTF8RejectInvalid,
+		FieldNameMatching: cbor.FieldNameMatchingCaseSensitive,
+		NaN:               cbor.NaNDecodeForbidden,
+		Inf:               cbor.InfDecodeForbidden,
+		BinaryUnmarshaler: cbor.BinaryUnmarshalerNone,
+		TextUnmarshaler:   cbor.TextUnmarshalerNone,
+	}).DecMode()
+	if err != nil {
+		panic(err)
+	}
+	return mode
+}
 
 func mustNetCBORDecMode() cbor.DecMode {
 	mode, err := (cbor.DecOptions{
@@ -69,15 +91,21 @@ func writeNetMessage(conn net.Conn, msg netWireMessage, maxFrame int) error {
 }
 
 func writeNetFrame(conn net.Conn, codec netplayCodec, msg netWireMessage, maxFrame int) error {
+	_, err := writeNetFrameN(conn, codec, msg, maxFrame)
+	return err
+}
+
+// writeNetFrameN also reports the bytes written (for bandwidth diagnostics).
+func writeNetFrameN(conn net.Conn, codec netplayCodec, msg netWireMessage, maxFrame int) (int, error) {
 	if conn == nil || codec == nil {
-		return errors.New("invalid netplay writer")
+		return 0, errors.New("invalid netplay writer")
 	}
 	payload, err := codec.Encode(msg)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if len(payload) == 0 || len(payload) > maxFrame {
-		return fmt.Errorf("netplay frame too large: %d bytes", len(payload))
+		return 0, fmt.Errorf("netplay frame too large: %d bytes", len(payload))
 	}
 	// Header and payload go out as ONE conn.Write. On a WebSocket transport
 	// every Write becomes a separate message, so the previous two-write framing
@@ -88,10 +116,10 @@ func writeNetFrame(conn net.Conn, codec netplayCodec, msg netWireMessage, maxFra
 	copy(frame[4:], payload)
 	_ = conn.SetWriteDeadline(time.Now().Add(netWriteTimeout))
 	if err := writeAll(conn, frame); err != nil {
-		return err
+		return 0, err
 	}
 	_ = conn.SetWriteDeadline(time.Time{})
-	return nil
+	return len(frame), nil
 }
 
 func readNetMessage(conn net.Conn, maxFrame int, msg *netWireMessage) error {
@@ -99,22 +127,28 @@ func readNetMessage(conn net.Conn, maxFrame int, msg *netWireMessage) error {
 }
 
 func readNetFrame(conn net.Conn, codec netplayCodec, maxFrame int, msg *netWireMessage) error {
+	_, err := readNetFrameN(conn, codec, maxFrame, msg)
+	return err
+}
+
+// readNetFrameN also reports the bytes read (for bandwidth diagnostics).
+func readNetFrameN(conn net.Conn, codec netplayCodec, maxFrame int, msg *netWireMessage) (int, error) {
 	if conn == nil || codec == nil || msg == nil {
-		return errors.New("invalid netplay read")
+		return 0, errors.New("invalid netplay read")
 	}
 	var header [4]byte
 	if _, err := io.ReadFull(conn, header[:]); err != nil {
-		return err
+		return 0, err
 	}
 	n := int(binary.BigEndian.Uint32(header[:]))
 	if n <= 0 || n > maxFrame {
-		return fmt.Errorf("invalid netplay frame size: %d", n)
+		return 4, fmt.Errorf("invalid netplay frame size: %d", n)
 	}
 	payload := make([]byte, n)
 	if _, err := io.ReadFull(conn, payload); err != nil {
-		return err
+		return 4, err
 	}
-	return codec.Decode(payload, msg)
+	return 4 + n, codec.Decode(payload, msg)
 }
 
 func writeAll(w io.Writer, data []byte) error {
@@ -151,7 +185,7 @@ func sanitizeRemotePlayerConfig(cfg CustomPlayerConfig) (CustomPlayerConfig, err
 	if !isStarterHandgunNumber(cfg.Gun) {
 		return CustomPlayerConfig{}, errors.New("invalid starter weapon")
 	}
-	if cfg.Perk < 1 || cfg.Perk > 9 {
+	if !isSelectablePerk(cfg.Perk) {
 		return CustomPlayerConfig{}, errors.New("invalid player perk")
 	}
 	if cfg.Throwable < 0 || cfg.Throwable >= throwableTypeCount {
@@ -278,6 +312,9 @@ func validateNetMessageForHost(msg netWireMessage) error {
 		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
 			return errors.New("authentication fields are only allowed during handshake")
 		}
+		if len(msg.InputFrames) > netInputHistoryFrames || int64(msg.InputSeq) < int64(len(msg.InputFrames)) {
+			return errors.New("invalid input history")
+		}
 		return nil
 	case netMessagePlayerConfig:
 		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
@@ -285,7 +322,7 @@ func validateNetMessageForHost(msg netWireMessage) error {
 		}
 		_, err := sanitizeRemotePlayerConfig(msg.Config)
 		return err
-	case netMessagePostGameReady:
+	case netMessagePostGameReady, netMessagePing, netMessagePong, netMessageAck:
 		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
 			return errors.New("authentication fields are only allowed during handshake")
 		}
@@ -305,9 +342,17 @@ func validateNetMessageForClient(msg netWireMessage) error {
 			return errors.New("invalid host authentication challenge")
 		}
 		return nil
-	case netMessageHello, netMessageState:
+	case netMessageHello, netMessagePing, netMessagePong, netMessageReject:
 		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
 			return errors.New("unexpected host authentication fields")
+		}
+		return nil
+	case netMessageState:
+		if msg.Challenge != "" || msg.AuthProof != "" || !emptyNetProbeInfo(msg.Probe) {
+			return errors.New("unexpected host authentication fields")
+		}
+		if len(msg.Payload) == 0 || msg.PayloadLen <= 0 || msg.PayloadLen > maxNetSnapshotRawLen {
+			return errors.New("invalid host snapshot frame")
 		}
 		return nil
 	case netMessageProbeReply:
@@ -328,7 +373,7 @@ func validateNetSnapshot(s netSnapshot) error {
 		got  int
 		max  int
 	}{
-		{"players", len(s.Players), maxOnlinePlayers},
+		{"players", len(s.Players), 16}, // includes perk/campaign doubles
 		{"map platforms", len(s.Arena.Platforms), 128},
 		{"bullets", len(s.Bullets), 1024},
 		{"instagib trails", len(s.InstagibTrails), 512},
@@ -337,6 +382,7 @@ func validateNetSnapshot(s netSnapshot) error {
 		{"muzzle flashes", len(s.Flashes), 512},
 		{"grenades", len(s.Grenades), 256},
 		{"fire patches", len(s.FirePatches), 512},
+		{"area effects", len(s.AreaEffects), 128},
 		{"portals", len(s.Portals), 128},
 		{"dynamite fx", len(s.DynamiteFX), 512},
 		{"blast fx", len(s.BlastFX), 512},

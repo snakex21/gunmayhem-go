@@ -5,12 +5,22 @@ import (
 	"testing"
 )
 
+// measureNetSnapshot is the wire size of a snapshot sent as the FIRST message
+// of a fresh stream (worst case: no history to compress against, map included).
 func measureNetSnapshot(t testing.TB, state netSnapshot) int {
 	t.Helper()
+	var enc netHostEncoder
+	frame := enc.encode(state)
+	body, rawLen, err := newNetPeerStream().message(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
 	payload, err := (cborNetplayCodec{}).Encode(netWireMessage{
-		Type:     netMessageState,
-		Protocol: netplayProtocolVersion,
-		State:    state,
+		Type:       netMessageState,
+		Protocol:   netplayProtocolVersion,
+		Tick:       frame.tick,
+		Payload:    body,
+		PayloadLen: rawLen,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +45,7 @@ func TestNetInputMessageWireSize(t *testing.T) {
 	})
 	held := measureNetMessage(t, netWireMessage{
 		Type: netMessageInput, Protocol: netplayProtocolVersion, PlayerID: 2,
-		Input: PlayerInputState{Left: true, Right: true, Shoot: true},
+		InputSeq: 1000, InputFrames: []byte{1, 3, 19, 19, 17, 16, 0, 4},
 	})
 	config := measureNetMessage(t, netWireMessage{
 		Type: netMessagePlayerConfig, Protocol: netplayProtocolVersion, PlayerID: 2,
@@ -210,7 +220,7 @@ func TestNetSnapshotWireSizeReport(t *testing.T) {
 	// A busy four-player frame is the worst case that must still fit a
 	// comfortable Cloudflare WSS budget at 60 Hz. The measured payload fell
 	// from ~51.7 kB to this bound; raise it deliberately, never silently.
-	if full > 48*1024 {
-		t.Fatalf("busy snapshot=%dB, want <=48KiB", full)
+	if full > 16*1024 {
+		t.Fatalf("busy first snapshot=%dB, want <=16KiB", full)
 	}
 }

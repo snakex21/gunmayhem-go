@@ -2,6 +2,7 @@ package game
 
 import (
 	"image"
+	"math"
 	"testing"
 )
 
@@ -309,7 +310,10 @@ func TestRapidSpecialToolsUseAutomaticFire(t *testing.T) {
 	}
 }
 
-func TestDevelopedSemiAutoRepeatsWhileFireIsHeld(t *testing.T) {
+// AI shooters have no physical trigger and are exempt from the semi-auto
+// trigger reset; human and remote players are covered by
+// TestSemiAutoNeedsNewTriggerPress.
+func TestDevelopedSemiAutoRepeatsWhileAIFireIsHeld(t *testing.T) {
 	p := &Player{ID: 1, Active: true, AI: true, AIShoot: true, Facing: 1, MiniMulti: 1, PlayerScale: .8}
 	p.Weapon = NewWeapon(98) // FN Five-seveN, developed semi-auto pistol
 	p.Weapon.Frame = 1
@@ -442,7 +446,7 @@ func TestGlock18CReloadsAfterEmptyMagazine(t *testing.T) {
 	if p.Weapon.Def.Number != 99 || p.Weapon.Bullets != 0 || !p.Weapon.Playing {
 		t.Fatalf("empty starter pistol did not begin reload: weapon=%d bullets=%d playing=%v", p.Weapon.Def.Number, p.Weapon.Bullets, p.Weapon.Playing)
 	}
-	for i := 0; i < 40 && p.Weapon.Playing; i++ {
+	for i := 0; i < developedPistolReloadFrames+5 && p.Weapon.Playing; i++ {
 		updateWeapon(p, &bullets, &shells, &flashes)
 	}
 	if p.Weapon.Def.Number != 99 || p.Weapon.Bullets != p.Weapon.Def.Bullets || p.Weapon.Playing {
@@ -528,19 +532,15 @@ func TestShieldPreventsFlareIgnition(t *testing.T) {
 	}
 }
 
-func TestDevelopedOneShotReloadWeaponsDoNotAutoReequip(t *testing.T) {
+func TestDevelopedOneShotPickupsAreDiscardedWhenEmpty(t *testing.T) {
 	oneShotCount := 0
-	for number, def := range developedWeaponCatalog {
-		if def.Bullets != 1 || number == 192 {
+	for _, number := range allDevelopedWeaponNumbers() {
+		def := developedWeaponCatalog[number]
+		if def.Bullets != 1 {
 			continue
 		}
 		oneShotCount++
-		reloadFrames := developedManualReloadFrames(number)
-		if reloadFrames < 75 || reloadFrames > 210 {
-			t.Fatalf("one-shot reload weapon %d (%s) reload=%d outside supported range", number, def.Name, reloadFrames)
-		}
-
-		p := &Player{ID: 3, Active: true, AI: true, AIShoot: true, Facing: 1, MiniMulti: 1, PlayerScale: .8, DefaultWeapon: number}
+		p := &Player{ID: 3, Active: true, AI: true, AIShoot: true, Facing: 1, MiniMulti: 1, PlayerScale: .8, DefaultWeapon: 1}
 		p.Weapon = NewWeapon(number)
 		p.Weapon.Frame = 1
 		p.Weapon.WaitTime = p.Weapon.Def.ROF
@@ -549,34 +549,153 @@ func TestDevelopedOneShotReloadWeaponsDoNotAutoReequip(t *testing.T) {
 		var flashes []MuzzleFlash
 
 		updateWeapon(p, &bullets, &shells, &flashes)
-		if len(bullets) == 0 || p.Weapon.Def.Number != number || p.Weapon.Bullets != 0 || p.Weapon.WaitTime != -reloadFrames {
-			t.Fatalf("one-shot weapon %d (%s) first shot/reload state wrong: projectiles=%d weapon=%d ammo=%d wait=%d want wait=%d", number, def.Name, len(bullets), p.Weapon.Def.Number, p.Weapon.Bullets, p.Weapon.WaitTime, -reloadFrames)
+		if len(bullets) == 0 {
+			t.Fatalf("one-shot weapon %d (%s) did not fire", number, def.Name)
 		}
-		projectilesAfterShot := len(bullets)
-		for i := 0; i < reloadFrames; i++ {
-			updateWeapon(p, &bullets, &shells, &flashes)
-			if len(bullets) != projectilesAfterShot {
-				t.Fatalf("one-shot weapon %d (%s) fired during reload at frame %d", number, def.Name, i+1)
-			}
-		}
-		if p.Weapon.Bullets != 1 || p.Weapon.WaitTime != p.Weapon.Def.ROF {
-			t.Fatalf("one-shot weapon %d (%s) did not finish reload: ammo=%d wait=%d", number, def.Name, p.Weapon.Bullets, p.Weapon.WaitTime)
-		}
-		updateWeapon(p, &bullets, &shells, &flashes)
-		if len(bullets) <= projectilesAfterShot {
-			t.Fatalf("one-shot weapon %d (%s) did not fire after reload", number, def.Name)
+		if p.Weapon.Def.Number != p.DefaultWeapon {
+			t.Fatalf("one-shot weapon %d (%s) was not discarded: weapon=%d ammo=%d wait=%d", number, def.Name, p.Weapon.Def.Number, p.Weapon.Bullets, p.Weapon.WaitTime)
 		}
 	}
 	if oneShotCount < 9 {
-		t.Fatalf("developed one-shot reload audit found only %d weapons", oneShotCount)
+		t.Fatalf("developed one-shot audit found only %d weapons", oneShotCount)
+	}
+}
+
+func TestDevelopedPickupsNeverReloadInPlace(t *testing.T) {
+	for _, number := range allDevelopedWeaponNumbers() {
+		spec, _ := developedWeaponSpec(number)
+		if spec.Category == DevelopedCategoryPistol {
+			continue // starter handguns reload like source weapons 1-6
+		}
+		p := &Player{ID: 1, Active: true, AI: true, AIShoot: true, Facing: 1, MiniMulti: 1, PlayerScale: .8, DefaultWeapon: 1}
+		p.Weapon = NewWeapon(number)
+		var bullets []Bullet
+		var shells []Shell
+		var flashes []MuzzleFlash
+		for frame := 0; frame < 5000 && p.Weapon.Def.Number == number; frame++ {
+			p.Weapon.Frame = 1
+			updateWeapon(p, &bullets, &shells, &flashes)
+		}
+		if p.Weapon.Def.Number != 1 {
+			t.Fatalf("pickup %d (%s) never ran dry: ammo=%d wait=%d", number, developedWeaponCatalog[number].Name, p.Weapon.Bullets, p.Weapon.WaitTime)
+		}
+	}
+}
+
+func TestExtraAmmoPerkGivesOneShotPickupOneExtraRoundOnly(t *testing.T) {
+	const rpg = 87
+	p := &Player{ID: 1, Active: true, AI: true, AIShoot: true, Facing: 1, MiniMulti: 1, PlayerScale: .8, DefaultWeapon: 1, PerkNumber: 7}
+	p.EquipWeapon(rpg)
+	if p.Weapon.Bullets != 2 {
+		t.Fatalf("EXTRA AMMO RPG-7 ammo=%d want 2 (source adjustrof: ceil(1*0.333) extra)", p.Weapon.Bullets)
+	}
+	var bullets []Bullet
+	var shells []Shell
+	var flashes []MuzzleFlash
+	shots := 0
+	for frame := 0; frame < 1000 && p.Weapon.Def.Number == rpg; frame++ {
+		before := len(bullets)
+		p.Weapon.Frame = 1
+		updateWeapon(p, &bullets, &shells, &flashes)
+		if len(bullets) > before {
+			shots++
+		}
+	}
+	if shots != 2 || p.Weapon.Def.Number != 1 {
+		t.Fatalf("EXTRA AMMO RPG-7 fired %d shots, weapon=%d; want 2 shots then the default pistol", shots, p.Weapon.Def.Number)
+	}
+}
+
+func TestRPG7DirectHitOutmatchesStrongestSniper(t *testing.T) {
+	strongestSniper := 0.0
+	for number := 10; number <= 86; number++ {
+		if def, ok := WeaponByNumber(number); ok && def.Shotgun == 0 && def.Firepower > strongestSniper {
+			strongestSniper = def.Firepower
+		}
+	}
+	for _, number := range allDevelopedWeaponNumbers() {
+		if spec, _ := developedWeaponSpec(number); spec.ExplosionRadius == 0 {
+			if def := developedWeaponCatalog[number]; def.Firepower > strongestSniper {
+				strongestSniper = def.Firepower
+			}
+		}
+	}
+	// Source bullets add random(8)-4, i.e. up to +3.
+	strongestSniper += 3
+
+	spec, _ := developedWeaponSpec(87)
+	if developedWeaponCatalog[87].Bullets != 1 {
+		t.Fatalf("RPG-7 ammo=%d want 1", developedWeaponCatalog[87].Bullets)
+	}
+	shooter := &Player{ID: 1, Active: true, X: 300, Y: 300, PlayerScale: .8, DamageMulti: 1}
+	target := &Player{ID: 2, Active: true, X: 400, Y: 300, PlayerScale: .8, DamageMulti: 1}
+	b := Bullet{DevelopedProjectile: DevelopedProjectileRocket, X: 340, Y: 300 - 38, VX: spec.ProjectileSpeed, Facing: 1, OwnerID: 1,
+		Lifetime: spec.Lifetime, ExplosionRadius: spec.ExplosionRadius, ExplosionPower: spec.ExplosionPower}
+	var explosions []Explosion
+	for i := 0; i < 10 && !b.Dead; i++ {
+		updateDevelopedProjectile(Map{}, &b, []*Player{shooter, target}, &explosions, nil)
+	}
+	if !b.Dead || len(explosions) == 0 {
+		t.Fatal("RPG-7 rocket did not detonate on the target")
+	}
+	if target.VX <= strongestSniper {
+		t.Fatalf("RPG-7 direct hit push=%.1f want > strongest sniper %.1f", target.VX, strongestSniper)
+	}
+	ks23, _ := WeaponByNumber(165)
+	if ks23.Firepower*float64(ks23.Shotgun) >= target.VX {
+		t.Fatalf("KS-23 point blank %.1f must stay below RPG-7 direct hit %.1f", ks23.Firepower*float64(ks23.Shotgun), target.VX)
+	}
+	// Shooter stood 100px behind the impact: pushed back, but at most half of
+	// the unscaled falloff impulse.
+	if shooter.VX >= 0 {
+		t.Fatalf("shooter was not pushed away from the blast: vx=%.2f", shooter.VX)
+	}
+	dist := math.Hypot(shooter.X-b.X, shooter.Y-30-b.Y)
+	fullSelf := spec.ExplosionPower * (1 - dist/spec.ExplosionRadius)
+	if got := math.Hypot(shooter.VX, shooter.VY/0.7); got > fullSelf*developedExplosionSelfPushScale+0.01 {
+		t.Fatalf("shooter self-push=%.2f want <= %.2f", got, fullSelf*developedExplosionSelfPushScale)
+	}
+}
+
+func TestRPG7NearSplashStillBeatsStrongestSniper(t *testing.T) {
+	spec, _ := developedWeaponSpec(87)
+	target := &Player{ID: 2, Active: true, X: 400, Y: 300, PlayerScale: .8, DamageMulti: 1}
+	b := Bullet{X: 360, Y: 300 - 30, Facing: 1, OwnerID: 1, ExplosionRadius: spec.ExplosionRadius, ExplosionPower: spec.ExplosionPower}
+	explodeDevelopedProjectile(&b, []*Player{target}, nil, nil)
+	if target.VX <= 73 {
+		t.Fatalf("RPG-7 splash 40px away push=%.1f want > 73", target.VX)
+	}
+}
+
+func TestKS23IsWidePumpShotgun(t *testing.T) {
+	def, _ := WeaponByNumber(165)
+	spec, _ := developedWeaponSpec(165)
+	if def.ROF < 30 || def.Bullets > 3 || spec.PelletFanStep < 4 {
+		t.Fatalf("KS-23 rof=%d ammo=%d fan=%.1f want pump >=30, <=3 shells, wide fan", def.ROF, def.Bullets, spec.PelletFanStep)
+	}
+	p := &Player{ID: 1, Active: true, AI: true, AIShoot: true, Facing: 1, MiniMulti: 1, PlayerScale: .8}
+	p.Weapon = NewWeapon(165)
+	p.Weapon.Frame = 1
+	p.Weapon.WaitTime = p.Weapon.Def.ROF
+	var bullets []Bullet
+	var shells []Shell
+	var flashes []MuzzleFlash
+	updateWeapon(p, &bullets, &shells, &flashes)
+	if len(bullets) != 7 {
+		t.Fatalf("KS-23 pellets=%d want7", len(bullets))
+	}
+	minRot, maxRot := math.Inf(1), math.Inf(-1)
+	for _, b := range bullets {
+		minRot = math.Min(minRot, b.Rotation)
+		maxRot = math.Max(maxRot, b.Rotation)
+	}
+	if maxRot-minRot < 25 || math.Abs(maxRot+minRot) > 0.01 {
+		t.Fatalf("KS-23 fan %.1f..%.1f deg want symmetric and >=25 deg wide", minRot, maxRot)
 	}
 }
 
 func TestTankgewehrDropsAfterItsSingleShot(t *testing.T) {
 	const tankgewehr = 192
-	if reload := developedManualReloadFrames(tankgewehr); reload != 0 {
-		t.Fatalf("Tankgewehr reload=%d want0 so the empty pickup is discarded", reload)
-	}
 	p := &Player{ID: 1, Active: true, AI: true, AIShoot: true, Facing: 1, MiniMulti: 1, PlayerScale: .8, DefaultWeapon: 1}
 	p.Weapon = NewWeapon(tankgewehr)
 	p.Weapon.Frame = 1

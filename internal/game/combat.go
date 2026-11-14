@@ -13,6 +13,16 @@ type WeaponState struct {
 	Frame    int
 	Playing  bool
 	Alpha    float64
+
+	// Developed burst weapons (87+) fire their burst as separate rounds a few
+	// frames apart. BurstLeft counts the rounds still to come in the current
+	// burst and BurstWait the frames until the next one. TriggerLatched marks
+	// a semi-auto trigger that has fired and must be released before the next
+	// shot. All three live in the player's WeaponState, so they ride along in
+	// the host's whole-Player network snapshot.
+	BurstLeft      int  `cbor:",omitempty"`
+	BurstWait      int  `cbor:",omitempty"`
+	TriggerLatched bool `cbor:",omitempty"`
 }
 
 type BulletKind int
@@ -96,32 +106,6 @@ func sourceBulletTrailNaturalWidth() float64 {
 	return bulletTrailWidth
 }
 
-func developedManualReloadFrames(number int) int {
-	// Most developed one-shot weapons reload in place instead of falling through
-	// to the legacy >=9 empty-weapon branch. Tankgewehr is deliberately a
-	// one-shot pickup: after firing its only round it must be discarded and the
-	// player returns to the default handgun, matching normal Gun Mayhem pickup
-	// behaviour rather than turning the rifle into a permanent starter weapon.
-	if number == 192 {
-		return 0
-	}
-	def, ok := developedWeaponCatalog[number]
-	if !ok || def.Bullets != 1 {
-		return 0
-	}
-	// Scale the reload with the weapon's authored cadence. This gives light
-	// single-shot tools a readable pause while heavy launchers/anti-materiel
-	// rifles take noticeably longer, without needing a pile of per-gun hacks.
-	frames := def.ROF * 3
-	if frames < 75 {
-		frames = 75
-	}
-	if frames > 210 {
-		frames = 210
-	}
-	return frames
-}
-
 func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]MuzzleFlash) {
 	if !p.Active {
 		return
@@ -129,20 +113,23 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 
 	w := &p.Weapon
 	advanceWeaponTimeline(p, shells)
-	if reloadFrames := developedManualReloadFrames(w.Def.Number); reloadFrames > 0 && w.Bullets <= 0 && w.WaitTime < 0 {
-		w.WaitTime++
-		if w.WaitTime >= 0 {
-			w.Bullets = w.Def.Bullets
-			w.WaitTime = w.Def.ROF
-		}
+	pressed := p.shootPressed()
+	spec, developed := developedWeaponSpec(w.Def.Number)
+	if !pressed {
+		w.TriggerLatched = false
+	}
+
+	// A developed burst finishes on its own once started, one round every
+	// BurstGap frames, whether or not the trigger is still held. The post-burst
+	// pause (Def.ROF) only starts counting after its last round.
+	if developed && w.BurstLeft > 0 {
+		continueDevelopedBurst(p, w, spec, bullets, shells, flashes)
 		return
 	}
+
 	if w.WaitTime < w.Def.ROF {
 		w.WaitTime++
 	}
-
-	pressed := p.shootPressed()
-	spec, developed := developedWeaponSpec(w.Def.Number)
 
 	// DefineSprite_697_player: source shots are accepted only while the weapon
 	// movie clip is stopped on Flash frame 2. Custom weapons use the same rest
@@ -150,7 +137,39 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 	if !pressed || w.WaitTime < w.Def.ROF || w.Bullets <= 0 || w.Frame != 1 {
 		return
 	}
+	// Every source weapon 1-86 is hold-to-fire (the AS only tests
+	// Key.isDown(shoot) && waittime >= rof). Developed weapons marked semi-auto
+	// need the trigger released between shots, using the same held-latch idea
+	// as the source grenade key (GrenadeHeld). AI players have no physical
+	// trigger: their cadence is already limited by ROF, so they are exempt.
+	if developed && w.TriggerLatched && developedTriggerResetRequired(spec) && !p.AI {
+		return
+	}
+	fireWeaponRound(p, w, spec, developed, true, bullets, shells, flashes)
+}
 
+// continueDevelopedBurst counts down to the next round of a burst in
+// progress and fires it.
+func continueDevelopedBurst(p *Player, w *WeaponState, spec DevelopedWeaponSpec, bullets *[]Bullet, shells *[]Shell, flashes *[]MuzzleFlash) {
+	w.BurstWait--
+	if w.BurstWait > 0 {
+		return
+	}
+	if w.Bullets <= 0 || w.Frame != 1 {
+		w.BurstLeft = 0
+		w.BurstWait = 0
+		return
+	}
+	w.BurstLeft--
+	w.BurstWait = developedBurstGap(spec)
+	fireWeaponRound(p, w, spec, true, false, bullets, shells, flashes)
+}
+
+// fireWeaponRound fires one accepted shot: a source FIREBULLET() for weapons
+// 1-86, or one developed projectile (or pellet load). triggerShot is true for
+// the shot that the trigger itself released, false for the follow-up rounds of
+// a developed burst.
+func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, developed, triggerShot bool, bullets *[]Bullet, shells *[]Shell, flashes *[]MuzzleFlash) {
 	w.WaitTime = 0
 	p.IdleTime = 0
 
@@ -197,6 +216,11 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 			naturalWidth := sourceBulletTrailNaturalWidth()
 			for i := 0; i < w.Def.Shotgun; i++ {
 				rotation := -90 + 90*float64(facing) - float64(w.Def.Shotgun)/1.9 + float64(i)*2
+				if spec.PelletFanStep > 0 {
+					// Wide-choke heavy shotguns: a symmetric fan around the aim
+					// line, so only part of the load connects beyond close range.
+					rotation = -90 + 90*float64(facing) + (float64(i)-float64(w.Def.Shotgun-1)/2)*spec.PelletFanStep
+				}
 				speed := spec.ProjectileSpeed + float64(rand.Intn(7)-3)
 				rad := rotation * math.Pi / 180
 				*bullets = append(*bullets, Bullet{
@@ -209,13 +233,9 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 				})
 			}
 		} else {
-			count := 1
-			if spec.FireMode == DevelopedFireBurst2 {
-				count = 2
-			} else if spec.FireMode == DevelopedFireBurst3 {
-				count = 3
-			}
-			for i := 0; i < count && w.Bullets-i > 0; i++ {
+			// One projectile per call: burst weapons come back through
+			// continueDevelopedBurst for each further round.
+			{
 				spread := (rand.Float64()*2 - 1) * spec.Spread
 				speed := spec.ProjectileSpeed
 				if speed <= 0 {
@@ -251,8 +271,16 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 						p.PortalNextColor = PortalBlue
 					}
 				}
-				if spec.Projectile == DevelopedProjectileArcRocket || spec.Projectile == DevelopedProjectileGrenade || spec.Projectile == DevelopedProjectileBolt || spec.Projectile == DevelopedProjectileFlare {
+				if spec.Projectile == DevelopedProjectileArcRocket || spec.Projectile == DevelopedProjectileGrenade {
 					b.VY = -speed * 0.22
+				}
+				if spec.Projectile == DevelopedProjectileBolt || spec.Projectile == DevelopedProjectileFlare {
+					// Bolts/flares are near-flat shots: zeroed at ~420 px with an
+					// apex of at most 14 px, so they never clear the 18 px between
+					// the muzzle (p.Y-38) and the hitbox top (p.Y-56). The grenade
+					// lob (-0.22*speed) overflew every standing target past ~150 px.
+					g := spec.ProjectileGravity
+					b.VY = -math.Min(g*(420/speed)/2, math.Sqrt(2*g*14))
 				}
 				if spec.Projectile == DevelopedProjectileTopAttack {
 					// Keep the launch visible, then acquire a target for the dive.
@@ -276,7 +304,10 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 			}
 		}
 		flashX, flashY := p.X+w.Def.FlashX*mini*float64(facing), p.Y-38*mini
-		if spec.Projectile != DevelopedProjectileFlame && spec.Projectile != DevelopedProjectilePortal {
+		// Bows, crossbow and harpoon have no powder charge: no muzzle flash.
+		// The nail gun keeps its small flash.
+		silentBolt := spec.Projectile == DevelopedProjectileBolt && w.Def.Number != 180
+		if spec.Projectile != DevelopedProjectileFlame && spec.Projectile != DevelopedProjectilePortal && !silentBolt {
 			appendMuzzleFlash(flashes, flashX, flashY, facing)
 		}
 		if w.Def.Number == 182 || w.Def.Number == 193 {
@@ -341,28 +372,27 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 
 	// Source increments pgsdata[player-1][3] once per accepted trigger shot,
 	// after FIREBULLET() (shotguns still count as one shot, not one per pellet).
+	// Each round of a developed burst is a separate shot with its own sound
+	// and ammo, so it counts too.
 	p.ShotsFired++
-	spent := 1
-	if developed {
-		if spec.FireMode == DevelopedFireBurst2 {
-			spent = 2
-		} else if spec.FireMode == DevelopedFireBurst3 {
-			spent = 3
-		}
-		if spent > w.Bullets {
-			spent = w.Bullets
+	if triggerShot {
+		w.TriggerLatched = true
+		if developed {
+			if rounds := developedBurstRounds(spec); rounds > 1 {
+				w.BurstLeft = rounds - 1
+				w.BurstWait = developedBurstGap(spec)
+			}
 		}
 	}
-	w.Bullets -= spent
+	w.Bullets--
 	if w.Bullets <= 0 {
+		w.BurstLeft = 0
+		w.BurstWait = 0
+		// Gun Mayhem pickups carry exactly one magazine. Every developed pickup,
+		// including the one-round launchers and single-shot rifles, falls through
+		// to the source discard branch below; only developed starter pistols
+		// reload in place, like the source handguns 1-6.
 		if developed {
-			if reloadFrames := developedManualReloadFrames(w.Def.Number); reloadFrames > 0 {
-				w.Bullets = 0
-				w.WaitTime = -reloadFrames
-				w.Playing = false
-				w.Frame = 1
-				return
-			}
 			if spec.Category == DevelopedCategoryPistol {
 				beginDevelopedPistolReload(p, w)
 				return
@@ -568,7 +598,7 @@ func hitDevelopedPlayerAlongSegment(arena Map, b *Bullet, x0, y0, x1, y1 float64
 				continue
 			}
 			if b.ExplosionRadius > 0 {
-				explodeDevelopedProjectile(b, players, explosions, blast)
+				explodeDevelopedProjectileWithDirectHit(b, p, players, explosions, blast)
 			} else {
 				hitPlayerWithBullet(arena, b, players, false)
 			}
@@ -593,7 +623,20 @@ func segmentIntersectsRect(x0, y0, x1, y1 float64, r Rect) bool {
 	return false
 }
 
+// developedExplosionSelfPushScale damps the blast on the shooter (and the
+// shooter's doubles). Point-blank rockets still shove the shooter, but no
+// longer as hard as the target.
+const developedExplosionSelfPushScale = 0.5
+
 func explodeDevelopedProjectile(b *Bullet, players []*Player, explosions *[]Explosion, blast *[]BlastEffect) {
+	explodeDevelopedProjectileWithDirectHit(b, nil, players, explosions, blast)
+}
+
+// explodeDevelopedProjectileWithDirectHit detonates b. A player struck
+// directly by the projectile (direct != nil) takes the full ExplosionPower
+// along the projectile's flight direction instead of the distance falloff,
+// so a direct rocket hit is the strongest single impulse of that weapon.
+func explodeDevelopedProjectileWithDirectHit(b *Bullet, direct *Player, players []*Player, explosions *[]Explosion, blast *[]BlastEffect) {
 	if b == nil || b.Dead {
 		return
 	}
@@ -621,11 +664,31 @@ func explodeDevelopedProjectile(b *Bullet, players []*Player, explosions *[]Expl
 		}
 		angle := math.Atan2(dy, dx)
 		push := power * falloff
+		if p == direct {
+			push = power
+		}
 		if p.ShieldTime > 0 || p.PerkNumber == 6 {
 			push *= 0.2
 		}
-		p.VX += math.Cos(angle) * push
-		p.VY += math.Sin(angle) * push * 0.7
+		if p.scoreOwnerID() == b.OwnerID {
+			push *= developedExplosionSelfPushScale
+		}
+		if p == direct {
+			dir := float64(b.Facing)
+			if b.VX > 0.5 {
+				dir = 1
+			} else if b.VX < -0.5 {
+				dir = -1
+			}
+			if dir == 0 {
+				dir = sign(dx)
+			}
+			p.VX += dir * push
+			p.VY -= push * 0.15
+		} else {
+			p.VX += math.Cos(angle) * push
+			p.VY += math.Sin(angle) * push * 0.7
+		}
 		p.LastHitBy = b.OwnerID
 		p.HitByGrenade = true
 	}
@@ -729,6 +792,7 @@ func updateInstagibBullet(arena Map, b *Bullet, players []*Player, instatrails *
 		if p.DamageMulti > 0 {
 			push *= p.DamageMulti
 		}
+		push *= kevlarBulletKnockbackMultiplier(p)
 		p.VX += push
 		p.HitNumber++
 		p.HitTimer = 0
@@ -801,6 +865,7 @@ func hitPlayerWithBullet(arena Map, b *Bullet, players []*Player, minigun bool) 
 				push *= 0.33 // DefineSprite_369/370
 			}
 		}
+		push *= kevlarBulletKnockbackMultiplier(p)
 		p.VX += push
 		p.HitNumber++
 		p.HitTimer = 0

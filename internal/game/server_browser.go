@@ -761,7 +761,7 @@ func (g *Game) refreshMultiplayerServers() {
 	}
 	ch := make(chan masterServerDiscoveryResult, 2)
 	g.multiplayerDiscoveryCh = ch
-	g.multiplayerMessage = "SEARCHING NETWORK..."
+	g.setMultiplayerBrowserStatus("SEARCHING NETWORK...")
 	go func() {
 		type sourceResult struct {
 			servers []multiplayerServerInfo
@@ -842,7 +842,7 @@ func (g *Game) pollMultiplayerServerBrowser() {
 		}
 		if result.Err != nil && result.Done {
 			g.multiplayerServers = nil
-			g.multiplayerMessage = "SERVER SEARCH ERROR: " + result.Err.Error()
+			g.setMultiplayerBrowserStatus("SERVER SEARCH ERROR: " + result.Err.Error())
 			return
 		}
 		result.Servers = g.filterOwnHostedServer(result.Servers)
@@ -851,20 +851,20 @@ func (g *Game) pollMultiplayerServerBrowser() {
 		g.multiplayerSelectedServer = -1
 		if !result.Done {
 			if len(result.Servers) > 0 {
-				g.multiplayerMessage = "FOUND LAN SESSIONS - SEARCHING INTERNET..."
+				g.setMultiplayerBrowserStatus("FOUND LAN SESSIONS - SEARCHING INTERNET...")
 			} else {
-				g.multiplayerMessage = "SEARCHING INTERNET..."
+				g.setMultiplayerBrowserStatus("SEARCHING INTERNET...")
 			}
 			return
 		}
 		if len(result.Servers) == 0 {
 			if result.DHTErr != nil {
-				g.multiplayerMessage = "NO OPEN SESSIONS - INTERNET DISCOVERY UNAVAILABLE"
+				g.setMultiplayerBrowserStatus("NO OPEN SESSIONS - INTERNET DISCOVERY UNAVAILABLE")
 			} else {
-				g.multiplayerMessage = "NO OPEN SESSIONS FOUND"
+				g.setMultiplayerBrowserStatus("NO OPEN SESSIONS FOUND")
 			}
 		} else {
-			g.multiplayerMessage = "FOUND OPEN SESSIONS"
+			g.setMultiplayerBrowserStatus("FOUND OPEN SESSIONS")
 		}
 	default:
 	}

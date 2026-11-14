@@ -304,10 +304,14 @@ func (g *Game) joinSelectedCustomServer() {
 		return
 	}
 	g.multiplayerAddress = server.Address
-	if err := g.StartNetClientServer(server); err != nil {
-		g.multiplayerMessage = "JOIN ERROR: " + err.Error()
-		return
-	}
+	g.beginAsyncNetJoin(server.Name, func(scratch *Game) error {
+		return scratch.StartNetClientServer(server)
+	}, g.enterOnlineCustomGameAsClient)
+}
+
+// enterOnlineCustomGameAsClient switches the UI to the SLOTS page after a
+// successful join from the Custom Game server browser.
+func (g *Game) enterOnlineCustomGameAsClient() {
 	g.customOnlineMode = true
 	g.onlineMatchSetup = true
 	g.customNetworkOpen = false
@@ -327,29 +331,9 @@ func (g *Game) joinFromCustomSession() {
 		g.multiplayerMessage = "ENTER A JOIN CODE OR IP:PORT"
 		return
 	}
-	var err error
-	upperAddress := strings.ToUpper(address)
-	if strings.HasPrefix(upperAddress, cloudflareInviteCodePrefix) {
-		err = g.StartNetClientCloudflareInvite(address)
-	} else if strings.HasPrefix(upperAddress, inviteCodePrefix) {
-		err = g.StartNetClientInvite(address)
-	} else if strings.HasPrefix(upperAddress, shortOpenCodePrefix) {
-		err = g.StartNetClientShortOpenCode(address)
-	} else {
-		err = g.StartNetClient(address)
-	}
-	if err != nil {
-		g.multiplayerMessage = "JOIN ERROR: " + err.Error()
-		return
-	}
-	g.customOnlineMode = true
-	g.onlineMatchSetup = true
-	g.customNetworkOpen = false
-	g.customHostSetupOpen = false
-	g.multiplayerFocus = false
-	g.setCustomV2Page(customPagePlayers)
-	g.multiplayerMessage = "CONNECTED - CHOOSE YOUR CHARACTER"
-	g.screen = screenCustomGame
+	g.beginAsyncNetJoin(address, func(scratch *Game) error {
+		return scratch.startNetClientFromInput(address)
+	}, g.enterOnlineCustomGameAsClient)
 }
 
 func (g *Game) configuredOnlineBotCount() int {
@@ -622,10 +606,15 @@ func (g *Game) drawCustomNetworkPanel(screen *ebiten.Image) {
 	drawDevelopedMenuButton(screen, customNetworkDirectJoinRect, "JOIN")
 	if g.multiplayerMessage != "" {
 		msg := g.multiplayerMessage
-		if len(msg) > 82 {
-			msg = msg[:82]
+		msgColor := color.NRGBA{R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff}
+		if wrappedLineCount(msg, menuFontCondensed, 10.5, 820) <= 1 {
+			drawSourceMenuText(screen, msg, menuFontCondensed, 10.5, msgColor, 55, 512)
+		} else {
+			// Long errors (for example Cloudflare join failures) are shown in
+			// full beside MAIN MENU instead of being cut at 82 characters.
+			drawWrappedMenuText(screen, msg, menuFontCondensed, 10.5, msgColor, 322, 515, 550, 13, 6,
+				color.NRGBA{R: 0x22, G: 0x27, B: 0x2f, A: 0xff})
 		}
-		drawSourceMenuText(screen, msg, menuFontCondensed, 10.5, color.NRGBA{R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff}, 55, 512)
 	}
 	drawDevelopedMenuButton(screen, customNetworkMainMenuRect, "MAIN MENU")
 }
@@ -634,8 +623,8 @@ func customPlayerEditorHitSlot(hit int) (int, bool) {
 	if slot, _, ok := decodeCustomDevelopedGunHit(hit); ok {
 		return slot, true
 	}
-	if hit >= menuHitPlayerThrowableBase && hit < menuHitPlayerThrowableBase+40 {
-		return (hit - menuHitPlayerThrowableBase) / 10, true
+	if hit >= menuHitPlayerThrowableBase && hit < menuHitPlayerThrowableBase+4*throwableHitStride {
+		return (hit - menuHitPlayerThrowableBase) / throwableHitStride, true
 	}
 	if hit >= menuHitPlayerEditBase && hit < menuHitPlayerEditBase+40 {
 		return (hit - menuHitPlayerEditBase) / 10, true

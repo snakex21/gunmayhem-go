@@ -35,6 +35,11 @@ func beginDevelopedPistolReload(p *Player, w *WeaponState) {
 	p.IdleTime = 0
 }
 
+// developedPistolReloadFrames is the length of the developed starter pistol
+// reload. The source handgun timelines take 50-76 frames; 55 keeps the added
+// starters inside the source sustained-push band (about 1.0-1.6 px/frame).
+const developedPistolReloadFrames = 55
+
 // Developed starter pistols do not have exported Flash timelines of their own.
 // Give them a compact magazine-and-slide sequence instead of silently replacing
 // the empty pistol with a freshly loaded instance.
@@ -44,9 +49,9 @@ func advanceDevelopedPistolReload(p *Player, w *WeaponState, shells *[]Shell) {
 	case 6:
 		p.PendingSounds = append(p.PendingSounds, "pistol_mag.wav")
 		spawnReloadParticle(p, 7, shells)
-	case 20:
+	case developedPistolReloadFrames - 15:
 		p.PendingSounds = append(p.PendingSounds, "pistol_slide.wav")
-	case 27:
+	case developedPistolReloadFrames:
 		w.Bullets = w.Def.Bullets
 		w.Frame = 1
 		w.Playing = false
@@ -59,7 +64,7 @@ func advanceDevelopedPistolReload(p *Player, w *WeaponState, shells *[]Shell) {
 
 	// A visible but restrained dip for the magazine, followed by a small upward
 	// tilt while the slide is worked. It applies only during developed reloads.
-	if w.Frame < 13 {
+	if w.Frame < developedPistolReloadFrames-20 {
 		p.VisualGunRotation = 18
 		p.VisualGunY = 4
 	} else {

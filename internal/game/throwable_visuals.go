@@ -71,6 +71,11 @@ func ensureThrowableVisuals() {
 			vector.DrawFilledCircle(molotov, 9, 2, 4, color.NRGBA{R: 0xff, G: 0x70, B: 0x0c, A: 0xff}, true)
 			throwableImages[ThrowableMolotov] = molotov
 		}
+
+		// Developed utility throwables are fully procedural.
+		for _, kind := range [...]int{ThrowableShock, ThrowableFlashbang, ThrowableSmoke, ThrowableTearGas} {
+			throwableImages[kind] = utilityThrowableImage(kind)
+		}
 	})
 }
 
@@ -158,6 +163,8 @@ func throwableGameplaySize(kind int) (float64, float64) {
 		return 34, 42
 	case ThrowableMolotov:
 		return 31, 58
+	case ThrowableShock, ThrowableFlashbang, ThrowableSmoke, ThrowableTearGas:
+		return 22, 42
 	default:
 		return 40, 48
 	}
@@ -183,17 +190,4 @@ func (g *Game) drawThrowable(screen *ebiten.Image, gr Grenade) {
 	op.GeoM.Rotate(gr.Rotation * math.Pi / 180)
 	op.GeoM.Translate(g.worldX(gr.X), g.worldY(gr.Y))
 	screen.DrawImage(img, op)
-}
-
-func (g *Game) drawFirePatches(screen *ebiten.Image) {
-	for _, patch := range g.firePatches {
-		if patch.Dead || patch.Life <= 0 {
-			continue
-		}
-		x, y := float32(g.worldX(patch.X)), float32(g.worldY(patch.Y))
-		pulse := float32((patch.Frame/3)%3) * 1.4
-		vector.DrawFilledCircle(screen, x, y-7-pulse, 12+pulse, color.NRGBA{R: 0xff, G: 0x35, B: 0x08, A: 0x88}, true)
-		vector.DrawFilledCircle(screen, x+3, y-8-pulse, 7+pulse*.5, color.NRGBA{R: 0xff, G: 0x9b, B: 0x12, A: 0xe0}, true)
-		vector.DrawFilledCircle(screen, x+5, y-10-pulse, 3.2, color.NRGBA{R: 0xff, G: 0xef, B: 0x74, A: 0xff}, true)
-	}
 }

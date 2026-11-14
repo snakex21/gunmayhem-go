@@ -58,7 +58,7 @@ func prepareAITarget(p *Player, g *Game) {
 		if !other.Active || other.Team == p.Team || other.scoreOwnerID() == p.scoreOwnerID() {
 			continue
 		}
-		if !aiCanDetectPlayer(p, other) {
+		if !g.aiCanDetect(p, other) {
 			continue
 		}
 		distance := math.Round(math.Sqrt(
@@ -86,7 +86,7 @@ func prepareAITarget(p *Player, g *Game) {
 		// invisible. Keep searching from the last visible coordinates instead of
 		// silently forgetting the opponent (and therefore never blind-firing).
 		for _, other := range g.players {
-			if other.ID != previousTargetID || !other.Active || other.InvisibleTime <= 0 || aiCanDetectPlayer(p, other) {
+			if other.ID != previousTargetID || !other.Active || !g.aiTargetConcealed(p, other) || g.aiCanDetect(p, other) {
 				continue
 			}
 			p.AITargetX, p.AITargetY = previousTargetX, previousTargetY
@@ -163,11 +163,11 @@ func refreshSourceAITarget(p *Player, g *Game) bool {
 			if other.ID != p.AITargetPlayerID || !other.Active {
 				continue
 			}
-			if aiCanDetectPlayer(p, other) {
+			if g.aiCanDetect(p, other) {
 				p.AITargetX, p.AITargetY = other.X, other.Y
 				return true
 			}
-			if other.InvisibleTime > 0 {
+			if p.BlindTime <= 0 && g.aiTargetConcealed(p, other) {
 				beginAISearch(p, other.ID)
 				return true
 			}
@@ -411,6 +411,8 @@ func decideAIController(p *Player, g *Game) {
 		p.AIUp = true
 		p.AILockUp--
 	}
+	aiAvoidFire(p, g.arena.Platforms, g.firePatches)
+	aiAvoidGasClouds(p, g.arena.Platforms, g.areaEffects)
 
 	if targetPlayer != nil && targetPlayer.Y < p.Y+20 && targetPlayer.Y > p.Y-80 {
 		facingTarget := (targetPlayer.X > p.X && p.Facing == 1) || (targetPlayer.X < p.X && p.Facing == -1)
@@ -437,6 +439,8 @@ func decideAIController(p *Player, g *Game) {
 			}
 		}
 	}
+	aiApplyFlashAvoid(p)
+	aiBlindedBehaviour(p, g.arena.Platforms)
 	applyExtraCampaignAIFireCadence(p, g)
 	// Original playerAI never sets KEYNADE=true.
 }
@@ -534,7 +538,7 @@ func sourceAITargetPlayer(p *Player, g *Game) *Player {
 		return nil
 	}
 	for _, other := range g.players {
-		if other.ID == p.AITargetPlayerID && other.Active && aiCanDetectPlayer(p, other) {
+		if other.ID == p.AITargetPlayerID && other.Active && g.aiCanDetect(p, other) {
 			return other
 		}
 	}
@@ -549,4 +553,102 @@ func aiCanDetectPlayer(observer, target *Player) bool {
 		return true
 	}
 	return math.Hypot(target.X-observer.X, target.Y-observer.Y) <= 135
+}
+
+// aiFleeGrenade ports the AI dodge from DefineSprite_665_wep_grenade
+// (fusetime==40): every AI without BLAST SHIELD that is within 150 px of the
+// grenade and not clearly below it presses jump and runs for 10 frames.
+//
+// Deviation: the source locks the AI *toward* the grenade (player left of it
+// gets lockright), which makes bots hop over the bomb and stay in the blast.
+// This port runs away from it instead, and on a ledge where running away would
+// mean walking off the platform it only jumps.
+func aiFleeGrenade(arena Map, x, y float64, players []*Player) {
+	for _, p := range players {
+		if p == nil || !p.Active || !p.AI || p.PerkNumber == 6 {
+			continue
+		}
+		distance := math.Round(math.Hypot(p.X-x, p.Y-30-y))
+		if p.Y >= y+20 || distance > 150 {
+			continue
+		}
+		if p.AILockUp < 1 {
+			p.AILockUp = 1
+		}
+		dir := 1.0
+		if p.X < x {
+			dir = -1
+		}
+		if p.JumpNum == 2 && !pointHitsPlatforms(arena.Platforms, p.X+64*dir, p.Y+16) {
+			continue
+		}
+		if dir < 0 {
+			p.AILockLeft, p.AILockRight = 10, 0
+		} else {
+			p.AILockRight, p.AILockLeft = 10, 0
+		}
+	}
+}
+
+// aiAvoidFire keeps grounded bots out of Molotov fire that can hurt them.
+// Inside fire they walk (and hop) out through the nearer edge that still has
+// ground under it; next to fire they stop instead of walking into it.
+func aiAvoidFire(p *Player, platforms []Rect, patches []FirePatch) {
+	if p == nil || !p.Active || len(patches) == 0 || p.JumpNum != 2 {
+		return
+	}
+	const reach = molotovFireHalfWidth + 8
+	inside := false
+	minX, maxX := math.Inf(1), math.Inf(-1)
+	for i := range patches {
+		patch := &patches[i]
+		if patch.Dead || patch.Life <= 0 || fireOwnerImmune(p, patch.OwnerID) {
+			continue
+		}
+		vertical := p.Y - patch.Y
+		if vertical < -52 || vertical > 16 {
+			continue
+		}
+		dx := math.Abs(p.X - patch.X)
+		if dx > reach+120 {
+			continue
+		}
+		if dx <= reach {
+			inside = true
+		}
+		minX = math.Min(minX, patch.X)
+		maxX = math.Max(maxX, patch.X)
+	}
+	if math.IsInf(minX, 1) {
+		return
+	}
+	if inside {
+		leftExit := minX - reach - 6
+		rightExit := maxX + reach + 6
+		leftOK := pointHitsPlatforms(platforms, leftExit, p.Y+16)
+		rightOK := pointHitsPlatforms(platforms, rightExit, p.Y+16)
+		goLeft := p.X-leftExit <= rightExit-p.X
+		if goLeft && !leftOK && rightOK {
+			goLeft = false
+		} else if !goLeft && !rightOK && leftOK {
+			goLeft = true
+		}
+		if leftOK || rightOK {
+			p.AILeft, p.AIRight = goLeft, !goLeft
+			if goLeft {
+				p.AILockLeft, p.AILockRight = 6, 0
+			} else {
+				p.AILockRight, p.AILockLeft = 6, 0
+			}
+		}
+		p.AIUp = true
+		return
+	}
+	// Not burning yet: do not step into the strip.
+	if p.AIRight && minX > p.X && minX-p.X <= reach+40 {
+		p.AIRight = false
+	}
+	if p.AILeft && maxX < p.X && p.X-maxX <= reach+40 {
+		p.AILeft = false
+	}
 }

@@ -12,17 +12,47 @@ const (
 	ThrowableStielhand
 	ThrowableRGD5
 	ThrowableMolotov
+	// Developed utility throwables. ALWAYS append new kinds here: saves and
+	// online player configs carry the number, so existing values never move.
+	ThrowableShock
+	ThrowableFlashbang
+	ThrowableSmoke
+	ThrowableTearGas
 	throwableTypeCount
 )
 
+// throwableHitStride is the per-slot stride of the throwable choice menu hit
+// codes; it must exceed throwableTypeCount (code = base + slot*stride + kind+1).
+const throwableHitStride = 20
+
+// throwableBehavior is what a throwable does when it goes off. Grenade update
+// code dispatches on it instead of testing individual throwable kinds.
+type throwableBehavior int
+
+const (
+	throwableBehaviorExplode throwableBehavior = iota // knockback blast
+	throwableBehaviorIgnite                           // Molotov fire strip
+	throwableBehaviorShock                            // pushing gas cloud, no damage
+	throwableBehaviorFlash                            // blinding flash
+	throwableBehaviorSmoke                            // vision-blocking smoke cloud
+	throwableBehaviorTearGas                          // coughing cloud: slow, low jump, bad aim
+)
+
 type throwableProfile struct {
-	Name               string
-	Fuse               int
+	Name     string
+	Fuse     int
+	Behavior throwableBehavior
+	// ImpactDetonate breaks the throwable on its first ground contact
+	// (Molotov) instead of waiting for the fuse.
+	ImpactDetonate     bool
 	Radius             float64
 	HorizontalPush     float64
 	VerticalPush       float64
 	EdgeHorizontalPush float64
 	EdgeVerticalPush   float64
+	// EffectFrames is the lifetime of the cloud (gas/smoke) or the longest
+	// blind (flashbang). Zero for plain explosives.
+	EffectFrames int
 }
 
 var throwableProfiles = [...]throwableProfile{
@@ -37,7 +67,16 @@ var throwableProfiles = [...]throwableProfile{
 	{Name: "SOVIET F-1", Fuse: 70, Radius: 220, HorizontalPush: 56, VerticalPush: 34, EdgeHorizontalPush: 24, EdgeVerticalPush: 15},
 	{Name: "GERMAN M24", Fuse: 44, Radius: 170, HorizontalPush: 82, VerticalPush: 45, EdgeHorizontalPush: 31, EdgeVerticalPush: 19},
 	{Name: "SOVIET RGD-5", Fuse: 54, Radius: 180, HorizontalPush: 58, VerticalPush: 38, EdgeHorizontalPush: 22, EdgeVerticalPush: 16},
-	{Name: "MOLOTOV", Fuse: 90, Radius: 100, HorizontalPush: 7, VerticalPush: 4, EdgeHorizontalPush: 2, EdgeVerticalPush: 1},
+	{Name: "MOLOTOV", Fuse: 90, Behavior: throwableBehaviorIgnite, ImpactDetonate: true, Radius: 100, HorizontalPush: 7, VerticalPush: 4, EdgeHorizontalPush: 2, EdgeVerticalPush: 1},
+	// Utility throwables (no blast). Radius is the cloud / flash reach.
+	{Name: "SHOCK GRENADE", Fuse: 46, Behavior: throwableBehaviorShock, Radius: gasCloudRadius, EffectFrames: gasCloudFrames},
+	{Name: "FLASHBANG", Fuse: 30, Behavior: throwableBehaviorFlash, Radius: flashbangRadius, EffectFrames: flashFullBlindMaxFrames},
+	{Name: "SMOKE GRENADE", Fuse: 50, Behavior: throwableBehaviorSmoke, Radius: smokeCloudRadius, EffectFrames: smokeCloudFrames},
+	{Name: "TEAR GAS", Fuse: 50, Behavior: throwableBehaviorTearGas, Radius: tearGasCloudRadius, EffectFrames: tearGasCloudFrames},
+}
+
+func throwableProfileFor(kind int) throwableProfile {
+	return throwableProfiles[normalizedThrowableType(kind)]
 }
 
 func normalizedThrowableType(kind int) int {
@@ -100,6 +139,13 @@ func updateGrenadeInput(p *Player, grenades *[]Grenade) {
 	}
 
 	pressed := p.grenadePressed()
+	if p.BlindTime > 0 {
+		// A blinded player cannot throw: an active wind-up is dropped without
+		// spending the throwable, and no new charge starts until sight returns.
+		p.GrenadeHeld = false
+		p.GrenadePower = 0
+		return
+	}
 	if pressed && !p.GrenadeHeld {
 		p.GrenadeHeld = true
 		p.GrenadePower = 1
@@ -120,6 +166,11 @@ func updateGrenadeInput(p *Player, grenades *[]Grenade) {
 			Type:     normalizedThrowableType(p.ThrowableType),
 		})
 		p.Grenades--
+		// Throw follow-through: the off hand snaps forward and the regular
+		// pose easing in updateSourceVisualState swings it back over the next
+		// frames (source hand2.gotoAndPlay(6)).
+		p.VisualHand2ChildX = grenadeThrowHandX
+		p.VisualHand2ChildY = grenadeThrowHandY
 	}
 
 	if pressed && p.GrenadePower < 14 {
@@ -128,9 +179,33 @@ func updateGrenadeInput(p *Player, grenades *[]Grenade) {
 			p.GrenadePower = 14
 		}
 	}
+	if pressed && p.GrenadeHeld {
+		// Wind-up (source hand2.gotoAndPlay(2), held on frame 5): the off hand
+		// is pulled back and up while the throw is charging.
+		p.VisualHand2ChildX = grenadeWindupHandX
+		p.VisualHand2ChildY = grenadeWindupHandY
+	}
 }
 
+// Off-hand poses for the grenade wind-up/throw. The original DefineSprite_681
+// tween cannot be recovered from the exported assets (all 41 exported frames
+// are pixel-identical and the Symbol 681 XFL is missing), so these are local
+// hand offsets approximating the wind-up hold and the forward release.
+const (
+	grenadeWindupHandX = -16.0
+	grenadeWindupHandY = -20.0
+	grenadeThrowHandX  = 34.0
+	grenadeThrowHandY  = -14.0
+)
+
 func updateGrenades(arena Map, grenades []Grenade, players []*Player, explosions *[]Explosion, dynamite *[]DynamiteEffect, blast *[]BlastEffect, fire *[]FirePatch) {
+	updateGrenadesWithAreas(arena, grenades, players, explosions, dynamite, blast, fire, nil)
+}
+
+// updateGrenadesWithAreas is updateGrenades plus the area-effect list that gas
+// and smoke clouds (and the flashbang burst visual) are spawned into. A nil
+// areas pointer still applies every direct effect (blast, fire, blind).
+func updateGrenadesWithAreas(arena Map, grenades []Grenade, players []*Player, explosions *[]Explosion, dynamite *[]DynamiteEffect, blast *[]BlastEffect, fire *[]FirePatch, areas *[]AreaEffect) {
 	for i := range grenades {
 		g := &grenades[i]
 		if g.Dead {
@@ -206,24 +281,67 @@ func updateGrenades(arena Map, grenades []Grenade, players []*Player, explosions
 		}
 
 		g.Fuse++
-		profile := throwableProfiles[normalizedThrowableType(g.Type)]
-		molotovImpact := false
-		if g.Type == ThrowableMolotov {
-			molotovImpact = g.HitGround
+		profile := throwableProfileFor(g.Type)
+		if (profile.Behavior == throwableBehaviorExplode || profile.Behavior == throwableBehaviorShock) &&
+			!profile.ImpactDetonate && g.Fuse == profile.Fuse-grenadeAIWarningFrames {
+			// DefineSprite_665: at fusetime==40 (10 frames before the 50-frame
+			// dynamite blast) nearby AI players jump away from the grenade.
+			// (Flashbangs use their own turn-away reaction, see
+			// Game.updateAIFlashbangAwareness.)
+			aiFleeGrenade(arena, g.X, g.Y, players)
+		}
+		impact := false
+		if profile.ImpactDetonate {
+			impact = g.HitGround
 			// A fast Molotov should not tunnel through a thin platform between
 			// frames. Break it on the first platform top crossed while descending.
-			if !molotovImpact {
+			if !impact {
 				if impactX, impactY, ok := molotovTopImpact(arena, previousX, previousY, g.X, g.Y); ok {
 					g.X, g.Y = impactX, impactY
 					g.HitGround = true
-					molotovImpact = true
+					impact = true
 				}
 			}
 		}
-		if g.Fuse > profile.Fuse || molotovImpact {
-			if g.Type == ThrowableMolotov {
-				spawnMolotovFire(arena, g, players, fire)
+		if g.Fuse > profile.Fuse || impact {
+			switch profile.Behavior {
+			case throwableBehaviorShock:
 				g.Dead = true
+				spawnGasCloud(g, areas)
+				spawnMolotovSparks(dynamite, g.X, g.Y-6, 5)
+				continue
+			case throwableBehaviorFlash:
+				g.Dead = true
+				detonateFlashbang(arena, g, players, areas)
+				continue
+			case throwableBehaviorSmoke:
+				g.Dead = true
+				spawnSmokeCloud(g, areas)
+				spawnMolotovSparks(dynamite, g.X, g.Y-6, 4)
+				continue
+			case throwableBehaviorTearGas:
+				g.Dead = true
+				spawnTearGasCloud(g, areas)
+				spawnMolotovSparks(dynamite, g.X, g.Y-6, 4)
+				continue
+			}
+			if profile.Behavior == throwableBehaviorIgnite {
+				molotovImpact := impact
+				g.Dead = true
+				if !molotovImpact {
+					// Fuse ran out in mid-air: the burning bottle drops to the
+					// nearest surface below. With no surface in reach it fizzles
+					// instead of leaving a fire patch floating in the sky.
+					surfaceY, ok := molotovSurfaceBelow(arena, g.X, g.Y, molotovTimeoutDrop)
+					if !ok {
+						spawnMolotovSparks(dynamite, g.X, g.Y, 4)
+						continue
+					}
+					g.Y = surfaceY
+				}
+				if spawnMolotovFire(arena, g, players, fire) {
+					spawnMolotovSparks(dynamite, g.X, g.Y-6, 9)
+				}
 				continue
 			}
 			explodeGrenade(g, players)
@@ -300,17 +418,41 @@ func molotovTopImpact(arena Map, x0, y0, x1, y1 float64) (float64, float64, bool
 	return bestX, bestY, bestT <= 1
 }
 
-func fireSurfaceY(arena Map, x, referenceY float64) (float64, bool) {
-	bestDistance := 70.0
+const (
+	// grenadeAIWarningFrames mirrors the source dodge at fusetime==40 for the
+	// 50-frame dynamite fuse; typed grenades warn the same 10 frames early.
+	grenadeAIWarningFrames = 10
+	// molotovImpactDrop is how far below the impact point a fire patch may
+	// settle (bounce-landing path).
+	molotovImpactDrop = 70.0
+	// molotovTimeoutDrop is how far a Molotov that timed out mid-air may fall
+	// to find a surface before it fizzles.
+	molotovTimeoutDrop = 160.0
+	// molotovSurfaceAbove tolerates the bounce code resting the bottle up to
+	// 8 px above the surface it actually hit; anything higher is a different
+	// (upper) platform and must not catch fire.
+	molotovSurfaceAbove  = 12.0
+	molotovFireHalfWidth = 34.0
+	// molotovBlastShield is the BLAST SHIELD (perk 6) multiplier for Molotov
+	// impact/fire: half burn time and half contact push.
+	molotovBlastShield = 0.5
+)
+
+// molotovSurfaceBelow returns the nearest platform top under x that lies at
+// most molotovSurfaceAbove px above referenceY and at most maxDrop px below
+// it. Unlike the old absolute-distance search it never snaps fire *up* onto a
+// platform above the bottle.
+func molotovSurfaceBelow(arena Map, x, referenceY, maxDrop float64) (float64, bool) {
 	bestY := 0.0
 	found := false
 	for _, r := range arena.Platforms {
 		if x < r.X || x > r.X+r.W {
 			continue
 		}
-		d := math.Abs(r.Y - referenceY)
-		if d <= bestDistance {
-			bestDistance = d
+		if r.Y < referenceY-molotovSurfaceAbove || r.Y > referenceY+maxDrop {
+			continue
+		}
+		if !found || r.Y < bestY {
 			bestY = r.Y
 			found = true
 		}
@@ -318,15 +460,47 @@ func fireSurfaceY(arena Map, x, referenceY float64) (float64, bool) {
 	return bestY, found
 }
 
-func spawnMolotovFire(arena Map, g *Grenade, players []*Player, patches *[]FirePatch) {
+// fireSurfaceY returns the surface a Molotov breaking at (x, referenceY) burns on.
+func fireSurfaceY(arena Map, x, referenceY float64) (float64, bool) {
+	return molotovSurfaceBelow(arena, x, referenceY, molotovImpactDrop)
+}
+
+// fireOwnerImmune reports whether p started this fire. The thrower (and their
+// DOUBLE clones) never burn in their own Molotov fire; environmental fire
+// (owner 0, chaos rain) burns everybody. Other players, teammates included,
+// are still affected exactly as before (fire has never had team rules).
+func fireOwnerImmune(p *Player, ownerID int) bool {
+	return p != nil && ownerID != 0 && p.scoreOwnerID() == ownerID
+}
+
+// spawnMolotovSparks reuses the fx_dynamite spark particle for the bottle
+// breaking (impact) or fizzling (timed out with no surface below).
+func spawnMolotovSparks(dynamite *[]DynamiteEffect, x, y float64, count int) {
+	if dynamite == nil {
+		return
+	}
+	for i := 0; i < count; i++ {
+		e := newDynamiteEffect(x, y)
+		e.VY -= rand.Float64() * 3
+		*dynamite = append(*dynamite, e)
+	}
+}
+
+// spawnMolotovFire breaks the bottle at g's position. It returns false when no
+// surface was found, in which case nothing ignites (no floating fire).
+func spawnMolotovFire(arena Map, g *Grenade, players []*Player, patches *[]FirePatch) bool {
+	profile := throwableProfiles[ThrowableMolotov]
 	if patches != nil {
-		before := len(*patches)
-		// Spread only across real platform surface. The old implementation placed
-		// seven patches at a fixed Y even across gaps, which made fire hover in air.
+		centerY, ok := fireSurfaceY(arena, g.X, g.Y)
+		if !ok {
+			return false
+		}
+		// Spread only along the struck surface itself. A neighbouring x that
+		// runs past the platform edge does not drip fire onto a lower floor.
 		for i := -3; i <= 3; i++ {
 			x := g.X + float64(i)*28
-			y, ok := fireSurfaceY(arena, x, g.Y)
-			if !ok {
+			y, ok := molotovSurfaceBelow(arena, x, centerY, 0)
+			if !ok || math.Abs(y-centerY) > 0.5 {
 				continue
 			}
 			*patches = append(*patches, FirePatch{
@@ -334,28 +508,41 @@ func spawnMolotovFire(arena Map, g *Grenade, players []*Player, patches *[]FireP
 				Life: 300 - int(math.Abs(float64(i)))*20,
 			})
 		}
-		// Test arenas or unusual geometry can lack a platform list. Keep one
-		// center flame rather than silently deleting the Molotov effect entirely.
-		if len(*patches) == before {
-			*patches = append(*patches, FirePatch{X: g.X, Y: g.Y, OwnerID: g.OwnerID, Life: 300})
-		}
 	}
 	for _, p := range players {
-		if p == nil || !p.Active || math.Hypot(p.X-g.X, p.Y-30-g.Y) > 100 {
+		if p == nil || !p.Active || fireOwnerImmune(p, g.OwnerID) || math.Hypot(p.X-g.X, p.Y-30-g.Y) > profile.Radius {
 			continue
 		}
 		dir := 1
 		if p.X < g.X {
 			dir = -1
 		}
-		p.igniteWithPower(g.OwnerID, dir, 165, 20)
+		frames, shove, lift := 165, 5.5, 2.8
+		if p.PerkNumber == 6 {
+			frames = int(float64(frames) * molotovBlastShield)
+			shove *= molotovBlastShield
+			lift *= molotovBlastShield
+		}
+		p.igniteWithPower(g.OwnerID, dir, frames, 20)
 		// Molotov is primarily an ignition weapon. Give the bottle impact a small
 		// readable shove without turning it into another high-explosive grenade.
-		p.VX += float64(dir) * 5.5
-		p.VY -= 2.8
+		p.VX += float64(dir) * shove
+		p.VY -= lift
 		p.LastHitBy = g.OwnerID
 		p.HitByGrenade = true
 	}
+	return true
+}
+
+func firePatchTouches(p *Player, patch *FirePatch) bool {
+	if math.Abs(p.X-patch.X) > molotovFireHalfWidth {
+		return false
+	}
+	// Player Y is effectively the feet/ground contact. Fire rises from the
+	// platform, so it can catch somebody standing in it or jumping just over
+	// it, but not players a full platform-height away.
+	vertical := p.Y - patch.Y
+	return vertical >= -52 && vertical <= 16
 }
 
 func updateFirePatches(patches []FirePatch, players []*Player) {
@@ -368,34 +555,75 @@ func updateFirePatches(patches []FirePatch, players []*Player) {
 		patch.Life--
 		if patch.Life <= 0 {
 			patch.Dead = true
+		}
+	}
+	for _, p := range players {
+		if p == nil || !p.Active {
 			continue
 		}
-		if patch.Frame%6 != 0 {
+		// Resolve every patch touching this player once per tick. The old code
+		// let each overlapping patch re-aim BurnDirection and the contact push,
+		// so a player standing inside a fire line was shoved left/right/left.
+		var source *FirePatch
+		for i := range patches {
+			patch := &patches[i]
+			if patch.Dead || patch.Frame%6 != 0 || fireOwnerImmune(p, patch.OwnerID) || !firePatchTouches(p, patch) {
+				continue
+			}
+			if source == nil || math.Abs(p.X-patch.X) < math.Abs(p.X-source.X) {
+				source = patch
+			}
+		}
+		if source == nil {
 			continue
 		}
-		for _, p := range players {
-			if p == nil || !p.Active || math.Abs(p.X-patch.X) > 34 {
-				continue
-			}
-			// Player Y is effectively the feet/ground contact. Fire rises from the
-			// platform, so it can catch somebody standing in it or jumping just over
-			// it, but no longer burns players a full platform-height away.
-			vertical := p.Y - patch.Y
-			if vertical < -52 || vertical > 16 {
-				continue
-			}
-			dir := 1
-			if p.X < patch.X {
-				dir = -1
-			}
-			p.igniteWithPower(patch.OwnerID, dir, 125, 18)
-			// Standing in burning Molotov fuel must physically matter in a
-			// knockback game. Contact gives a readable pop away from the flame,
-			// while a short per-player cooldown prevents seven overlapping fire
-			// patches from stacking the impulse in the same frame.
-			p.applyFireContactKnockback(patch.OwnerID, dir, 5.5, 4.2, 8)
-			p.LastHitBy = patch.OwnerID
+		dir := fireEjectDirection(p, patches, source)
+		frames, power, push, lift := 125, 18.0, 5.5, 4.2
+		if p.PerkNumber == 6 {
+			// BLAST SHIELD halves Molotov fire (shorter burn, half the contact
+			// pop). Shield powerup immunity is handled by igniteWithPower.
+			frames = int(float64(frames) * molotovBlastShield)
+			push *= molotovBlastShield
+			lift *= molotovBlastShield
 		}
+		p.igniteWithPower(source.OwnerID, dir, frames, power)
+		// Standing in burning Molotov fuel must physically matter in a
+		// knockback game. Contact gives a readable pop away from the fire's
+		// centre; the per-player cooldown prevents stacking.
+		p.applyFireContactKnockback(source.OwnerID, dir, push, lift, 8)
+		p.LastHitBy = source.OwnerID
+	}
+}
+
+// fireEjectDirection pushes a player out of the nearer side of the burning
+// strip they stand in: away from the centre of all live patches on the same
+// surface within reach. Exactly at the centre it keeps the current burn
+// direction so the push never alternates.
+func fireEjectDirection(p *Player, patches []FirePatch, source *FirePatch) int {
+	sum, n := 0.0, 0
+	for i := range patches {
+		patch := &patches[i]
+		if patch.Dead || math.Abs(patch.Y-source.Y) > 0.5 || math.Abs(patch.X-p.X) > 120 {
+			continue
+		}
+		sum += patch.X
+		n++
+	}
+	center := source.X
+	if n > 0 {
+		center = sum / float64(n)
+	}
+	switch {
+	case p.X > center+2:
+		return 1
+	case p.X < center-2:
+		return -1
+	case p.BurnTime > 0 && p.BurnDirection != 0:
+		return p.BurnDirection
+	case p.Facing < 0:
+		return 1 // back out the way they walked in
+	default:
+		return -1
 	}
 }
 

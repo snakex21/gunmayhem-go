@@ -1,11 +1,14 @@
 package game
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -73,9 +76,32 @@ func TestCloudflareQuickTunnelLiveWebSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tunnel.Close()
-	wsURL, err := tunnel.WaitReady(30 * time.Second)
-	if err != nil {
-		t.Fatal(err)
+	// Use the production startup path (backoff + cloudflared restarts).
+	tunnel.monitorStartup()
+	var wsURL string
+	deadline := time.Now().Add(time.Duration(cloudflareTunnelMaxAttempts) * (cloudflareTunnelStartWindow + 5*time.Second))
+	for {
+		ready, _, url, statusErr := tunnel.Status()
+		if ready {
+			wsURL = url
+			break
+		}
+		if statusErr != nil {
+			t.Fatal(statusErr)
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("Quick Tunnel did not become ready")
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	attempt, _ := tunnel.StartupAttempt()
+	t.Logf("tunnel ready attempt=%d url=%s", attempt, wsURL)
+	if data, readErr := os.ReadFile(networkDiagnosticPath); readErr == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.Contains(line, "CLOUDFLARE") {
+				t.Log(line)
+			}
+		}
 	}
 
 	client, err := newClientNetplayCloudflare(wsURL, "", 10*time.Second)
@@ -120,10 +146,8 @@ func TestCloudflareMonitorStartupDoesNotBlockCaller(t *testing.T) {
 		session:   host,
 		publicURL: health.URL,
 		wsURL:     "wss://unit-test.trycloudflare.com" + cloudflareNetplayPath,
-		ready:     make(chan struct{}),
 	}
 	tunnel.running.Store(true)
-	tunnel.readyOnce.Do(func() { close(tunnel.ready) })
 
 	started := time.Now()
 	tunnel.monitorStartup()
@@ -162,5 +186,110 @@ func TestLoopbackEphemeralInternetHostDoesNotRequireCloudflared(t *testing.T) {
 	}
 	if !shouldUseCloudflareInternetTunnel(":7777") {
 		t.Fatal("production Internet host did not require Cloudflare")
+	}
+}
+
+// TestCloudflareWaitReadyBacksOffHealthProbes guards against the old busy loop
+// that fired ~35 /healthz requests per second while the edge returned 530.
+func TestCloudflareWaitReadyBacksOffHealthProbes(t *testing.T) {
+	var (
+		mu       sync.Mutex
+		requests []time.Time
+	)
+	const failures = 4
+	health := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requests = append(requests, time.Now())
+		n := len(requests)
+		mu.Unlock()
+		if n <= failures {
+			w.WriteHeader(530)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer health.Close()
+
+	tunnel := &cloudflareQuickTunnel{
+		publicURL:        health.URL,
+		wsURL:            "wss://unit-test.trycloudflare.com" + cloudflareNetplayPath,
+		healthBackoffMin: 40 * time.Millisecond,
+		healthBackoffMax: 120 * time.Millisecond,
+	}
+	tunnel.running.Store(true)
+	wsURL, err := tunnel.WaitReady(5 * time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wsURL != tunnel.wsURL {
+		t.Fatalf("wsURL=%q", wsURL)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(requests) != failures+1 {
+		t.Fatalf("health requests=%d want %d", len(requests), failures+1)
+	}
+	wantGaps := []time.Duration{40, 80, 120, 120}
+	for i := 1; i < len(requests); i++ {
+		gap := requests[i].Sub(requests[i-1])
+		min := wantGaps[i-1]*time.Millisecond - 10*time.Millisecond
+		if gap < min {
+			t.Fatalf("probe %d came %v after the previous one; want >= %v", i, gap, min)
+		}
+	}
+}
+
+func TestCloudflareWaitReadyTimesOutWithRealReason(t *testing.T) {
+	var count atomic.Int32
+	health := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count.Add(1)
+		w.WriteHeader(530)
+	}))
+	defer health.Close()
+
+	tunnel := &cloudflareQuickTunnel{
+		publicURL:        health.URL,
+		wsURL:            "wss://unit-test.trycloudflare.com" + cloudflareNetplayPath,
+		healthBackoffMin: 50 * time.Millisecond,
+		healthBackoffMax: 100 * time.Millisecond,
+	}
+	tunnel.running.Store(true)
+	started := time.Now()
+	_, err := tunnel.WaitReady(600 * time.Millisecond)
+	if err == nil {
+		t.Fatal("WaitReady succeeded against a failing edge")
+	}
+	if elapsed := time.Since(started); elapsed > 2*time.Second {
+		t.Fatalf("WaitReady overran its timeout: %v", elapsed)
+	}
+	if !strings.Contains(err.Error(), "HTTP 530") {
+		t.Fatalf("error does not carry the real reason: %v", err)
+	}
+	if got := count.Load(); got > 12 {
+		t.Fatalf("too many health probes in 600ms: %d", got)
+	}
+}
+
+func TestCloudflareWaitReadyStopsOnAttemptError(t *testing.T) {
+	tunnel := &cloudflareQuickTunnel{lastCloudflaredErr: "2026-01-01T00:00:00Z ERR failed to request quick Tunnel: 429 Too Many Requests"}
+	tunnel.setAttemptError(errors.New("cloudflared stopped: exit status 1"))
+	_, err := tunnel.WaitReady(time.Second)
+	if err == nil {
+		t.Fatal("WaitReady ignored the attempt error")
+	}
+	if _, _, _, statusErr := tunnel.Status(); statusErr != nil {
+		t.Fatalf("a retryable attempt error leaked into Status: %v", statusErr)
+	}
+	if got := tunnel.withCloudflaredReason(err).Error(); !strings.Contains(got, "429 Too Many Requests") {
+		t.Fatalf("cloudflared reason missing: %s", got)
+	}
+}
+
+func TestCloudflaredErrorLineDetection(t *testing.T) {
+	if !isCloudflaredErrorLine("2026-11-14T10:00:00Z ERR Failed to create new quick Tunnel error=\"429\"") {
+		t.Fatal("ERR line not detected")
+	}
+	if isCloudflaredErrorLine("2026-11-14T10:00:00Z INF Requesting new quick Tunnel on trycloudflare.com...") {
+		t.Fatal("INF line treated as an error")
 	}
 }

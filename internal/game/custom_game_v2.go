@@ -933,16 +933,27 @@ func (g *Game) drawCustomV2Players(screen *ebiten.Image) {
 		accent = color.NRGBA{R: 0x06, G: 0x68, B: 0xe8, A: 0xff}
 		label = "ONLINE: OPEN NETWORK SLOTS OR ADD AI BOTS"
 		if g.netplay != nil && g.netplay.mode == netplayHost {
-			label = g.currentHostDisplayJoinCodeLabel()
+			label = g.hostJoinCodeLabelWithCopyHint()
 		}
 	}
-	ebitenutil.DrawRect(screen, 20, 501, 860, 20, panelFill)
-	ebitenutil.DrawRect(screen, 20, 501, 5, 20, accent)
 	fontSize := 10.5
-	if strings.HasPrefix(label, "JOIN CODE: ") {
+	if strings.HasPrefix(label, "JOIN CODE: ") || strings.HasPrefix(label, "INVITE CODE: ") {
 		fontSize = 9.5
 	}
-	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, fontSize, color.White, 34, 505)
+	// Tunnel errors can be long: grow the bar upward to a second line rather
+	// than clipping. The full text is always in network.log.
+	lines := wrappedLineCount(label, menuFontCondensedExtraBold, fontSize, 836)
+	if lines > 2 {
+		lines = 2
+	}
+	if lines < 1 {
+		lines = 1
+	}
+	barH := 20 + float64(lines-1)*13
+	barY := 521 - barH
+	ebitenutil.DrawRect(screen, 20, barY, 860, barH, panelFill)
+	ebitenutil.DrawRect(screen, 20, barY, 5, barH, accent)
+	drawWrappedMenuText(screen, label, menuFontCondensedExtraBold, fontSize, color.White, 34, barY+4, 836, 13, 2, nil)
 }
 
 func (g *Game) drawCustomGameV2(screen *ebiten.Image) {

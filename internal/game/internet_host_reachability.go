@@ -21,6 +21,7 @@ type hostInternetReachability struct {
 	CloudflareReady    bool
 	CloudflareURL      string
 	CloudflareErr      error
+	CloudflareProgress string
 }
 
 func (g *Game) currentHostInternetReachability() hostInternetReachability {
@@ -74,6 +75,7 @@ func (g *Game) currentHostInternetReachability() hostInternetReachability {
 	if g.cloudflareTunnel != nil {
 		status.CloudflareRequired = true
 		status.CloudflareReady, status.CloudflareURL, _, status.CloudflareErr = g.cloudflareTunnel.Status()
+		status.CloudflareProgress = g.cloudflareTunnel.StartupStatusText()
 	}
 	return status
 }
@@ -112,6 +114,9 @@ func (s hostInternetReachability) openSessionLabel() string {
 			return "CLOUDFLARE TUNNEL ERROR: " + strings.ToUpper(s.CloudflareErr.Error())
 		}
 		if !s.CloudflareReady {
+			if progress := strings.TrimSpace(s.CloudflareProgress); progress != "" && progress != "TUNNEL READY" {
+				return "CLOUDFLARE " + progress
+			}
 			return "CLOUDFLARE TUNNEL STARTING..."
 		}
 		if s.P2PReady {

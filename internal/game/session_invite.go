@@ -405,9 +405,9 @@ func (g *Game) currentHostDisplayJoinCodeLabel() string {
 			case ready:
 				return "INVITE CODE: PREPARING SESSION..."
 			case err != nil:
-				return "INVITE CODE: TUNNEL ERROR"
+				return "INVITE CODE: TUNNEL ERROR - " + strings.ToUpper(err.Error())
 			default:
-				return "INVITE CODE: STARTING TUNNEL..."
+				return "INVITE CODE: " + g.cloudflareTunnel.StartupStatusText()
 			}
 		}
 		return "INVITE CODE: PREPARING LAN SESSION..."

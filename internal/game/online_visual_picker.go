@@ -115,7 +115,7 @@ func onlineCharacterVisualChoiceCount(picker int) int {
 	case onlineVisualCharacterGun:
 		return len(starterHandgunNumbers())
 	case onlineVisualCharacterPerk:
-		return 9
+		return len(selectablePerkNumbers())
 	case onlineVisualCharacterTeam:
 		return 2
 	}
@@ -277,6 +277,9 @@ func (g *Game) applyOnlineVisualChoice(visibleIndex int) {
 		if g.onlineVisualPicker == onlineVisualCharacterGun {
 			handguns := starterHandgunNumbers()
 			choice = handguns[absolute]
+		}
+		if g.onlineVisualPicker == onlineVisualCharacterPerk {
+			choice = selectablePerkNumbers()[absolute]
 		}
 		cfg := &g.customPlayers[id-1]
 		cfg.Type = 1
@@ -532,6 +535,9 @@ func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 			choice := absolute + 1
 			if g.onlineVisualPicker == onlineVisualCharacterGun {
 				choice = starterHandgunNumbers()[absolute]
+			}
+			if g.onlineVisualPicker == onlineVisualCharacterPerk {
+				choice = selectablePerkNumbers()[absolute]
 			}
 			r := onlineVisualCharacterChoiceRect(g.onlineVisualPicker, i)
 			g.drawOnlineCharacterChoice(screen, g.onlineVisualPicker, choice, r, choice == selected)

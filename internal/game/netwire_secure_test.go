@@ -15,12 +15,10 @@ func TestSecureWireRoundTripClientInput(t *testing.T) {
 	defer right.Close()
 
 	want := netWireMessage{
-		Type:     netMessageInput,
-		Protocol: netplayProtocolVersion,
-		Input: PlayerInputState{
-			Left:  true,
-			Shoot: true,
-		},
+		Type:        netMessageInput,
+		Protocol:    netplayProtocolVersion,
+		InputSeq:    3,
+		InputFrames: []byte{17, 0, 17},
 	}
 	errCh := make(chan error, 1)
 	go func() {
@@ -33,7 +31,7 @@ func TestSecureWireRoundTripClientInput(t *testing.T) {
 	if err := <-errCh; err != nil {
 		t.Fatal(err)
 	}
-	if got.Type != want.Type || got.Protocol != want.Protocol || !got.Input.Left || !got.Input.Shoot {
+	if got.Type != want.Type || got.Protocol != want.Protocol || got.InputSeq != 3 || string(got.InputFrames) != string([]byte{17, 0, 17}) {
 		t.Fatalf("round trip mismatch: %+v", got)
 	}
 }

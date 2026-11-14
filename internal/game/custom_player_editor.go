@@ -53,7 +53,7 @@ func customThrowableChoiceHit(slot, kind int) int {
 	if kind < 0 || kind >= throwableTypeCount {
 		return menuHitNone
 	}
-	return menuHitPlayerThrowableBase + slot*10 + kind + 1
+	return menuHitPlayerThrowableBase + slot*throwableHitStride + kind + 1
 }
 
 func customDevelopedGunHit(slot, number int) int {
@@ -298,15 +298,16 @@ func (g *Game) customSelectionUnlocked(editor, number int) bool {
 	// Developed build: all real perks are available immediately. The Flash
 	// source locked perks 3/6/9 behind GM1 campaign progress, but that made
 	// visible choices such as GUN SPAWN appear broken until those missions had
-	// been completed. Keep only the real 1..9 perk range; frame 10 is not a
-	// selectable perk.
-	return number >= 1 && number <= 9
+	// been completed. Keep only the real 1..9 perks plus the developed perks
+	// 14+ (10..13 are reserved for GM2 perks); frame 10 is not a selectable
+	// perk.
+	return isSelectablePerk(number)
 }
 
 func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
-	if hit >= menuHitPlayerThrowableBase && hit < menuHitPlayerThrowableBase+40 {
+	if hit >= menuHitPlayerThrowableBase && hit < menuHitPlayerThrowableBase+4*throwableHitStride {
 		v := hit - menuHitPlayerThrowableBase
-		slot, action := v/10, v%10
+		slot, action := v/throwableHitStride, v%throwableHitStride
 		kind := action - 1
 		if slot >= 0 && slot < 4 && kind >= 0 && kind < throwableTypeCount {
 			if !g.onlineMayEditCustomCharacterSlot(slot) {

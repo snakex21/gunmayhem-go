@@ -29,6 +29,26 @@ func developedCrateWeapons() []int {
 	}
 	// Custom 87+ weapons are intentionally dormant until their first PNG is
 	// present under assets/custom/weapons/<asset-dir>/1.png.
-	out = append(out, availableCustomWeaponNumbers()...)
+	for _, n := range availableCustomWeaponNumbers() {
+		if developedCrateEligible(n) {
+			out = append(out, n)
+		}
+	}
 	return out
+}
+
+// developedCrateEligible keeps added handguns and the Portal Gun out of
+// random crates. Source crates never hold handguns (random(77)+10), and the
+// added pistols reload in place, so a crate pistol would be a permanent
+// replacement for the starter. They stay available as starter handguns, in
+// the pistols-only modifier, the gun library and campaign loadouts.
+func developedCrateEligible(number int) bool {
+	spec, ok := developedWeaponSpec(number)
+	if !ok {
+		return false
+	}
+	if spec.Category == DevelopedCategoryPistol || spec.Projectile == DevelopedProjectilePortal {
+		return false
+	}
+	return true
 }

@@ -75,6 +75,12 @@ func (g *Game) updateMultiplayerSessionNameInput() {
 }
 
 func (g *Game) updateMultiplayerAddressInput() {
+	// Ctrl+V / Shift+Insert works whenever the join field is on screen; long
+	// GMT1 invite codes are impractical to type.
+	if isPasteShortcutJustPressed() {
+		g.pasteIntoMultiplayerAddress()
+		return
+	}
 	if !g.multiplayerFocus {
 		return
 	}
@@ -180,7 +186,7 @@ func (g *Game) updateMultiplayerMenu() {
 		g.beginFade(screenCustomGame, fadePurposeScreen)
 	case activated == menuHitMultiplayerHost:
 		if err := g.StartNetHost(":7777"); err != nil {
-			g.multiplayerMessage = "HOST ERROR: " + err.Error()
+			g.reportNetError("HOST ERROR", err)
 			return
 		}
 		g.multiplayerFocus = false
@@ -205,12 +211,12 @@ func (g *Game) updateMultiplayerMenu() {
 			return
 		}
 		g.multiplayerAddress = server.Address
-		if err := g.StartNetClientServer(server); err != nil {
-			g.multiplayerMessage = "JOIN ERROR: " + err.Error()
-			return
-		}
-		g.multiplayerFocus = false
-		g.openOnlineCustomSlots("CONNECTED - CHOOSE YOUR CHARACTER")
+		g.beginAsyncNetJoin(server.Name, func(scratch *Game) error {
+			return scratch.StartNetClientServer(server)
+		}, func() {
+			g.multiplayerFocus = false
+			g.openOnlineCustomSlots("CONNECTED - CHOOSE YOUR CHARACTER")
+		})
 	}
 }
 
@@ -220,23 +226,12 @@ func (g *Game) joinFromMultiplayerMenu() {
 		g.multiplayerMessage = "ENTER A JOIN CODE OR IP:PORT"
 		return
 	}
-	var err error
-	upperAddress := strings.ToUpper(address)
-	if strings.HasPrefix(upperAddress, cloudflareInviteCodePrefix) {
-		err = g.StartNetClientCloudflareInvite(address)
-	} else if strings.HasPrefix(upperAddress, inviteCodePrefix) {
-		err = g.StartNetClientInvite(address)
-	} else if strings.HasPrefix(upperAddress, shortOpenCodePrefix) {
-		err = g.StartNetClientShortOpenCode(address)
-	} else {
-		err = g.StartNetClient(address)
-	}
-	if err != nil {
-		g.multiplayerMessage = "JOIN ERROR: " + err.Error()
-		return
-	}
-	g.multiplayerFocus = false
-	g.openOnlineCustomSlots("CONNECTED - CHOOSE YOUR CHARACTER")
+	g.beginAsyncNetJoin(address, func(scratch *Game) error {
+		return scratch.startNetClientFromInput(address)
+	}, func() {
+		g.multiplayerFocus = false
+		g.openOnlineCustomSlots("CONNECTED - CHOOSE YOUR CHARACTER")
+	})
 }
 
 func drawDevelopedMenuButton(screen *ebiten.Image, r Rect, label string) {
@@ -322,6 +317,12 @@ func (g *Game) drawMultiplayerMenu(screen *ebiten.Image) {
 		status = g.NetplayStatus()
 	}
 	if status != "" {
-		drawSourceMenuText(screen, status, menuFontCondensed, 13.5, color.NRGBA{A: 0xff}, 180, 548)
+		// Full text, wrapped (errors used to be cut off). Extra lines get a
+		// backdrop because they extend below the panel.
+		var backdrop color.Color
+		if wrappedLineCount(status, menuFontCondensed, 13.5, 540) > 1 {
+			backdrop = color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf2}
+		}
+		drawWrappedMenuText(screen, status, menuFontCondensed, 13.5, color.NRGBA{A: 0xff}, 180, 548, 540, 16, 3, backdrop)
 	}
 }

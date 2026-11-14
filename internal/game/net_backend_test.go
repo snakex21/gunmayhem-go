@@ -34,7 +34,7 @@ func TestNetplayLinkUsesReplaceableCodec(t *testing.T) {
 	codec := markerNetplayCodec{base: cborNetplayCodec{}}
 	left := (&netplayStack{codec: codec}).adopt(leftConn)
 	right := (&netplayStack{codec: codec}).adopt(rightConn)
-	want := netWireMessage{Type: netMessageInput, Protocol: netplayProtocolVersion, PlayerID: 2, Input: PlayerInputState{Left: true, Shoot: true}}
+	want := netWireMessage{Type: netMessageInput, Protocol: netplayProtocolVersion, PlayerID: 2, InputSeq: 5, InputFrames: []byte{17, 1}}
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- left.Write(want, maxClientWireFrame) }()
@@ -45,7 +45,7 @@ func TestNetplayLinkUsesReplaceableCodec(t *testing.T) {
 	if err := <-errCh; err != nil {
 		t.Fatal(err)
 	}
-	if got.Type != want.Type || got.PlayerID != want.PlayerID || got.Input != want.Input {
+	if got.Type != want.Type || got.PlayerID != want.PlayerID || got.InputSeq != want.InputSeq || string(got.InputFrames) != string(want.InputFrames) {
 		t.Fatalf("decoded message=%+v want=%+v", got, want)
 	}
 }
@@ -77,7 +77,7 @@ func TestNetplayOutboxDoesNotLetInputEvictControlState(t *testing.T) {
 	wantConfig := CustomPlayerConfig{Name: "LAN Player", Type: 1}
 	outbox.Push(netWireMessage{Type: netMessagePlayerConfig, Config: wantConfig})
 	for i := 0; i < 100; i++ {
-		outbox.Push(netWireMessage{Type: netMessageInput, Input: PlayerInputState{Left: i == 99}})
+		outbox.Push(netWireMessage{Type: netMessageInput, InputSeq: uint32(i + 1)})
 	}
 
 	stop := make(chan struct{})
@@ -93,7 +93,7 @@ func TestNetplayOutboxDoesNotLetInputEvictControlState(t *testing.T) {
 		case netMessagePlayerConfig:
 			gotConfig = msg.Config.Name == wantConfig.Name
 		case netMessageInput:
-			gotLatestInput = msg.Input.Left
+			gotLatestInput = msg.InputSeq == 100
 		}
 	}
 	if !gotConfig || !gotLatestInput {
