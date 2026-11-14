@@ -61,19 +61,25 @@ const (
 	zombieMsgBoxMoved
 	zombieMsgTaken
 	zombieMsgDown
+	zombieMsgDoorOpened // step 2: doors (zombie_zones.go)
+	zombieMsgDoorLocked
+	zombieMsgDoorNoPath
 )
 
 var zombieMsgText = map[int]string{
-	zombieMsgBought:   "BOUGHT",
-	zombieMsgNoPoints: "NOT ENOUGH POINTS",
-	zombieMsgOwned:    "ALREADY OWNED",
-	zombieMsgFull:     "ALREADY FULL",
-	zombieMsgNoGun:    "NO BOUGHT GUN",
-	zombieMsgClosed:   "SHOP IS CLOSED",
-	zombieMsgBoxBusy:  "BOX IS BUSY",
-	zombieMsgBoxMoved: "THE BOX MOVED!",
-	zombieMsgTaken:    "WEAPON TAKEN",
-	zombieMsgDown:     "YOU ARE DOWN",
+	zombieMsgBought:     "BOUGHT",
+	zombieMsgNoPoints:   "NOT ENOUGH POINTS",
+	zombieMsgOwned:      "ALREADY OWNED",
+	zombieMsgFull:       "ALREADY FULL",
+	zombieMsgNoGun:      "NO BOUGHT GUN",
+	zombieMsgClosed:     "SHOP IS CLOSED",
+	zombieMsgBoxBusy:    "BOX IS BUSY",
+	zombieMsgBoxMoved:   "THE BOX MOVED!",
+	zombieMsgTaken:      "WEAPON TAKEN",
+	zombieMsgDown:       "YOU ARE DOWN",
+	zombieMsgDoorOpened: "DOOR OPENED",
+	zombieMsgDoorLocked: "LOCKED UNTIL A LATER WAVE",
+	zombieMsgDoorNoPath: "CANNOT USE THE DOOR NOW",
 }
 
 type zombieShopItem struct {
@@ -422,17 +428,32 @@ const (
 	zombieBoxLeaving // the roll came up with the "bye bye" teddy: refund, then move
 )
 
+// placeBox puts the box on a random spot of an unlocked zone (multi-zone
+// arenas: every unlocked zone's spots), never on the spot it left (avoid is
+// the index into that list, -1 none).
 func (m *zombieMatch) placeBox(avoid int) {
-	zone := m.zone()
-	if zone == nil || len(zone.BoxSpots) == 0 {
+	type spot struct {
+		zone int
+		pt   zombiePoint
+	}
+	var spots []spot
+	for _, z := range m.arena.Zones {
+		if !m.zoneUnlocked(z.ID) {
+			continue
+		}
+		for _, pt := range z.BoxSpots {
+			spots = append(spots, spot{z.ID, pt})
+		}
+	}
+	if len(spots) == 0 {
 		return
 	}
-	spot := m.rng.Intn(len(zone.BoxSpots))
-	if len(zone.BoxSpots) > 1 && spot == avoid {
-		spot = (spot + 1 + m.rng.Intn(len(zone.BoxSpots)-1)) % len(zone.BoxSpots)
+	i := m.rng.Intn(len(spots))
+	if len(spots) > 1 && i == avoid {
+		i = (i + 1 + m.rng.Intn(len(spots)-1)) % len(spots)
 	}
-	pt := zone.BoxSpots[spot]
-	m.hud.Box = ZombieBoxState{Spot: spot, X: pt.X, Y: pt.Y, Zone: zone.ID, State: zombieBoxIdle, Uses: 0}
+	s := spots[i]
+	m.hud.Box = ZombieBoxState{Spot: i, X: s.pt.X, Y: s.pt.Y, Zone: s.zone, State: zombieBoxIdle, Uses: 0}
 	m.boxMoveAt = 4 + m.rng.Intn(5)
 }
 
@@ -442,6 +463,9 @@ func (m *zombieMatch) boxInReach(p *Player) bool {
 	}
 	b := m.hud.Box
 	if b.State != zombieBoxIdle && b.State != zombieBoxOffer {
+		return false
+	}
+	if m.multiZone() && m.playerZone(p) != b.Zone {
 		return false
 	}
 	return math.Abs(p.X-b.X) <= zombieBoxReachX && math.Abs(p.Y-b.Y) <= zombieBoxReachY

@@ -273,6 +273,56 @@ var zombieArenas = []zombieArenaDef{
 			BoxSpots: []zombiePoint{{483, 511}, {484, 331}, {483, 151}},
 		}},
 	},
+	{
+		// Step 2: four zones (each an existing map) linked by barricaded
+		// doors. Prices grow with the depth of the zone.
+		ID: "outbreak", Name: "OUTBREAK", Blurb: "Four zones linked by barricaded doors. Buy the doors to push from the city to the mountain.",
+		StartZone: 0,
+		Zones: []zombieZoneDef{
+			{
+				ID: 0, Name: "CITY", MapNumber: 11,
+				Spawns: []zombiePoint{
+					{20, 540}, {860, 540}, // street ends
+					{30, 364}, {850, 364}, // overpass ends
+					{200, 198}, {670, 198}, // rooftop
+					{220, 280}, {620, 280},
+				},
+				BoxSpots: []zombiePoint{{420, 454}, {430, 364}, {430, 198}},
+			},
+			{
+				ID: 1, Name: "SAVANNA", MapNumber: 12,
+				Spawns: []zombiePoint{
+					{60, 299}, {460, 299},
+					{220, 383}, {690, 383},
+					{260, 210}, {640, 210},
+					{700, 477},
+				},
+				BoxSpots: []zombiePoint{{450, 477}, {560, 299}},
+			},
+			{
+				ID: 2, Name: "TUNDRA", MapNumber: 10,
+				Spawns: []zombiePoint{
+					{830, 540}, {450, 540},
+					{80, 450}, {720, 450},
+					{640, 360}, {150, 270}, {250, 180},
+				},
+				BoxSpots: []zombiePoint{{400, 450}, {300, 270}},
+			},
+			{
+				ID: 3, Name: "PEAK", MapNumber: 6,
+				Spawns: []zombiePoint{
+					{900, 477}, {850, 305}, {760, 151}, {400, 151},
+					{80, 151}, {80, 312}, {600, 389}, {350, 477},
+				},
+				BoxSpots: []zombiePoint{{590, 477}, {620, 221}},
+			},
+		},
+		Doors: []zombieDoorDef{
+			{ID: 0, Zone: 0, At: zombiePoint{885, 540}, ToZone: 1, To: zombiePoint{190, 477}, Cost: 750, Name: "SAVANNA GATE"},
+			{ID: 1, Zone: 1, At: zombiePoint{850, 299}, ToZone: 2, To: zombiePoint{40, 540}, Cost: 1250, Name: "TUNDRA PASS"},
+			{ID: 2, Zone: 2, At: zombiePoint{900, 540}, ToZone: 3, To: zombiePoint{20, 477}, Cost: 2000, Name: "PEAK TRAIL"},
+		},
+	},
 }
 
 func zombieArenaByIndex(i int) *zombieArenaDef {

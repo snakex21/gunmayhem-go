@@ -493,10 +493,14 @@ func (g *Game) playSourceSFXGain(name string, loud bool, gain float64) {
 	if volume <= 0 {
 		return
 	}
-	g.audio.playSFXGain(name, volume, gain)
+	// A multi-zone zombie tick also simulates zones this screen does not
+	// show: their sounds go only to the guests in that zone.
+	if !g.sfxLocalMute {
+		g.audio.playSFXGain(name, volume, gain)
+	}
 	if g.netplay != nil && g.netplay.mode == netplayHost {
 		g.netSFXSeq++
-		g.netSFXPending = append(g.netSFXPending, netSFXEvent{Seq: g.netSFXSeq, Name: name, Loud: loud, Gain: gain})
+		g.netSFXPending = append(g.netSFXPending, netSFXEvent{Seq: g.netSFXSeq, Name: name, Loud: loud, Gain: gain, Zone: g.sfxZoneTag})
 	}
 }
 

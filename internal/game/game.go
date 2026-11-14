@@ -177,6 +177,11 @@ type Game struct {
 	zombieRecords       map[string]ZombieRecord
 	onlineZombie        bool // the online session in the lobby is a zombie co-op session
 	zombieBulletScratch []int
+	// Multi-zone zombie tick (zombie_zones.go): sounds of a zone that this
+	// screen does not show are not played locally; sfxZoneTag (zone+1, 0 =
+	// every zone) tags the net SFX events for the guests of that zone.
+	sfxLocalMute bool
+	sfxZoneTag   int
 
 	// arenagamedata2 defaults used by the source Options screen.
 	musicOn                 bool
@@ -486,8 +491,24 @@ func (g *Game) Update() error {
 	g.updateZombieShopUI()
 	g.updateZombiePreInput()
 
+	if !g.runZombieZoneTick() {
+		g.simulateArenaTick(true)
+	}
+	g.updateZombieMatch()
+	g.updateMatchInteractions()
+	return nil
+}
+
+// simulateArenaTick is one gameplay step of the world in Game (players,
+// enemies, zombies, projectiles, effects). A multi-zone zombie match runs it
+// once per zone with that zone's lists swapped in (zombie_zones.go);
+// primary is false for the zones this screen does not show, which skips the
+// once-per-tick parts (HUD, kill feed, map FX, pickup timers).
+func (g *Game) simulateArenaTick(primary bool) {
 	chaosKnockback := beginAbilityKnockbackWindow(g.players)
-	g.updateChaosMode()
+	if primary {
+		g.updateChaosMode()
+	}
 	// Chaos wind / shockwaves follow HEAVY, LIGHT and ANCHOR but never spend
 	// the one-hit SHIELD.
 	endAbilityKnockbackWindow(g.players, chaosKnockback, false)
@@ -509,7 +530,10 @@ func (g *Game) Update() error {
 					g.prepareCampaignAISpecial(p)
 					prepareAITarget(p, g)
 				}
-				afterPhysics = func() { decideAIController(p, g) }
+				afterPhysics = func() {
+					decideAIController(p, g)
+					g.zombieBotAssist(p)
+				}
 			}
 			// The weapon fires inside the player update, before that frame's
 			// friction, as in the source onEnterFrame (recoil, then vx *= 0.93).
@@ -609,9 +633,13 @@ func (g *Game) Update() error {
 		p.advanceHeadTimeline(g.assets.HeadTimeline)
 		p.updateSourceVisualState()
 	}
-	g.updateHUDLastLife()
+	if primary {
+		g.updateHUDLastLife()
+	}
 	g.updateSourceCamera()
-	g.advanceSourceMapFX()
+	if primary {
+		g.advanceSourceMapFX()
+	}
 
 	// Non-player campaign enemies move, shove and shoot before the hit
 	// phase; their shoves sit in the players' knockback window.
@@ -709,8 +737,10 @@ func (g *Game) Update() error {
 	updateBlastEffects(runtimeArena, g.blastFX)
 	updateJetThrustEffects(g.jetThrustFX)
 	updateDropPackEffects(runtimeArena, g.dropPackFX)
-	g.crateTimer++
-	if g.crateTimer >= g.customCrateInterval() && g.GameMode != SourceGameModeGunGame && g.customCratesEnabled() {
+	if primary {
+		g.crateTimer++
+	}
+	if primary && g.crateTimer >= g.customCrateInterval() && g.GameMode != SourceGameModeGunGame && g.customCratesEnabled() {
 		c := spawnCrate(runtimeArena)
 		c.Weapon = g.rollCrateWeapon()
 		c.Serial = g.nextPickupSerial
@@ -731,8 +761,10 @@ func (g *Game) Update() error {
 		// DefineSprite_668_crate: getgun(randgun); playsound2("bolt2.wav").
 		g.playSourceSFX("bolt2.wav", true)
 	}
-	g.powerupTimer++
-	if g.powerupTimer >= 600 && g.GameMode != SourceGameModeGunGame && g.GameMode != SourceGameModeSurvival && g.PowerON {
+	if primary {
+		g.powerupTimer++
+	}
+	if primary && g.powerupTimer >= 600 && g.GameMode != SourceGameModeGunGame && g.GameMode != SourceGameModeSurvival && g.PowerON {
 		// DefineSprite_734 replaces the Double powerup with shield whenever a
 		// helper already exists OR campaignmode is active.
 		pu := spawnPowerup(runtimeArena, g.hasActiveDouble() || g.campaignMode)
@@ -761,10 +793,14 @@ func (g *Game) Update() error {
 		}
 	}
 	g.updatePowerupPickupEffects()
-	g.updateTestGunPickup()
-	g.spawnRequestedDoubles()
+	if primary {
+		g.updateTestGunPickup()
+		g.spawnRequestedDoubles()
+	}
 	updateExplosions(g.explosions)
-	updateKillFeeds(g.killfeeds)
+	if primary {
+		updateKillFeeds(g.killfeeds)
+	}
 	g.bullets = compactBullets(g.bullets)
 	g.instagibTrails = compactInstagibTrails(g.instagibTrails)
 	g.playerTrails = compactPlayerTrailEffects(g.playerTrails)
@@ -778,12 +814,11 @@ func (g *Game) Update() error {
 	g.jetThrustFX = compactJetThrustEffects(g.jetThrustFX)
 	g.dropPackFX = compactDropPackEffects(g.dropPackFX)
 	g.explosions = compactExplosions(g.explosions)
-	g.killfeeds = compactKillFeeds(g.killfeeds)
+	if primary {
+		g.killfeeds = compactKillFeeds(g.killfeeds)
+	}
 	g.crates = compactCrates(g.crates)
 	g.powerups = compactPowerups(g.powerups)
-	g.updateZombieMatch()
-	g.updateMatchInteractions()
-	return nil
 }
 
 func (g *Game) resetArenaState() {

@@ -220,7 +220,7 @@ func (g *Game) zombieSnapshot() []Zombie {
 func (z *Zombie) wire() Zombie {
 	return Zombie{ID: z.ID, Kind: z.Kind, X: z.X, Y: z.Y, VX: z.VX, VY: z.VY, Facing: z.Facing, HP: z.HP, MaxHP: z.MaxHP,
 		State: z.State, StateTimer: z.StateTimer, Anim: z.Anim, HitFlash: z.HitFlash, Airborne: z.Airborne,
-		Dead: z.Dead, DeadFrames: z.DeadFrames, RingOut: z.RingOut, Zone: z.Zone, Level: z.Level}
+		Dead: z.Dead, DeadFrames: z.DeadFrames, RingOut: z.RingOut, Zone: z.Zone, Level: z.Level, DoorPasses: z.DoorPasses}
 }
 
 func (g *Game) zombieHUDSnapshot() ZombieHUD {
@@ -295,9 +295,25 @@ func validateZombieSnapshot(s netSnapshot) error {
 			return errors.New("invalid mystery box weapon in host snapshot")
 		}
 	}
+	zones := len(zombieArenas[h.Arena].Zones)
+	badZone := func(z int) bool { return z < 0 || z >= zones || z >= zombieMaxZones }
+	if badZone(h.View) || badZone(h.Box.Zone) {
+		return errors.New("invalid zombie zone in host snapshot")
+	}
+	if h.Gather.Door < 0 || h.Gather.Door > len(zombieArenas[h.Arena].Doors) {
+		return errors.New("invalid zombie door in host snapshot")
+	}
+	for _, zp := range h.Players {
+		if zp.ID != 0 && badZone(zp.Zone) {
+			return errors.New("invalid zombie player zone in host snapshot")
+		}
+	}
 	for _, z := range s.Zombies {
 		if z.Kind <= int(zombieKindNone) || z.Kind >= int(zombieKindCount) {
 			return errors.New("invalid zombie kind in host snapshot")
+		}
+		if badZone(z.Zone) {
+			return errors.New("invalid zombie zone in host snapshot")
 		}
 	}
 	if s.ZombieSetupArena < 0 || s.ZombieSetupArena >= len(zombieArenas) || s.ZombieSetupMode < 0 || s.ZombieSetupMode >= zombieModeCount {

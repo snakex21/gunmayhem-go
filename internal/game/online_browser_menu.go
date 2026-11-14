@@ -355,6 +355,9 @@ func (g *Game) buildOnlineBrowserList(ctx *uiCtx) {
 		id := onlineBrowserRowID(index)
 		selected := index == g.multiplayerSelectedServer
 		info := fmt.Sprintf("%s - %s, players %s.", server.Name, onlineServerSource(server), onlineServerPlayers(server))
+		if onlineServerIsZombie(server) {
+			info += " Zombie co-op session."
+		}
 		if server.Full() {
 			info += " The session is full."
 		}
@@ -366,7 +369,13 @@ func (g *Game) buildOnlineBrowserList(ctx *uiCtx) {
 				if server.Full() && !selected {
 					nameClr = uiTextMuted
 				}
-				uiTextIn(dst, name, true, uiSizeBody, uiWithAlpha(nameClr, alpha), Rect{X: r.X, Y: r.Y, W: r.W - 160, H: r.H}, uiAlignLeft, 12)
+				nameW := r.W - 160
+				if onlineServerIsZombie(server) {
+					// Zombie co-op sessions carry a badge with a zombie head.
+					nameW = r.W - 252
+					drawZombieSessionBadge(dst, Rect{X: r.X + r.W - 228, Y: r.Y + 6, W: 82, H: r.H - 12}, alpha)
+				}
+				uiTextIn(dst, name, true, uiSizeBody, uiWithAlpha(nameClr, alpha), Rect{X: r.X, Y: r.Y, W: nameW, H: r.H}, uiAlignLeft, 12)
 				badge := Rect{X: r.X + r.W - 140, Y: r.Y + 6, W: 70, H: r.H - 12}
 				badgeFill := uiInk900
 				if strings.Contains(onlineServerSource(server), "LAN") {
@@ -429,8 +438,14 @@ func (g *Game) buildOnlineBrowserPreview(ctx *uiCtx) {
 			uiText(ctx.dst, label, true, uiSizeBody, uiTextLight, x, p.Y+116, uiAlignLeft)
 			uiParagraph(ctx.dst, detail, false, uiSizeBody, uiTextMuted, x, p.Y+140, w, 20, 3)
 		} else {
-			uiText(ctx.dst, developedModeTitle(server.GameMode), true, uiSizeButton, uiTextLight, x, p.Y+110, uiAlignLeft)
+			title := developedModeTitle(server.GameMode)
 			stats := fmt.Sprintf("LIVES %d   /   ROUNDS %d   /   CRATES %s   /   PICKUPS %s", server.Lives, server.Rounds, onOff(server.Crates), onOff(server.Pickups))
+			if onlineServerIsZombie(server) {
+				title = "ZOMBIE CO-OP"
+				stats = "WAVES OF ZOMBIES   /   POINTS, SHOP AND MYSTERY BOX   /   JOIN ANY TIME"
+				drawZombieSessionBadge(ctx.dst, Rect{X: x + w - 82, Y: p.Y + 98, W: 82, H: 24}, 1)
+			}
+			uiText(ctx.dst, title, true, uiSizeButton, uiTextLight, x, p.Y+110, uiAlignLeft)
 			uiText(ctx.dst, uiFit(stats, false, uiSizeHint, w), false, uiSizeHint, uiTextMuted, x, p.Y+132, uiAlignLeft)
 			rules := strings.TrimSpace(server.RuleSummary)
 			if rules == "" {

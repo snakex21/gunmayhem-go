@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -351,15 +352,20 @@ func (g *Game) drawZombieWorld(screen *ebiten.Image) {
 		return
 	}
 	m := g.zombie
-	g.drawZombieBox(screen)
+	g.drawZombieDoors(screen)
+	if g.zombieInView(m.hud.Box.Zone) {
+		g.drawZombieBox(screen)
+	}
 	g.drawZombieDownMarkers(screen)
 	for _, z := range m.zombies {
-		if z != nil {
+		if z != nil && g.zombieInView(z.Zone) {
 			g.drawZombie(screen, z)
 		}
 	}
 	for _, p := range m.pops {
-		g.drawZombiePop(screen, p)
+		if g.zombieInView(p.Zone) {
+			g.drawZombiePop(screen, p)
+		}
 	}
 }
 
@@ -636,7 +642,7 @@ func (g *Game) drawZombieDownMarkers(screen *ebiten.Image) {
 	m := g.zombie
 	for i := range m.hud.Players {
 		zp := &m.hud.Players[i]
-		if zp.ID == 0 || (zp.State != zombiePlayerDown && zp.State != zombiePlayerDead) {
+		if zp.ID == 0 || (zp.State != zombiePlayerDown && zp.State != zombiePlayerDead) || !g.zombieInView(zp.Zone) {
 			continue
 		}
 		p := g.playerByID(zp.ID)
@@ -710,4 +716,31 @@ func (g *Game) drawMainZombieArt(dst *ebiten.Image, r Rect, alpha float64) {
 	draw(zombieBrute, zombiePoseWalk+2, r.X+r.W*0.6, 0.95, true)
 	draw(zombieWalker, zombiePoseWalk+5, r.X+r.W*0.82, 1.15, true)
 	draw(zombieRunner, zombiePoseWalk+1, r.X+r.W*0.36, 1.15, true)
+}
+
+// --- server browser badge ----------------------------------------------------------------
+
+// onlineServerIsZombie: the session's rules line says it is zombie co-op
+// (onlineRuleSummary), so no discovery format change is needed.
+func onlineServerIsZombie(s multiplayerServerInfo) bool {
+	return strings.HasPrefix(strings.ToUpper(strings.TrimSpace(s.RuleSummary)), "ZOMBIE CO-OP")
+}
+
+// drawZombieSessionBadge: a green badge with a zombie head and "ZOMBIE".
+func drawZombieSessionBadge(dst *ebiten.Image, r Rect, alpha float64) {
+	uiFillRound(dst, r, 3, uiWithAlpha(zombieTagColor, alpha))
+	s := zombieSpriteFor(zombieWalker, zombiePoseWalk)
+	op := &ebiten.DrawImageOptions{}
+	op.Filter = ebiten.FilterLinear
+	// Only the head: the sprite's top part, scaled to the badge height.
+	b := s.img.Bounds()
+	head := s.img.SubImage(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+b.Dy()*45/100)).(*ebiten.Image)
+	hb := head.Bounds()
+	scale := (r.H - 4) / float64(hb.Dy())
+	op.GeoM.Scale(scale, scale)
+	op.GeoM.Translate(r.X+3, r.Y+2)
+	op.ColorScale.ScaleAlpha(float32(alpha))
+	dst.DrawImage(head, op)
+	text := Rect{X: r.X + 4 + float64(hb.Dx())*scale, Y: r.Y, W: r.W - 6 - float64(hb.Dx())*scale, H: r.H}
+	uiTextIn(dst, "ZOMBIE", true, uiSizeHint, uiWithAlpha(uiTextLight, alpha), text, uiAlignCenter, 2)
 }

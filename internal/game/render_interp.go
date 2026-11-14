@@ -54,6 +54,7 @@ type renderSample struct {
 	serial            int  // death serial (players)
 	double            bool // players: helper double
 	active            bool
+	zone              int // zombie zone (a door pass between zones snaps)
 }
 
 // renderListScratch is reused by every interpolated list in a frame.
@@ -66,6 +67,7 @@ type renderListScratch struct {
 type renderInterpState struct {
 	valid      bool
 	arena      int
+	zone       int // zombie view zone (multi-zone matches)
 	screen     gameScreen
 	camX, camY float64
 	lastUpdate time.Time
@@ -99,7 +101,7 @@ func samplePlayer(p *Player) renderSample {
 // sampleZombie: zombies are matched by ID; rising and dead zombies are not
 // interpolated (they do not move, or play their own death animation).
 func sampleZombie(z *Zombie) renderSample {
-	return renderSample{x: z.X, y: z.Y, vx: z.VX, vy: z.VY, key: z.ID, active: !z.Dead && z.State != zombieStateRising}
+	return renderSample{x: z.X, y: z.Y, vx: z.VX, vy: z.VY, key: z.ID, serial: z.DoorPasses, zone: z.Zone, active: !z.Dead && z.State != zombieStateRising}
 }
 
 func sampleBullet(b *Bullet) renderSample {
@@ -153,11 +155,14 @@ func (g *Game) captureRenderPrev(now time.Time) {
 		return
 	}
 	r.arena = g.arena.Number
+	r.zone = g.zombieViewZone()
 	r.camX, r.camY = g.cameraX, g.cameraY
 	r.players = r.players[:0]
 	for _, p := range g.players {
 		if p != nil {
-			r.players = append(r.players, samplePlayer(p))
+			s := samplePlayer(p)
+			s.zone = g.zombie.playerZone(p)
+			r.players = append(r.players, s)
 		}
 	}
 	r.enemies = r.enemies[:0]
@@ -243,7 +248,7 @@ func renderObjectError(prev, cur renderSample) float64 {
 // renderPlayerContinues reports whether a player can be interpolated from
 // prev to cur (same life, no teleport).
 func renderPlayerContinues(prev, cur renderSample) bool {
-	if !prev.active || !cur.active || prev.key != cur.key || prev.double != cur.double || prev.serial != cur.serial {
+	if !prev.active || !cur.active || prev.key != cur.key || prev.double != cur.double || prev.serial != cur.serial || prev.zone != cur.zone {
 		return false
 	}
 	jx, jy := cur.x-prev.x, cur.y-prev.y
@@ -313,7 +318,7 @@ func interpolateRenderList[T any](dst []T, list []T, prev []renderSample, sample
 func (g *Game) beginRenderInterpolation(now time.Time) func() {
 	r := &g.renderInterp
 	alpha := 1.0
-	if g.renderInterpolationEnabled() && r.valid && r.screen == screenGameplay && g.screen == screenGameplay && r.arena == g.arena.Number {
+	if g.renderInterpolationEnabled() && r.valid && r.screen == screenGameplay && g.screen == screenGameplay && r.arena == g.arena.Number && r.zone == g.zombieViewZone() {
 		alpha = renderAlphaAt(r.lastUpdate, now)
 	}
 	r.lastAlpha = alpha
@@ -337,6 +342,7 @@ func (g *Game) beginRenderInterpolation(now time.Time) func() {
 	for i := range r.drawPlayers {
 		p := &r.drawPlayers[i]
 		cur := samplePlayer(p)
+		cur.zone = g.zombie.playerZone(p)
 		for _, prev := range r.players {
 			if prev.key == cur.key && prev.double == cur.double {
 				if renderPlayerContinues(prev, cur) {

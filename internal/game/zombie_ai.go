@@ -310,7 +310,7 @@ func (g *Game) newZombie(kind zombieKind, hp int, pt zombiePoint, zone int) *Zom
 		speed = 1
 	}
 	facing := 1
-	if pt.X > (g.arena.SpawnMinX+g.arena.SpawnMaxX)/2 {
+	if mp := g.zombieZoneMap(zone); pt.X > (mp.SpawnMinX+mp.SpawnMaxX)/2 {
 		facing = -1
 	}
 	z := &Zombie{ID: m.nextID, Kind: int(kind), X: pt.X, Y: pt.Y, Facing: facing, HP: hp, MaxHP: hp,
@@ -333,14 +333,20 @@ func (g *Game) newZombie(kind zombieKind, hp int, pt zombiePoint, zone int) *Zom
 	return z
 }
 
-// pickZombieSpawn chooses a spawn point of the zone away from the players.
+// pickZombieSpawn chooses a zone (multi-zone: weighted toward the players,
+// pickZombieSpawnZone) and a spawn point of it away from the players.
 func (g *Game) pickZombieSpawn(farthest bool) (zombiePoint, int) {
 	m := g.zombie
-	zone := m.zone()
+	zone := m.arena.zone(m.pickZombieSpawnZone(farthest))
 	if zone == nil || len(zone.Spawns) == 0 {
-		x := (g.arena.SpawnMinX + g.arena.SpawnMaxX) / 2
-		y, _ := zombieFloorBelow(g.arena, x, -1000)
-		return zombiePoint{x, y}, 0
+		mp := g.arena
+		id := 0
+		if zone != nil {
+			mp, id = g.zombieZoneMap(zone.ID), zone.ID
+		}
+		x := (mp.SpawnMinX + mp.SpawnMaxX) / 2
+		y, _ := zombieFloorBelow(mp, x, -1000)
+		return zombiePoint{x, y}, id
 	}
 	type cand struct {
 		pt   zombiePoint
@@ -349,8 +355,8 @@ func (g *Game) pickZombieSpawn(farthest bool) (zombiePoint, int) {
 	cands := make([]cand, 0, len(zone.Spawns))
 	for _, sp := range zone.Spawns {
 		d := math.Inf(1)
-		for _, p := range g.players {
-			if p == nil || !p.Active {
+		for _, p := range g.zombiePlayersAll() {
+			if p == nil || !p.Active || m.playerZone(p) != zone.ID {
 				continue
 			}
 			d = math.Min(d, math.Hypot(p.X-sp.X, p.Y-sp.Y))
@@ -416,17 +422,20 @@ func (g *Game) updateZombies(arena Map) {
 		return
 	}
 	m := g.zombie
-	if m.hud.Phase == zombiePhaseWave {
+	if m.hud.Phase == zombiePhaseWave && m.passZone < 0 {
+		// Multi-zone matches spawn once per tick before the zone passes.
 		g.spawnZombieWave()
 	}
-	navs := [2]*zombieNav{m.navFor(m.arena.StartZone, arena, zombieNavNormal), m.navFor(m.arena.StartZone, arena, zombieNavHeavy)}
 	for i := 0; i < len(m.zombies); i++ {
 		z := m.zombies[i]
 		if z.Dead {
 			z.DeadFrames++
 			continue
 		}
-		g.updateZombie(z, arena, navs[zombieNavClass(z.kind())])
+		if m.passZone >= 0 && z.Zone != m.passZone {
+			continue // came through a door during this pass
+		}
+		g.updateZombie(z, arena, m.navFor(z.Zone, arena, zombieNavClass(z.kind())))
 	}
 	out := m.zombies[:0]
 	for _, z := range m.zombies {
@@ -470,8 +479,22 @@ func (g *Game) updateZombie(z *Zombie, arena Map, nav *zombieNav) {
 	st := z.kind().stats()
 	wasAirborne := b.JumpNum != 2
 
+	var doorTarget Player
+	steerTarget := target
 	switch z.State {
 	case zombieStateWalk:
+		if di, goal, ok := g.zombieDoorGoal(z); ok && target == nil && b.BlindTime <= 0 {
+			// No player in this zone: walk to the door toward the nearest
+			// one and come through.
+			if b.JumpNum == 2 && math.Abs(b.X-goal.X) <= zombieDoorZombieReach && math.Abs(b.Y-goal.Y) <= 8 {
+				g.zombieThroughDoor(z, di)
+				return
+			}
+			doorTarget = zombieDoorTarget(goal)
+			steerTarget = &doorTarget
+			g.zombieSteer(z, steerTarget, nav)
+			break
+		}
 		if target != nil && b.BlindTime <= 0 {
 			if z.kind() == zombieExploder && zombieDist(b, target) < zombieExploderTrigger*b.PlayerScale/0.8 {
 				z.State = zombieStateFuse
@@ -549,7 +572,7 @@ func (g *Game) updateZombie(z *Zombie, arena Map, nav *zombieNav) {
 			g.zombieBossSlam(z)
 		}
 	}
-	g.zombieTrackStuck(z, target, nav)
+	g.zombieTrackStuck(z, steerTarget, nav)
 	z.syncFromBody()
 }
 
@@ -608,7 +631,6 @@ func (g *Game) zombieTarget(z *Zombie) *Player {
 // zombieSteer presses the AI keys that move the zombie along its path.
 func (g *Game) zombieSteer(z *Zombie, target *Player, nav *zombieNav) {
 	b := &z.body
-	grounded := b.JumpNum == 2
 	if z.unstickTimer > 0 {
 		z.unstickTimer--
 		zombieHold(b, z.unstickDir)
@@ -619,119 +641,203 @@ func (g *Game) zombieSteer(z *Zombie, target *Player, nav *zombieNav) {
 		}
 		return
 	}
-	if grounded {
-		z.nav.cur = nav.platformUnder(b.X, b.Y)
-		if z.nav.cur >= 0 {
-			z.nav.lastPlat = z.nav.cur
-		}
-		z.nav.airFrames = 0
-	} else {
-		z.nav.airFrames++
+	navSteer(b, &z.nav, z.Anim, target.X, target.Y, nav)
+}
+
+// navSteer presses the keys that move body b along the nav graph toward
+// (tx, ty). ns is the body's path state. Zombies and AI teammates (walking
+// to a downed player, zombie_bots.go) share it.
+func navSteer(b *Player, ns *zombieNavState, anim int, tx, ty float64, nav *zombieNav) {
+	navSteerKeys(b, ns, anim, tx, ty, nav)
+	navEdgeGuard(b, ns, nav)
+}
+
+// navEdgeGuard brakes a fast grounded body that would slide off its
+// platform where the path does not leave it (a runner at full speed coasts
+// some 60 px).
+func navEdgeGuard(b *Player, ns *zombieNavState, nav *zombieNav) {
+	if b.JumpNum != 2 || ns.cur < 0 || ns.cur >= len(nav.plats) || math.Abs(b.VX) <= 2.5 {
+		return
 	}
-	goal := nav.platformNear(target.X, target.Y)
-	if grounded {
-		z.nav.hasLink = false
-		z.nav.jumped = false
-		if z.nav.cur >= 0 && goal >= 0 && z.nav.cur != goal {
-			if li := nav.next[z.nav.cur][goal]; li >= 0 {
-				z.nav.link = nav.links[z.nav.cur][li]
-				z.nav.hasLink = true
+	dir := zsign(b.VX)
+	if ns.hasLink {
+		switch ns.link.kind {
+		case zombieLinkHop, zombieLinkFall, zombieLinkWalk:
+			if ns.link.dir == dir || ns.link.kind == zombieLinkWalk {
+				return // leaving the platform this way is the plan
 			}
 		}
 	}
-	if !z.nav.hasLink {
+	r := nav.plats[ns.cur]
+	stopX := b.X + b.VX*math.Abs(b.VX)/1.2
+	if stopX >= r.X+6 && stopX <= r.X+r.W-6 {
+		return
+	}
+	b.AILeft, b.AIRight = false, false
+	zombieHold(b, -dir)
+}
+
+func navSteerKeys(b *Player, ns *zombieNavState, anim int, tx, ty float64, nav *zombieNav) {
+	grounded := b.JumpNum == 2
+	if grounded {
+		ns.cur = nav.platformUnder(b.X, b.Y)
+		if ns.cur >= 0 {
+			ns.lastPlat = ns.cur
+		}
+		ns.airFrames = 0
+	} else {
+		ns.airFrames++
+	}
+	goal := nav.platformNear(tx, ty)
+	if grounded {
+		ns.hasLink = false
+		ns.jumped = false
+		if ns.cur >= 0 && goal >= 0 && ns.cur != goal {
+			if li := nav.next[ns.cur][goal]; li >= 0 {
+				ns.link = nav.links[ns.cur][li]
+				ns.hasLink = true
+			}
+		}
+	}
+	if !ns.hasLink {
 		// Same platform (or no known way): go straight for the target.
-		dx := target.X - b.X
+		dx := tx - b.X
 		if math.Abs(dx) > 6 {
 			zombieHold(b, zsign(dx))
 		}
-		if grounded && target.Y < b.Y-60 && math.Abs(dx) < 40 && z.Anim%30 == 0 {
-			zombiePressUp(z)
+		if grounded && ty < b.Y-60 && math.Abs(dx) < 40 && anim%30 == 0 {
+			navPressUp(b, ns)
 		} else {
-			z.nav.upPrev = false
+			ns.upPrev = false
 		}
 		return
 	}
-	l := z.nav.link
+	l := ns.link
 	dest := nav.plats[l.to]
 	margin := math.Min(30, dest.W/3)
-	landX := math.Max(dest.X+margin, math.Min(target.X, dest.X+dest.W-margin))
+	landX := math.Max(dest.X+margin, math.Min(tx, dest.X+dest.W-margin))
 	switch l.kind {
 	case zombieLinkWalk:
 		zombieHold(b, zsign(landX-b.X))
-		z.nav.upPrev = false
+		ns.upPrev = false
 	case zombieLinkHop:
 		if grounded {
 			ahead := (l.x - b.X) * float64(l.dir) // > 0: launch point still ahead
 			switch {
 			case ahead < -40:
 				zombieHold(b, -l.dir) // went past the edge zone: come back
-				z.nav.upPrev = false
+				ns.upPrev = false
 			case ahead > 12:
 				zombieHold(b, l.dir)
-				z.nav.upPrev = false
+				ns.upPrev = false
 			default:
 				zombieHold(b, l.dir)
-				zombiePressUp(z)
-				z.nav.jumped = true
+				navPressUp(b, ns)
+				ns.jumped = true
 			}
 		} else {
-			if b.X > dest.X+margin && b.X < dest.X+dest.W-margin {
-				zombieHold(b, zsign(landX-b.X))
-			} else {
+			far := dest.X + dest.W - margin
+			if l.dir < 0 {
+				far = dest.X + margin
+			}
+			switch {
+			case (b.X-far)*float64(l.dir) > 0 && b.Y < dest.Y && b.VY > 0 && dest.Y <= nav.plats[nav.clampIndex(ns.lastPlat)].Y+6:
+				// A fast body is flying past a platform at its own height
+				// (nothing below to land on): come back.
+				zombieHold(b, -l.dir)
+			case b.X > dest.X+margin && b.X < dest.X+dest.W-margin:
+				navAirSteer(b, landX)
+			default:
 				zombieHold(b, l.dir)
 			}
-			if z.nav.jumped && b.VY > -1.5 && b.JumpNum == 1 && b.Y > dest.Y-25 {
-				zombiePressUp(z)
+			if ns.jumped && b.VY > -1.5 && b.JumpNum == 1 && b.Y > dest.Y-25 {
+				navPressUp(b, ns)
 			} else {
-				z.nav.upPrev = false
+				ns.upPrev = false
 			}
 		}
 	case zombieLinkClimb:
 		if grounded {
 			dx := l.x - b.X
+			// Coasting distance of a fast body: a runner at full speed
+			// would slide past a launch point near a platform's edge.
+			stop := b.VX * b.VX / 1.2
 			switch {
 			case math.Abs(dx) <= 10 && math.Abs(b.VX) < 3:
-				zombiePressUp(z)
-				z.nav.jumped = true
-			case math.Abs(dx) <= 10+3*math.Abs(b.VX) && zsign(dx) == zsign(b.VX):
-				z.nav.upPrev = false // coast: friction brakes a fast runner
+				navPressUp(b, ns)
+				ns.jumped = true
+			case math.Abs(dx) <= 10+math.Max(3*math.Abs(b.VX), stop) && zsign(dx) == zsign(b.VX):
+				if math.Abs(b.VX) > 4 {
+					zombieHold(b, -zsign(b.VX)) // brake hard
+				}
+				ns.upPrev = false
 			default:
 				zombieHold(b, zsign(dx))
-				z.nav.upPrev = false
+				ns.upPrev = false
 			}
 		} else {
 			// Stay over the overlap until landed; the path goes on from there.
 			if dx := l.x - b.X; math.Abs(dx) > 8 && !(math.Abs(dx) < 4*math.Abs(b.VX) && zsign(dx) == zsign(b.VX)) {
 				zombieHold(b, zsign(dx))
 			}
-			if z.nav.jumped && b.VY > -1.5 && b.JumpNum == 1 && b.Y > dest.Y-25 {
-				zombiePressUp(z)
+			if ns.jumped && b.VY > -1.5 && b.JumpNum == 1 && b.Y > dest.Y-25 {
+				navPressUp(b, ns)
 			} else {
-				z.nav.upPrev = false
+				ns.upPrev = false
 			}
 		}
 	case zombieLinkDrop:
-		z.nav.upPrev = false
+		ns.upPrev = false
 		if grounded {
 			dx := l.x - b.X
-			if math.Abs(dx) > 14 {
-				zombieHold(b, zsign(dx))
-			} else {
+			switch {
+			case zombieDropLandsOn(b, dest):
+				// The fall (with the current speed) ends well inside the
+				// platform below: drop now.
 				b.AIDown = true
+			case math.Abs(dx) <= 14 && math.Abs(b.VX) > 3:
+				// Too fast at the drop point: brake against the motion.
+				zombieHold(b, -zsign(b.VX))
+			case math.Abs(dx) <= 14:
+				b.AIDown = true
+			default:
+				zombieHold(b, zsign(dx))
 			}
 		} else {
-			zombieHold(b, zsign(landX-b.X))
+			navAirSteer(b, landX)
 		}
 	case zombieLinkFall:
-		z.nav.upPrev = false
+		ns.upPrev = false
 		if grounded {
 			zombieHold(b, l.dir)
-		} else if b.Y > nav.plats[nav.clampIndex(z.nav.lastPlat)].Y+8 {
-			zombieHold(b, zsign(landX-b.X))
+		} else if b.Y > nav.plats[nav.clampIndex(ns.lastPlat)].Y+8 {
+			navAirSteer(b, landX)
 		} else {
 			zombieHold(b, l.dir)
 		}
+	}
+}
+
+// zombieDropLandsOn: a body dropping through its platform now would land
+// on dest with a margin, given its horizontal speed (a fast runner drifts
+// far while it falls).
+func zombieDropLandsOn(b *Player, dest Rect) bool {
+	dy := dest.Y - b.Y
+	if dy <= 0 {
+		return false
+	}
+	t := math.Sqrt(2 * dy / DefaultGravity)
+	land := b.X + b.VX*t
+	const margin = 24.0
+	return b.X >= dest.X+margin && b.X <= dest.X+dest.W-margin && land >= dest.X+margin && land <= dest.X+dest.W-margin
+}
+
+// navAirSteer steers a falling body toward landX, braking early enough for
+// its speed (air control takes about 1 px/frame off the speed per frame).
+func navAirSteer(b *Player, landX float64) {
+	predict := b.X + b.VX*math.Abs(b.VX)/2
+	if d := landX - predict; math.Abs(d) > 3 {
+		zombieHold(b, zsign(d))
 	}
 }
 
@@ -783,12 +889,16 @@ func zombieHold(b *Player, dir int) {
 // zombiePressUp presses jump on every other frame so the jump key is seen
 // as released in between (double jumps need a fresh press).
 func zombiePressUp(z *Zombie) {
-	if z.nav.upPrev {
-		z.nav.upPrev = false
+	navPressUp(&z.body, &z.nav)
+}
+
+func navPressUp(b *Player, ns *zombieNavState) {
+	if ns.upPrev {
+		ns.upPrev = false
 		return
 	}
-	z.body.AIUp = true
-	z.nav.upPrev = true
+	b.AIUp = true
+	ns.upPrev = true
 }
 
 func zsign(v float64) int {
@@ -957,7 +1067,7 @@ func (g *Game) zombieBossSummon(z *Zombie, phase2 bool) {
 	if m.livingZombies() >= zombieMaxActive {
 		return
 	}
-	nav := m.navFor(m.arena.StartZone, g.arena, zombieNavNormal)
+	nav := m.navFor(z.Zone, g.zombieZoneMap(z.Zone), zombieNavNormal)
 	cur := nav.platformUnder(b.X, b.Y)
 	for i := 0; i < zombieBossSummonCount; i++ {
 		kind := zombieWalker
@@ -991,6 +1101,10 @@ func (g *Game) updateZombieBlasts() {
 	ready := make([]zombiePendingBlast, 0, 4)
 	keep := m.blasts[:0]
 	for _, bl := range m.blasts {
+		if m.passZone >= 0 && bl.zone != m.passZone {
+			keep = append(keep, bl) // another zone's pass sets it off
+			continue
+		}
 		bl.timer--
 		if bl.timer <= 0 {
 			ready = append(ready, bl)

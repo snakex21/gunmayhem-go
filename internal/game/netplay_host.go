@@ -412,8 +412,18 @@ func (s *netplaySession) queueState(state netSnapshot) {
 	if s == nil || s.closed.Load() || s.mode != netplayHost {
 		return
 	}
+	s.queueStateViews([]netSnapshot{state}, []int{0}, nil)
+}
+
+// queueStateViews is queueState with one snapshot per view (multi-zone
+// zombie matches: one per zone a guest is in); peerView maps a player ID
+// to its view index.
+func (s *netplaySession) queueStateViews(states []netSnapshot, zones []int, peerView map[int]int) {
+	if s == nil || s.closed.Load() || s.mode != netplayHost || len(states) == 0 {
+		return
+	}
 	s.hostEncMu.Lock()
-	frame := s.hostEnc.encode(state)
+	frame := s.hostEnc.encodeViews(states, zones, peerView)
 	s.hostEncMu.Unlock()
 	s.peersMu.RLock()
 	peers := make([]*netplayPeer, 0, len(s.peers))
@@ -673,6 +683,10 @@ func (g *Game) queueNetHostSnapshot() {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost || !g.netplay.connected() {
 		return
 	}
-	g.netplay.queueState(g.makeNetSnapshot())
+	if states, zones, peerView, ok := g.zombieNetViews(); ok {
+		g.netplay.queueStateViews(states, zones, peerView)
+	} else {
+		g.netplay.queueState(g.makeNetSnapshot())
+	}
 	g.netSFXPending = g.netSFXPending[:0]
 }

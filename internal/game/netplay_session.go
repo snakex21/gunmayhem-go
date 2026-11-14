@@ -18,7 +18,9 @@ const (
 	// 19: compact streamed snapshots, per-frame input history, heartbeat,
 	// game version in the handshake. 21: input acks. 22: zombie mode
 	// (snapshot lists Zombies / ZombiePops, ZombieHUD, netMessageZombie).
-	netplayProtocolVersion = 22
+	// 23: zombie zones and doors (ZombieHUD.Doors / Gather / View,
+	// ZombiePop.Zone; per-peer zone views of the snapshot).
+	netplayProtocolVersion = 23
 	maxOnlinePlayers       = 4
 )
 
@@ -68,6 +70,9 @@ type netSFXEvent struct {
 	Name string
 	Loud bool
 	Gain float64
+	// Zone (host only, never sent): 0 for every peer, z+1 only for peers
+	// that view zone z of a multi-zone zombie match.
+	Zone int `net:"-"`
 }
 
 type netProbeInfo struct {

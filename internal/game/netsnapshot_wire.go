@@ -152,46 +152,97 @@ func restoreNetSnapshotFromWire(s *netSnapshot) {
 // Host side: one shared encoded frame per tick
 
 type netHostFrame struct {
-	tick     uint32
-	body     []byte
-	arenaSeq uint32
-	arena    []byte
+	tick uint32
+	// views: one encoded snapshot per view. Ordinary matches have exactly
+	// one; a multi-zone zombie match has one per zone that a peer is in
+	// (zombie_zones.go), so each guest gets only its own zone's entities.
+	views []netHostView
+	// peerView[playerID] is the index of that peer's view.
+	peerView [maxOnlinePlayers + 1]int
 	sfx      []netSFXEvent // recent SFX ring (immutable copy)
 	// inputAck[playerID] is that peer's netInputReplay.appliedSeq at the
 	// moment the snapshot was taken (filled before the frame is shared).
 	inputAck [maxOnlinePlayers + 1]uint32
 }
 
+// netHostView is one encoded snapshot body and the map that goes with it.
+type netHostView struct {
+	zone     int // zombie zone of the view (SFX tagged for another zone are skipped)
+	body     []byte
+	arenaSeq uint32
+	arena    []byte
+}
+
 type netHostEncoder struct {
 	tick      uint32
 	arenaSeq  uint32
-	arenaRaw  []byte
+	arenas    []netHostArena // recently sent maps (one per zone of a multi-zone match)
 	recentSFX []netSFXEvent
+}
+
+type netHostArena struct {
+	seq uint32
+	raw []byte
+}
+
+const netHostArenaCache = 8
+
+// arenaSeqFor numbers every distinct map: a peer gets the map again only
+// when its view switches to a map with another number.
+func (h *netHostEncoder) arenaSeqFor(raw []byte) (uint32, []byte) {
+	for _, a := range h.arenas {
+		if bytes.Equal(a.raw, raw) {
+			return a.seq, a.raw
+		}
+	}
+	h.arenaSeq++
+	h.arenas = append(h.arenas, netHostArena{seq: h.arenaSeq, raw: raw})
+	if len(h.arenas) > netHostArenaCache {
+		h.arenas = append(h.arenas[:0], h.arenas[len(h.arenas)-netHostArenaCache:]...)
+	}
+	return h.arenaSeq, raw
 }
 
 // encode builds the shared frame. state must be a snapshot copy owned by the
 // caller; it is modified (trimmed/stripped).
 func (h *netHostEncoder) encode(state netSnapshot) *netHostFrame {
-	prepareNetSnapshotForWire(&state)
+	return h.encodeViews([]netSnapshot{state}, []int{0}, nil)
+}
+
+// encodeViews builds one frame with several views (zones[i] is the zombie
+// zone of states[i]). peerView maps a player ID to its view index; peers
+// that are not listed get view 0. The SFX of the first state are used.
+func (h *netHostEncoder) encodeViews(states []netSnapshot, zones []int, peerView map[int]int) *netHostFrame {
 	h.tick++
-	arena := netEncodeValue(nil, &state.Arena)
-	if h.arenaSeq == 0 || !bytes.Equal(arena, h.arenaRaw) {
-		h.arenaSeq++
-		h.arenaRaw = arena
+	frame := &netHostFrame{tick: h.tick}
+	for i := range states {
+		state := states[i]
+		prepareNetSnapshotForWire(&state)
+		if i == 0 && len(state.SFXEvents) > 0 {
+			h.recentSFX = append(append([]netSFXEvent(nil), h.recentSFX...), state.SFXEvents...)
+			if len(h.recentSFX) > netRecentSFXLimit {
+				h.recentSFX = h.recentSFX[len(h.recentSFX)-netRecentSFXLimit:]
+			}
+		}
+		seq, raw := h.arenaSeqFor(netEncodeValue(nil, &state.Arena))
+		zone := 0
+		if i < len(zones) {
+			zone = zones[i]
+		}
+		frame.views = append(frame.views, netHostView{
+			zone:     zone,
+			body:     netEncodeValue(make([]byte, 0, 4096), &state),
+			arenaSeq: seq,
+			arena:    raw,
+		})
 	}
-	if len(state.SFXEvents) > 0 {
-		h.recentSFX = append(append([]netSFXEvent(nil), h.recentSFX...), state.SFXEvents...)
-		if len(h.recentSFX) > netRecentSFXLimit {
-			h.recentSFX = h.recentSFX[len(h.recentSFX)-netRecentSFXLimit:]
+	for id, v := range peerView {
+		if id >= 0 && id < len(frame.peerView) && v >= 0 && v < len(frame.views) {
+			frame.peerView[id] = v
 		}
 	}
-	return &netHostFrame{
-		tick:     h.tick,
-		body:     netEncodeValue(make([]byte, 0, 4096), &state),
-		arenaSeq: h.arenaSeq,
-		arena:    h.arenaRaw,
-		sfx:      h.recentSFX,
-	}
+	frame.sfx = h.recentSFX
+	return frame
 }
 
 // netPeerStream is the per-peer compression state. Only the peer's writer
@@ -213,6 +264,13 @@ func newNetPeerStream() *netPeerStream {
 
 // message builds this peer's compressed state message for frame f.
 func (p *netPeerStream) message(f *netHostFrame, playerID int) (payload []byte, rawLen int, err error) {
+	if len(f.views) == 0 {
+		return nil, 0, errors.New("snapshot frame has no view")
+	}
+	view := &f.views[0]
+	if playerID >= 0 && playerID < len(f.peerView) && f.peerView[playerID] < len(f.views) {
+		view = &f.views[f.peerView[playerID]]
+	}
 	env := netStateEnvelope{Tick: f.tick}
 	if playerID >= 0 && playerID < len(f.inputAck) {
 		env.InputAck = f.inputAck[playerID]
@@ -226,25 +284,30 @@ func (p *netPeerStream) message(f *netHostFrame, playerID int) (payload []byte, 
 			}
 		}
 	}
+	newest := p.sfxSeq
 	for _, ev := range f.sfx {
-		if ev.Seq > p.sfxSeq {
-			env.SFX = append(env.SFX, ev)
+		if ev.Seq <= p.sfxSeq {
+			continue
 		}
+		newest = max(newest, ev.Seq)
+		// Zone 0: everybody; zone z+1: only views of zombie zone z.
+		if ev.Zone != 0 && ev.Zone != view.zone+1 {
+			continue
+		}
+		env.SFX = append(env.SFX, ev)
 	}
 	if len(env.SFX) > netSFXPerMessageMax {
 		env.SFX = env.SFX[len(env.SFX)-netSFXPerMessageMax:]
 	}
-	if n := len(env.SFX); n > 0 {
-		p.sfxSeq = env.SFX[n-1].Seq
-	}
-	sendArena := p.arenaSeq != f.arenaSeq
+	p.sfxSeq = newest
+	sendArena := p.arenaSeq != view.arenaSeq
 	if sendArena {
-		env.ArenaSeq = f.arenaSeq
+		env.ArenaSeq = view.arenaSeq
 	}
 	p.raw = netEncodeValue(p.raw[:0], &env)
-	p.raw = append(p.raw, f.body...)
+	p.raw = append(p.raw, view.body...)
 	if sendArena {
-		p.raw = append(p.raw, f.arena...)
+		p.raw = append(p.raw, view.arena...)
 	}
 	p.zbuf.Reset()
 	if _, err := p.zw.Write(p.raw); err != nil {
@@ -254,7 +317,7 @@ func (p *netPeerStream) message(f *netHostFrame, playerID int) (payload []byte, 
 		return nil, 0, err
 	}
 	if sendArena {
-		p.arenaSeq = f.arenaSeq
+		p.arenaSeq = view.arenaSeq
 	}
 	return append([]byte(nil), p.zbuf.Bytes()...), len(p.raw), nil
 }
@@ -475,6 +538,10 @@ func (p *netPlayout) noteHold() {
 // not interpolated.
 func interpolateNetSnapshot(a, b netSnapshot, alpha float64) netSnapshot {
 	if alpha <= 0 {
+		return a
+	}
+	if a.Arena.Number != b.Arena.Number || a.ZombieHUD.View != b.ZombieHUD.View {
+		// A zone change (multi-zone zombie map): nothing to blend between.
 		return a
 	}
 	if alpha > 1 {

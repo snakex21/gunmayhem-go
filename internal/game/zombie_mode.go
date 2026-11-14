@@ -39,6 +39,9 @@ type Zombie struct {
 	RingOut    bool
 	Zone       int
 	Level      int // boss level (1, 2, ...)
+	// DoorPasses counts the doors this zombie came through (render
+	// interpolation snaps on a change).
+	DoorPasses int
 
 	body          Player
 	preVX, preVY  float64
@@ -130,6 +133,7 @@ type ZombiePop struct {
 	Amount int
 	Kind   int
 	Life   int
+	Zone   int
 }
 
 // ZombieHUD is the synced match state (one value per snapshot).
@@ -153,6 +157,11 @@ type ZombieHUD struct {
 	RecordWave  int // best wave before this match (results screen)
 	RecordScore int
 	NewRecord   bool
+	// Step 2 (zombie_zones.go): doors, the shared-screen gather and the
+	// zone this snapshot shows (online: per guest).
+	Doors  [zombieMaxDoors]ZombieDoorState
+	Gather ZombieGatherState
+	View   int
 }
 
 // zombieSetupConfig is what the setup screen chooses.
@@ -182,12 +191,16 @@ type zombieHostPlayer struct {
 	remote           bool // online guest (RemoteInput comes from the network)
 	masked           bool // local player whose game input is masked by the shop
 	reviverID        int
+	// AI teammates: path to a downed teammate (zombie_bots.go).
+	botNav      zombieNavState
+	botReviveID int
 }
 
 type zombiePendingBlast struct {
 	x, y    float64
 	timer   int
 	ownerID int
+	zone    int
 }
 
 // zombieMatch is the whole zombie state. On an online guest only hud,
@@ -211,6 +224,17 @@ type zombieMatch struct {
 	ended      bool
 	// stuckRespawns counts zombies re-spawned by the anti-stuck rule (tests).
 	stuckRespawns int
+
+	// Zones (zombie_zones.go, host / local only).
+	zoneMaps   map[int]Map
+	worlds     map[int]*zombieZoneWorld
+	resident   int // zone whose lists are in the Game fields
+	viewZone   int // zone this screen shows
+	passZone   int // zone being simulated (-1 outside a zone pass)
+	zoneCount  [zombieMaxZones]int
+	zoneRoute  [zombieMaxZones]int // door toward the nearest player (-1 none)
+	allPlayers []*Player           // every player while a zone pass runs
+	doorPasses int                 // zombies that came through a door (tests)
 
 	// Shop UI (local and guest): one panel per local player.
 	shop [4]zombieShopUI
@@ -353,6 +377,7 @@ func (g *Game) startZombieMatch() bool {
 	g.onlineMatchSetup = online
 	g.resetArenaState()
 	g.zombie = newZombieMatch(cfg, arenaDef, g.players, g.zombieRecordFor(cfg.Arena, cfg.Mode))
+	g.initZombieZones()
 	for _, p := range g.players {
 		hp := g.zombie.hostPlayer(p.ID)
 		if hp != nil {
@@ -366,11 +391,12 @@ func (g *Game) startZombieMatch() bool {
 
 func newZombieMatch(cfg zombieSetupConfig, arena *zombieArenaDef, players []*Player, record ZombieRecord) *zombieMatch {
 	m := &zombieMatch{
-		host:   true,
-		arena:  arena,
-		nextID: zombieIDBase,
-		rng:    rand.New(rand.NewSource(rand.Int63())),
-		navs:   make(map[int]*zombieNav),
+		host:     true,
+		arena:    arena,
+		nextID:   zombieIDBase,
+		rng:      rand.New(rand.NewSource(rand.Int63())),
+		navs:     make(map[int]*zombieNav),
+		passZone: -1,
 	}
 	m.hud = ZombieHUD{Active: true, Mode: cfg.Mode, Arena: cfg.Arena, Wave: 1, Phase: zombiePhaseIntro, PhaseTimer: zombieIntroFrames,
 		BannerFrame: 1, RecordWave: record.BestWave, RecordScore: record.BestScore}
@@ -421,7 +447,14 @@ func (g *Game) zombieJoinPlayer(p *Player) {
 	}
 	zp.ShopOpen, zp.Ready = false, false
 	zp.Gun, zp.Reserve = 0, 0 // the new body has only its starter pistol
-	gx, gy := g.zombieSafeGround(p.X)
+	if !m.zoneUnlocked(zp.Zone) {
+		zp.Zone = m.arena.StartZone
+	}
+	gx, gy := g.zombieSafeGroundIn(zp.Zone, p.X)
+	if zp.Zone != m.resident {
+		// The new body dropped in on the resident map: put it on its zone.
+		placeZombieArrival(p, gx, gy)
+	}
 	m.players[p.ID-1] = zombieHostPlayer{seenSerial: p.DeathSerial, groundX: gx, groundY: gy, remote: p.RemoteControlled}
 	if m.hud.Phase == zombiePhaseBreak && !p.AI {
 		zp.ShopOpen = true
@@ -500,6 +533,11 @@ func (g *Game) updateZombiePreInput() {
 			if !hp.downHeld {
 				g.zombieUseBox(p)
 			}
+		} else if di := m.doorNear(p); down && !p.AI && di >= 0 {
+			p.DownHeld = true // no drop-through at a door either
+			if !hp.downHeld {
+				g.zombieUseDoor(p, di)
+			}
 		}
 		hp.downHeld = down
 	}
@@ -521,7 +559,7 @@ func (g *Game) appendZombieBodies(out []*Player) []*Player {
 		return out
 	}
 	for _, z := range g.zombie.zombies {
-		if z.alive() {
+		if z.alive() && (g.zombie.passZone < 0 || z.Zone == g.zombie.passZone) {
 			out = append(out, &z.body)
 		}
 	}
@@ -716,7 +754,7 @@ func (g *Game) zombieKill(z *Zombie, creditID int, ringOut, headshot bool) {
 		if z.chained {
 			delay = zombieExploderChain
 		}
-		m.blasts = append(m.blasts, zombiePendingBlast{x: z.X, y: z.Y, timer: delay, ownerID: creditID})
+		m.blasts = append(m.blasts, zombiePendingBlast{x: z.X, y: z.Y, timer: delay, ownerID: creditID, zone: z.Zone})
 	} else if !ringOut {
 		g.playRandomDeathSound()
 	}
@@ -756,21 +794,31 @@ func (g *Game) zombieAward(id, amount, kind int, x, y float64) {
 		zp.Earned += amount
 		owner.Score += amount
 	}
-	g.zombie.addPop(x, y, amount, kind)
+	// The popup shows where the points were earned: the owner's zone.
+	g.zombie.addPopIn(zp.Zone, x, y, amount, kind)
 }
 
 func (m *zombieMatch) addPop(x, y float64, amount, kind int) {
+	zone := m.viewZone
+	if m.passZone >= 0 {
+		zone = m.passZone
+	}
+	m.addPopIn(zone, x, y, amount, kind)
+}
+
+// addPopIn adds a popup in a zone (multi-zone matches show it only there).
+func (m *zombieMatch) addPopIn(zone int, x, y float64, amount, kind int) {
 	if kind == zombiePopHit {
 		// Merge hit popups at the same spot into one growing number.
 		for i := len(m.pops) - 1; i >= 0 && i >= len(m.pops)-6; i-- {
 			p := &m.pops[i]
-			if p.Kind == zombiePopHit && p.Life > zombiePopLife-10 && math.Abs(p.X-x) < 40 && math.Abs(p.Y-y) < 40 {
+			if p.Kind == zombiePopHit && p.Zone == zone && p.Life > zombiePopLife-10 && math.Abs(p.X-x) < 40 && math.Abs(p.Y-y) < 40 {
 				p.Amount += amount
 				return
 			}
 		}
 	}
-	m.pops = append(m.pops, ZombiePop{X: x, Y: y, Amount: amount, Kind: kind, Life: zombiePopLife})
+	m.pops = append(m.pops, ZombiePop{X: x, Y: y, Amount: amount, Kind: kind, Life: zombiePopLife, Zone: zone})
 	if len(m.pops) > zombiePopCap {
 		m.pops = append(m.pops[:0], m.pops[len(m.pops)-zombiePopCap:]...)
 	}
@@ -792,8 +840,12 @@ func (g *Game) updateZombieMatch() {
 			m.hud.BannerFrame = 0
 		}
 	}
-	g.updateZombiePlayers()
+	if !m.multiZone() {
+		// Multi-zone: runZombieZoneTick already ran it per zone.
+		g.updateZombiePlayers()
+	}
 	g.updateZombieBox()
+	g.updateZombieDoors()
 	switch m.hud.Phase {
 	case zombiePhaseIntro:
 		m.hud.PhaseTimer--
@@ -1156,7 +1208,8 @@ func (g *Game) zombieRevive(p *Player, zp *ZombiePlayerState, hpValue int) {
 // zombieRespawnDead brings a bled-out player back at the start of a break,
 // dropping in from the top like a normal respawn.
 func (g *Game) zombieRespawnDead(p *Player, zp *ZombiePlayerState, hpValue int) {
-	x, y := g.zombieSafeGround((g.arena.SpawnMinX + g.arena.SpawnMaxX) / 2)
+	mp := g.zombieZoneMap(zp.Zone)
+	x, y := g.zombieSafeGroundIn(zp.Zone, (mp.SpawnMinX+mp.SpawnMaxX)/2)
 	zp.DownX, zp.DownY = x, y
 	g.zombieRevive(p, zp, hpValue)
 }
@@ -1164,12 +1217,27 @@ func (g *Game) zombieRespawnDead(p *Player, zp *ZombiePlayerState, hpValue int) 
 // zombieSafeGround is a down position on the highest platform under x (a
 // player who falls before ever landing is downed there, not in the sky).
 func (g *Game) zombieSafeGround(x float64) (float64, float64) {
-	if y, ok := zombieFloorBelow(g.arena, x, -2000); ok {
+	return safeGroundOn(g.arena, x)
+}
+
+// zombieSafeGroundIn is zombieSafeGround on the map of a zone.
+func (g *Game) zombieSafeGroundIn(zone int, x float64) (float64, float64) {
+	return safeGroundOn(g.zombieZoneMap(zone), x)
+}
+
+func safeGroundOn(arena Map, x float64) (float64, float64) {
+	if y, ok := zombieFloorBelow(arena, x, -2000); ok {
 		return x, y
 	}
-	cx := (g.arena.SpawnMinX + g.arena.SpawnMaxX) / 2
-	y, _ := zombieFloorBelow(g.arena, cx, -2000)
+	cx := (arena.SpawnMinX + arena.SpawnMaxX) / 2
+	y, _ := zombieFloorBelow(arena, cx, -2000)
 	return cx, y
+}
+
+// placeZombieArrival stands a player still on a platform top.
+func placeZombieArrival(p *Player, x, y float64) {
+	p.X, p.Y, p.VX, p.VY = x, y, 0, 0
+	p.JumpNum, p.Grounded, p.FreePass = 2, true, false
 }
 
 // zombieFloorBelow is the top of the first platform at or below y at x.

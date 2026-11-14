@@ -42,6 +42,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// After the shake detector (it keys on tick positions of new blasts):
 	// draw moving objects between the previous and the current tick.
 	defer g.beginRenderInterpolation(time.Now())()
+	// Multi-zone zombie match: only the players of the zone on this screen.
+	endZoneView := g.beginZombieViewDraw()
 
 	// Symbol 1391 source order/matrices: scene1 (0,0), scene2 (0,0),
 	// gameplay, foreground (51.1,192.6). SourceRaster preserves each child
@@ -101,6 +103,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// so off-screen indicators sit above gameplay/map FX but below the HUD.
 	g.drawPlayerArrows(screen)
 	g.drawCampaignEnemyArrows(screen)
+	endZoneView()
 	if g.zombieActive() {
 		g.drawZombieHUD(screen)
 	} else if !g.GameWin {

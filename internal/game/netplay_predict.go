@@ -45,6 +45,9 @@ type netPredictEnv struct {
 	arena      Map // runtime gravity/friction already applied
 	leg1, leg2 int
 	head       []SourceTransformFrame
+	// noDrop: areas where DOWN uses something (zombie mystery box, doors)
+	// instead of dropping through the platform, like on the host.
+	noDrop []Rect
 }
 
 // netPredictor runs on the client's game thread only.
@@ -109,6 +112,14 @@ func predictStep(p *Player, in PlayerInputState, env *netPredictEnv) bool {
 	p.RemoteControlled = true
 	p.AI = false
 	p.RemoteInput = in
+	if in.Down {
+		for _, r := range env.noDrop {
+			if r.Contains(p.X, p.Y) {
+				p.DownHeld = true
+				break
+			}
+		}
+	}
 	var bullets []Bullet
 	var shells []Shell
 	var flashes []MuzzleFlash
@@ -285,7 +296,7 @@ func (g *Game) applyNetPrediction(latest uint32) {
 		g.netPredict.reset()
 		return
 	}
-	env := netPredictEnv{arena: arena}
+	env := netPredictEnv{arena: arena, noDrop: g.zombieNoDropAreas()}
 	if g.assets != nil {
 		env.leg1, env.leg2 = len(g.assets.Leg1Timeline), len(g.assets.Leg2Timeline)
 		env.head = g.assets.HeadTimeline

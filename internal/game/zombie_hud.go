@@ -21,6 +21,7 @@ func (g *Game) drawZombieHUD(screen *ebiten.Image) {
 		return
 	}
 	g.drawZombieWavePanel(screen)
+	g.drawZombieZoneHUD(screen)
 	if m.hud.BossID != 0 && m.hud.BossMaxHP > 0 {
 		frac := float64(m.hud.BossHP) / float64(m.hud.BossMaxHP)
 		phase := 0
@@ -195,6 +196,16 @@ func (g *Game) drawZombiePlayerCard(screen *ebiten.Image, zp *ZombiePlayerState,
 		b := Rect{X: cx - w/2, Y: r.Y - 22, W: w, H: 18}
 		uiFillRound(screen, b, 4, fill)
 		uiTextIn(screen, tag, true, uiSizeHint, uiTextDark, b, uiAlignCenter, 2)
+	}
+	if m := g.zombie; m.multiZone() && zp.Zone != g.zombieViewZone() {
+		// Online: this teammate is in another zone.
+		if z := m.arena.zone(zp.Zone); z != nil {
+			tag := "IN " + z.Name
+			w := uiMeasure(true, uiSizeHint, tag) + 14
+			b := Rect{X: r.X + r.W - w - 4, Y: r.Y - 20, W: w, H: 17}
+			uiFillRound(screen, b, 4, zombieTagColor)
+			uiTextIn(screen, tag, true, uiSizeHint, uiTextLight, b, uiAlignCenter, 2)
+		}
 	}
 	if zp.MsgTimer > 0 && zp.Msg != zombieMsgNone && !zp.ShopOpen {
 		drawZombieTag(screen, zombieMsgText[zp.Msg], cx, r.Y-34)

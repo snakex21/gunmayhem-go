@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"strconv"
 	"strings"
 
@@ -135,18 +136,43 @@ func (g *Game) buildZombieSetup(ctx *uiCtx) {
 	ctx.KeyHintBar([]uiKeyHint{{"UP/DOWN", "Move"}, {"LEFT/RIGHT", "Change"}, {"ENTER", "Select"}, {"ESC", "Back"}})
 }
 
-// buildZombieArenaTiles draws one tile per arena (map thumbnail).
+// buildZombieArenaTiles draws one tile per arena: a single-arena map
+// thumbnail, or a mosaic of the zones of a multi-zone map with a ZONES badge.
 func (g *Game) buildZombieArenaTiles(ctx *uiCtx, prefix string, x, y float64) {
 	cfg := &g.zombieSetup
+	const gap, total = 8.0, 392.0
+	n := float64(len(zombieArenas))
+	w := math.Floor((total - gap*(n-1)) / n)
 	for i := range zombieArenas {
 		a := &zombieArenas[i]
-		r := Rect{X: x + float64(i)*200, Y: y, W: 190, H: 150}
-		mapNumber := a.zone(a.StartZone).MapNumber
-		if ctx.Tile(prefix+"."+strconv.Itoa(i), r, a.Name, uiTileOpts{Selected: cfg.Arena == i, InfoTitle: a.Name, InfoBody: a.Blurb,
+		r := Rect{X: x + float64(i)*(w+gap), Y: y, W: w, H: 150}
+		info := a.Blurb
+		if len(a.Zones) > 1 {
+			info = fmt.Sprintf("%d ZONES. %s", len(a.Zones), a.Blurb)
+		} else {
+			info = "SINGLE ARENA. " + a.Blurb
+		}
+		if ctx.Tile(prefix+"."+strconv.Itoa(i), r, a.Name, uiTileOpts{Selected: cfg.Arena == i, InfoTitle: a.Name, InfoBody: info,
 			Art: func(dst *ebiten.Image, inner Rect) {
-				if g.assets != nil {
-					drawSetupThumbFit(dst, g.assets.MapPreviewImages[mapNumber], inner, 1)
+				if g.assets == nil {
+					return
 				}
+				if len(a.Zones) <= 1 {
+					drawSetupThumbFit(dst, g.assets.MapPreviewImages[a.zone(a.StartZone).MapNumber], inner, 1)
+					return
+				}
+				// 2x2 mosaic of the first zones.
+				cw, ch := inner.W/2, inner.H/2
+				for zi, z := range a.Zones {
+					if zi >= 4 {
+						break
+					}
+					cell := Rect{X: inner.X + float64(zi%2)*cw, Y: inner.Y + float64(zi/2)*ch, W: cw, H: ch}
+					drawSetupThumbFit(dst, g.assets.MapPreviewImages[z.MapNumber], uiInset(cell, 1), 1)
+				}
+				badge := Rect{X: inner.X + 4, Y: inner.Y + 4, W: 64, H: 18}
+				uiFillRound(dst, badge, 3, zombieTagColor)
+				uiTextIn(dst, fmt.Sprintf("%d ZONES", len(a.Zones)), true, uiSizeHint, uiTextLight, badge, uiAlignCenter, 2)
 			}}) {
 			cfg.Arena = i
 		}
