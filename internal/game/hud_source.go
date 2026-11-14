@@ -312,6 +312,7 @@ func (g *Game) drawSourceHUDCard(screen *ebiten.Image, p *Player, x, y float64) 
 		color.NRGBA{A: 255}, x+13.5, y+13.6)
 	g.drawHUDThrowableCount(screen, p, x, y)
 	g.drawHUDStatusEffects(screen, p, x, y)
+	g.drawHUDAbility(screen, p, x, y)
 }
 
 func makeSourcePowerupDoubleIcon() *SourceRaster {

@@ -17,6 +17,7 @@ const (
 	customEditEyes      = 6
 	customEditThrowable = 7
 	customEditColor     = 8
+	customEditAbility   = 9 // developed ABILITY / GEAR page (abilities.go)
 )
 
 const (
@@ -79,7 +80,7 @@ func decodeCustomSelectHit(hit int) (slot, editor, number int, ok bool) {
 	v %= 1000
 	editor = v / 100
 	number = v % 100
-	if slot < 0 || slot >= 4 || editor < 1 || editor > customEditColor || number <= 0 {
+	if slot < 0 || slot >= 4 || editor < 1 || editor > customEditAbility || number <= 0 {
 		return 0, 0, 0, false
 	}
 	return slot, editor, number, true
@@ -206,6 +207,7 @@ func (g *Game) customPlayerEditorHitAt(x, y float64) int {
 				{customEditGun, 17.5, 161.7, 0.5387115478515625},
 				{customEditPerk, 17.5, 220.75, 0.53875732421875},
 				{customEditThrowable, 17.5, 248.0, 0.53875732421875},
+				{customEditAbility, setupAbilityButtonX, 220.75, 0.53875732421875},
 			}
 			for _, e := range edits {
 				if sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+e.x, cardY+e.y, e.sx, 1).Contains(x, y) {
@@ -328,7 +330,7 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 	if hit >= menuHitPlayerEditBase && hit < menuHitPlayerEditBase+40 {
 		v := hit - menuHitPlayerEditBase
 		slot, editor := v/10, v%10
-		if slot >= 0 && slot < 4 && ((editor >= 1 && editor <= 4) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor) {
+		if slot >= 0 && slot < 4 && ((editor >= 1 && editor <= 4) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor || editor == customEditAbility) {
 			if !g.onlineMayEditCustomCharacterSlot(slot) {
 				return true
 			}
@@ -372,6 +374,10 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 			kind := number - 1
 			if kind >= 0 && kind < throwableTypeCount {
 				cfg.Throwable = kind
+			}
+		case customEditAbility:
+			if ability, ok := abilityFromMenuNumber(number); ok {
+				cfg.Ability = ability
 			}
 		}
 		g.customEditor[slot] = 0

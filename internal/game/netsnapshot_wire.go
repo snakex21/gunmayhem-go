@@ -91,6 +91,8 @@ var netSnapshotListCaps = []netListCap{
 	{"powerups", 64, func(s *netSnapshot, m int) int { return trimNetList(&s.Powerups, m) }},
 	{"powerup names", 64, func(s *netSnapshot, m int) int { return trimNetList(&s.PowerupNameFX, m) }},
 	{"life fx", 64, func(s *netSnapshot, m int) int { return trimNetList(&s.LifeBlingFX, m) }},
+	{"campaign enemies", 32, func(s *netSnapshot, m int) int { return trimNetList(&s.CampaignEnemies, m) }},
+	{"hazard markers", 32, func(s *netSnapshot, m int) int { return trimNetList(&s.HazardMarkers, m) }},
 	{"sfx events", netRecentSFXLimit, func(s *netSnapshot, m int) int { return trimNetList(&s.SFXEvents, m) }},
 }
 
@@ -496,6 +498,10 @@ const (
 	netInputBacklogKeep   = 4
 )
 
+// netInputButtonMask keeps the seven defined button bits (left, right, up,
+// down, shoot, grenade, ability) and drops anything else a peer sends.
+const netInputButtonMask = 127
+
 func packNetInput(in PlayerInputState) uint8 {
 	var b uint8
 	if in.Left {
@@ -516,13 +522,16 @@ func packNetInput(in PlayerInputState) uint8 {
 	if in.Grenade {
 		b |= 32
 	}
+	if in.Ability {
+		b |= 64
+	}
 	return b
 }
 
 func unpackNetInput(b uint8) PlayerInputState {
 	return PlayerInputState{
 		Left: b&1 != 0, Right: b&2 != 0, Up: b&4 != 0, Down: b&8 != 0,
-		Shoot: b&16 != 0, Grenade: b&32 != 0,
+		Shoot: b&16 != 0, Grenade: b&32 != 0, Ability: b&64 != 0,
 	}
 }
 
@@ -569,13 +578,13 @@ func (r *netInputReplay) receive(seq uint32, frames []uint8, now time.Time) {
 		if s <= int64(r.lastSeq) {
 			continue
 		}
-		r.queue = append(r.queue, b&63)
+		r.queue = append(r.queue, b&netInputButtonMask)
 		r.lastSeq = uint32(s)
 	}
 	if len(r.queue) > netInputQueueMax {
 		r.queue = append(r.queue[:0], r.queue[len(r.queue)-netInputQueueMax:]...)
 	}
-	r.newest = frames[len(frames)-1] & 63
+	r.newest = frames[len(frames)-1] & netInputButtonMask
 	r.lastRecv = now
 }
 

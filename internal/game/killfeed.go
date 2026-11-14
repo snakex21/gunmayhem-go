@@ -23,6 +23,9 @@ func (g *Game) playerNameByID(id int) string {
 			return p.Name
 		}
 	}
+	if e := g.campaignEnemyByID(id); e != nil {
+		return e.Body.Name
+	}
 	return "none"
 }
 

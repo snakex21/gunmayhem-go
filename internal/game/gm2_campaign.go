@@ -386,14 +386,16 @@ func (g *Game) startGM2CampaignMission() {
 		p.HatNumber = cfg.Hat
 		p.EyeNumber = cfg.Eyes
 		p.DefaultWeapon = cfg.Gun
+		cfg = migrateLegacyGearPerk(cfg)
 		p.PerkNumber = cfg.Perk
+		p.AbilityNumber = resolveConfigAbility(cfg.Ability, nil)
 		p.Team = 1
 		p.configureSourceGameMode(SourceGameModeNormal, spec.Lives, arena)
 		p.ThrowableType = normalizedThrowableType(cfg.Throwable)
 		players = append(players, p)
 	}
 
-	for _, src := range spec.Enemies {
+	for enemyIndex, src := range spec.Enemies {
 		e := NewPlayer(src.ID, arena)
 		e.Controls = g.controlConfigs[src.ID-1]
 		e.AI = true
@@ -405,6 +407,7 @@ func (g *Game) startGM2CampaignMission() {
 		e.UseGM2Cosmetics = true
 		e.DefaultWeapon = src.Gun
 		e.PerkNumber = src.Perk
+		e.AbilityNumber = campaignEnemyAbility(2, level, enemyIndex)
 		e.Team = 2
 		switch level {
 		case 6:

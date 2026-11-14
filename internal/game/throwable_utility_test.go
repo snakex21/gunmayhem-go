@@ -101,7 +101,7 @@ func TestShockGrenadePushesOutwardWithoutDamage(t *testing.T) {
 	// BLAST SHIELD halves it; GAS MASK does not protect from the shock push.
 	plain, shield, mask := utilityPlayer(7, 450, 1), utilityPlayer(8, 450, 1), utilityPlayer(9, 450, 1)
 	shield.PerkNumber = 6
-	mask.PerkNumber = perkGasMask
+	mask.AbilityNumber = abilityGasMask
 	a = []AreaEffect{{Kind: areaEffectGas, X: 400, Y: 270, MaxRadius: gasCloudRadius, Life: 100, MaxLife: 150, Frame: 20}}
 	updateAreaEffects(a, []*Player{plain, shield, mask})
 	if math.Abs(shield.VX-plain.VX*gasBlastShieldScale) > 1e-9 {
@@ -143,12 +143,12 @@ func TestFlashbangBlindRules(t *testing.T) {
 		t.Fatal("platform did not block the flash")
 	}
 	goggles := utilityPlayer(6, 250, 1)
-	goggles.PerkNumber = perkFlashGoggles
+	goggles.AbilityNumber = abilityFlashGoggles
 	if f, _ := flashbangBlindFor(arena, fx, fy, goggles); f != 0 {
 		t.Fatal("flash goggles did not protect")
 	}
 	mask := utilityPlayer(7, 250, 1)
-	mask.PerkNumber = perkGasMask
+	mask.AbilityNumber = abilityGasMask
 	if f, _ := flashbangBlindFor(arena, fx, fy, mask); f == 0 {
 		t.Fatal("gas mask must not protect from flash")
 	}
@@ -211,7 +211,7 @@ func TestSmokeBreaksAIDetectionUnlessThermal(t *testing.T) {
 	if !g.aiTargetConcealed(observer, target) {
 		t.Fatal("smoke-hidden target should trigger the search behaviour")
 	}
-	observer.PerkNumber = perkThermalGoggles
+	observer.AbilityNumber = abilityThermalGoggles
 	if !g.aiCanDetect(observer, target) {
 		t.Fatal("thermal goggles bot should see through smoke")
 	}
@@ -232,7 +232,7 @@ func TestSmokeAddsShotSpreadExceptThermal(t *testing.T) {
 	if !g.shooterSmokePenalty(shooter) {
 		t.Fatal("shooting through smoke has no penalty")
 	}
-	shooter.PerkNumber = perkThermalGoggles
+	shooter.AbilityNumber = abilityThermalGoggles
 	if g.shooterSmokePenalty(shooter) {
 		t.Fatal("thermal shooter penalised")
 	}
@@ -248,7 +248,7 @@ func TestTearGasSlowsLowersJumpSpreadsAndWearsOff(t *testing.T) {
 	base := utilityPlayer(1, 300, 1)
 	gassed := utilityPlayer(2, 300, 1)
 	mask := utilityPlayer(3, 300, 1)
-	mask.PerkNumber = perkGasMask
+	mask.AbilityNumber = abilityGasMask
 	cloud := []AreaEffect{{Kind: areaEffectTear, X: 300, Y: 266, MaxRadius: tearGasCloudRadius, Life: 200, MaxLife: 270, Frame: 50}}
 	updateAreaEffects(cloud, []*Player{gassed, mask})
 	if gassed.TearGasTime == 0 {
@@ -301,9 +301,9 @@ func TestTearGasSlowsLowersJumpSpreadsAndWearsOff(t *testing.T) {
 
 func TestKevlarReducesBulletKnockbackOnly(t *testing.T) {
 	arena := utilityArena()
-	shoot := func(perk int) float64 {
+	shoot := func(ability int) float64 {
 		p := utilityPlayer(2, 300, -1)
-		p.PerkNumber = perk
+		p.AbilityNumber = ability
 		h := p.Hitbox()
 		b := Bullet{Kind: BulletNormal, X: h.X + h.W/2, Y: h.Y + h.H/2, Firepower: 10, OwnerID: 1, Team: 1, Facing: 1, Alpha: 1}
 		if !hitPlayerWithBullet(arena, &b, []*Player{p}, false) {
@@ -311,24 +311,24 @@ func TestKevlarReducesBulletKnockbackOnly(t *testing.T) {
 		}
 		return p.VX
 	}
-	plain, kevlar := shoot(7), shoot(perkKevlar)
+	plain, kevlar := shoot(abilityNone), shoot(abilityKevlar)
 	if math.Abs(kevlar-plain*kevlarBulletKnockbackScale) > 1e-9 {
 		t.Fatalf("kevlar bullet push %.3f want %.3f", kevlar, plain*kevlarBulletKnockbackScale)
 	}
 
-	blastPush := func(perk int) float64 {
+	blastPush := func(ability int) float64 {
 		p := utilityPlayer(2, 380, 1)
-		p.PerkNumber = perk
+		p.AbilityNumber = ability
 		gr := Grenade{X: 300, Y: 280, Type: ThrowableDynamite, OwnerID: 1}
 		explodeGrenade(&gr, []*Player{p})
 		return p.VX
 	}
-	if blastPush(7) != blastPush(perkKevlar) {
+	if blastPush(abilityNone) != blastPush(abilityKevlar) {
 		t.Fatal("kevlar must not reduce explosion knockback")
 	}
 
 	base, vest := utilityPlayer(3, 300, 1), utilityPlayer(4, 300, 1)
-	vest.PerkNumber = perkKevlar
+	vest.AbilityNumber = abilityKevlar
 	base.AIRight, vest.AIRight = true, true
 	runMoveFrame(base)
 	runMoveFrame(vest)
@@ -336,7 +336,7 @@ func TestKevlarReducesBulletKnockbackOnly(t *testing.T) {
 		t.Fatalf("kevlar speed %.3f want %.3f", vest.VX, base.VX*kevlarMoveScale)
 	}
 	jb, jv := utilityPlayer(5, 300, 1), utilityPlayer(6, 300, 1)
-	jv.PerkNumber = perkKevlar
+	jv.AbilityNumber = abilityKevlar
 	jb.AIUp, jv.AIUp = true, true
 	runMoveFrame(jb)
 	runMoveFrame(jv)
@@ -345,37 +345,37 @@ func TestKevlarReducesBulletKnockbackOnly(t *testing.T) {
 	}
 }
 
-func TestNewPerksAcceptedOnlineAndInMenus(t *testing.T) {
+func TestGearMovedToAbilitySlotOnlineAndInMenus(t *testing.T) {
 	g := &Game{}
-	for _, perk := range []int{perkFlashGoggles, perkThermalGoggles, perkGasMask, perkKevlar} {
-		cfg := CustomPlayerConfig{Name: "P", Color: 1, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: perk, Throwable: ThrowableTearGas, Type: 1, Team: 1}
+	for _, gear := range []int{abilityFlashGoggles, abilityThermalGoggles, abilityGasMask, abilityKevlar} {
+		cfg := CustomPlayerConfig{Name: "P", Color: 1, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: 7, Ability: gear, Throwable: ThrowableTearGas, Type: 1, Team: 1}
 		if _, err := sanitizeRemotePlayerConfig(cfg); err != nil {
-			t.Fatalf("perk %d rejected online: %v", perk, err)
-		}
-		if !g.customSelectionUnlocked(customEditPerk, perk) {
-			t.Fatalf("perk %d locked in the custom menu", perk)
-		}
-		extra := &Game{campaignSetExtra: true}
-		if !extra.campaignSelectionUnlocked(customEditPerk, perk) || !(&Game{}).campaignSelectionUnlocked(customEditPerk, perk) {
-			t.Fatalf("perk %d locked in campaign setup", perk)
+			t.Fatalf("gear ability %d rejected online: %v", gear, err)
 		}
 		g.onlinePerksEnabled = true
-		if g.onlineAllowedPerk(perk) != perk {
-			t.Fatalf("perk %d stripped online", perk)
+		if g.onlineAllowedAbility(gear, abilityNone) != gear {
+			t.Fatalf("gear ability %d stripped online", gear)
 		}
-		if onlinePerkName(perk) == "PERK" {
-			t.Fatalf("perk %d has no name", perk)
+		if abilityName(gear) == "ABILITY" || abilityMenuIndex(gear) < 0 {
+			t.Fatalf("gear ability %d has no name / menu cell", gear)
 		}
 	}
-	for _, reserved := range []int{10, 11, 12, 13, 18} {
-		cfg := CustomPlayerConfig{Name: "P", Color: 1, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: reserved, Type: 1, Team: 1}
+	// The old gear perk numbers and the reserved GM2 perks are no perks.
+	for _, perk := range []int{10, 11, 12, 13, 14, 15, 16, 17, 18} {
+		cfg := CustomPlayerConfig{Name: "P", Color: 1, Shirt: 1, Hat: 1, Eyes: 1, Gun: 1, Perk: perk, Type: 1, Team: 1}
 		if _, err := sanitizeRemotePlayerConfig(cfg); err == nil {
-			t.Fatalf("reserved perk %d accepted online", reserved)
+			t.Fatalf("perk %d accepted online", perk)
+		}
+		if g.customSelectionUnlocked(customEditPerk, perk) {
+			t.Fatalf("perk %d still selectable in the perk grid", perk)
 		}
 	}
 	// Every selectable perk has a menu cell, all distinct.
 	seen := map[int]bool{}
 	for _, item := range developedPerkSelectionItems() {
+		if item.Number > 9 {
+			t.Fatalf("perk grid still offers %d", item.Number)
+		}
 		seen[item.Number] = true
 	}
 	if len(sourceCustomSelectionItems()[customEditPerk]) > 0 {
@@ -385,33 +385,33 @@ func TestNewPerksAcceptedOnlineAndInMenus(t *testing.T) {
 			}
 		}
 	}
-	if stepSelectablePerk(9, 1) != perkFlashGoggles || stepSelectablePerk(1, -1) != perkKevlar {
-		t.Fatal("online perk stepping skips the new perks")
+	if stepSelectablePerk(9, 1) != 1 || stepSelectablePerk(1, -1) != 9 {
+		t.Fatal("perk stepping must wrap within 1..9")
 	}
 }
 
 func TestHeadgearReplacesHatOnlyAtRenderTime(t *testing.T) {
-	cfg := CustomPlayerConfig{Hat: 12, Perk: perkThermalGoggles}
+	cfg := CustomPlayerConfig{Hat: 12, Ability: abilityThermalGoggles}
 	p := utilityPlayer(1, 100, 1)
 	p.HatNumber = cfg.Hat
-	p.PerkNumber = cfg.Perk
-	if playerHeadgearPerk(p) != perkThermalGoggles {
+	p.AbilityNumber = cfg.Ability
+	if playerHeadgear(p) != abilityThermalGoggles {
 		t.Fatal("goggles not active")
 	}
 	if p.HatNumber != 12 || cfg.Hat != 12 {
 		t.Fatal("headgear mutated the chosen hat")
 	}
-	p.PerkNumber = 7
-	if playerHeadgearPerk(p) != 0 {
+	p.AbilityNumber = abilityNone
+	if playerHeadgear(p) != 0 {
 		t.Fatal("hat should show again without a head perk")
 	}
-	p.PerkNumber = perkKevlar
-	if playerHeadgearPerk(p) != 0 {
+	p.AbilityNumber = abilityKevlar
+	if playerHeadgear(p) != 0 {
 		t.Fatal("kevlar is body gear and must not hide the hat")
 	}
-	for _, perk := range []int{perkFlashGoggles, perkGasMask} {
-		p.PerkNumber = perk
-		if playerHeadgearPerk(p) != perk {
+	for _, perk := range []int{abilityFlashGoggles, abilityGasMask} {
+		p.AbilityNumber = perk
+		if playerHeadgear(p) != perk {
 			t.Fatalf("head perk %d not detected", perk)
 		}
 	}
@@ -428,7 +428,7 @@ func TestBotsLeaveGasClouds(t *testing.T) {
 	}
 	mask := utilityPlayer(2, 330, -1)
 	mask.AI = true
-	mask.PerkNumber = perkGasMask
+	mask.AbilityNumber = abilityGasMask
 	aiAvoidGasClouds(mask, arena.Platforms, []AreaEffect{{Kind: areaEffectTear, X: 300, Y: 270, Radius: 120, Life: 100}})
 	if mask.AIRight || mask.AILeft {
 		t.Fatal("gas-mask bot should ignore tear gas")
@@ -455,7 +455,7 @@ func TestBotTurnsAwayFromLiveFlashbang(t *testing.T) {
 
 func TestNewPlayerAndAreaFieldsSurviveSnapshotCodec(t *testing.T) {
 	in := netSnapshot{
-		Players:     []Player{{ID: 1, Active: true, BlindTime: 90, BlindMax: 120, BlindStrength: 0.8, TearGasTime: 40, PerkNumber: perkGasMask}},
+		Players:     []Player{{ID: 1, Active: true, BlindTime: 90, BlindMax: 120, BlindStrength: 0.8, TearGasTime: 40, AbilityNumber: abilityGasMask}},
 		AreaEffects: []AreaEffect{{Kind: areaEffectSmoke, X: 10, Y: 20, Radius: 100, MaxRadius: 170, OwnerID: 2, Life: 300, MaxLife: 450, Frame: 5}},
 	}
 	data := netEncodeValue(nil, &in)
@@ -464,7 +464,7 @@ func TestNewPlayerAndAreaFieldsSurviveSnapshotCodec(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := out.Players[0]
-	if p.BlindTime != 90 || p.BlindMax != 120 || math.Abs(p.BlindStrength-0.8) > 1e-6 || p.TearGasTime != 40 || p.PerkNumber != perkGasMask {
+	if p.BlindTime != 90 || p.BlindMax != 120 || math.Abs(p.BlindStrength-0.8) > 1e-6 || p.TearGasTime != 40 || p.AbilityNumber != abilityGasMask {
 		t.Fatalf("player status lost: %+v", p)
 	}
 	if len(out.AreaEffects) != 1 || out.AreaEffects[0].Kind != areaEffectSmoke || out.AreaEffects[0].Life != 300 {

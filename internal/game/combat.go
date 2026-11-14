@@ -303,7 +303,7 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 				*bullets = append(*bullets, b)
 			}
 		}
-		flashX, flashY := p.X+w.Def.FlashX*mini*float64(facing), p.Y-38*mini
+		flashX, flashY := p.X+w.Def.FlashX*mini*float64(facing), p.Y+developedFlashY(w.Def.Number)*mini
 		// Bows, crossbow and harpoon have no powder charge: no muzzle flash.
 		// The nail gun keeps its small flash.
 		silentBolt := spec.Projectile == DevelopedProjectileBolt && w.Def.Number != 180

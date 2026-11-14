@@ -12,6 +12,9 @@ type Crate struct {
 	Facing  int
 	Falling bool
 	Dead    bool
+	// Weapon is rolled when the crate spawns so SCAVENGER players can see
+	// it. 0 (older spawners) rolls on pickup as before.
+	Weapon int
 }
 
 func spawnCrate(arena Map) Crate {
@@ -65,8 +68,11 @@ func updateCrates(arena Map, crates []Crate, players []*Player, unlocked []int, 
 
 			// Source crate clip increments pgsdata[player-1][5] on pickup.
 			p.CratesCollected++
-			if len(unlocked) > 0 {
-				randGun := pickCrateWeapon(unlocked)
+			if len(unlocked) > 0 || c.Weapon > 0 {
+				randGun := c.Weapon
+				if randGun <= 0 {
+					randGun = pickCrateWeapon(unlocked)
+				}
 				// Source perk 4: one in three crate pickups becomes the minigun.
 				if p.PerkNumber == 4 && rand.Intn(3) == 0 {
 					randGun = 55
@@ -76,6 +82,9 @@ func updateCrates(arena Map, crates []Crate, players []*Player, unlocked []int, 
 					randGun = 55
 				}
 				p.EquipWeapon(randGun)
+				if p.Weapon.Def.Number == randGun {
+					p.Weapon.Bullets += scavengerBonusAmmo(p, randGun)
+				}
 			}
 			c.Dead = true
 			break
@@ -146,4 +155,12 @@ func compactCrates(in []Crate) []Crate {
 
 func rectsOverlap(a, b Rect) bool {
 	return a.X < b.X+b.W && a.X+a.W > b.X && a.Y < b.Y+b.H && a.Y+a.H > b.Y
+}
+
+// rollCrateWeapon pre-rolls a new crate's weapon from the active pool.
+func (g *Game) rollCrateWeapon() int {
+	if g == nil || len(g.crateWeapons) == 0 {
+		return 0
+	}
+	return pickCrateWeapon(g.crateWeapons)
 }

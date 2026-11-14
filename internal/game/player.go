@@ -12,6 +12,7 @@ type PlayerInputState struct {
 	Down    bool `cbor:",omitempty"`
 	Shoot   bool `cbor:",omitempty"`
 	Grenade bool `cbor:",omitempty"`
+	Ability bool `cbor:",omitempty"`
 }
 
 type Player struct {
@@ -96,6 +97,20 @@ type Player struct {
 	// Tear gas coughing: slower, lower jumps, worse aim while > 0.
 	TearGasTime int `cbor:",omitempty"`
 
+	// ABILITY / GEAR slot (abilities.go), the second loadout choice next to
+	// PerkNumber. The runtime counters are synced for the HUD and visuals.
+	AbilityNumber      int  `cbor:",omitempty"`
+	AbilityCooldown    int  `cbor:",omitempty"` // DASH / ANCHOR frames until usable
+	AbilityCooldownMax int  `cbor:",omitempty"` // HUD fill reference
+	DashTime           int  `cbor:",omitempty"` // dash after-image frames left
+	DashAirUsed        bool `cbor:",omitempty"` // one air dash per airtime
+	AnchorTime         int  `cbor:",omitempty"` // > 0 while anchored (frames held)
+	AbilityAirJumps    int  `cbor:",omitempty"` // TRIPLE JUMP extra jumps left
+	AbilityShieldUsed  bool `cbor:",omitempty"` // SHIELD spent this life
+	AbilityShieldBreak int  `cbor:",omitempty"` // shield break FX frames left
+	// AbilityKeyHeld is host-side edge detection for the ability key.
+	AbilityKeyHeld bool `cbor:",omitempty" net:"-"`
+
 	// Developed Custom Game modifiers. Zero multipliers mean the original 1x
 	// behavior so source/campaign players are unchanged unless a rule enables
 	// them explicitly.
@@ -155,6 +170,7 @@ type Player struct {
 	AIDown           bool    `cbor:",omitempty"`
 	AIShoot          bool    `cbor:",omitempty"`
 	AIGrenade        bool    `cbor:",omitempty"`
+	AIAbility        bool    `cbor:",omitempty"`
 	AITargetPlayerID int     `cbor:",omitempty"`
 	AITargetPlayer   bool    `cbor:",omitempty"`
 	AITargetX        float64 `cbor:",omitempty"`
@@ -179,6 +195,17 @@ type Player struct {
 	AIFlashAvoidDir  int     `cbor:",omitempty"`
 	DamageMulti      float64 `cbor:",omitempty"`
 	FirepowerMulti   float64 `cbor:",omitempty"`
+	// AIShotDelay is a data-driven trigger pause (frames) for campaign bots
+	// holding their mission weapon (extra_campaign.go ShotDelay). Host-only
+	// like every AI* field.
+	AIShotDelay int `cbor:",omitempty"`
+	// Campaign boss / enemy tuning (extra_campaign_boss.go). Zero means 1x.
+	// KnockbackScale scales every external push inside the ability knockback
+	// windows; CampaignMoveScale scales walking speed; BossPhase is the
+	// current boss phase (0 = first) for the HUD bar.
+	KnockbackScale    float64 `cbor:",omitempty"`
+	CampaignMoveScale float64 `cbor:",omitempty"`
+	BossPhase         int     `cbor:",omitempty"`
 
 	Team                   int      `cbor:",omitempty"`
 	OwnerPlayerID          int      `cbor:",omitempty"`
@@ -259,6 +286,10 @@ func (p *Player) movementInput() (left, right, up, down bool) {
 }
 
 func (p *Player) shootPressed() bool {
+	if p.anchored() {
+		// ANCHOR: planted players cannot shoot.
+		return false
+	}
 	if p.RemoteControlled {
 		return p.RemoteInput.Shoot
 	}
@@ -285,6 +316,7 @@ func (p *Player) clearAIInput() {
 	p.AIDown = false
 	p.AIShoot = false
 	p.AIGrenade = false
+	p.AIAbility = false
 }
 
 func (p *Player) scoreOwnerID() int {
@@ -309,6 +341,7 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 		return
 	}
 	p.advanceShieldTimeline()
+	p.updateAbilityTimers()
 	p.HardLanded = false
 	p.JetThrusted = false
 	p.JetDropped = false
@@ -342,6 +375,13 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 	}
 
 	left, right, up, down := p.movementInput()
+	abilityKey := p.abilityPressed()
+	abilityEdge := abilityKey && !p.AbilityKeyHeld
+	p.AbilityKeyHeld = abilityKey
+	if p.updateAnchor(abilityKey, abilityEdge) {
+		// ANCHOR: planted, so no walking, jumping or dropping through.
+		left, right, up, down = false, false, false, false
+	}
 	p.WalkRequested = left || right
 	moveMultiplier := p.RuleMoveMultiplier
 	if moveMultiplier <= 0 {
@@ -351,8 +391,11 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 	if jumpMultiplier <= 0 {
 		jumpMultiplier = 1
 	}
-	moveSpeed := MoveSpeed * moveMultiplier * tearGasMoveMultiplier(p) * kevlarMoveMultiplier(p)
-	jumpPower := JumpPower * jumpMultiplier * tearGasJumpMultiplier(p) * kevlarJumpMultiplier(p)
+	moveSpeed := MoveSpeed * moveMultiplier * tearGasMoveMultiplier(p) * abilityMoveMultiplier(p)
+	if p.CampaignMoveScale > 0 {
+		moveSpeed *= p.CampaignMoveScale
+	}
+	jumpPower := JumpPower * jumpMultiplier * tearGasJumpMultiplier(p) * abilityJumpMultiplier(p)
 	if p.SpeedTime >= 0 {
 		moveSpeed *= 2
 	}
@@ -389,6 +432,8 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 			}
 		}
 		p.Y--
+	} else {
+		p.tryTripleJump(up, jumpPower)
 	}
 	if !up {
 		p.JumpHeld = false
@@ -451,6 +496,8 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 			p.VX += moveSpeed / 1.1 * weight
 		}
 	}
+
+	p.tryDash(abilityEdge)
 
 	if fire != nil {
 		fire()
@@ -580,6 +627,9 @@ func (p *Player) updateBurning() {
 	if p.DamageMulti > 0 {
 		tickPower *= p.DamageMulti
 	}
+	tickScale := abilityBurnTickScale(p)
+	tickPower *= tickScale
+	phase *= tickScale
 	p.VX += tickPower*float64(direction) + phase
 	p.VY -= tickPower*.38 + math.Abs(phase)*.20
 	p.HitNumber++
@@ -601,6 +651,7 @@ func (p *Player) resolvePlatforms(platforms []Rect) {
 		if p.PerkNumber == 3 {
 			p.TripleJump = true
 		}
+		p.refillAbilityOnLanding()
 
 		fallSpeed := p.VY
 		if crossed {
@@ -943,6 +994,10 @@ func (p *Player) Respawn(m Map) {
 	if p.PerkNumber == 8 {
 		p.Grenades += 2
 	}
+	if p.AbilityNumber == abilityGrenadier {
+		p.Grenades += grenadierBonusThrowables
+	}
+	p.resetAbilityForLife()
 	p.GrenadeHeld = false
 	p.GrenadePower = 0
 	if p.PortalNextColor != PortalBlue && p.PortalNextColor != PortalOrange {

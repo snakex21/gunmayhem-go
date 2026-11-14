@@ -59,6 +59,14 @@ func sourceKeyToEbiten(code int) (ebiten.Key, bool) {
 		return ebiten.KeyNumpad0, true
 	case 110:
 		return ebiten.KeyNumpadDecimal, true
+	case 220:
+		return ebiten.KeyBackslash, true
+	case 85:
+		return ebiten.KeyU, true
+	case 107:
+		return ebiten.KeyNumpadAdd, true
+	case 102:
+		return ebiten.KeyNumpad6, true
 	default:
 		return 0, false
 	}

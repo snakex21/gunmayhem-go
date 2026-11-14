@@ -10,7 +10,10 @@ func TestOriginalControlArrayVirtualKeys(t *testing.T) {
 		{Up: 101, Left: 97, Down: 98, Right: 99, Shoot: 96, Grenade: 110},
 	}
 	for i := range want {
-		if got := OriginalControls(i + 1); got != want[i] {
+		got := OriginalControls(i + 1)
+		// Ability is the developed key and not part of the source controlarray.
+		got.Ability = 0
+		if got != want[i] {
 			t.Fatalf("P%d controls = %+v, want %+v", i+1, got, want[i])
 		}
 	}

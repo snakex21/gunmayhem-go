@@ -20,7 +20,7 @@ import (
 const (
 	// 19: compact streamed snapshots, per-frame input history, heartbeat,
 	// game version in the handshake.
-	netplayProtocolVersion = 19
+	netplayProtocolVersion = 20
 	maxOnlinePlayers       = 4
 )
 
@@ -151,6 +151,10 @@ type netSnapshot struct {
 	Powerups       []Powerup             `cbor:",omitempty"`
 	PowerupNameFX  []PowerupNameEffect   `cbor:",omitempty"`
 	LifeBlingFX    []LifeBlingEffect     `cbor:",omitempty"`
+	// Campaign-only state. Campaigns are local today; carrying these keeps a
+	// future online co-op campaign rendering correctly with no extra work.
+	CampaignEnemies []CampaignEnemy `cbor:",omitempty"`
+	HazardMarkers   []HazardMarker  `cbor:",omitempty"`
 	// SFXEvents travel in the per-peer envelope so a dropped snapshot never
 	// drops a sound (netsnapshot_wire.go).
 	SFXEvents []netSFXEvent `cbor:",omitempty" net:"-"`
@@ -193,6 +197,7 @@ type netSnapshot struct {
 	OnlinePowerupsEnabled          bool                           `cbor:",omitempty"`
 	OnlineBlockedWeapons           [developedWeaponSlotCount]bool `cbor:",omitempty"`
 	OnlineBlockedPerks             [onlinePerkTableSize]bool      `cbor:",omitempty"`
+	OnlineBlockedAbilities         [abilityCount]bool             `cbor:",omitempty"`
 	PostGameReady                  [4]bool                        `cbor:",omitempty"`
 	PostGameReadyCountdown         int                            `cbor:",omitempty"`
 
@@ -1809,6 +1814,7 @@ func capturePlayerInput(c Controls) PlayerInputState {
 		Down:    sourceKeyDown(c.Down),
 		Shoot:   sourceKeyDown(c.Shoot),
 		Grenade: sourceKeyDown(c.Grenade),
+		Ability: sourceKeyDown(c.Ability),
 	}
 }
 
@@ -1882,6 +1888,8 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		Powerups:                       append([]Powerup(nil), g.powerups...),
 		PowerupNameFX:                  append([]PowerupNameEffect(nil), g.powerupNameFX...),
 		LifeBlingFX:                    append([]LifeBlingEffect(nil), g.lifeBlingFX...),
+		CampaignEnemies:                g.campaignEnemySnapshot(),
+		HazardMarkers:                  append([]HazardMarker(nil), g.extraHazardMarkers...),
 		SFXEvents:                      append([]netSFXEvent(nil), g.netSFXPending...),
 		MapFXFrame:                     g.mapFXFrame,
 		CameraX:                        g.cameraX,
@@ -1919,6 +1927,7 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		OnlinePowerupsEnabled:          g.onlinePowerupsEnabled,
 		OnlineBlockedWeapons:           g.onlineBlockedWeapons,
 		OnlineBlockedPerks:             g.onlineBlockedPerks,
+		OnlineBlockedAbilities:         g.onlineBlockedAbilities,
 		PostGameReady:                  g.onlinePostGameReadySnapshot(),
 		PostGameReadyCountdown:         g.postGameReadyCountdown,
 		Paused:                         g.paused,
@@ -2005,6 +2014,8 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 	g.powerups = append(g.powerups[:0], state.Powerups...)
 	g.powerupNameFX = append(g.powerupNameFX[:0], state.PowerupNameFX...)
 	g.lifeBlingFX = append(g.lifeBlingFX[:0], state.LifeBlingFX...)
+	g.applyCampaignEnemySnapshot(state.CampaignEnemies)
+	g.extraHazardMarkers = append(g.extraHazardMarkers[:0], state.HazardMarkers...)
 	g.mapFXFrame = state.MapFXFrame
 	g.cameraX = state.CameraX
 	g.cameraY = state.CameraY
@@ -2056,6 +2067,7 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 	g.onlinePowerupsEnabled = state.OnlinePowerupsEnabled
 	g.onlineBlockedWeapons = state.OnlineBlockedWeapons
 	g.onlineBlockedPerks = state.OnlineBlockedPerks
+	g.onlineBlockedAbilities = state.OnlineBlockedAbilities
 	g.postGameReady = state.PostGameReady
 	g.postGameReadyCountdown = state.PostGameReadyCountdown
 	g.paused = state.Paused

@@ -187,23 +187,17 @@ func drawSetupPerkThumb(dst *ebiten.Image, number int, r Rect, alpha float64) {
 		1: {"NO", "PERKS"}, 2: {"SPEED+"}, 3: {"JUMP+"},
 		4: {"MINI", "GUN"}, 5: {"NO", "RECOIL"}, 6: {"BLAST", "SHIELD"},
 		7: {"EXTRA", "AMMO"}, 8: {"EXTRA", "NADES"}, 9: {"GUN", "SPAWN"},
-		perkFlashGoggles: {"FLASH", "GOGGLES"}, perkThermalGoggles: {"THERMAL", "GOGGLES"},
-		perkGasMask: {"GAS", "MASK"}, perkKevlar: {"KEVLAR"},
 	}
 	colors := map[int]color.NRGBA{
-		1:                  {R: 0xff, G: 0xff, B: 0xff, A: uint8(255 * alpha)},
-		2:                  {R: 0x33, G: 0xcc, B: 0x00, A: uint8(255 * alpha)},
-		3:                  {R: 0xff, G: 0x33, B: 0x99, A: uint8(255 * alpha)},
-		4:                  {R: 0x66, G: 0x66, B: 0x66, A: uint8(255 * alpha)},
-		5:                  {R: 0xff, G: 0xcc, B: 0x66, A: uint8(255 * alpha)},
-		6:                  {R: 0x00, G: 0x66, B: 0xff, A: uint8(255 * alpha)},
-		7:                  {R: 0xff, G: 0x99, B: 0x00, A: uint8(255 * alpha)},
-		8:                  {R: 0xff, G: 0x33, B: 0x00, A: uint8(255 * alpha)},
-		9:                  {R: 0x99, G: 0xff, B: 0x00, A: uint8(255 * alpha)},
-		perkFlashGoggles:   {R: 0xff, G: 0xff, B: 0xcc, A: uint8(255 * alpha)},
-		perkThermalGoggles: {R: 0x33, G: 0xff, B: 0x66, A: uint8(255 * alpha)},
-		perkGasMask:        {R: 0xcc, G: 0xdd, B: 0x44, A: uint8(255 * alpha)},
-		perkKevlar:         {R: 0x88, G: 0x99, B: 0x66, A: uint8(255 * alpha)},
+		1: {R: 0xff, G: 0xff, B: 0xff, A: uint8(255 * alpha)},
+		2: {R: 0x33, G: 0xcc, B: 0x00, A: uint8(255 * alpha)},
+		3: {R: 0xff, G: 0x33, B: 0x99, A: uint8(255 * alpha)},
+		4: {R: 0x66, G: 0x66, B: 0x66, A: uint8(255 * alpha)},
+		5: {R: 0xff, G: 0xcc, B: 0x66, A: uint8(255 * alpha)},
+		6: {R: 0x00, G: 0x66, B: 0xff, A: uint8(255 * alpha)},
+		7: {R: 0xff, G: 0x99, B: 0x00, A: uint8(255 * alpha)},
+		8: {R: 0xff, G: 0x33, B: 0x00, A: uint8(255 * alpha)},
+		9: {R: 0x99, G: 0xff, B: 0x00, A: uint8(255 * alpha)},
 	}
 	lines := labels[number]
 	if len(lines) == 0 {
@@ -216,9 +210,6 @@ func drawSetupPerkThumb(dst *ebiten.Image, number int, r Rect, alpha float64) {
 		y := r.Y + r.H/2 - float64(len(lines))*7 + float64(i)*14
 		drawSourceMenuText(dst, line, menuFontCondensedExtraBold, fontSize, clr, x, y)
 	}
-	if number > 9 {
-		drawPerkGearIcon(dst, number, r.X+r.W-13, r.Y+11, alpha)
-	}
 }
 
 func setupSelectionVisualRect(editor int, source Rect, localY float64) Rect {
@@ -229,20 +220,26 @@ func setupSelectionVisualRect(editor int, source Rect, localY float64) Rect {
 	return r
 }
 
-func (g *Game) drawSetupSelectionContents(dst *ebiten.Image, editor int, localY, alpha float64, campaign bool, selectedGun int) {
+func (g *Game) drawSetupSelectionContents(dst *ebiten.Image, editor int, localY, alpha float64, campaign bool, selectedGun, selectedAbility int) {
 	for _, item := range developedCustomSelectionItems(editor) {
 		r := setupSelectionVisualRect(editor, item.Rect, localY)
 		cellColor := color.NRGBA{R: 0x99, G: 0x99, B: 0x99, A: uint8(255 * alpha)}
-		if editor == customEditGun && item.Number == selectedGun {
+		selected := (editor == customEditGun && item.Number == selectedGun) ||
+			(editor == customEditAbility && item.Number == abilityMenuIndex(selectedAbility)+1)
+		if selected {
 			cellColor = color.NRGBA{R: 0xff, G: 0x92, B: 0x00, A: uint8(255 * alpha)}
 		}
 		ebitenutil.DrawRect(dst, r.X, r.Y, r.W, r.H, cellColor)
-		if editor == customEditGun && item.Number == selectedGun {
+		if selected {
 			ebitenutil.DrawRect(dst, r.X+2, r.Y+2, r.W-4, r.H-4,
 				color.NRGBA{R: 0x99, G: 0x99, B: 0x99, A: uint8(255 * alpha)})
 		}
 		if editor == customEditPerk {
 			drawSetupPerkThumb(dst, item.Number, r, alpha)
+		} else if editor == customEditAbility {
+			if ability, ok := abilityFromMenuNumber(item.Number); ok {
+				drawSetupAbilityThumb(dst, ability, r, alpha)
+			}
 		} else if editor == customEditColor {
 			swatch := developedPlayerColorSwatch(item.Number)
 			swatch.A = uint8(255 * alpha)
@@ -286,6 +283,10 @@ func (g *Game) drawSetupSelectionContents(dst *ebiten.Image, editor int, localY,
 	} else if editor == customEditThrowable {
 		drawSourceMenuText(dst, "THROWABLES", menuFontCondensedExtraBold, 15,
 			color.NRGBA{A: uint8(255 * alpha)}, 54, localY+405)
+	} else if editor == customEditAbility {
+		drawSourceMenuText(dst, "ABILITY / GEAR", menuFontCondensedExtraBold, 15,
+			color.NRGBA{A: uint8(255 * alpha)}, 46, localY+405)
+		drawSetupAbilityDescription(dst, selectedAbility, localY, alpha)
 	} else if editor == customEditGun {
 		name := weaponDisplayName(selectedGun)
 		if name == "" {
@@ -328,6 +329,8 @@ func (g *Game) drawSetupPlayerPreview(dst *ebiten.Image, cfg CustomPlayerConfig,
 	p.ShirtNumber = cfg.Shirt
 	p.HatNumber = cfg.Hat
 	p.EyeNumber = cfg.Eyes
+	// Preview the chosen gear (goggles, mask, vest) on the character.
+	p.AbilityNumber = migrateLegacyGearPerk(cfg).Ability
 	p.HeadFrame = 0
 	p.LegFrame1 = 0
 	p.LegFrame2 = 0
@@ -368,8 +371,8 @@ func (g *Game) drawPlayerSetupCardMasked(screen *ebiten.Image, cfg CustomPlayerC
 	if editor == 0 && base != nil {
 		drawSourceRaster(clip, base, 0, localY, 1, 1, alpha)
 	}
-	if editor >= 1 && editor <= customEditColor {
-		g.drawSetupSelectionContents(clip, editor, localY, alpha, campaign, cfg.Gun)
+	if editor >= 1 && editor <= customEditAbility {
+		g.drawSetupSelectionContents(clip, editor, localY, alpha, campaign, cfg.Gun, migrateLegacyGearPerk(cfg).Ability)
 	}
 
 	if cfg.Type == 0 {
@@ -397,6 +400,7 @@ func (g *Game) drawPlayerSetupCardMasked(screen *ebiten.Image, cfg CustomPlayerC
 		}
 		drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+220.75, 0.53875732421875, alpha)
 		drawSetupEditButton(clip, g.assets.CustomEditButton, 17.5, localY+248.0, 0.53875732421875, alpha)
+		drawSetupEditButton(clip, g.assets.CustomEditButton, setupAbilityButtonX, localY+220.75, 0.53875732421875, alpha)
 
 		drawSourceMenuText(clip, "HAT", menuFontTwCen, 15.9,
 			color.NRGBA{A: uint8(255 * alpha)}, 35.75, localY+96.25)
@@ -420,6 +424,9 @@ func (g *Game) drawPlayerSetupCardMasked(screen *ebiten.Image, cfg CustomPlayerC
 			color.NRGBA{A: uint8(255 * alpha)}, 29.65, localY+224.5)
 		drawSourceMenuText(clip, "GRENADE", menuFontTwCen, 15.0,
 			color.NRGBA{A: uint8(255 * alpha)}, 22.0, localY+251.5)
+		drawSourceMenuText(clip, "ABILITY", menuFontTwCen, 15.0,
+			color.NRGBA{A: uint8(255 * alpha)}, setupAbilityButtonX+15, localY+224.5)
+		drawSetupCardAbilitySummary(clip, migrateLegacyGearPerk(cfg).Ability, localY, alpha)
 		drawSourceMenuText(clip, "NAME:", menuFontTwCen, 15.9,
 			color.NRGBA{A: uint8(255 * alpha)}, 26.65, localY+271.2)
 

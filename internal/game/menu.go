@@ -558,14 +558,17 @@ func (g *Game) startCustomGame() {
 		p.HatNumber = cfg.Hat
 		p.EyeNumber = cfg.Eyes
 		p.ThrowableType = normalizedThrowableType(cfg.Throwable)
+		cfg = migrateLegacyGearPerk(cfg)
 		if g.onlineMatchSetup {
 			p.DefaultWeapon = g.onlineStartingWeapon(cfg.Gun)
 			p.PerkNumber = g.onlineAllowedPerk(cfg.Perk)
+			p.AbilityNumber = g.onlineAllowedAbility(cfg.Ability, abilityNone)
 			p.AI = cfg.Type == 2
 			p.RemoteControlled = cfg.Type == 1 && id != 1
 		} else {
 			p.DefaultWeapon = cfg.Gun
 			p.PerkNumber = cfg.Perk
+			p.AbilityNumber = resolveConfigAbility(cfg.Ability, nil)
 			p.AI = cfg.Type == 2
 		}
 		if mode == SourceGameModeTeams {

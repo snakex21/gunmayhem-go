@@ -138,6 +138,11 @@ func updateGrenadeInput(p *Player, grenades *[]Grenade) {
 		return
 	}
 
+	if p.anchored() {
+		// ANCHOR: no throwing while planted. A wind-up in progress is kept
+		// and continues after the anchor is released.
+		return
+	}
 	pressed := p.grenadePressed()
 	if p.BlindTime > 0 {
 		// A blinded player cannot throw: an active wind-up is dropped without
@@ -390,8 +395,12 @@ func explodeGrenade(g *Grenade, players []*Player) {
 		}
 		p.VX += pushX
 		p.VY += pushY
-		p.LastHitBy = g.OwnerID
-		p.HitByGrenade = true
+		if g.OwnerID >= 0 {
+			p.LastHitBy = g.OwnerID
+			p.HitByGrenade = true
+		}
+		// A negative owner marks a neutral arena hazard (EXTRA dynamite rain):
+		// it pushes, but the last real attacker keeps the kill credit.
 	}
 }
 

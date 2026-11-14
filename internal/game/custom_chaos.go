@@ -813,6 +813,7 @@ func (g *Game) fireChaosShockPulse() {
 func (g *Game) spawnChaosCrates(count int) {
 	for i := 0; i < count; i++ {
 		c := spawnCrate(g.arena)
+		c.Weapon = g.rollCrateWeapon()
 		c.Serial = g.nextPickupSerial
 		g.nextPickupSerial++
 		c.Y -= float64(i * 55)

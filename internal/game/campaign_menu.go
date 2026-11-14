@@ -403,7 +403,9 @@ func (g *Game) startCampaignMission() {
 		p.HatNumber = cfg.Hat
 		p.EyeNumber = cfg.Eyes
 		p.DefaultWeapon = cfg.Gun
+		cfg = migrateLegacyGearPerk(cfg)
 		p.PerkNumber = cfg.Perk
+		p.AbilityNumber = resolveConfigAbility(cfg.Ability, nil)
 		// frame10 campaign block always assigns p1team=p2team=1. When P2 is
 		// enabled, normal/instagib campaign matches become a team game.
 		p.Team = 1
@@ -433,6 +435,7 @@ func (g *Game) startCampaignMission() {
 		}
 		e.PlayerColor = spec.color
 		e.PerkNumber = spec.perk
+		e.AbilityNumber = campaignEnemyAbility(1, level, i)
 		// Campaign enemies are always on the opposing side. Source p3/p4 use
 		// team2 in level6; in solo levels their reset team0 serves the same
 		// purpose, but an explicit opposing team keeps projectile filtering sane.

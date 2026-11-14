@@ -18,6 +18,7 @@ const (
 	onlineVisualCharacterGun
 	onlineVisualCharacterPerk
 	onlineVisualCharacterTeam
+	onlineVisualCharacterAbility
 )
 
 const (
@@ -88,6 +89,8 @@ func onlineCharacterPickerForField(field int) int {
 		return onlineVisualCharacterPerk
 	case onlineCharTeam:
 		return onlineVisualCharacterTeam
+	case onlineCharAbility:
+		return onlineVisualCharacterAbility
 	}
 	return onlineVisualNone
 }
@@ -116,6 +119,8 @@ func onlineCharacterVisualChoiceCount(picker int) int {
 		return len(starterHandgunNumbers())
 	case onlineVisualCharacterPerk:
 		return len(selectablePerkNumbers())
+	case onlineVisualCharacterAbility:
+		return len(selectableAbilityNumbers())
 	case onlineVisualCharacterTeam:
 		return 2
 	}
@@ -134,6 +139,8 @@ func onlineCharacterVisualCols(picker int) int {
 		return 7
 	case onlineVisualCharacterPerk:
 		return 3
+	case onlineVisualCharacterAbility:
+		return 5
 	case onlineVisualCharacterTeam:
 		return 2
 	}
@@ -189,7 +196,7 @@ func (g *Game) onlineVisualPagedItems() []int {
 }
 
 func (g *Game) onlineVisualPageSize() int {
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterTeam {
+	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
 		return onlineCharacterVisualPageSize(g.onlineVisualPicker)
 	}
 	if g.onlineVisualPicker == onlineVisualFixedMap {
@@ -199,7 +206,7 @@ func (g *Game) onlineVisualPageSize() int {
 }
 
 func (g *Game) onlineVisualMaxPage() int {
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterTeam {
+	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
 		count := onlineCharacterVisualChoiceCount(g.onlineVisualPicker)
 		if count <= 0 {
 			return 0
@@ -228,7 +235,7 @@ func (g *Game) onlineVisualPickerHitAt(x, y float64) int {
 	if onlineOverlayBackRect.Contains(x, y) {
 		return menuHitOnlineOverlayBack
 	}
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterTeam {
+	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
 		count := onlineCharacterVisualChoiceCount(g.onlineVisualPicker)
 		pageSize := g.onlineVisualPageSize()
 		start := g.onlineVisualPage * pageSize
@@ -264,7 +271,7 @@ func (g *Game) onlineVisualPickerHitAt(x, y float64) int {
 
 func (g *Game) applyOnlineVisualChoice(visibleIndex int) {
 	id := g.onlineLocalPlayerID()
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterTeam {
+	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
 		if id < 1 || id > 4 {
 			return
 		}
@@ -281,6 +288,9 @@ func (g *Game) applyOnlineVisualChoice(visibleIndex int) {
 		if g.onlineVisualPicker == onlineVisualCharacterPerk {
 			choice = selectablePerkNumbers()[absolute]
 		}
+		if g.onlineVisualPicker == onlineVisualCharacterAbility {
+			choice = selectableAbilityNumbers()[absolute]
+		}
 		cfg := &g.customPlayers[id-1]
 		cfg.Type = 1
 		switch g.onlineVisualPicker {
@@ -296,6 +306,8 @@ func (g *Game) applyOnlineVisualChoice(visibleIndex int) {
 			cfg.Gun = choice
 		case onlineVisualCharacterPerk:
 			cfg.Perk = choice
+		case onlineVisualCharacterAbility:
+			cfg.Ability = choice
 		case onlineVisualCharacterTeam:
 			cfg.Team = choice
 		}
@@ -336,6 +348,8 @@ func onlineVisualPickerTitle(picker int) string {
 		return "CHOOSE HANDGUN"
 	case onlineVisualCharacterPerk:
 		return "CHOOSE PERK"
+	case onlineVisualCharacterAbility:
+		return "CHOOSE ABILITY / GEAR"
 	case onlineVisualCharacterTeam:
 		return "CHOOSE TEAM"
 	case onlineVisualOnlyWeapon:
@@ -490,6 +504,9 @@ func (g *Game) drawOnlineCharacterChoice(dst *ebiten.Image, picker, choice int, 
 		g.drawOnlineWeaponThumb(dst, choice, inner)
 	case onlineVisualCharacterPerk:
 		drawSetupPerkThumb(dst, choice, inner, 1)
+	case onlineVisualCharacterAbility:
+		g.drawOnlineAbilityChoice(dst, choice, r)
+		return
 	case onlineVisualCharacterTeam:
 		label := "TEAM A"
 		if choice == 2 {
@@ -505,7 +522,7 @@ func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 	drawSourceMenuText(screen, onlineVisualPickerTitle(g.onlineVisualPicker), menuFontTwCen, 31, color.NRGBA{A: 0xff}, 70, 66)
 	drawSourceMenuText(screen, "Click the picture you want.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 70, 105)
 
-	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterTeam {
+	if g.onlineVisualPicker >= onlineVisualCharacterColor && g.onlineVisualPicker <= onlineVisualCharacterAbility {
 		id := g.onlineLocalPlayerID()
 		selected := 0
 		if id >= 1 && id <= 4 {
@@ -523,6 +540,8 @@ func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 				selected = cfg.Gun
 			case onlineVisualCharacterPerk:
 				selected = cfg.Perk
+			case onlineVisualCharacterAbility:
+				selected = cfg.Ability
 			case onlineVisualCharacterTeam:
 				selected = cfg.Team
 			}
@@ -538,6 +557,9 @@ func (g *Game) drawOnlineVisualPicker(screen *ebiten.Image) {
 			}
 			if g.onlineVisualPicker == onlineVisualCharacterPerk {
 				choice = selectablePerkNumbers()[absolute]
+			}
+			if g.onlineVisualPicker == onlineVisualCharacterAbility {
+				choice = selectableAbilityNumbers()[absolute]
 			}
 			r := onlineVisualCharacterChoiceRect(g.onlineVisualPicker, i)
 			g.drawOnlineCharacterChoice(screen, g.onlineVisualPicker, choice, r, choice == selected)
@@ -628,6 +650,10 @@ func (g *Game) drawOnlineCharacterFieldTile(dst *ebiten.Image, field int, cfg Cu
 		label = "PERK"
 		value = onlinePerkName(cfg.Perk)
 		drawSetupPerkThumb(dst, cfg.Perk, thumb, 1)
+	case onlineCharAbility:
+		label = "ABILITY / GEAR"
+		value = abilityName(cfg.Ability)
+		drawAbilityIcon(dst, cfg.Ability, thumb.X+thumb.W/2, thumb.Y+thumb.H/2, 18, 1)
 	case onlineCharTeam:
 		label = "TEAM"
 		if cfg.Team == 2 {
@@ -690,4 +716,25 @@ func (g *Game) drawOnlineWeaponModeTile(dst *ebiten.Image, mode int, r Rect) {
 		g.drawOnlineWeaponThumb(dst, 10, Rect{X: inner.X + 42, Y: inner.Y, W: inner.W, H: inner.H})
 	}
 	drawSourceMenuText(dst, onlineWeaponModeLabel(mode), menuFontCondensedExtraBold, 11.5, color.NRGBA{A: 0xff}, r.X+90, r.Y+25)
+}
+
+// drawOnlineAbilityChoice is one tile of the online ABILITY / GEAR picker:
+// icon, name and a short description, plus a BLOCKED veil for abilities the
+// host rules forbid.
+func (g *Game) drawOnlineAbilityChoice(dst *ebiten.Image, ability int, r Rect) {
+	drawAbilityIcon(dst, ability, r.X+22, r.Y+r.H/2-4, 13, 1)
+	drawSourceMenuText(dst, abilityName(ability), menuFontCondensedExtraBold, 12,
+		color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, r.X+42, r.Y+9)
+	for i, line := range wrapAbilityText(abilityDescription(ability), 9.5, r.W-50) {
+		if i >= 3 {
+			break
+		}
+		drawSourceMenuText(dst, line, menuFontCondensed, 9.5,
+			color.NRGBA{R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff}, r.X+42, r.Y+27+float64(i)*12)
+	}
+	if ability > abilityNone && ability < abilityCount && (!g.onlinePerksEnabled || g.onlineBlockedAbilities[ability]) {
+		ebitenutil.DrawRect(dst, r.X+3, r.Y+3, r.W-6, r.H-6, color.NRGBA{R: 0x40, G: 0x10, B: 0x10, A: 0x90})
+		drawSourceMenuText(dst, "BLOCKED BY HOST", menuFontCondensedExtraBold, 10,
+			color.NRGBA{R: 0xff, G: 0x88, B: 0x88, A: 0xff}, r.X+42, r.Y+r.H-18)
+	}
 }

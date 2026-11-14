@@ -15,8 +15,11 @@ type CustomPlayerConfig struct {
 	Gun       int    `cbor:",omitempty"`
 	Perk      int    `cbor:",omitempty"`
 	Throwable int    `cbor:",omitempty"`
-	Type      int    `cbor:",omitempty"` // source playertype: 0 empty, 1 human, 2 AI
-	Team      int    `cbor:",omitempty"`
+	// Ability is the ABILITY / GEAR slot (abilities.go): 0 none, 1..12, or
+	// abilityRandom.
+	Ability int `cbor:",omitempty"`
+	Type    int `cbor:",omitempty"` // source playertype: 0 empty, 1 human, 2 AI
+	Team    int `cbor:",omitempty"`
 }
 
 func sourceDefaultCustomPlayers() [4]CustomPlayerConfig {
@@ -145,6 +148,11 @@ func (g *Game) activateCustomPlayerSlot(hit int) bool {
 		g.customPlayers[slot].Type = 1
 	case playerSlotActionAI:
 		g.customPlayers[slot].Type = 2
+		if g.customPlayers[slot].Ability == abilityNone {
+			// Bots get an ability unless the player picks one (or NONE)
+			// for them afterwards.
+			g.customPlayers[slot].Ability = abilityRandom
+		}
 	case playerSlotActionClear:
 		g.customPlayers[slot].Type = 0
 		g.customEditor[slot] = 0

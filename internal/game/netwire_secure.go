@@ -185,8 +185,13 @@ func sanitizeRemotePlayerConfig(cfg CustomPlayerConfig) (CustomPlayerConfig, err
 	if !isStarterHandgunNumber(cfg.Gun) {
 		return CustomPlayerConfig{}, errors.New("invalid starter weapon")
 	}
+	// Perks are 1..9 only; the gear that used to be perks 14-17 now lives in
+	// the ability slot and is rejected here.
 	if !isSelectablePerk(cfg.Perk) {
 		return CustomPlayerConfig{}, errors.New("invalid player perk")
+	}
+	if !isSelectableAbility(cfg.Ability) {
+		return CustomPlayerConfig{}, errors.New("invalid player ability")
 	}
 	if cfg.Throwable < 0 || cfg.Throwable >= throwableTypeCount {
 		return CustomPlayerConfig{}, errors.New("invalid throwable")
@@ -412,7 +417,7 @@ func validateNetSnapshot(s netSnapshot) error {
 		}
 	}
 	for _, cfg := range s.OnlineCustomPlayers {
-		if len(cfg.Name) > 96 || !utf8.ValidString(cfg.Name) {
+		if len(cfg.Name) > 96 || !utf8.ValidString(cfg.Name) || !isSelectableAbility(cfg.Ability) {
 			return errors.New("invalid online player config in host snapshot")
 		}
 	}

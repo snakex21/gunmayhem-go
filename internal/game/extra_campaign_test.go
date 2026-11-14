@@ -2,7 +2,7 @@ package game
 
 import "testing"
 
-func TestExtraCampaignHasTwentyVariedRespawnMissions(t *testing.T) {
+func TestExtraCampaignHasVariedRespawnMissions(t *testing.T) {
 	if len(extraCampaignTitles) != extraCampaignMissionCount || len(extraCampaignMissions) != extraCampaignMissionCount {
 		t.Fatalf("EXTRA campaign size titles=%d missions=%d", len(extraCampaignTitles), len(extraCampaignMissions))
 	}
@@ -17,10 +17,11 @@ func TestExtraCampaignHasTwentyVariedRespawnMissions(t *testing.T) {
 		} else {
 			twoEnemyMissions++
 		}
-		if lives := extraCampaignEnemyLives(spec); lives <= spec.PlayerLives {
+		units := extraCampaignUnitCount(spec)
+		if lives := extraCampaignEnemyLives(spec) + units; lives <= spec.PlayerLives {
 			t.Fatalf("EXTRA mission %d enemy respawns=%d must exceed player lives=%d", i+1, lives, spec.PlayerLives)
 		}
-		if extraCampaignEnemyRespawns(spec) < 6 {
+		if extraCampaignEnemyRespawns(spec)+units < 6 {
 			t.Fatalf("EXTRA mission %d does not have enough enemy returns", i+1)
 		}
 		for _, enemy := range spec.Enemies {
@@ -39,7 +40,7 @@ func TestExtraCampaignHasTwentyVariedRespawnMissions(t *testing.T) {
 		t.Fatalf("mission 9 is not the HIMARS airstrike boss: %+v", mission)
 	}
 	mechanicMissions := 0
-	for _, mission := range extraCampaignMissions[12:] {
+	for _, mission := range extraCampaignMissions[12:20] {
 		if len(mission.Modifiers) > 0 || mission.Hazard != extraCampaignHazardNone {
 			mechanicMissions++
 		}
@@ -173,44 +174,80 @@ func TestExtraCampaignEndsWhenEitherSideIsEliminated(t *testing.T) {
 	}
 }
 
-func TestExtraMissionSixFlareAIWaitsBetweenSingleShots(t *testing.T) {
-	g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 6}
-	flare := &Player{AI: true, Weapon: NewWeapon(181)}
-	triggerFrames := 0
-	for i := 0; i < 270; i++ {
-		flare.AIShoot = true
-		applyExtraCampaignAIFireCadence(flare, g)
-		if flare.AIShoot {
-			triggerFrames++
+// extraMissionBot builds the bot of mission/enemy index exactly as the
+// mission start does for the fire-pace fields (gun + data ShotDelay).
+func extraMissionBot(mission, index int) *Player {
+	src := extraCampaignMissions[mission-1].Enemies[index]
+	return &Player{ID: src.ID, Active: true, AI: true, Facing: 1, DefaultWeapon: src.Gun, Weapon: NewWeapon(src.Gun), AIShotDelay: src.ShotDelay}
+}
+
+func countCadenceTriggers(p *Player, g *Game, frames int) int {
+	n := 0
+	for i := 0; i < frames; i++ {
+		p.AIShoot = true
+		applyExtraCampaignAIFireCadence(p, g)
+		if p.AIShoot {
+			n++
 		}
 	}
-	if triggerFrames != 3 {
-		t.Fatalf("mission6 Flare Gun trigger frames=%d want3", triggerFrames)
-	}
+	return n
+}
 
-	// The correction is intentionally limited to mission 6. Mission 8 keeps
-	// the original finale weapon behavior.
+func TestExtraMissionSixFlareAIWaitsBetweenSingleShots(t *testing.T) {
+	if got := extraCampaignMissions[5].Enemies[0].ShotDelay; got != 90 {
+		t.Fatalf("mission6 Firestarter ShotDelay=%d want90", got)
+	}
+	g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 6}
+	if got := countCadenceTriggers(extraMissionBot(6, 0), g, 270); got != 3 {
+		t.Fatalf("mission6 Flare Gun trigger frames=%d want3", got)
+	}
+	// Mission 8 keeps the original finale weapon behavior (no data delay).
 	g.campaignLevel = 8
-	energy := &Player{AI: true, Weapon: NewWeapon(185), AIShoot: true}
+	energy := extraMissionBot(8, 1)
+	energy.AIShoot = true
 	applyExtraCampaignAIFireCadence(energy, g)
 	if !energy.AIShoot || energy.AIFireCadence != 0 {
-		t.Fatalf("mission8 cadence was changed by mission6 fix: %+v", energy)
+		t.Fatalf("mission8 cadence was changed by mission6 data: %+v", energy)
+	}
+}
+
+// The pace comes from mission data, not from the mission number: the same
+// bot keeps its pause whatever campaignLevel says, and a crate weapon fires
+// at its own rate.
+func TestExtraFirePaceComesFromMissionData(t *testing.T) {
+	for _, level := range []int{1, 6, 11, 25} {
+		g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: level}
+		if got := countCadenceTriggers(extraMissionBot(6, 0), g, 270); got != 3 {
+			t.Fatalf("level %d changed the data-driven pace: %d", level, got)
+		}
+	}
+	bot := extraMissionBot(6, 0)
+	bot.Weapon = NewWeapon(91) // picked up a crate rifle
+	if got := countCadenceTriggers(bot, &Game{}, 30); got != 30 {
+		t.Fatalf("crate weapon inherited the mission pause: %d", got)
+	}
+	// Mission start copies ShotDelay onto the bot.
+	g := startExtraMissionForTest(t, 9)
+	found := false
+	for _, p := range g.players {
+		if p.ID == 3 {
+			found = true
+			if p.AIShotDelay != 135 {
+				t.Fatalf("mission9 bot AIShotDelay=%d want135", p.AIShotDelay)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("mission9 boss missing")
 	}
 }
 
 func TestExtraMissionNineAirstrikeBossUsesAimedCadence(t *testing.T) {
 	g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 9}
-	marshal := &Player{ID: 3, Active: true, AI: true, Facing: 1, Weapon: NewWeapon(90), AITargetValid: true, AITargetX: 500, AITargetY: 300}
-	triggerFrames := 0
-	for i := 0; i < 405; i++ {
-		marshal.AIShoot = true
-		applyExtraCampaignAIFireCadence(marshal, g)
-		if marshal.AIShoot {
-			triggerFrames++
-		}
-	}
-	if triggerFrames != 3 {
-		t.Fatalf("mission9 airstrike trigger frames=%d want3", triggerFrames)
+	marshal := extraMissionBot(9, 0)
+	marshal.AITargetValid, marshal.AITargetX, marshal.AITargetY = true, 500, 300
+	if got := countCadenceTriggers(marshal, g, 405); got != 3 {
+		t.Fatalf("mission9 airstrike trigger frames=%d want3", got)
 	}
 
 	marshal.AIFireCadence = 0
@@ -228,23 +265,14 @@ func TestExtraMissionNineAirstrikeBossUsesAimedCadence(t *testing.T) {
 
 func TestExtraJuggernautUsesDeliberateHarpoonShots(t *testing.T) {
 	g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 11}
-	juggernaut := &Player{AI: true, Weapon: NewWeapon(179)}
-	triggerFrames := 0
-	for i := 0; i < 225; i++ {
-		juggernaut.AIShoot = true
-		applyExtraCampaignAIFireCadence(juggernaut, g)
-		if juggernaut.AIShoot {
-			triggerFrames++
-		}
-	}
-	if triggerFrames != 3 {
-		t.Fatalf("mission11 harpoon trigger frames=%d want3", triggerFrames)
+	if got := countCadenceTriggers(extraMissionBot(11, 0), g, 225); got != 3 {
+		t.Fatalf("mission11 harpoon trigger frames=%d want3", got)
 	}
 }
 
 func TestExtraCampaignCardsFitPagedThreeRowsAboveNavigation(t *testing.T) {
-	if extraCampaignPageCount() != 2 {
-		t.Fatalf("EXTRA pages=%d want2", extraCampaignPageCount())
+	if want := (extraCampaignMissionCount + extraCampaignPageSize - 1) / extraCampaignPageSize; extraCampaignPageCount() != want || want < 3 {
+		t.Fatalf("EXTRA pages=%d want%d", extraCampaignPageCount(), want)
 	}
 	for page := 0; page < extraCampaignPageCount(); page++ {
 		start, end := extraCampaignPageRange(page)
@@ -299,8 +327,68 @@ func TestExtraDynamiteRainWarnsThenSpawnsNeutralGrenade(t *testing.T) {
 		t.Fatalf("dynamite rain spawned early: %d", len(g.grenades))
 	}
 	g.updateExtraCampaignHazards()
-	if len(g.grenades) != 1 || g.grenades[0].OwnerID != 0 || g.grenades[0].Type != ThrowableDynamite {
+	if len(g.grenades) != 1 || g.grenades[0].OwnerID != extraHazardOwnerID || g.grenades[0].Type != ThrowableDynamite {
 		t.Fatalf("dynamite rain spawn=%+v", g.grenades)
+	}
+}
+
+// The briefing promises a warning: a landing marker appears a full second
+// before the dynamite drops, at the exact landing X, and stays until the
+// blast.
+func TestExtraDynamiteRainMarkerAppearsBeforeImpact(t *testing.T) {
+	g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 18, arena: OriginalMap1()}
+	firstMarker := -1
+	for frame := 1; frame <= 100; frame++ {
+		g.updateExtraCampaignHazards()
+		if firstMarker < 0 && len(g.extraHazardMarkers) > 0 {
+			firstMarker = frame
+		}
+	}
+	if firstMarker < 0 || 100-firstMarker < dynamiteRainWarningFrames-1 {
+		t.Fatalf("marker first frame=%d, want >= %d frames of warning", firstMarker, dynamiteRainWarningFrames)
+	}
+	if len(g.grenades) != 1 || len(g.extraHazardMarkers) != 1 {
+		t.Fatalf("grenades=%d markers=%d", len(g.grenades), len(g.extraHazardMarkers))
+	}
+	m := g.extraHazardMarkers[0]
+	if m.X != g.grenades[0].X {
+		t.Fatalf("marker x=%.1f dynamite x=%.1f", m.X, g.grenades[0].X)
+	}
+	if want := hazardLandingY(g.arena, m.X); m.Y != want {
+		t.Fatalf("marker y=%.1f want landing %.1f", m.Y, want)
+	}
+	if m.Life < throwableProfileFor(ThrowableDynamite).Fuse {
+		t.Fatalf("marker disappears before the fuse ends: life=%d", m.Life)
+	}
+	// Deterministic: a second run picks the same spot.
+	g2 := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 18, arena: OriginalMap1()}
+	for frame := 1; frame <= 100; frame++ {
+		g2.updateExtraCampaignHazards()
+	}
+	if g2.grenades[0].X != g.grenades[0].X {
+		t.Fatalf("landing point not deterministic: %.1f vs %.1f", g2.grenades[0].X, g.grenades[0].X)
+	}
+}
+
+func TestExtraNeutralHazardsKeepKillCreditAndRespectBlastShield(t *testing.T) {
+	arena := OriginalMap1()
+	center := (arena.CrateMinX + arena.CrateMaxX) / 2
+	victim := &Player{ID: 3, Active: true, AI: true, X: center + 60, Y: 300, LastHitBy: 1}
+	shielded := &Player{ID: 4, Active: true, AI: true, X: center + 60, Y: 300, PerkNumber: 6}
+	g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 19, arena: arena, players: []*Player{victim, shielded}, extraHazardFrame: 299}
+	g.updateExtraCampaignHazards()
+	if victim.LastHitBy != 1 {
+		t.Fatalf("reactor pulse erased kill credit: LastHitBy=%d", victim.LastHitBy)
+	}
+	if shielded.VX <= 0 || shielded.VX*4.9 > victim.VX || shielded.VX*5.1 < victim.VX {
+		t.Fatalf("blast shield should take one fifth: shielded=%.2f normal=%.2f", shielded.VX, victim.VX)
+	}
+	// Neutral dynamite pushes but keeps the credit too.
+	gr := Grenade{X: victim.X - 40, Y: victim.Y - 30, OwnerID: extraHazardOwnerID, Type: ThrowableDynamite}
+	before := victim.VX
+	explodeGrenade(&gr, []*Player{victim})
+	if victim.VX <= before || victim.LastHitBy != 1 {
+		t.Fatalf("neutral dynamite push=%.1f credit=%d", victim.VX-before, victim.LastHitBy)
 	}
 }
 
@@ -317,4 +405,24 @@ func TestExtraShockReactorPushesBothSidesFromCenter(t *testing.T) {
 	if len(g.blastFX) == 0 || len(g.explosions) != 1 {
 		t.Fatalf("reactor pulse visuals blast=%d explosions=%d", len(g.blastFX), len(g.explosions))
 	}
+}
+
+func startExtraMissionForTest(t *testing.T, level int) *Game {
+	t.Helper()
+	spec := extraCampaignMissions[level-1]
+	arena := OriginalMap1()
+	arena.Number = spec.MapNumber
+	g := &Game{maps: map[int]Map{spec.MapNumber: arena}, arena: arena, campaignLevel: level, screen: screenCampaign, seenDeaths: map[int]int{}}
+	for i := range g.controlConfigs {
+		g.controlConfigs[i] = OriginalControls(i + 1)
+	}
+	g.initCampaignPlayerSetup()
+	g.extraCampaignLevels = defaultExtraCampaignState()
+	g.extraCampaignLevels[level-1] = 1
+	g.campaignSetExtra = true
+	g.startExtraCampaignMission()
+	if !g.campaignMode || g.campaignLevel != level {
+		t.Fatalf("mission %d did not start", level)
+	}
+	return g
 }

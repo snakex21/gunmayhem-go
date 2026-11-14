@@ -308,6 +308,7 @@ var optionControlKeyPositions = [...]struct{ x, y float64 }{
 	{93.65, 140.2}, // right
 	{40.35, 247.2}, // shoot
 	{78.85, 247.2}, // bomb
+	{108.0, 302.5}, // ability (developed; free space under BOMB in the 153x339 panel)
 }
 
 func optionsControlHitAt(x, y float64) (player, index int, ok bool) {
@@ -336,6 +337,8 @@ func controlByIndex(c Controls, index int) int {
 		return c.Shoot
 	case 5:
 		return c.Grenade
+	case 6:
+		return c.Ability
 	}
 	return 0
 }
@@ -354,6 +357,8 @@ func setControlByIndex(c *Controls, index, value int) {
 		c.Shoot = value
 	case 5:
 		c.Grenade = value
+	case 6:
+		c.Ability = value
 	}
 }
 
@@ -507,6 +512,7 @@ func (g *Game) drawOptionControlPanels(screen *ebiten.Image) {
 		{"DOWN", 52.5, 177.35},
 		{"SHOOT", 31.95, 223.85},
 		{"BOMB", 83.6, 283.7},
+		{"ABILITY", 47.0, 309.5},
 	}
 	for p, px := range optionControlPanelX {
 		panelY := 83.85

@@ -7,18 +7,29 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+// Campaign player-card hit codes. Every family owns a disjoint range (see
+// TestCampaignPlayerSetupHitCodesAreUnique). The selection grid used to start
+// at 9100 with a 1000-per-slot stride, so slot 0's colour and eye choices ran
+// into the hat-page (9700+) and name-field (9900+) codes.
 const (
-	campaignPlayerHitHumanBase   = 9000
-	campaignPlayerHitClearBase   = 9010
-	campaignPlayerHitEditBase    = 9020
-	campaignPlayerHitBackBase    = 9050
-	campaignPlayerHitSelectBase  = 9100
-	campaignPlayerHitHatPageBase = 9700
-	campaignPlayerHitColorBase   = 9800
-	campaignPlayerHitNameBase    = 9900
+	campaignPlayerHitHumanBase   = 9000 // + slot
+	campaignPlayerHitClearBase   = 9010 // + slot
+	campaignPlayerHitEditBase    = 9020 // + slot*10 + editor
+	campaignPlayerHitBackBase    = 9050 // + slot
+	campaignPlayerHitHatPageBase = 9700 // + slot
+	campaignPlayerHitNameBase    = 9900 // + slot
 	campaignPlayerHitCustomGun   = 12000
 	campaignPlayerHitThrowable   = 13000
+	// campaignPlayerHitSelectBase + slot*campaignSelectSlotStride +
+	// editor*campaignSelectEditorStride + item number.
+	campaignPlayerHitSelectBase = 20000
+	campaignSelectSlotStride    = 1000
+	campaignSelectEditorStride  = 100
 )
+
+func campaignSelectHit(slot, editor, number int) int {
+	return campaignPlayerHitSelectBase + slot*campaignSelectSlotStride + editor*campaignSelectEditorStride + number
+}
 
 func campaignThrowableChoiceHit(slot, kind int) int {
 	if kind < 0 || kind >= throwableTypeCount {
@@ -112,6 +123,7 @@ func (g *Game) campaignPlayerHitAt(x, y float64) int {
 				{customEditGun, 17.5, 161.7, 0.5387115478515625},
 				{customEditPerk, 17.5, 220.75, 0.53875732421875},
 				{customEditThrowable, 17.5, 248.0, 0.53875732421875},
+				{customEditAbility, setupAbilityButtonX, 220.75, 0.53875732421875},
 			}
 			for _, e := range edits {
 				if sourceMenuHitRect(customPlayerTypeButtonLocal, cx+e.x, cy+e.y, e.sx, 1).Contains(x, y) {
@@ -142,7 +154,7 @@ func (g *Game) campaignPlayerHitAt(x, y float64) int {
 				if editor == customEditThrowable {
 					return campaignThrowableChoiceHit(slot, item.Number-1)
 				}
-				return campaignPlayerHitSelectBase + slot*1000 + editor*100 + item.Number
+				return campaignSelectHit(slot, editor, item.Number)
 			}
 		}
 		if (editor == customEditHat1 || editor == customEditHat2) &&
@@ -190,7 +202,7 @@ func (g *Game) activateCampaignPlayerHit(hit int) bool {
 	if hit >= campaignPlayerHitEditBase && hit < campaignPlayerHitEditBase+20 {
 		v := hit - campaignPlayerHitEditBase
 		slot, editor := v/10, v%10
-		if slot < 2 && ((editor >= 1 && editor <= 4) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor) {
+		if slot < 2 && ((editor >= 1 && editor <= 4) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor || editor == customEditAbility) {
 			for i := range g.campaignEditor {
 				g.campaignEditor[i] = 0
 			}
@@ -215,24 +227,16 @@ func (g *Game) activateCampaignPlayerHit(hit int) bool {
 		}
 		return true
 	}
-	if hit >= campaignPlayerHitColorBase && hit < campaignPlayerHitColorBase+200 {
-		v := hit - campaignPlayerHitColorBase
-		slot, n := v/100, v%100
-		if slot < 2 && n >= 1 && n <= maxDevelopedColorValue() {
-			g.campaignPlayers[slot].Color = n
-			return true
-		}
-	}
 	if hit >= campaignPlayerHitNameBase && hit < campaignPlayerHitNameBase+2 {
 		g.campaignNameFocus = hit - campaignPlayerHitNameBase + 1
 		return true
 	}
-	if hit >= campaignPlayerHitSelectBase && hit < campaignPlayerHitSelectBase+2000 {
+	if hit >= campaignPlayerHitSelectBase && hit < campaignPlayerHitSelectBase+2*campaignSelectSlotStride {
 		v := hit - campaignPlayerHitSelectBase
-		slot := v / 1000
-		v %= 1000
-		editor, n := v/100, v%100
-		if slot < 2 && ((editor >= 1 && editor <= 5) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor) && n > 0 {
+		slot := v / campaignSelectSlotStride
+		v %= campaignSelectSlotStride
+		editor, n := v/campaignSelectEditorStride, v%campaignSelectEditorStride
+		if slot < 2 && ((editor >= 1 && editor <= 5) || editor == customEditEyes || editor == customEditThrowable || editor == customEditColor || editor == customEditAbility) && n > 0 {
 			cfg := &g.campaignPlayers[slot]
 			switch editor {
 			case customEditShirt:
@@ -253,6 +257,10 @@ func (g *Game) activateCampaignPlayerHit(hit int) bool {
 				kind := n - 1
 				if kind >= 0 && kind < throwableTypeCount {
 					cfg.Throwable = kind
+				}
+			case customEditAbility:
+				if ability, ok := abilityFromMenuNumber(n); ok {
+					cfg.Ability = ability
 				}
 			}
 			g.campaignEditor[slot] = 0

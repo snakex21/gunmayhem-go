@@ -246,11 +246,15 @@ func TestRequestedHistoricalRiflesAnchorAtTheirTriggers(t *testing.T) {
 		if !ok {
 			t.Fatalf("weapon %d has no corrected grip origin", number)
 		}
-		if origin[0] < .28 || origin[0] > .36 || origin[1] < .54 || origin[1] > .70 {
+		// The Fedorov's tall magazine makes its trigger sit at only .42 of
+		// the sprite height, so the vertical band starts there.
+		if origin[0] < .28 || origin[0] > .36 || origin[1] < .40 || origin[1] > .70 {
 			t.Errorf("weapon %d trigger origin=%v outside rear trigger region", number, origin)
 		}
 	}
-	if g11Origin := customWeaponGripOrigins[213]; g11Origin[0] < .45 || g11Origin[0] > .53 || g11Origin[1] < .62 || g11Origin[1] > .72 {
+	// The G11 pistol grip hangs under the rear quarter of the body (measured
+	// on the normalized sprite at about x 29, y 30 of 104x40).
+	if g11Origin := customWeaponGripOrigins[213]; g11Origin[0] < .24 || g11Origin[0] > .33 || g11Origin[1] < .68 || g11Origin[1] > .80 {
 		t.Fatalf("G11 trigger origin=%v does not land on its bullpup pistol grip", g11Origin)
 	}
 

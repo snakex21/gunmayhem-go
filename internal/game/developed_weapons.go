@@ -350,6 +350,9 @@ func init() {
 }
 
 func addDevelopedWeapon(def WeaponDef, spec DevelopedWeaponSpec) {
+	if muzzle, ok := developedWeaponMuzzles[def.Number]; ok {
+		def.FlashX = muzzle[0]
+	}
 	developedWeaponCatalog[def.Number] = def
 	spec.Number = def.Number
 	developedWeaponSpecs[def.Number] = spec
@@ -628,98 +631,10 @@ var customWeaponScaleOverrides = map[int]float64{
 	219: .42, // AF2011-A1 double 1911
 	230: .50, // Annihilator: shoulder-fired SMG, larger than a sidearm
 	231: .42, // Peacekeeper long-barrel revolver
-}
-
-var customWeaponGripOrigins = map[int][2]float64{
-	89:  {.48, .66}, // Javelin pistol grip
-	90:  {.40, .68}, // strike designator pistol grip
-	98:  {.24, .52}, // FN Five-seveN upper grip
-	99:  {.22, .50}, // Glock 18C upper grip
-	100: {.22, .52}, // Beretta 92FS upper grip
-	101: {.24, .50}, // SIG P226 upper grip
-	102: {.24, .53}, // CZ 75 upper grip
-	103: {.24, .52}, // H&K USP .45 upper grip
-	104: {.24, .54}, // H&K Mark 23 upper grip
-	105: {.26, .51}, // Walther P99 upper grip
-	106: {.26, .54}, // Browning Hi-Power upper grip
-	107: {.24, .53}, // Tokarev TT-33 upper grip
-	108: {.24, .48}, // Makarov PM upper grip
-	109: {.30, .53}, // Luger P08 angled grip
-	110: {.17, .65}, // Mauser C96 grip sits far behind its magazine
-	111: {.20, .56}, // S&W Model 29 revolver grip
-	112: {.22, .55}, // Mateba 6 Unica revolver grip
-	113: {.56, .61}, // MP7 magazine/grip
-	114: {.56, .60}, // Uzi grip magazine
-	115: {.53, .60}, // Micro Uzi
-	116: {.50, .59}, // MAC-11
-	117: {.52, .60}, // Skorpion
-	118: {.54, .60}, // PP-2000
-	133: {.57, .63}, // bullpup trigger positions
-	134: {.62, .62},
-	135: {.53, .62},
-	136: {.48, .61}, // L85 trigger sits forward of its bullpup magazine
-	138: {.48, .62},
-	166: {.48, .60}, // DP-12 bullpup shotgun
-	167: {.43, .61}, // M26 MASS
-	168: {.45, .57},
-	169: {.53, .60},
-	170: {.53, .59},
-	172: {.46, .59},
-	177: {.43, .61}, // crossbow trigger
-	178: {.50, .55}, // compound-bow riser grip
-	179: {.45, .62},
-	180: {.48, .63},
-	181: {.52, .58},
-	182: {.35, .59},
-	183: {.35, .60},
-	184: {.43, .61},
-	185: {.46, .62},
-	186: {.38, .59}, // Carcano trigger/bolt wrist
-	187: {.31, .65}, // M2 flamethrower pistol grip
-	188: {.31, .66}, // Flammenwerfer trigger grip
-	189: {.39, .67}, // Portal Gun trigger grip
-	190: {.23, .55}, // Lancaster Howdah grip
-	191: {.31, .63}, // Gewehr 98 trigger
-	192: {.34, .60}, // Tankgewehr pistol grip
-	193: {.33, .63}, // Martini-Henry trigger lever
-	194: {.42, .64}, // MP 18 trigger
-	195: {.39, .64}, // MP 28 trigger
-	196: {.43, .62}, // Erma EMP pistol grip
-	197: {.40, .61}, // Automatico trigger ahead of magazine
-	198: {.20, .66}, // Villar Perosa rear spade grips
-	199: {.32, .56}, // MG 08/15 upper pistol grip / trigger
-	200: {.35, .60}, // MG 15 n.A. rear pistol grip / trigger
-	201: {.34, .62}, // Chauchat grip ahead of curved magazine
-	202: {.36, .62}, // Hellriegel grip
-	203: {.34, .63}, // BAR trigger
-	205: {.34, .63}, // Springfield M1903 trigger
-	206: {.25, .53}, // Colt 1903
-	207: {.24, .55}, // Frommer Stop
-	212: {.53, .61}, // UMP9 magazine well / grip
-	204: {.34, .68}, // Sjogren trigger behind its inertia receiver
-	208: {.32, .66}, // Gewehr 43 trigger
-	209: {.33, .66}, // SKS trigger
-	210: {.31, .67}, // SVT-40 trigger
-	211: {.33, .60}, // Fedorov trigger
-	213: {.49, .68}, // G11 pistol grip / trigger under the rear body
-	214: {.46, .62}, // M3 Grease Gun pistol grip
-	215: {.35, .63}, // Type 99 Arisaka trigger
-	216: {.27, .55}, // Nambu angled grip
-	217: {.47, .63}, // Type 100 pistol grip
-	218: {.32, .68}, // Johnson trigger
-	219: {.24, .56}, // AF2011 double 1911 grip
-	220: {.34, .61}, // Huot trigger behind its drum magazine
-	221: {.35, .62}, // Madsen grip behind top magazine
-	222: {.44, .61}, // Ribeyrolles pistol grip
-	223: {.34, .62}, // SMG 08/18 grip
-	224: {.31, .66}, // RSC 1917 trigger
-	225: {.32, .65}, // Mondragon trigger
-	226: {.31, .68}, // General Liu trigger
-	227: {.34, .63}, // Ross Mk III trigger
-	228: {.35, .63}, // Russian 1895 trigger
-	229: {.35, .60}, // Model 1900 trigger
-	230: {.36, .61}, // Annihilator rear pistol grip, behind its magazine
-	231: {.22, .57}, // Peacekeeper revolver grip
+	93:  1.2, // M14 EBR canvas has wide padding; match other battle rifles
+	165: 1.2, // KS-23 is a full-size pump gun, not a carbine
+	180: .75, // nail gun is a handheld tool
+	181: .70, // flare gun is pistol-sized
 }
 
 func customWeaponOrigin(number int, category DevelopedWeaponCategory) (x, y float64) {

@@ -441,41 +441,27 @@ func decideAIController(p *Player, g *Game) {
 	}
 	aiApplyFlashAvoid(p)
 	aiBlindedBehaviour(p, g.arena.Platforms)
+	aiUseAbility(p, g)
 	applyExtraCampaignAIFireCadence(p, g)
 	// Original playerAI never sets KEYNADE=true.
 }
 
+// applyExtraCampaignAIFireCadence gives single-shot campaign weapons a
+// visible manual-reload-like pause. The pause comes from mission data
+// (extraCampaignEnemy.ShotDelay -> Player.AIShotDelay) and only applies while
+// the bot still holds its mission weapon, so reordering missions or picking up
+// a crate weapon cannot silently change it.
 func applyExtraCampaignAIFireCadence(p *Player, g *Game) {
-	if p == nil || g == nil || !p.AIShoot {
-		if p != nil {
-			p.AIFireCadence = 0
-		}
+	_ = g
+	if p == nil {
 		return
 	}
-	if !g.campaignMode || !g.campaignSetExtra || !p.AI {
+	if !p.AIShoot || !p.AI || p.AIShotDelay <= 0 || p.Weapon.Def.Number != p.DefaultWeapon {
 		p.AIFireCadence = 0
 		return
 	}
-
-	delay := 0
-	switch {
-	case g.campaignLevel == 6 && p.Weapon.Def.Number == 181:
-		delay = 90
-	case g.campaignLevel == 9 && p.Weapon.Def.Number == 90:
-		// The airstrike boss announces roughly one strike every 2.25 seconds.
-		delay = 135
-	case g.campaignLevel == 11 && p.Weapon.Def.Number == 179:
-		// A harpoon hit is extremely strong, so the duel is built around dodging
-		// deliberate shots instead of enduring automatic one-shot reloads.
-		delay = 75
-	}
-	if delay == 0 {
-		p.AIFireCadence = 0
-		return
-	}
+	delay := p.AIShotDelay
 	p.AIFireCadence++
-	// These single-shot campaign weapons get a visible manual-reload-like pause
-	// instead of instantly re-equipping their default weapon every source ROF.
 	p.AIShoot = (p.AIFireCadence-1)%delay == 0
 }
 

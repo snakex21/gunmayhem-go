@@ -51,19 +51,15 @@ func onlineWeaponModeLabel(v int) string {
 
 func onlinePerkName(n int) string {
 	names := map[int]string{
-		1:                  "NO PERKS",
-		2:                  "SPEED+",
-		3:                  "JUMP+",
-		4:                  "MINI GUN",
-		5:                  "NO RECOIL",
-		6:                  "BLAST SHIELD",
-		7:                  "EXTRA AMMO",
-		8:                  "EXTRA NADES",
-		9:                  "GUN SPAWN",
-		perkFlashGoggles:   "FLASH GOGGLES",
-		perkThermalGoggles: "THERMAL GOGGLES",
-		perkGasMask:        "GAS MASK",
-		perkKevlar:         "KEVLAR",
+		1: "NO PERKS",
+		2: "SPEED+",
+		3: "JUMP+",
+		4: "MINI GUN",
+		5: "NO RECOIL",
+		6: "BLAST SHIELD",
+		7: "EXTRA AMMO",
+		8: "EXTRA NADES",
+		9: "GUN SPAWN",
 	}
 	if name := names[n]; name != "" {
 		return name
@@ -78,6 +74,19 @@ func (g *Game) blockedOnlinePerkCount() int {
 	count := 0
 	for n := 1; n < len(g.onlineBlockedPerks); n++ {
 		if g.onlineBlockedPerks[n] {
+			count++
+		}
+	}
+	return count
+}
+
+func (g *Game) blockedOnlineAbilityCount() int {
+	if g == nil {
+		return 0
+	}
+	count := 0
+	for n := 1; n < len(g.onlineBlockedAbilities); n++ {
+		if g.onlineBlockedAbilities[n] {
 			count++
 		}
 	}

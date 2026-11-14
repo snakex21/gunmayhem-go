@@ -158,6 +158,20 @@ type Game struct {
 	campaignSetExtra    bool
 	extraCampaignPage   int
 	extraHazardFrame    int
+	// EXTRA hazard state (extra_campaign_hazards.go).
+	extraHazardCycle    int
+	extraHazardMarkers  []HazardMarker
+	extraHazardPendingX float64
+	extraHazardPending  bool
+	extraWindDir        int
+	extraWindTime       int
+	// Non-player campaign enemies (campaign_enemies.go) and boss banner.
+	campaignEnemies     []*CampaignEnemy
+	campaignEnemyWaves  []campaignEnemyWave
+	nextCampaignEnemyID int
+	campaignEnemyFrame  int
+	bossBanner          string
+	bossBannerFrame     int
 
 	// arenagamedata2 defaults used by the source Options screen.
 	musicOn                 bool
@@ -247,6 +261,7 @@ type Game struct {
 	onlinePowerupsEnabled     bool
 	onlineBlockedWeapons      [developedWeaponSlotCount]bool
 	onlineBlockedPerks        [onlinePerkTableSize]bool
+	onlineBlockedAbilities    [abilityCount]bool
 	postGameReady             [4]bool
 	postGameReadyCountdown    int
 
@@ -400,7 +415,11 @@ func (g *Game) Update() error {
 		}
 	}
 
+	chaosKnockback := beginAbilityKnockbackWindow(g.players)
 	g.updateChaosMode()
+	// Chaos wind / shockwaves follow HEAVY, LIGHT and ANCHOR but never spend
+	// the one-hit SHIELD.
+	endAbilityKnockbackWindow(g.players, chaosKnockback, false)
 	g.syncRuntimePlayerRuleModifiers()
 	runtimeArena := g.customRuntimeArena()
 	weaponFiredInUpdate := make([]bool, len(g.players))
@@ -437,6 +456,9 @@ func (g *Game) Update() error {
 		// avoids the respawn/default speedtime=0 frame, which source decrements
 		// to -1 before testing the modulo.
 		if speedBefore > 0 && p.SpeedTime >= 0 && p.SpeedTime%2 == 0 && p.Active {
+			g.playerTrails = append(g.playerTrails, newPlayerTrailEffect(p, miniForTrail))
+		} else if p.DashTime > 0 && p.DashTime%2 == 0 && p.Active {
+			// DASH after-images reuse the speed-powerup trail.
 			g.playerTrails = append(g.playerTrails, newPlayerTrailEffect(p, miniForTrail))
 		}
 		if p.JetThrusted {
@@ -520,17 +542,33 @@ func (g *Game) Update() error {
 	g.updateSourceCamera()
 	g.advanceSourceMapFX()
 
+	// Non-player campaign enemies move, shove and shoot before the hit
+	// phase; their shoves sit in the players' knockback window.
+	enemyKnockback := beginAbilityKnockbackWindow(g.players)
+	g.updateCampaignEnemies(runtimeArena)
+	endAbilityKnockbackWindow(g.players, enemyKnockback, true)
+	g.updateExtraCampaignBosses()
+	// targets = players + living enemy bodies: every hit source below sees
+	// both through the same code paths and knockback windows.
+	targets := g.hitTargets()
+	g.beginCampaignEnemyHitPhase()
+
 	hitsBefore := 0
-	for _, p := range g.players {
+	for _, p := range targets {
 		hitsBefore += p.HitNumber
 	}
 	projectileBlastBefore := len(g.blastFX)
-	updateBullets(runtimeArena, g.bullets, g.players, &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
+	bulletKnockback := beginAbilityKnockbackWindow(targets)
+	if g.deflectShieldBullets(targets) > 0 {
+		g.playSourceSFX("bolt1.wav", false)
+	}
+	updateBullets(runtimeArena, g.bullets, targets, &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
+	shieldBroke := endAbilityKnockbackWindow(targets, bulletKnockback, true)
 	if len(g.blastFX) > projectileBlastBefore {
 		g.playRandomExplosionSound()
 	}
 	hitsAfter := 0
-	for _, p := range g.players {
+	for _, p := range targets {
 		hitsAfter += p.HitNumber
 	}
 	for i := hitsBefore; i < hitsAfter; i++ {
@@ -543,26 +581,32 @@ func (g *Game) Update() error {
 	blastBefore := len(g.blastFX)
 	var grenadeVX, grenadeVY []float64
 	if g.customModifierActive(customModifierDoubleKnockback) {
-		grenadeVX = make([]float64, len(g.players))
-		grenadeVY = make([]float64, len(g.players))
-		for i, p := range g.players {
+		grenadeVX = make([]float64, len(targets))
+		grenadeVY = make([]float64, len(targets))
+		for i, p := range targets {
 			grenadeVX[i] = p.VX
 			grenadeVY[i] = p.VY
 		}
 	}
 	firePatchesBefore := len(g.firePatches)
 	areaEffectsBefore := len(g.areaEffects)
-	updateGrenadesWithAreas(runtimeArena, g.grenades, g.players, &g.explosions, &g.dynamiteFX, &g.blastFX, &g.firePatches, &g.areaEffects)
+	blastKnockback := beginAbilityKnockbackWindow(targets)
+	updateGrenadesWithAreas(runtimeArena, g.grenades, targets, &g.explosions, &g.dynamiteFX, &g.blastFX, &g.firePatches, &g.areaEffects)
 	if len(g.firePatches) > firePatchesBefore {
 		g.playSourceSFXGain("dev_flame.wav", true, 1.6) // Molotov bottle bursting into flame
 	}
 	g.playAreaEffectSpawnSounds(areaEffectsBefore)
 	g.updateAIFlashbangAwareness()
-	updateFirePatches(g.firePatches, g.players)
-	updateAreaEffects(g.areaEffects, g.players)
+	updateFirePatches(g.firePatches, targets)
+	updateAreaEffects(g.areaEffects, targets)
+	// Portal travel redirects velocity; it is not knockback, so the window
+	// closes before it.
+	if endAbilityKnockbackWindow(targets, blastKnockback, true) {
+		shieldBroke = true
+	}
 	updatePortalTravel(g.portals, g.players, g.grenades)
 	if grenadeVX != nil {
-		for i, p := range g.players {
+		for i, p := range targets {
 			p.VX += p.VX - grenadeVX[i]
 			p.VY += p.VY - grenadeVY[i]
 		}
@@ -573,7 +617,15 @@ func (g *Game) Update() error {
 	// Root frame10 attaches the campaign-level-5 falling grenade after the
 	// ordinary player/grenade updates; it begins moving on the following tick.
 	g.updateCampaignDynamiteRain()
+	hazardKnockback := beginAbilityKnockbackWindow(targets)
 	g.updateExtraCampaignHazards()
+	if endAbilityKnockbackWindow(targets, hazardKnockback, true) {
+		shieldBroke = true
+	}
+	g.endCampaignEnemyHitPhase(runtimeArena)
+	if shieldBroke {
+		g.playSourceSFX("emp.wav", true)
+	}
 	updateDynamiteEffects(g.dynamiteFX)
 	updateBlastEffects(runtimeArena, g.blastFX)
 	updateJetThrustEffects(g.jetThrustFX)
@@ -581,6 +633,7 @@ func (g *Game) Update() error {
 	g.crateTimer++
 	if g.crateTimer >= g.customCrateInterval() && g.GameMode != SourceGameModeGunGame && g.customCratesEnabled() {
 		c := spawnCrate(runtimeArena)
+		c.Weapon = g.rollCrateWeapon()
 		c.Serial = g.nextPickupSerial
 		g.nextPickupSerial++
 		g.crates = append(g.crates, c)
@@ -702,6 +755,17 @@ func (g *Game) resetArenaState() {
 		g.seenDeaths[p.ID] = 0
 	}
 	g.resetHUDLastLife()
+	// Campaign-only arena state: enemy waves, hazard markers, boss banner.
+	g.extraHazardFrame = 0
+	g.extraHazardCycle = 0
+	g.extraHazardMarkers = g.extraHazardMarkers[:0]
+	g.extraHazardPending = false
+	g.extraWindDir, g.extraWindTime = 0, 0
+	g.bossBanner, g.bossBannerFrame = "", 0
+	g.resetCampaignEnemies()
+	if m := g.activeExtraCampaignMission(); m != nil {
+		g.setupCampaignEnemyWaves(m.Units)
+	}
 }
 
 func (g *Game) hasActiveDouble() bool {
@@ -1018,7 +1082,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.drawPlayer(screen, &drawP)
 		}
 	}
+	g.drawCampaignEnemies(screen)
+	g.drawHazardMarkers(screen)
 	g.drawPlayerStatusEffects(screen)
+	g.drawCrateScavengerLabels(screen)
 	g.drawSmokeClouds(screen)
 	g.drawFlashBursts(screen)
 	g.drawGrenadeChargeIndicators(screen)
@@ -1029,9 +1096,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Source player_arrow clips use depth 10005..10008; HUD is depth 10010,
 	// so off-screen indicators sit above gameplay/map FX but below the HUD.
 	g.drawPlayerArrows(screen)
+	g.drawCampaignEnemyArrows(screen)
 	if !g.GameWin {
 		g.drawHUD(screen)
 		g.drawExtraCampaignHazardHUD(screen)
+		g.drawExtraCampaignBossHUD(screen)
 		g.drawChaosHUD(screen)
 	}
 	g.drawViewerBlindWhiteout(screen)
@@ -1358,9 +1427,9 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 	}
 	g.drawPlayerBody(screen, p)
 	g.drawPlayerKevlar(screen, p, g.playerTorsoRaster(p))
-	// A head perk (goggles / gas mask) replaces the chosen hat at render time
+	// Head gear (goggles / gas mask) replaces the chosen hat at render time
 	// only; HatNumber and the saved config stay untouched.
-	headgear := playerHeadgearPerk(p)
+	headgear := playerHeadgear(p)
 	// Source hats 8 and 22 swapDepths with eyes and therefore sit behind the
 	// eye layer; all other player_hat frames stay in front of it.
 	if headgear == 0 && (p.HatNumber == 8 || p.HatNumber == 22) {
@@ -1402,6 +1471,7 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 
 	g.drawPlayerBurn(screen, p)
 	g.drawPlayerShield(screen, p)
+	g.drawPlayerAbilityFX(screen, p)
 	if g.showCollisions {
 		h := p.Hitbox()
 		ebitenutil.DrawRect(screen, h.X, h.Y, h.W, h.H, color.RGBA{R: 30, G: 255, B: 120, A: 80})

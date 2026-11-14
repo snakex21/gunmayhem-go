@@ -92,6 +92,21 @@ func defaultGM2CampaignState() [16]int {
 	return levels
 }
 
+// normalizeExtraCampaignLevels upgrades saves made with fewer EXTRA
+// missions: missions appended later decode as locked (0), so the one after
+// the last completed mission is unlocked again. Mission 1 is always open.
+func normalizeExtraCampaignLevels(levels [extraCampaignMissionCount]int) [extraCampaignMissionCount]int {
+	if levels[0] == 0 {
+		levels[0] = 1
+	}
+	for i := 1; i < len(levels); i++ {
+		if levels[i] == 0 && levels[i-1] == 2 {
+			levels[i] = 1
+		}
+	}
+	return levels
+}
+
 func defaultExtraCampaignState() [extraCampaignMissionCount]int {
 	var levels [extraCampaignMissionCount]int
 	levels[0] = 1
@@ -204,6 +219,8 @@ func normalizeConfig(cfg AppConfig) AppConfig {
 			cfg.Controls[i] = defaults.Controls[i]
 		}
 	}
+	// Configs saved before the ABILITY key existed have Ability=0.
+	migrateAbilityKeys(&cfg.Controls)
 	return cfg
 }
 
@@ -340,7 +357,7 @@ func NewPersistent(cfg AppConfig, save SaveData) *Game {
 	g.campaignGuns = save.CampaignGuns
 	g.gm2CampaignLevels = save.GM2CampaignLevels
 	g.gm2Challenges = save.GM2Challenges
-	g.extraCampaignLevels = save.ExtraCampaignLevels
+	g.extraCampaignLevels = normalizeExtraCampaignLevels(save.ExtraCampaignLevels)
 	setSourceRenderQuality(g.quality)
 	ebiten.SetScreenFilterEnabled(g.quality != 1)
 	g.startAutomaticUpdateCheck()

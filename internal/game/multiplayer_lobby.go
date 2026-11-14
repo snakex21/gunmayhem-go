@@ -32,6 +32,7 @@ const (
 	menuHitOnlineCharacterBase = 6400
 	menuHitOnlineBlockBase     = 6600
 	menuHitOnlinePerkBase      = 6800
+	menuHitOnlineAbilityBase   = 6850
 )
 
 const (
@@ -41,6 +42,7 @@ const (
 	onlineCharFace
 	onlineCharGun
 	onlineCharPerk
+	onlineCharAbility
 	onlineCharTeam
 	onlineCharFieldCount
 )
@@ -197,6 +199,13 @@ func (g *Game) updateMultiplayerLobby() {
 		}
 		return
 	}
+	if activated >= menuHitOnlineAbilityBase && activated < menuHitOnlineAbilityBase+abilityCount && g.onlinePerkBlocklistOpen {
+		ability := activated - menuHitOnlineAbilityBase
+		if ability >= 1 && ability < len(g.onlineBlockedAbilities) {
+			g.onlineBlockedAbilities[ability] = !g.onlineBlockedAbilities[ability]
+		}
+		return
+	}
 	if index, decoded := decodeOnlineBlockWeaponHit(activated); decoded && g.onlineBlocklistOpen {
 		weapons := onlineAllWeaponNumbers()
 		n := weapons[index]
@@ -322,6 +331,8 @@ func (g *Game) adjustOnlineCharacter(field, delta int) {
 		cfg.Gun = stepStarterHandgun(cfg.Gun, delta)
 	case onlineCharPerk:
 		cfg.Perk = stepSelectablePerk(cfg.Perk, delta)
+	case onlineCharAbility:
+		cfg.Ability = stepSelectableAbility(cfg.Ability, delta)
 	case onlineCharTeam:
 		cfg.Team = wrapOnlineValue(cfg.Team, 1, 2, delta)
 	}
@@ -425,6 +436,11 @@ func (g *Game) onlinePerkBlocklistHitAt(x, y float64) int {
 			return menuHitOnlinePerkBase + perk
 		}
 	}
+	for i, ability := range realAbilityNumbers() {
+		if onlineAbilityBlocklistRect(i).Contains(x, y) {
+			return menuHitOnlineAbilityBase + ability
+		}
+	}
 	return menuHitNone
 }
 
@@ -474,9 +490,9 @@ func (g *Game) onlineRulesSummary() string {
 	} else if g.onlineWeaponMode == onlineWeaponsBlocklist {
 		weapon = fmt.Sprintf("BLOCKLIST %d", g.blockedOnlineWeaponCount())
 	}
-	perks := fmt.Sprintf("PERKS ON (%d BLOCKED)", g.blockedOnlinePerkCount())
+	perks := fmt.Sprintf("PERKS+ABILITIES ON (%d BLOCKED)", g.blockedOnlinePerkCount()+g.blockedOnlineAbilityCount())
 	if !g.onlinePerksEnabled {
-		perks = "PERKS OFF"
+		perks = "PERKS+ABILITIES OFF"
 	}
 	power := "POWERUPS ON"
 	if !g.onlinePowerupsEnabled {
@@ -557,7 +573,7 @@ func (g *Game) drawMultiplayerLobby(screen *ebiten.Image) {
 			if cfg.Team == 2 {
 				team = "B"
 			}
-			cfgSummary = fmt.Sprintf("%s   %s   TEAM %s", weaponDisplayName(cfg.Gun), onlinePerkName(cfg.Perk), team)
+			cfgSummary = fmt.Sprintf("%s   %s + %s   TEAM %s", weaponDisplayName(cfg.Gun), onlinePerkName(cfg.Perk), abilityName(cfg.Ability), team)
 		}
 		drawLobbySlot(screen, positions[id-1], title, detail, cfgSummary, occupied, localID == id)
 		if occupied {
@@ -660,9 +676,10 @@ func (g *Game) drawOnlineRules(screen *ebiten.Image) {
 		drawDevelopedMenuButton(screen, Rect{X: 460, Y: 305, W: 360, H: 65}, fmt.Sprintf("WEAPON BLOCKLIST  %d BLOCKED", g.blockedOnlineWeaponCount()))
 	}
 
-	perks := fmt.Sprintf("PERKS ON  (%d BLOCKED)", g.blockedOnlinePerkCount())
+	// One toggle covers both loadout slots (perk and ability / gear).
+	perks := fmt.Sprintf("PERKS/ABIL. ON (%d)", g.blockedOnlinePerkCount()+g.blockedOnlineAbilityCount())
 	if !g.onlinePerksEnabled {
-		perks = "PERKS OFF"
+		perks = "PERKS/ABIL. OFF"
 	}
 	power := "POWERUPS ON"
 	if !g.onlinePowerupsEnabled {
@@ -670,7 +687,7 @@ func (g *Game) drawOnlineRules(screen *ebiten.Image) {
 	}
 	drawDevelopedMenuButton(screen, Rect{X: 80, Y: 390, W: 220, H: 52}, perks)
 	drawDevelopedMenuButton(screen, Rect{X: 315, Y: 390, W: 220, H: 52}, power)
-	drawDevelopedMenuButton(screen, Rect{X: 550, Y: 390, W: 270, H: 52}, fmt.Sprintf("PERK BLOCKLIST  %d", g.blockedOnlinePerkCount()))
+	drawDevelopedMenuButton(screen, Rect{X: 550, Y: 390, W: 270, H: 52}, fmt.Sprintf("PERK/ABILITY BLOCKLIST %d", g.blockedOnlinePerkCount()+g.blockedOnlineAbilityCount()))
 	drawSourceMenuText(screen, "Selected tiles are outlined in orange.", menuFontCondensed, 12, color.NRGBA{R: 0xaa, G: 0xaa, B: 0xaa, A: 0xff}, 80, 461)
 	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO LOBBY")
 }
@@ -711,27 +728,50 @@ func (g *Game) drawOnlineBlocklist(screen *ebiten.Image) {
 func (g *Game) drawOnlinePerkBlocklist(screen *ebiten.Image) {
 	ebitenutil.DrawRect(screen, 25, 45, 850, 540, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xf8})
 	drawSourceMenuText(screen, "PERK / ABILITY BLOCKLIST", menuFontTwCen, 30, color.NRGBA{A: 0xff}, 170, 70)
-	drawSourceMenuText(screen, "Click a perk to allow/block it. Blocked perks cannot be used by any player.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 170, 112)
+	drawSourceMenuText(screen, "Click a perk or ability to allow/block it. Blocked ones cannot be used by any player.", menuFontCondensed, 13, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, 170, 104)
 
+	blocked := color.NRGBA{R: 0x65, G: 0x2e, B: 0x2e, A: 0xff}
+	allowed := color.NRGBA{R: 0x46, G: 0x4d, B: 0x57, A: 0xff}
+	drawSourceMenuText(screen, "PERKS", menuFontCondensedExtraBold, 13, color.NRGBA{A: 0xff}, 40, 124)
 	for i, perk := range selectablePerkNumbers() {
 		r := onlinePerkBlocklistRect(i)
-		clr := color.NRGBA{R: 0x46, G: 0x4d, B: 0x57, A: 0xff}
+		clr := allowed
 		if perk < len(g.onlineBlockedPerks) && g.onlineBlockedPerks[perk] {
-			clr = color.NRGBA{R: 0x65, G: 0x2e, B: 0x2e, A: 0xff}
+			clr = blocked
 		}
 		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, clr)
-		drawSetupPerkThumb(screen, perk, Rect{X: r.X + 5, Y: r.Y + 5, W: 68, H: r.H - 10}, 1)
-		drawSourceMenuText(screen, onlinePerkName(perk), menuFontTwCen, 12.5, color.NRGBA{A: 0xff}, r.X+78, r.Y+19)
-		drawSourceMenuText(screen, fmt.Sprintf("#%d", perk), menuFontCondensedExtraBold, 9.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, r.X+78, r.Y+39)
+		drawSetupPerkThumb(screen, perk, Rect{X: r.X + 3, Y: r.Y + 3, W: 62, H: r.H - 6}, 1)
+		drawSourceMenuText(screen, onlinePerkName(perk), menuFontTwCen, 11.5, color.NRGBA{A: 0xff}, r.X+66, r.Y+12)
+		drawSourceMenuText(screen, fmt.Sprintf("#%d", perk), menuFontCondensedExtraBold, 9.5, color.NRGBA{R: 0xbb, G: 0xbb, B: 0xbb, A: 0xff}, r.X+66, r.Y+30)
 	}
 
-	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d / %d", g.blockedOnlinePerkCount(), len(selectablePerkNumbers())), menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 40, 535)
+	drawSourceMenuText(screen, "ABILITIES / GEAR", menuFontCondensedExtraBold, 13, color.NRGBA{A: 0xff}, 40, 282)
+	for i, ability := range realAbilityNumbers() {
+		r := onlineAbilityBlocklistRect(i)
+		clr := allowed
+		if g.onlineBlockedAbilities[ability] {
+			clr = blocked
+		}
+		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, clr)
+		drawAbilityIcon(screen, ability, r.X+20, r.Y+r.H/2, 11, 1)
+		drawSourceMenuText(screen, abilityName(ability), menuFontTwCen, 12, color.NRGBA{A: 0xff}, r.X+38, r.Y+r.H/2-8)
+	}
+
+	drawSourceMenuText(screen, fmt.Sprintf("BLOCKED: %d PERKS, %d ABILITIES", g.blockedOnlinePerkCount(), g.blockedOnlineAbilityCount()), menuFontCondensedExtraBold, 15, color.NRGBA{A: 0xff}, 40, 535)
 	drawDevelopedMenuButton(screen, onlineOverlayBackRect, "BACK TO RULES")
 }
 
-// onlinePerkBlocklistRect lays the selectable perks out in four columns.
+// onlinePerkBlocklistRect lays the selectable perks out in five columns.
 func onlinePerkBlocklistRect(i int) Rect {
+	col := i % 5
+	row := i / 5
+	return Rect{X: 40 + float64(col)*165, Y: 142 + float64(row)*64, W: 155, H: 56}
+}
+
+// onlineAbilityBlocklistRect lays the real abilities out in four columns
+// below the perks.
+func onlineAbilityBlocklistRect(i int) Rect {
 	col := i % 4
 	row := i / 4
-	return Rect{X: 60 + float64(col)*200, Y: 150 + float64(row)*82, W: 185, H: 66}
+	return Rect{X: 40 + float64(col)*205, Y: 300 + float64(row)*64, W: 195, H: 56}
 }

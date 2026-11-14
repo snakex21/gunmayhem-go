@@ -14,7 +14,7 @@ import (
 
 // Presentation of the utility throwables, blindness, tear gas and the
 // head/body perks. Everything is procedural and derived from synced state
-// (AreaEffect list, Player.BlindTime/TearGasTime/PerkNumber), so online
+// (AreaEffect list, Player.BlindTime/TearGasTime/AbilityNumber), so online
 // clients render the same world; only the viewer-specific parts (whiteout,
 // thermal view) depend on viewerPlayerID().
 
@@ -154,7 +154,7 @@ func (g *Game) drawSmokeClouds(screen *ebiten.Image) {
 		return
 	}
 	viewerThermal := false
-	if viewer := g.playerByID(g.viewerPlayerID()); viewer != nil && viewer.Active && viewer.PerkNumber == perkThermalGoggles {
+	if viewer := g.playerByID(g.viewerPlayerID()); viewer != nil && viewer.Active && viewer.AbilityNumber == abilityThermalGoggles {
 		viewerThermal = true
 	}
 	for i := range g.areaEffects {
@@ -198,7 +198,7 @@ func (g *Game) drawSmokeClouds(screen *ebiten.Image) {
 	// Shared screen: thermal wearers mark people hidden in smoke with a small
 	// chevron in the wearer's colour (visible to everybody).
 	for _, wearer := range g.players {
-		if wearer == nil || !wearer.Active || wearer.PerkNumber != perkThermalGoggles {
+		if wearer == nil || !wearer.Active || wearer.AbilityNumber != abilityThermalGoggles {
 			continue
 		}
 		clr := developedPlayerColorSwatch(wearer.PlayerColor)
@@ -382,7 +382,7 @@ func (g *Game) drawPlayerHeadgear(screen *ebiten.Image, p *Player, perk int, eye
 	strap := color.NRGBA{R: 0x22, G: 0x22, B: 0x22, A: a(0xff)}
 
 	switch perk {
-	case perkGasMask:
+	case abilityGasMask:
 		// Strap, rubber face plate over mouth/nose, round filter canister.
 		vector.StrokeLine(screen, backX, backY, leftX, leftY, 3*scale, strap, true)
 		mx, my := playerPartWorld(p, cx+2, cy+h*0.5+7)
@@ -399,13 +399,13 @@ func (g *Game) drawPlayerHeadgear(screen *ebiten.Image, p *Player, perk int, eye
 			vector.DrawFilledCircle(screen, lx, ly, lensR*0.85, color.NRGBA{R: 0xb8, G: 0xd8, B: 0xe0, A: a(0xa0)}, true)
 			vector.StrokeCircle(screen, lx, ly, lensR*0.85, 1.8*scale, color.NRGBA{R: 0x2c, G: 0x2f, B: 0x2a, A: a(0xff)}, true)
 		}
-	case perkFlashGoggles, perkThermalGoggles:
+	case abilityFlashGoggles, abilityThermalGoggles:
 		vector.StrokeLine(screen, backX, backY, leftX, leftY, 3*scale, strap, true)
 		vector.StrokeLine(screen, leftX, leftY, rightX, rightY, 3*scale, strap, true)
 		lens := color.NRGBA{R: 0x10, G: 0x10, B: 0x14, A: a(0xf0)}
 		glow := color.NRGBA{R: 0x88, G: 0x88, B: 0xa0, A: a(0x90)}
 		frame := color.NRGBA{R: 0x55, G: 0x55, B: 0x5a, A: a(0xff)}
-		if perk == perkThermalGoggles {
+		if perk == abilityThermalGoggles {
 			lens = color.NRGBA{R: 0x1c, G: 0xc8, B: 0x3a, A: a(0xf0)}
 			glow = color.NRGBA{R: 0x9a, G: 0xff, B: 0x9a, A: a(0xd0)}
 			frame = color.NRGBA{R: 0x2a, G: 0x34, B: 0x2a, A: a(0xff)}
@@ -415,7 +415,7 @@ func (g *Game) drawPlayerHeadgear(screen *ebiten.Image, p *Player, perk int, eye
 			if i == 1 {
 				ly = rightY
 			}
-			if perk == perkThermalGoggles {
+			if perk == abilityThermalGoggles {
 				drawPuff(screen, float64(lx), float64(ly), float64(lensR)*2.2, 0.3, 1, 0.4, float32(0.35*alpha))
 			}
 			vector.DrawFilledCircle(screen, lx, ly, lensR, lens, true)
@@ -428,7 +428,7 @@ func (g *Game) drawPlayerHeadgear(screen *ebiten.Image, p *Player, perk int, eye
 // drawPlayerKevlar draws a vest over the torso (body slot, so it stacks with
 // any head item). Pure render-time decoration.
 func (g *Game) drawPlayerKevlar(screen *ebiten.Image, p *Player, torso *SourceRaster) {
-	if p == nil || p.PerkNumber != perkKevlar || p.Alpha <= 0 {
+	if p == nil || p.AbilityNumber != abilityKevlar || p.Alpha <= 0 {
 		return
 	}
 	cx, cy, w, h := 0.0, p.VisualBodyY+25.3+16, 30.0, 28.0
@@ -459,23 +459,23 @@ func (g *Game) drawPlayerKevlar(screen *ebiten.Image, p *Player, torso *SourceRa
 // ---------------------------------------------------------------------------
 // Menu art
 
-func drawPerkGearIcon(dst *ebiten.Image, perk int, cx, cy float64, alpha float64) {
+func drawGearIcon(dst *ebiten.Image, perk int, cx, cy float64, alpha float64) {
 	a := uint8(255 * alpha)
 	x, y := float32(cx), float32(cy)
 	switch perk {
-	case perkFlashGoggles, perkThermalGoggles:
+	case abilityFlashGoggles, abilityThermalGoggles:
 		lens := color.NRGBA{R: 0x10, G: 0x10, B: 0x14, A: a}
-		if perk == perkThermalGoggles {
+		if perk == abilityThermalGoggles {
 			lens = color.NRGBA{R: 0x1c, G: 0xc8, B: 0x3a, A: a}
 		}
 		vector.StrokeLine(dst, x-12, y, x+12, y, 2, color.NRGBA{R: 0x22, G: 0x22, B: 0x22, A: a}, true)
 		vector.DrawFilledCircle(dst, x-5, y, 4.5, lens, true)
 		vector.DrawFilledCircle(dst, x+5, y, 4.5, lens, true)
-	case perkGasMask:
+	case abilityGasMask:
 		vector.DrawFilledCircle(dst, x, y, 7, color.NRGBA{R: 0x3a, G: 0x3f, B: 0x38, A: a}, true)
 		vector.DrawFilledCircle(dst, x+6, y+4, 4, color.NRGBA{R: 0x70, G: 0x76, B: 0x68, A: a}, true)
 		vector.DrawFilledCircle(dst, x-3, y-2, 2, color.NRGBA{R: 0xb8, G: 0xd8, B: 0xe0, A: a}, true)
-	case perkKevlar:
+	case abilityKevlar:
 		vector.DrawFilledRect(dst, x-7, y-7, 14, 14, color.NRGBA{R: 0x3b, G: 0x45, B: 0x30, A: a}, true)
 		vector.StrokeLine(dst, x, y-6, x, y+6, 1, color.NRGBA{R: 0x1d, G: 0x22, B: 0x18, A: a}, true)
 	}
@@ -536,7 +536,7 @@ func throwableBehaviorLabel(kind int) string {
 // playerTorsoRaster resolves the torso raster drawPlayerBody uses (for the
 // kevlar vest placement).
 func (g *Game) playerTorsoRaster(p *Player) *SourceRaster {
-	if g == nil || g.assets == nil || p == nil || p.PerkNumber != perkKevlar {
+	if g == nil || g.assets == nil || p == nil || p.AbilityNumber != abilityKevlar {
 		return nil
 	}
 	colorIndex, useGM2Color := resolvedPlayerColor(p.PlayerColor, p.UseGM2Cosmetics)

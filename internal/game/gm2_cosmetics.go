@@ -308,6 +308,8 @@ func developedCustomSelectionItems(editor int) []customSelectionItem {
 		return developedThrowableSelectionItems()
 	case customEditPerk:
 		return developedPerkSelectionItems()
+	case customEditAbility:
+		return developedAbilitySelectionItems()
 	case customEditEyes:
 		if gm2CosmeticsAvailable() {
 			return gm2FaceSelectionItems()

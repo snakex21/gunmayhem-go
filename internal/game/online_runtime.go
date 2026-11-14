@@ -191,6 +191,8 @@ func (g *Game) applyOnlineConfigToPlayer(p *Player, cfg CustomPlayerConfig) {
 	p.HatNumber = cfg.Hat
 	p.EyeNumber = cfg.Eyes
 	p.PerkNumber = g.onlineAllowedPerk(cfg.Perk)
+	// Keeps an already rolled RANDOM ability: this runs on every lobby sync.
+	p.AbilityNumber = g.onlineAllowedAbility(cfg.Ability, p.AbilityNumber)
 	p.ThrowableType = normalizedThrowableType(cfg.Throwable)
 	if g.GameMode == SourceGameModeTeams {
 		p.Team = cfg.Team
@@ -208,6 +210,7 @@ func (g *Game) newOnlinePlayer(id int) *Player {
 	p.EyeNumber = cfg.Eyes
 	p.DefaultWeapon = g.onlineStartingWeapon(cfg.Gun)
 	p.PerkNumber = g.onlineAllowedPerk(cfg.Perk)
+	p.AbilityNumber = g.onlineAllowedAbility(cfg.Ability, abilityNone)
 	p.ThrowableType = normalizedThrowableType(cfg.Throwable)
 	p.AI = cfg.Type == 2
 	p.RemoteControlled = cfg.Type == 1 && id != 1
@@ -221,6 +224,22 @@ func (g *Game) newOnlinePlayer(id int) *Player {
 	}
 	p.configureSourceGameMode(g.GameMode, g.TotalLives, g.arena)
 	return p
+}
+
+// onlineAbilityAllowed: the host rules allow ability n (the PERKS toggle
+// covers both loadout slots; the blocklist is per item).
+func (g *Game) onlineAbilityAllowed(n int) bool {
+	return g.onlinePerksEnabled && n > abilityNone && n < abilityCount && !g.onlineBlockedAbilities[n]
+}
+
+// onlineAllowedAbility resolves a config choice under the online rules.
+// current is the player's present ability: a RANDOM choice keeps it while it
+// is still allowed instead of re-rolling on every sync.
+func (g *Game) onlineAllowedAbility(choice, current int) int {
+	if choice == abilityRandom && g.onlineAbilityAllowed(current) {
+		return current
+	}
+	return resolveConfigAbility(choice, g.onlineAbilityAllowed)
 }
 
 func (g *Game) onlineAllowedPerk(selected int) int {

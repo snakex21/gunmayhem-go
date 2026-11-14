@@ -256,7 +256,9 @@ func (g *Game) updateMatchInteractions() {
 	// explicitly by side instead of waiting for active.size() == 1.
 	if g.campaignMode && g.campaignSetExtra && !g.GameWin && !g.teamGameWin {
 		var survivingHuman *Player
-		humans, enemies := 0, 0
+		// Non-player campaign enemies (and queued reinforcements) count as
+		// enemies still standing.
+		humans, enemies := 0, g.campaignEnemiesRemaining()
 		for _, p := range active {
 			if p.AI {
 				enemies++
@@ -302,7 +304,8 @@ func (g *Game) updateMatchInteractions() {
 	}
 
 	// Player/AI source clips handle the last survivor differently in campaign.
-	if !g.TeamGame && !g.teamGameWin && !g.GameWin && len(active) == 1 && g.GameMode != SourceGameModeSurvival && !(g.campaignSetGM2 && g.campaignLevel == 1) {
+	if !g.TeamGame && !g.teamGameWin && !g.GameWin && len(active) == 1 && g.GameMode != SourceGameModeSurvival && !(g.campaignSetGM2 && g.campaignLevel == 1) &&
+		g.campaignEnemiesRemaining() == 0 {
 		winner := active[0]
 		if g.campaignMode && winner.AI {
 			// playerAI: campaign loss sets teamgamewin and attaches fx_campaignlose.

@@ -15,19 +15,17 @@ import (
 // sends automatically. AI-only bookkeeping uses the AI* prefix, which the
 // codec keeps host-side.
 
-// Goggles perks. 10-13 are reserved for the not yet ported GM2 perks.
+// Gear (goggles, gas mask, kevlar) lives in the ABILITY / GEAR slot
+// (abilities.go). The perk slot keeps the original perks 1..9; 10-13 stay
+// reserved for the not yet ported GM2 perks.
 const (
-	perkFlashGoggles   = 14
-	perkThermalGoggles = 15
-	perkGasMask        = 16
-	// perkKevlar: body armour. No existing perk (1-9) touches bullet
-	// knockback: BLAST SHIELD (6) only covers explosions, NO RECOIL (5) only
-	// the shooter's own recoil.
-	perkKevlar = 17
 	// onlinePerkTableSize bounds per-perk tables such as the online perk
 	// blocklist (index = perk number).
-	onlinePerkTableSize = 18
+	onlinePerkTableSize = 10
 
+	// Kevlar: body armour. No perk (1-9) touches bullet knockback: BLAST
+	// SHIELD (6) only covers explosions, NO RECOIL (5) only the shooter's own
+	// recoil.
 	kevlarBulletKnockbackScale = 0.75 // -25% knockback from non-explosive hits
 	kevlarMoveScale            = 0.90 // -10% run speed
 	kevlarJumpScale            = 0.92 // -8% jump
@@ -36,29 +34,15 @@ const (
 // kevlarBulletKnockbackMultiplier applies to bullets, pellets, bolts and
 // instagib beams only (never explosions, fire, gas or flash).
 func kevlarBulletKnockbackMultiplier(p *Player) float64 {
-	if p != nil && p.PerkNumber == perkKevlar {
+	if p != nil && p.AbilityNumber == abilityKevlar {
 		return kevlarBulletKnockbackScale
-	}
-	return 1
-}
-
-func kevlarMoveMultiplier(p *Player) float64 {
-	if p != nil && p.PerkNumber == perkKevlar {
-		return kevlarMoveScale
-	}
-	return 1
-}
-
-func kevlarJumpMultiplier(p *Player) float64 {
-	if p != nil && p.PerkNumber == perkKevlar {
-		return kevlarJumpScale
 	}
 	return 1
 }
 
 // selectablePerkNumbers lists every perk a player may pick, in menu order.
 func selectablePerkNumbers() []int {
-	return []int{1, 2, 3, 4, 5, 6, 7, 8, 9, perkFlashGoggles, perkThermalGoggles, perkGasMask, perkKevlar}
+	return []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
 }
 
 func isSelectablePerk(n int) bool {
@@ -84,24 +68,24 @@ func stepSelectablePerk(current, delta int) int {
 	return perks[index]
 }
 
-// playerHeadgearPerk returns the head-worn perk (flash goggles, thermal
-// goggles or gas mask) the player has, or 0. A player has exactly one perk
-// slot, so at most one of them can be active; should that ever change, the
-// render priority is gas mask > thermal goggles > flash goggles (the first
-// match of headgearPerkPriority).
-func playerHeadgearPerk(p *Player) int {
+// playerHeadgear returns the head-worn gear (flash goggles, thermal goggles
+// or gas mask) the player has, or 0. A player has exactly one ability slot,
+// so at most one of them can be active; should that ever change, the render
+// priority is gas mask > thermal goggles > flash goggles (the first match of
+// headgearPriority).
+func playerHeadgear(p *Player) int {
 	if p == nil {
 		return 0
 	}
-	for _, perk := range headgearPerkPriority {
-		if p.PerkNumber == perk {
-			return perk
+	for _, gear := range headgearPriority {
+		if p.AbilityNumber == gear {
+			return gear
 		}
 	}
 	return 0
 }
 
-var headgearPerkPriority = [...]int{perkGasMask, perkThermalGoggles, perkFlashGoggles}
+var headgearPriority = [...]int{abilityGasMask, abilityThermalGoggles, abilityFlashGoggles}
 
 const (
 	areaEffectGas   = 1
@@ -201,7 +185,7 @@ func applyTearGas(a *AreaEffect, players []*Player) {
 		return
 	}
 	for _, p := range players {
-		if p == nil || !p.Active || p.PerkNumber == perkGasMask {
+		if p == nil || !p.Active || p.AbilityNumber == abilityGasMask {
 			continue
 		}
 		if math.Hypot(p.X-a.X, p.Y-30-a.Y) <= a.Radius*0.9 && p.TearGasTime < tearGasLingerFrames {
@@ -295,7 +279,7 @@ func flashOccluded(arena Map, fx, fy, x, y float64) bool {
 // flashbangBlindFor returns the blind duration and strength a flash at
 // (fx, fy) inflicts on p. Zero frames means no effect.
 func flashbangBlindFor(arena Map, fx, fy float64, p *Player) (int, float64) {
-	if p == nil || !p.Active || p.PerkNumber == perkFlashGoggles {
+	if p == nil || !p.Active || p.AbilityNumber == abilityFlashGoggles {
 		return 0, 0
 	}
 	if p.Y > fy+flashPointLift+flashLowerLevelThreshold {
@@ -493,7 +477,7 @@ func playerInSmoke(areas []AreaEffect, p *Player) bool {
 // aiSmokeHides reports whether smoke breaks observer's sight of target.
 // THERMAL GOGGLES see through smoke; very close targets are still noticed.
 func aiSmokeHides(areas []AreaEffect, observer, target *Player) bool {
-	if observer == nil || target == nil || observer.PerkNumber == perkThermalGoggles || len(areas) == 0 {
+	if observer == nil || target == nil || observer.AbilityNumber == abilityThermalGoggles || len(areas) == 0 {
 		return false
 	}
 	if math.Hypot(target.X-observer.X, target.Y-observer.Y) <= aiSmokeCloseRange {
@@ -535,7 +519,7 @@ func (g *Game) aiTargetConcealed(observer, target *Player) bool {
 // shooterSmokePenalty: shots fired from inside smoke or through it get a
 // small extra spread, unless the shooter wears thermal goggles.
 func (g *Game) shooterSmokePenalty(p *Player) bool {
-	if g == nil || p == nil || p.PerkNumber == perkThermalGoggles || len(g.areaEffects) == 0 {
+	if g == nil || p == nil || p.AbilityNumber == abilityThermalGoggles || len(g.areaEffects) == 0 {
 		return false
 	}
 	facing := float64(p.Facing)
@@ -665,7 +649,7 @@ func (g *Game) updateAIFlashbangAwareness() {
 // aiTurnAwayFromFlash makes a bot face away from a flash that would fully
 // blind it. It returns true when the bot reacted.
 func aiTurnAwayFromFlash(arena Map, p *Player, fx, fy float64) bool {
-	if p == nil || !p.AI || !p.Active || p.PerkNumber == perkFlashGoggles {
+	if p == nil || !p.AI || !p.Active || p.AbilityNumber == abilityFlashGoggles {
 		return false
 	}
 	probe := *p
@@ -761,7 +745,7 @@ func aiAvoidGasClouds(p *Player, platforms []Rect, areas []AreaEffect) {
 		if a.Dead || a.Life <= 0 {
 			continue
 		}
-		if a.Kind != areaEffectGas && (a.Kind != areaEffectTear || p.PerkNumber == perkGasMask) {
+		if a.Kind != areaEffectGas && (a.Kind != areaEffectTear || p.AbilityNumber == abilityGasMask) {
 			continue
 		}
 		vertical := p.Y - 30 - a.Y
@@ -798,45 +782,17 @@ func aiAvoidGasClouds(p *Player, platforms []Rect, areas []AreaEffect) {
 	}
 }
 
-// developedPerkSelectionItems is the source 3x4 perk grid (perks 1..9 in the
-// original cells) extended with the developed perks 14+. They take the cells
-// of the unused source frames 10..12 and continue on a fifth (compact) row; the GM2
-// perk ids 10..13 stay reserved.
+// developedPerkSelectionItems is the source 3x4 perk grid with the real
+// perks 1..9 in their original cells (frame 10 of the source grid is not a
+// perk; the gear that used to fill the developed cells moved to the ABILITY /
+// GEAR editor).
 func developedPerkSelectionItems() []customSelectionItem {
 	source := sourceCustomSelectionItems()[customEditPerk]
-	byNumber := map[int]customSelectionItem{}
-	for _, item := range source {
-		byNumber[item.Number] = item
-	}
 	out := make([]customSelectionItem, 0, len(selectablePerkNumbers()))
 	for _, item := range source {
-		if item.Number >= 1 && item.Number <= 9 {
+		if isSelectablePerk(item.Number) {
 			out = append(out, item)
 		}
-	}
-	first, okFirst := byNumber[1]
-	below, okBelow := byNumber[4]
-	if !okFirst || !okBelow {
-		return out
-	}
-	rowStep := below.Rect.Y - first.Rect.Y
-	for i, perk := range selectablePerkNumbers() {
-		if perk <= 9 {
-			continue
-		}
-		cell := 10 + (i - 9) // 10, 11, 12, 13, ...
-		col := (cell - 1) % 3
-		row := (cell - 1) / 3
-		base, ok := byNumber[1+col]
-		if !ok {
-			continue
-		}
-		r := base.Rect
-		// Developed rows are a bit shorter so a fifth row still ends above
-		// the BACK button (Symbol835 y=759.45).
-		r.H = math.Min(r.H, 45)
-		r.Y = first.Rect.Y + 3*rowStep + float64(row-3)*50
-		out = append(out, customSelectionItem{Editor: customEditPerk, Number: perk, Rect: r})
 	}
 	return out
 }
