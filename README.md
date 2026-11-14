@@ -100,15 +100,14 @@ The updater uses the release ZIP `GunMayhem-Windows-x64.zip` (the older `GunMayh
 │   ├── sounds/
 │   └── sprites/
 ├── source/                    # tracked original/reference Flash/FFDec material
-├── cmd/
 ├── internal/game/             # gameplay, source parsers and rendering
-├── ASSETS.md                  # asset separation and runtime dependencies
+├── docs/                      # ASSETS.md, GM2_PORT_PLAN.md, campaign notes
 ├── go.mod
 ├── go.sum
 └── main.go
 ```
 
-See [ASSETS.md](ASSETS.md) for the runtime/reference split. The Go runtime reads only `assets/`; `source/` is kept separate for 1:1 reverse-engineering work.
+See [docs/ASSETS.md](docs/ASSETS.md) for the runtime/reference split. The Go runtime reads only `assets/`; `source/` is kept separate for 1:1 reverse-engineering work.
 
 The developed `main` branch unifies local and LAN network play inside **Custom Game**. The shared player setup supports local humans, LAN human slots, AI bots and empty slots (including mixed matches such as 2 humans vs 2 bots), while LAN play keeps authoritative hosting, synchronized setup/rules, server discovery and join-in-progress. Internet hosting is available as an experimental Cloudflare Quick Tunnel path in this build; see `MULTIPLAYER.md` for its DHT directory, invite-code mode, firewall setup and limitations. Custom Game can also run a configurable 1-20 round playlist where every round stores its own map, with per-map READY flow in network play and cumulative per-nickname standings. Chaos Mode can rotate a host-selected pool of weapon, movement, environmental and hazard events during a match, including grenade/dynamite/Molotov rain and crate/powerup storms. See [MULTIPLAYER.md](MULTIPLAYER.md) for details.
 

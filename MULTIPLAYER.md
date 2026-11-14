@@ -6,7 +6,7 @@ Internet multiplayer is intentionally experimental. Quick Tunnels are useful for
 
 ## Supported multiplayer modes
 
-Open **CUSTOM GAME -> ONLINE -> CREATE SESSION**.
+Open **ONLINE** from the main menu, then **CREATE SESSION**.
 
 The available network reach modes are:
 
@@ -37,7 +37,7 @@ A player can:
 
 LAN discovery uses UDP port `7778`. The gameplay listener uses TCP port `7777` by default.
 
-If Windows Firewall asks for permission, allow `GunMayhem.exe` on private networks. On the first launch after moving the portable folder, the game asks for administrator approval once and creates path-specific rules for the current `GunMayhem.exe` and `cloudflared.exe`; moving the folder again causes the path check to recreate them.
+If Windows Firewall asks for permission, allow `GunMayhem.exe` on private networks. On the first launch after moving the portable folder, the game asks for administrator approval once and creates path-specific rules for the current `GunMayhem.exe` and `cloudflared.exe`; moving the folder again causes the path check to recreate them. The only inbound rules are the two LAN rules above, limited to the local subnet with edge traversal off; Internet hosting connects out through `cloudflared` and needs no inbound rule. A rule left behind by older test builds ("Gun Mayhem P2P DHT UDP 7777") is removed automatically.
 
 ## OPEN LAN sessions
 
@@ -78,4 +78,4 @@ Network hardening includes:
 
 ## Internet multiplayer status
 
-Internet multiplayer is available as an **experimental** Quick Tunnel path in this build. It is best for temporary tests with a known player, not for public competitive release. The repository also contains experimental DHT, QUIC and optional relay/master-server infrastructure for future work.
+Internet multiplayer is available as an **experimental** Quick Tunnel path in this build. It is best for temporary tests with a known player, not for public competitive release. There is no master server, relay, UPnP/NAT-PMP port mapping or direct Internet hosting: the only Internet transport is the Cloudflare tunnel, and the Mainline DHT is used only as the directory for OPEN Internet sessions.
