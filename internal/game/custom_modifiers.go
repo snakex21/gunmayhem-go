@@ -66,7 +66,6 @@ var customModifierSpecs = []customModifierSpec{
 }
 
 var (
-	customModifiersButtonRect        = Rect{X: -1090, Y: 386, W: 145, H: 42}
 	customModifiersCloseRect         = Rect{X: -1190, Y: 542, W: 250, H: 42}
 	customModifiersRandomRect        = Rect{X: -1760, Y: 378, W: 240, H: 44}
 	customModifiersScopeSeriesRect   = Rect{X: -1760, Y: 458, W: 235, H: 40}
@@ -291,9 +290,6 @@ func (g *Game) customModifierHitAt(x, y float64) int {
 		return g.customChaosHitAt(x, y)
 	}
 	if !g.customRulesOpen {
-		if g.customModifierEditingAllowed() && customModifiersButtonRect.Contains(x, y) {
-			return menuHitCustomModifiersOpen
-		}
 		return menuHitNone
 	}
 	for i, spec := range customModifierSpecs {
@@ -564,27 +560,6 @@ func drawModifierButton(screen *ebiten.Image, r Rect, label string, selected boo
 	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x55, G: 0x58, B: 0x60, A: 0xff})
 	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
 	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 12.5, color.White, r.X+8, r.Y+10)
-}
-
-func (g *Game) drawCustomModifierButton(screen *ebiten.Image) {
-	if g.customOnlineMode {
-		return
-	}
-	r := customModifiersButtonRect
-	r.X += g.customMenuX
-	selected := 0
-	for _, enabled := range g.customRuleEnabled {
-		if enabled {
-			selected++
-		}
-	}
-	label := "MODIFIERS"
-	if g.customRandomRules {
-		label = "RANDOM RULES"
-	} else if selected > 0 {
-		label = "MODIFIERS ON"
-	}
-	drawModifierButton(screen, r, label, selected > 0 || g.customRandomRules)
 }
 
 func (g *Game) drawCustomModifiersOverlay(screen *ebiten.Image) {

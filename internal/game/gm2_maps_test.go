@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -22,52 +23,22 @@ func TestGM2MapRuntimeIDsDoNotCollideWithGM1(t *testing.T) {
 	}
 }
 
-func TestGM2MapSelectorHitboxes(t *testing.T) {
-	if !gm2MapAssetsAvailable() {
-		t.Skip("local unpacked GM2 map assets not available")
+// The GM2 map set on the MAPS tab is one tile grid (custom_local_menu.go):
+// random first, then the nine new arenas, all inside the map panel.
+func TestGM2MapTilesFitTheMapsPanel(t *testing.T) {
+	choices := customV2MapChoices(true)
+	if len(choices) != 10 {
+		t.Fatalf("GM2 choices=%d want 10 (random + 9 new)", len(choices))
 	}
-	g := &Game{customMapSetGM2: false, customMap: 1}
-	_, gm2Toggle := gm2MapSetButtonRects()
-	hit, handled := g.gm2MapMenuHitAt(gm2Toggle.X+10, gm2Toggle.Y+10)
-	if !handled || hit != menuHitMapSetGM2 {
-		t.Fatalf("GM2 toggle hit=%d handled=%v", hit, handled)
+	if choices[0].value != customGM2RandomNew {
+		t.Fatalf("GM2 first tile is not random: %+v", choices[0])
 	}
-	g.customMapSetGM2 = true
-	rows := gm2CustomMapRows()
-	if len(rows) != 10 {
-		t.Fatalf("combined GM2 selector rows=%d want10 (random + 9 new)", len(rows))
-	}
-	first := gm2MapRowRect(0)
-	hit, handled = g.gm2MapMenuHitAt(first.X+10, first.Y+5)
-	if !handled || hit != menuHitGM2RandomAll {
-		t.Fatalf("top GM2 random hit=%d handled=%v", hit, handled)
-	}
-	firstMap := gm2MapRowRect(1)
-	hit, handled = g.gm2MapMenuHitAt(firstMap.X+10, firstMap.Y+5)
-	if !handled || hit != menuHitGM2MapBase+1 {
-		t.Fatalf("first GM2 map hit=%d handled=%v", hit, handled)
-	}
-	last := gm2MapRowRect(len(rows) - 1)
-	if last.Y+last.H < 455 || last.Y+last.H > 495 {
-		t.Fatalf("GM2 selector does not fill panel: last bottom=%.1f", last.Y+last.H)
-	}
-}
-
-func TestGM2ListClearRectRemovesBakedGM1Rows(t *testing.T) {
-	clear := gm2MapListClearRect()
-	for i := range gm2CustomMapRows() {
-		r := gm2MapRowRect(i)
-		if !clear.Contains(r.X+r.W/2, r.Y+r.H/2) {
-			t.Fatalf("GM2 row %d is outside clear strip: row=%+v clear=%+v", i, r, clear)
+	for i := range choices {
+		r := customLocalMapTileRect(i)
+		p := customLocalMapPanel
+		if r.X < p.X || r.X+r.W > p.X+p.W || r.Y < p.Y || r.Y+r.H > p.Y+p.H {
+			t.Fatalf("GM2 tile %d %+v outside the map panel %+v", i, r, p)
 		}
-	}
-	// The last baked GM1 row lives around y=458; it must disappear on GM2.
-	if !clear.Contains(-780, 465) {
-		t.Fatalf("clear strip does not cover final baked GM1 row: %+v", clear)
-	}
-	// Tabs and BACK live outside this strip and must remain visible.
-	if clear.Contains(-780, 80) || clear.Contains(-780, 540) {
-		t.Fatalf("clear strip overlaps GM1/GM2 tabs or BACK area: %+v", clear)
 	}
 }
 
@@ -91,20 +62,20 @@ func TestGM2SourcePreviewBitmapsLoadLikeGM1(t *testing.T) {
 
 func TestGM2NewMapOrderMatchesSource(t *testing.T) {
 	want := []string{"Castle", "Highway", "Sub Base", "Alien Planet", "Venice", "Avalon", "Space Station", "Ski Lift", "Jungle"}
-	rows := gm2CustomMapRows()
-	if len(rows) != len(want)+1 {
-		t.Fatalf("GM2 selector rows=%d want%d", len(rows), len(want)+1)
+	choices := customV2MapChoices(true)
+	if len(choices) != len(want)+1 {
+		t.Fatalf("GM2 selector choices=%d want%d", len(choices), len(want)+1)
 	}
-	if rows[0].value != customGM2RandomAll || rows[0].label != "Random GM2" {
-		t.Fatalf("GM2 top row is not Random GM2: %+v", rows[0])
+	if choices[0].value != customGM2RandomNew || choices[0].label != "RANDOM GM2" {
+		t.Fatalf("GM2 first choice is not RANDOM GM2: %+v", choices[0])
 	}
 	for i, name := range want {
-		row := rows[i+1]
-		if got := row.label; got != name {
-			t.Fatalf("GM2 new map %d label=%q want=%q", i+1, got, name)
+		choice := choices[i+1]
+		if wantLabel := fmt.Sprintf("MAP %d - %s", i+1, name); choice.label != wantLabel {
+			t.Fatalf("GM2 new map %d label=%q want=%q", i+1, choice.label, wantLabel)
 		}
-		if row.value != gm2MapID(i+1) {
-			t.Fatalf("GM2 new map %d runtime id=%d want=%d", i+1, row.value, gm2MapID(i+1))
+		if choice.value != gm2MapID(i+1) {
+			t.Fatalf("GM2 new map %d runtime id=%d want=%d", i+1, choice.value, gm2MapID(i+1))
 		}
 	}
 }

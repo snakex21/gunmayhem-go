@@ -258,7 +258,7 @@ func init() {
 	addSpecialProjectile(178, "Compound Bow", "compound_bow", 16, 37, 2, 8, DevelopedProjectileBolt, 18, .28)
 	addSpecialProjectile(179, "Harpoon Gun", "harpoon_gun", 28, 78, 8, 1, DevelopedProjectileBolt, 22, .06)
 	addSpecialProjectile(180, "Nail Gun", "nail_gun", 3, 12, .25, 40, DevelopedProjectileBolt, 23, .03)
-	addSpecialProjectile(181, "Flare Gun", "flare_gun", 30, 30, 3, 4, DevelopedProjectileFlare, 14, .20)
+	addSpecialProjectile(181, "Flare Gun", "flare_gun", 30, 35, 3, 4, DevelopedProjectileFlare, 14, .20)
 	addSpecialProjectile(182, "Musket", "musket", 38, 64, 10, 1, DevelopedProjectileBullet, 30, 0)
 	addShotgun(183, "Single-Shot Sawed-Off", "single_sawedoff", 44, 11.0, 10.0, 2, 8)
 	addGrenadeLauncher(184, "Improvised Grenade Launcher", "improvised_launcher", 45, 38, 9, 2, 11)
@@ -425,6 +425,11 @@ func addGrenadeLauncher(number int, name, asset string, rof int, firepower, reco
 	})
 }
 
+// flareIgniteFrames is the Flare Gun's burn: 135 ticks = 4.5 s at 30 TPS. The
+// flare is an ignition weapon, so the long panic (not its direct push) is what
+// threatens a target near an edge. Blast Shield still halves it.
+const flareIgniteFrames = 135
+
 func addSpecialProjectile(number int, name, asset string, rof int, firepower, recoil float64, bullets int, projectile DevelopedProjectileKind, speed, gravity float64) {
 	mode := DevelopedFireSemi
 	if number == 180 || number == 185 {
@@ -435,7 +440,7 @@ func addSpecialProjectile(number int, name, asset string, rof int, firepower, re
 		Projectile: projectile, ProjectileSpeed: speed, ProjectileGravity: gravity, Spread: 1.5, Lifetime: 140,
 	}
 	if projectile == DevelopedProjectileFlare {
-		spec.IgniteFrames = 90
+		spec.IgniteFrames = flareIgniteFrames
 	}
 	addDevelopedWeapon(developedDef(number, name, asset, rof, firepower, recoil, bullets, 0, .85), spec)
 }

@@ -27,14 +27,11 @@ const (
 
 const customV2PlaylistVisibleRows = 9
 
+// Geometry of the online wizard shell (MODE / MAPS / SLOTS). Local Custom
+// Game is the kit screen in custom_local_menu.go.
 var (
-	// LOCAL header tabs start after the title; keeping them separate from the
-	// online step rects prevents LOCAL CUSTOM GAME from running underneath step 1.
-	customV2TabMatchRect    = Rect{X: 280, Y: 48, W: 120, H: 34}
-	customV2TabPlaylistRect = Rect{X: 408, Y: 48, W: 105, H: 34}
-	customV2TabPlayersRect  = Rect{X: 521, Y: 48, W: 90, H: 34}
-	customV2BackRect        = Rect{X: 20, Y: 528, W: 190, H: 52}
-	customV2StartRect       = Rect{X: 660, Y: 528, W: 220, H: 52}
+	customV2BackRect  = Rect{X: 20, Y: 528, W: 190, H: 52}
+	customV2StartRect = Rect{X: 660, Y: 528, W: 220, H: 52}
 
 	customV2LivesMinusRect  = Rect{X: 365, Y: 283, W: 44, H: 38}
 	customV2LivesPlusRect   = Rect{X: 505, Y: 283, W: 44, H: 38}
@@ -173,23 +170,11 @@ func (g *Game) setCustomV2Page(page int) {
 	g.menuPressed = menuHitNone
 }
 
+// customV2HitAt is the online wizard's hit test (local Custom Game uses the
+// kit, but shares activateCustomV2Hit). The step headers are real navigation
+// controls, not decorative labels.
 func (g *Game) customV2HitAt(x, y float64) int {
-	// Both Local and Online are step-based flows. The step headers are real
-	// navigation controls, not decorative labels.
-	if !g.customOnlineMode {
-		switch {
-		case customSessionLocalRect.Contains(x, y):
-			return menuHitCustomSessionLocal
-		case customSessionOnlineRect.Contains(x, y):
-			return menuHitCustomSessionOnline
-		case customV2TabMatchRect.Contains(x, y):
-			return menuHitCustomV2TabMatch
-		case customV2TabPlaylistRect.Contains(x, y):
-			return menuHitCustomV2TabPlaylist
-		case customV2TabPlayersRect.Contains(x, y):
-			return menuHitCustomV2TabPlayers
-		}
-	} else if g.netplay != nil && g.netplay.mode == netplayHost {
+	if g.customOnlineMode && g.netplay != nil && g.netplay.mode == netplayHost {
 		for i, r := range customV2OnlineStepRects {
 			if !r.Contains(x, y) {
 				continue
@@ -567,20 +552,9 @@ func (g *Game) updateCustomGameV2() {
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		g.menuPressed = menuHitNone
-		if g.customOnlineMode {
-			if g.netplay != nil && g.netplay.mode == netplayClient {
-				_ = g.CloseNetplay()
-				g.returnToOnlineServerBrowser()
-				return
-			}
-			switch g.customPage {
-			case customPagePlayers:
-				g.setCustomV2Page(customPageMaps)
-			case customPageMaps:
-				g.setCustomV2Page(customPageGame)
-			default:
-				g.backToOnlineSessionSetupFromWizard()
-			}
+		if g.netplay != nil && g.netplay.mode == netplayClient {
+			_ = g.CloseNetplay()
+			g.returnToOnlineServerBrowser()
 			return
 		}
 		switch g.customPage {
@@ -589,7 +563,7 @@ func (g *Game) updateCustomGameV2() {
 		case customPageMaps:
 			g.setCustomV2Page(customPageGame)
 		default:
-			g.beginFade(screenMainMenu, fadePurposeScreen)
+			g.backToOnlineSessionSetupFromWizard()
 		}
 		return
 	}
@@ -610,73 +584,6 @@ func drawCustomV2Tab(screen *ebiten.Image, r Rect, label string, selected bool) 
 	}
 	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, fill)
 	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 14, text, r.X+12, r.Y+8)
-}
-
-func drawCustomLocalStep(screen *ebiten.Image, r Rect, number, label string, selected bool) {
-	fill := color.NRGBA{R: 0xf0, G: 0xf0, B: 0xf0, A: 0xff}
-	text := color.NRGBA{R: 0x23, G: 0x23, B: 0x23, A: 0xff}
-	if selected {
-		fill = color.NRGBA{R: 0xff, G: 0x92, B: 0x00, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, fill)
-	drawSourceMenuText(screen, number, menuFontCondensedExtraBold, 12, text, r.X+10, r.Y+5)
-	drawSourceMenuText(screen, label, menuFontTwCen, 15, text, r.X+29, r.Y+7)
-}
-
-func drawCustomOnlineTab(screen *ebiten.Image, r Rect, label string, selected bool) {
-	fill := color.NRGBA{R: 0x2a, G: 0x31, B: 0x3c, A: 0xff}
-	text := color.NRGBA{R: 0xd9, G: 0xdf, B: 0xe8, A: 0xff}
-	if selected {
-		fill = color.NRGBA{R: 0x06, G: 0x68, B: 0xe8, A: 0xff}
-		text = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, fill)
-	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 13.5, text, r.X+11, r.Y+8)
-}
-
-func (g *Game) drawCustomV2Shell(screen *ebiten.Image) {
-	if g.customOnlineMode {
-		g.drawCustomV2OnlineShell(screen)
-		return
-	}
-	g.drawCustomV2LocalShell(screen)
-}
-
-func (g *Game) drawCustomV2LocalShell(screen *ebiten.Image) {
-	// Local Custom Game is intentionally a couch-game setup, not the online UI
-	// with networking labels removed. The shared match data stays the same, but
-	// the presentation is deliberately simpler and warmer.
-	screen.Fill(color.NRGBA{R: 0xe7, G: 0xe7, B: 0xe7, A: 0xff})
-	ebitenutil.DrawRect(screen, 15, 14, 870, 78, color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xff})
-	drawSourceMenuText(screen, "LOCAL CUSTOM GAME", menuFontCondensedExtraBold, 31, color.White, 30, 23)
-	drawSourceMenuText(screen, "ONE COMPUTER  /  LOCAL PLAYERS + AI BOTS", menuFontCondensedExtraBold, 10.5,
-		color.NRGBA{R: 0xff, G: 0xb0, B: 0x45, A: 0xff}, 31, 60)
-
-	drawCustomLocalStep(screen, customV2TabMatchRect, "1", "MATCH", g.customPage == customPageGame)
-	drawCustomLocalStep(screen, customV2TabPlaylistRect, "2", "MAPS", g.customPage == customPageMaps)
-	drawCustomLocalStep(screen, customV2TabPlayersRect, "3", "PLAYERS", g.customPage == customPagePlayers)
-
-	ebitenutil.DrawRect(screen, customV2BackRect.X, customV2BackRect.Y, customV2BackRect.W, customV2BackRect.H, color.White)
-	backLabel := "MAIN MENU"
-	switch g.customPage {
-	case customPageMaps:
-		backLabel = "BACK TO MATCH"
-	case customPagePlayers:
-		backLabel = "BACK TO MAPS"
-	}
-	drawSourceMenuText(screen, backLabel, menuFontTwCen, 22, color.Black, customV2BackRect.X+14, customV2BackRect.Y+14)
-
-	startLabel := "NEXT: MAPS"
-	if g.customPage == customPageMaps {
-		startLabel = "NEXT: PLAYERS"
-	} else if g.customPage == customPagePlayers {
-		startLabel = "START LOCAL GAME"
-	}
-	ebitenutil.DrawRect(screen, customV2StartRect.X, customV2StartRect.Y, customV2StartRect.W, customV2StartRect.H,
-		color.NRGBA{R: 0xff, G: 0x92, B: 0x00, A: 0xff})
-	drawSourceMenuText(screen, startLabel, menuFontTwCen, 19, color.Black, customV2StartRect.X+17, customV2StartRect.Y+15)
-
-	g.drawCustomSessionControls(screen)
 }
 
 func drawOnlineWizardStep(screen *ebiten.Image, r Rect, number, label string, state int) {
@@ -976,7 +883,7 @@ func (g *Game) drawCustomGameV2(screen *ebiten.Image) {
 		g.drawCustomNetworkPanel(screen)
 		return
 	}
-	g.drawCustomV2Shell(screen)
+	g.drawCustomV2OnlineShell(screen)
 	switch g.customPage {
 	case customPageMaps:
 		g.drawCustomV2Playlist(screen)

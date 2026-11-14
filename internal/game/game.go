@@ -188,8 +188,16 @@ type Game struct {
 	optionsKeyCaptureIndex  int
 	optionsTab              int
 	optionsUI               uiState
-	uiLastCursorX           float64
-	uiLastCursorY           float64
+	mainMenuUI              uiState
+	mainMenuQuitOpen        bool
+	quitRequested           bool
+	customUI                uiState
+	// customCardEditSlot is 1-based: the PLAYERS card that is showing the
+	// classic card editor (phase 4 replaces it with the Loadout screen).
+	customCardEditSlot int
+	setupPreviewImg    *ebiten.Image
+	uiLastCursorX      float64
+	uiLastCursorY      float64
 
 	// Local display settings (ui_display.go). Presentation only: never part of
 	// the simulation, the netplay snapshot or the host's authority.
@@ -379,6 +387,10 @@ func New() *Game {
 
 func (g *Game) Update() error {
 	if g.updateUpdaterRuntime() {
+		return ebiten.Termination
+	}
+	if g.quitRequested {
+		_ = g.CloseNetplay()
 		return ebiten.Termination
 	}
 	g.trackWindowPersistence()

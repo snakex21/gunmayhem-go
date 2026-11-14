@@ -78,6 +78,12 @@ func (in uiInput) navigation() bool {
 	return in.Up || in.DownKey || in.Left || in.Right || in.Tab || in.Enter
 }
 
+// pointerOnly drops the keyboard part of a frame, for screens where a text
+// field currently owns the keyboard (typed letters must not switch tabs).
+func (in uiInput) pointerOnly() uiInput {
+	return uiInput{X: in.X, Y: in.Y, Moved: in.Moved, Down: in.Down, Pressed: in.Pressed, Released: in.Released, Wheel: in.Wheel}
+}
+
 type uiToast struct {
 	text  string
 	kind  uiToastKind
@@ -93,6 +99,7 @@ type uiState struct {
 	drag     string
 	keyboard bool // last interaction came from the keyboard: show focus ring
 	toasts   []uiToast
+	frame    int // update passes run (caret blink)
 }
 
 func (st *uiState) reset() {
@@ -295,6 +302,7 @@ func (ctx *uiCtx) end() {
 		return
 	}
 	ctx.st.items = ctx.items
+	ctx.st.frame++
 	if _, ok := ctx.st.item(ctx.st.focus); !ok {
 		ctx.st.focus = ""
 	}
@@ -352,6 +360,27 @@ func (ctx *uiCtx) FocusInfo() (title, body string) {
 
 // FocusedID exposes the keyboard focus (tests, rows that highlight).
 func (ctx *uiCtx) FocusedID() string { return ctx.st.focus }
+
+// ClickedAt reports where id was clicked with the mouse this update pass
+// (controls with several parts, e.g. the typed value of a stepper).
+func (ctx *uiCtx) ClickedAt(id string) (x, y float64, ok bool) {
+	if ctx.pass != uiPassUpdate || !ctx.live(id) || ctx.clicked != id {
+		return 0, 0, false
+	}
+	return ctx.in.X, ctx.in.Y, true
+}
+
+// PressedOutside is true in the update pass when the mouse went down on
+// anything but id (used to drop text-field focus).
+func (ctx *uiCtx) PressedOutside(id string) bool {
+	return ctx.pass == uiPassUpdate && ctx.in.Pressed && ctx.st.hot != id
+}
+
+// Block registers a non-interactive area that owns the pointer, so widgets
+// below it never become hot (a region handled by legacy hit-testing).
+func (ctx *uiCtx) Block(id string, r Rect) {
+	ctx.register(uiItem{id: id, rect: r})
+}
 
 // ---------------------------------------------------------------------------
 // Input
@@ -1247,4 +1276,139 @@ func (ctx *uiCtx) List(id string, r Rect, rows []string, selected int, scroll *i
 		}
 	}
 	return picked
+}
+
+type uiModeTileOpts struct {
+	Primary   bool // orange tile (the main mode)
+	Disabled  bool
+	Subtitle  string
+	Tag       string
+	TagFill   color.NRGBA
+	TitleSize float64
+	InfoTitle string
+	InfoBody  string
+	// Art draws an illustration into the tile (alpha is 1 or the disabled fade).
+	Art func(dst *ebiten.Image, r Rect, alpha float64)
+}
+
+// ModeTile is a large paper (or orange) tile with a heavy title, used for the
+// main-menu modes. A disabled tile stays visible and keeps its info text.
+func (ctx *uiCtx) ModeTile(id string, r Rect, title string, o uiModeTileOpts) bool {
+	ctx.register(uiItem{id: id, rect: r, focusable: true, disabled: o.Disabled, infoTitle: o.InfoTitle, infoBody: o.InfoBody})
+	if ctx.drawing() {
+		hover := !o.Disabled && ctx.hot(id)
+		pressed := hover && ctx.pressed(id)
+		alpha := 1.0
+		if o.Disabled {
+			alpha = 0.55
+		}
+		fill := uiPaper
+		if hover {
+			fill = uiPaperHover
+		}
+		if o.Primary {
+			fill = uiOrange
+			if hover {
+				fill = uiOrangeHover
+			}
+		}
+		draw := r
+		if pressed {
+			draw.Y++
+		}
+		uiFillRound(ctx.dst, Rect{X: draw.X + 3, Y: draw.Y + 4, W: draw.W, H: draw.H}, 8, color.NRGBA{A: uint8(0x70 * alpha)})
+		uiFillRound(ctx.dst, draw, 8, uiWithAlpha(uiTextDark, alpha))
+		uiFillRound(ctx.dst, uiInset(draw, 3), 6, uiWithAlpha(fill, alpha))
+		if o.Art != nil {
+			o.Art(ctx.dst, uiInset(draw, 3), alpha)
+		}
+		size := o.TitleSize
+		if size == 0 {
+			size = 30
+		}
+		pad := 18.0
+		subMid := draw.Y + draw.H - pad - 8
+		titleMid := subMid - 12 - size*0.42
+		if o.Subtitle == "" {
+			titleMid = draw.Y + draw.H - pad - size*0.36
+		}
+		sub := uiTextMutedDk
+		if o.Primary {
+			sub = color.NRGBA{R: 0x2a, G: 0x1a, B: 0x00, A: 0xff}
+		}
+		uiText(ctx.dst, uiFit(title, true, size, draw.W-2*pad), true, size, uiWithAlpha(uiTextDark, alpha), draw.X+pad, titleMid, uiAlignLeft)
+		if o.Subtitle != "" {
+			uiText(ctx.dst, uiFit(o.Subtitle, false, uiSizeBody, draw.W-2*pad), false, uiSizeBody, uiWithAlpha(sub, alpha), draw.X+pad, subMid, uiAlignLeft)
+		}
+		if o.Tag != "" {
+			tagFill := o.TagFill
+			if tagFill.A == 0 {
+				tagFill = uiInk900
+			}
+			w := uiMeasure(true, uiSizeHint, o.Tag) + 16
+			ctx.Badge(Rect{X: draw.X + draw.W - w - 12, Y: draw.Y + 12, W: w, H: 22}, o.Tag, uiWithAlpha(tagFill, math.Max(alpha, 0.8)))
+		}
+		if hover && !o.Primary {
+			uiFillRect(ctx.dst, Rect{X: draw.X + 10, Y: draw.Y + draw.H - 8, W: draw.W - 20, H: 3}, uiOrange)
+		}
+		if ctx.showFocus(id) {
+			uiFocusRing(ctx.dst, r)
+		}
+	}
+	return !o.Disabled && ctx.triggered(id)
+}
+
+// TextField draws an editable one-line field. The caller owns the text and
+// the typing (focused says whether this field currently receives characters);
+// it returns true when the field is clicked or activated to start editing.
+func (ctx *uiCtx) TextField(id string, r Rect, text, placeholder string, focused, disabled bool, infoTitle, infoBody string) bool {
+	ctx.register(uiItem{id: id, rect: r, focusable: true, disabled: disabled, infoTitle: infoTitle, infoBody: infoBody})
+	if ctx.drawing() {
+		alpha := 1.0
+		if disabled {
+			alpha = 0.45
+		}
+		border := uiInk500
+		if focused {
+			border = uiOrange
+		} else if !disabled && ctx.hot(id) {
+			border = uiOrangePress
+		}
+		uiFillRound(ctx.dst, r, 4, uiWithAlpha(border, alpha))
+		uiFillRound(ctx.dst, uiInset(r, 2), 3, uiWithAlpha(uiPaperHover, alpha))
+		shown, clr := text, uiTextDark
+		if shown == "" && !focused {
+			shown, clr = placeholder, uiTextMutedDk
+		}
+		inner := Rect{X: r.X + 8, Y: r.Y, W: r.W - 16, H: r.H}
+		shown = uiFit(shown, true, uiSizeBody, inner.W-8)
+		uiTextIn(ctx.dst, shown, true, uiSizeBody, uiWithAlpha(clr, alpha), inner, uiAlignLeft, 0)
+		if focused && (ctx.st.frame/15)%2 == 0 {
+			cx := inner.X + uiMeasure(true, uiSizeBody, shown) + 2
+			uiFillRect(ctx.dst, Rect{X: cx, Y: r.Y + 7, W: 2, H: r.H - 14}, uiTextDark)
+		}
+		if ctx.showFocus(id) {
+			uiFocusRing(ctx.dst, r)
+		}
+	}
+	return !disabled && ctx.triggered(id)
+}
+
+// SettingRow draws a label row on ink (orange marker while its control is
+// hovered or keyboard-focused) and returns the rect for the control, which
+// starts at labelW from the row's left edge.
+func (ctx *uiCtx) SettingRow(row Rect, label, controlID string, labelW float64) Rect {
+	if ctx.drawing() {
+		fill := uiWithAlpha(uiInk600, 0.55)
+		active := controlID != "" && (ctx.st.hot == controlID || (ctx.st.focus == controlID && ctx.st.keyboard))
+		if active {
+			fill = uiInk600
+		}
+		uiFillRound(ctx.dst, row, 5, fill)
+		if active {
+			uiFillRect(ctx.dst, Rect{X: row.X, Y: row.Y + 6, W: 4, H: row.H - 12}, uiOrange)
+		}
+		uiText(ctx.dst, label, true, uiSizeButton, uiTextLight, row.X+14, row.Y+row.H/2, uiAlignLeft)
+	}
+	return Rect{X: row.X + labelW, Y: row.Y + 3, W: row.W - labelW - 6, H: row.H - 6}
 }

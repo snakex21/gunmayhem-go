@@ -3,9 +3,7 @@ package game
 import (
 	"fmt"
 	"image/color"
-	"math"
 	"math/rand"
-	"os/exec"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -102,14 +100,9 @@ const (
 	menuHitMapBase  = 200
 )
 
-var (
-	// Exact frame-1 visual bounds from the source XFL. Mouse hit-testing in
-	// Flash uses these movie-clip shapes after the instance matrix is applied.
-	mainButtonLocal = Rect{X: 0, Y: 0, W: 300, H: 45}                                  // Symbol 8
-	modeButtonLocal = Rect{X: 0, Y: 0, W: 200, H: 20}                                  // Symbol 1282
-	mapButtonLocal  = Rect{X: 0, Y: -0.0150390625, W: 200, H: 20.0150390625}           // Symbol 1200
-	wideButtonLocal = Rect{X: 0, Y: -0.01953125, W: 639.9993896484375, H: 60.05859375} // Symbol 1048
-)
+// Exact frame-1 visual bounds of Symbol 1048 from the source XFL (the Gun
+// Library BACK button still uses the Flash hit shape).
+var wideButtonLocal = Rect{X: 0, Y: -0.01953125, W: 639.9993896484375, H: 60.05859375}
 
 func sourceMenuHitRect(local Rect, tx, ty, sx, sy float64) Rect {
 	return transformedLocalRect(local, tx, ty, sx, sy)
@@ -131,65 +124,6 @@ func (g *Game) resolveMenuRelease(hit int) (int, bool) {
 		}
 	}
 	return menuHitNone, false
-}
-
-func mainMenuHitAt(x, y float64) int {
-	placements := [...]struct {
-		hit    int
-		tx, ty float64
-	}{
-		{menuHitMainCampaign, 572.05, 253.05},
-		{menuHitMainCustom, 572.05, 298.85},
-		{menuHitMainLibrary, 572.05, 365.75},
-		{menuHitMainOptions, 572.05, 433.75},
-		{menuHitMainCredits, 572.05, 479.55},
-		{menuHitMainMore, 572.05, 525.40},
-	}
-	for _, p := range placements {
-		if sourceMenuHitRect(mainButtonLocal, p.tx, p.ty, 1, 1).Contains(x, y) {
-			return p.hit
-		}
-	}
-	return menuHitNone
-}
-
-func (g *Game) updateMainMenu() {
-	mx, my := g.cursorPos()
-	hit := mainMenuHitAt(float64(mx), float64(my))
-	if g.updateNoticeVisible() && g.updateRuntime.phase != updatePhaseDownloading && mainUpdateNoticeRect.Contains(float64(mx), float64(my)) {
-		hit = menuHitMainUpdate
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if !ok {
-		return
-	}
-	// DefineSprite_28_mainmenu: btn1..btn5 play menu.wav; the Armor Games
-	// external-link button (btn6) deliberately does not.
-	if activated != menuHitMainMore {
-		g.playSourceSFX("menu.wav", false)
-	}
-	switch activated {
-	case menuHitMainCampaign:
-		g.beginFade(screenCampaign, fadePurposeScreen)
-	case menuHitMainCustom:
-		g.customOnlineMode = false
-		g.customNetworkOpen = false
-		g.onlineMatchSetup = false
-		g.customPage = customPageGame
-		g.customMenuX = 1800
-		g.beginFade(screenCustomGame, fadePurposeScreen)
-	case menuHitMainLibrary:
-		g.beginFade(screenGunLibrary, fadePurposeScreen)
-	case menuHitMainOptions:
-		g.beginFade(screenOptions, fadePurposeScreen)
-	case menuHitMainCredits:
-		g.beginFade(screenCredits, fadePurposeScreen)
-	case menuHitMainMore:
-		// Exact source action: getURL("http://armorgames.com", _blank).
-		_ = exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", "http://armorgames.com").Start()
-	case menuHitMainUpdate:
-		g.beginUpdateDownload()
-	}
 }
 
 func (g *Game) updateSecondaryMenu() {
@@ -253,220 +187,14 @@ func (g *Game) updatePostGameMenu() {
 }
 
 func (g *Game) updateCustomGameMenu() {
-	g.updateCustomGameV2()
-	return
-
-	// Legacy Custom Game page flow is intentionally unreachable. The developed
-	// Custom Game UI owns all input now; the old Flash-strip code remains below
-	// only as reference for source-faithful mechanics that other tests use.
-	g.updateCustomWarning()
-	if g.customOnlineRulesOverlayActive() {
-		g.updateMultiplayerLobby()
+	// The online browser, host setup and online wizard keep their own screens
+	// until the online phase of the Mayhem UI migration; local Custom Game is
+	// the kit screen in custom_local_menu.go.
+	if g.customOnlineMode || g.customNetworkOpen {
+		g.updateCustomGameV2()
 		return
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) && g.customNetworkOpen {
-		if g.customHostSetupOpen {
-			g.customHostSetupOpen = false
-			g.multiplayerNameFocus = false
-			g.menuPressed = menuHitNone
-			g.multiplayerMessage = "CHOOSE A SESSION OR CREATE ONE"
-			return
-		}
-		g.leaveCustomNetworkPanel()
-		g.menuPressed = menuHitNone
-		return
-	}
-	if g.customPage == customPageGame {
-		g.updateCustomLivesInput()
-	}
-	if g.customPage == customPagePlayers {
-		g.updateCustomPlayerCards()
-		g.updateCustomNameInput()
-	}
-	target := customPageTargetX(g.customPage)
-	g.customMenuX += (target - g.customMenuX) / 3
-	if math.Abs(g.customMenuX-target) < 0.5 {
-		g.customMenuX = target
-	} else if math.Mod(g.customMenuX, 1) != 0 {
-		// Source rounds whenever _X is fractional.
-		g.customMenuX = math.Round(g.customMenuX)
-	}
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		g.menuPressed = menuHitNone
-		if g.customPage == customPageGame && g.customChaosOpen {
-			g.customChaosOpen = false
-			return
-		}
-		if g.customPage == customPageGame && g.customRulesOpen {
-			g.customRulesOpen = false
-			return
-		}
-		if g.customPage == customPageGame {
-			if g.customOnlineMode {
-				_ = g.CloseNetplay()
-				g.onlineMatchSetup = false
-				g.customOnlineMode = false
-				g.customNetworkOpen = false
-			}
-			g.beginFade(screenMainMenu, fadePurposeScreen)
-		} else {
-			g.customPage++
-		}
-		return
-	}
-
-	mx, my := g.cursorPos()
-	if g.updateCustomSessionInput(float64(mx), float64(my)) {
-		return
-	}
-	// Symbol1309's local origin is translated by _X. The SourceRaster padding
-	// does not enter this calculation: drawSourceRaster preserves that origin.
-	lx := float64(mx) - g.customMenuX
-	ly := float64(my)
-	hit := customMenuHitAt(g.customPage, lx, ly)
-	if g.customPage == customPageMaps {
-		if overlayHit, handled := g.gm2MapMenuHitAt(lx, ly); handled {
-			hit = overlayHit
-		}
-	}
-	if g.customPage == customPageGame {
-		if optionHit := g.customModeOptionsHitAt(lx, ly); optionHit != menuHitNone {
-			hit = optionHit
-		}
-	}
-	if g.customPage == customPagePlayers {
-		if editorHit := g.customPlayerEditorHitAt(lx, ly); editorHit != menuHitNone {
-			if slot, ok := customPlayerEditorHitSlot(editorHit); !g.customOnlineMode || !ok || g.onlineHostMayEditCustomSlot(slot) {
-				hit = editorHit
-			}
-		} else if playerHit := g.customPlayerSetupHitAt(lx, ly); playerHit != menuHitNone {
-			if slot, _, ok := decodePlayerSlotHit(playerHit); !g.customOnlineMode || !ok || slot != 0 {
-				hit = playerHit
-			}
-		}
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if !ok {
-		return
-	}
-	// Symbol1309 only plays menu.wav on the five navigation buttons. Mode/map
-	// choices, player setup fields and START itself are silent in the source.
-	switch activated {
-	case menuHitGameBack, menuHitGameContinue, menuHitMapBack, menuHitMapContinue, menuHitPlayerBack:
-		g.playSourceSFX("menu.wav", false)
-	}
-	g.activateCustomMenuHit(activated)
-}
-
-func customMenuHitAt(page int, x, y float64) int {
-	switch page {
-	case customPageGame:
-		return developedCustomGameHitAt(x+1800, y)
-
-	case customPageMaps:
-		mapRows := [...]struct {
-			mapNumber int
-			ty        float64
-		}{
-			{0, 99.3},
-			{12, 138.9}, {11, 167.95}, {10, 197.0}, {9, 226.0},
-			{8, 255.05}, {7, 284.1}, {6, 313.15}, {5, 342.2},
-			{4, 371.2}, {3, 400.25}, {2, 429.3}, {1, 458.35},
-		}
-		for _, row := range mapRows {
-			// Use the full visible row, not only Symbol1200's narrower source
-			// shape. The flattened map selector renders roughly 29 px high rows;
-			// clicking the lower edge previously missed, especially online.
-			r := Rect{X: -883, Y: row.ty, W: 200, H: 29.0}
-			if r.Contains(x, y) {
-				return menuHitMapBase + row.mapNumber
-			}
-		}
-		if sourceMenuHitRect(wideButtonLocal, -880, 520.05, 0.3125, 0.9991607666015625).Contains(x, y) {
-			return menuHitMapBack
-		}
-		if sourceMenuHitRect(wideButtonLocal, -660, 520.05, 1, 0.9991607666015625).Contains(x, y) {
-			return menuHitMapContinue
-		}
-
-	case customPagePlayers:
-		if sourceMenuHitRect(wideButtonLocal, 20, 520.05, 0.3125, 0.9991607666015625).Contains(x, y) {
-			return menuHitPlayerBack
-		}
-		if sourceMenuHitRect(wideButtonLocal, 240, 520.05, 1, 0.9991607666015625).Contains(x, y) {
-			return menuHitPlayerStart
-		}
-	}
-	return menuHitNone
-}
-
-func (g *Game) activateCustomMenuHit(hit int) {
-	if g.activateCustomModeOption(hit) {
-		return
-	}
-	if g.activateCustomPlayerEditorHit(hit) {
-		return
-	}
-	if g.activateCustomPlayerSlot(hit) {
-		return
-	}
-	switch {
-	case hit >= menuHitModeBase+SourceGameModeNormal && hit <= menuHitModeBase+SourceGameModeSurvival:
-		g.customMode = hit - menuHitModeBase
-	case hit >= menuHitMapBase && hit <= menuHitMapBase+12:
-		g.customMapSetGM2 = false
-		g.customMap = hit - menuHitMapBase
-	case hit == menuHitMapSetGM1:
-		g.customMapSetGM2 = false
-		if isGM2MapID(g.customMap) || g.customMap == customGM2RandomNew || g.customMap == customGM2RandomAll {
-			g.customMap = 1
-		}
-	case hit == menuHitMapSetGM2:
-		if gm2MapAssetsAvailable() {
-			g.customMapSetGM2 = true
-			if !isGM2MapID(g.customMap) && g.customMap != customGM2RandomNew && g.customMap != customGM2RandomAll {
-				g.customMap = gm2MapID(1)
-			}
-		}
-	case hit >= menuHitGM2MapBase+1 && hit <= menuHitGM2MapBase+21:
-		g.customMapSetGM2 = true
-		g.customMap = gm2MapID(hit - menuHitGM2MapBase)
-	case hit == menuHitGM2RandomNew:
-		g.customMapSetGM2 = true
-		g.customMap = customGM2RandomNew
-	case hit == menuHitGM2RandomAll:
-		g.customMapSetGM2 = true
-		g.customMap = customGM2RandomAll
-	case hit == menuHitGameBack:
-		if g.customOnlineMode {
-			_ = g.CloseNetplay()
-			g.onlineMatchSetup = false
-			g.customOnlineMode = false
-			g.customNetworkOpen = false
-		}
-		g.beginFade(screenMainMenu, fadePurposeScreen)
-	case hit == menuHitGameContinue:
-		if modeHasLives(g.customMode) && g.customLives <= 0 {
-			g.playCustomWarning(1)
-			return
-		}
-		g.customLivesFocus = false
-		g.customPage = customPageMaps
-		// The developed Game Setup is a standalone page rather than one third
-		// of Symbol1309, so jump directly to the source map page instead of
-		// briefly exposing the obsolete flattened Game Setup during the slide.
-		g.customMenuX = customPageTargetX(customPageMaps)
-	case hit == menuHitMapBack:
-		g.customPage = customPageGame
-		g.customMenuX = customPageTargetX(customPageGame)
-	case hit == menuHitMapContinue:
-		g.customPage = customPagePlayers
-	case hit == menuHitPlayerBack:
-		g.customPage = customPageMaps
-	case hit == menuHitPlayerStart:
-		g.startCustomGame()
-	}
+	g.updateCustomLocalMenu()
 }
 
 func (g *Game) startCustomGame() {
@@ -628,10 +356,9 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 
 	switch g.screen {
 	case screenMainMenu:
-		drawSourceRaster(screen, g.assets.MainMenu, 0, 0, 1, 1, 1)
-		g.drawUpdateNotice(screen)
+		g.drawMainMenu(screen)
 	case screenCustomGame:
-		g.drawCustomGameV2(screen)
+		g.drawCustomGameMenu(screen)
 	case screenCampaign:
 		g.drawCampaignMenu(screen)
 	case screenGunLibrary:
@@ -655,7 +382,7 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 	case screenMultiplayer:
 		g.drawMultiplayerMenu(screen)
 	case screenMultiplayerLobby:
-		g.drawCustomGameV2(screen)
+		g.drawCustomGameMenu(screen)
 	case screenSeriesSummary:
 		g.drawSeriesSummary(screen)
 	case screenPostGame:
@@ -671,27 +398,6 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 	}
 	if g.menuDebug {
 		g.drawMenuDebug(screen)
-	}
-}
-
-func (g *Game) drawCustomMenuChosen(screen *ebiten.Image) {
-	if g.assets.MenuChosen == nil {
-		return
-	}
-	switch g.customPage {
-	case customPageMaps:
-		if g.customMapSetGM2 {
-			return
-		}
-		rows := map[int]float64{
-			0:  99.3,
-			12: 138.9, 11: 167.95, 10: 197.0, 9: 226.0,
-			8: 255.05, 7: 284.1, 6: 313.15, 5: 342.2,
-			4: 371.2, 3: 400.25, 2: 429.3, 1: 458.35,
-		}
-		if y, ok := rows[g.customMap]; ok {
-			drawSourceRaster(screen, g.assets.MenuChosen, g.customMenuX-883, y, 1, 1.3199920654296875, 1)
-		}
 	}
 }
 
@@ -716,54 +422,23 @@ func drawMenuDebugRect(dst *ebiten.Image, r Rect) {
 
 func (g *Game) drawMenuDebug(screen *ebiten.Image) {
 	mx, my := g.cursorPos()
-	hit := menuHitNone
-	if g.screen == screenMainMenu {
-		placements := [...]struct {
-			tx, ty float64
-		}{
-			{572.05, 253.05}, {572.05, 298.85}, {572.05, 365.75},
-			{572.05, 433.75}, {572.05, 479.55}, {572.05, 525.40},
-		}
-		for _, p := range placements {
-			drawMenuDebugRect(screen, sourceMenuHitRect(mainButtonLocal, p.tx, p.ty, 1, 1))
-		}
-		hit = mainMenuHitAt(float64(mx), float64(my))
-	} else if g.screen == screenCustomGame {
-		lx := float64(mx) - g.customMenuX
-		ly := float64(my)
-		hit = customMenuHitAt(g.customPage, lx, ly)
-		for _, r := range customMenuDebugRects(g.customPage) {
-			r.X += g.customMenuX
-			drawMenuDebugRect(screen, r)
+	var st *uiState
+	switch g.screen {
+	case screenMainMenu:
+		st = &g.mainMenuUI
+	case screenOptions:
+		st = &g.optionsUI
+	case screenCustomGame:
+		if !g.customOnlineMode && !g.customNetworkOpen {
+			st = &g.customUI
 		}
 	}
-	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("MENU DEBUG  mouse=%d,%d  hit=%d  pressed=%d  page=%d  menuX=%.0f", mx, my, hit, g.menuPressed, g.customPage, g.customMenuX), 8, 8)
-}
-
-func customMenuDebugRects(page int) []Rect {
-	var out []Rect
-	switch page {
-	case customPageGame:
-		for _, p := range [][2]float64{{-1770, 160.0}, {-1770, 225.7}, {-1770, 291.5}, {-1770, 357.25}, {-1770, 423.1}} {
-			out = append(out, sourceMenuHitRect(modeButtonLocal, p[0], p[1], 1.6749725341796875, 2.99078369140625))
+	hot := ""
+	if st != nil {
+		for _, it := range st.items {
+			drawMenuDebugRect(screen, it.rect)
 		}
-		out = append(out,
-			sourceMenuHitRect(wideButtonLocal, -1780, 520.05, 0.3125, 0.9991607666015625),
-			sourceMenuHitRect(wideButtonLocal, -1560, 520.05, 1, 0.9991607666015625),
-		)
-	case customPageMaps:
-		for _, y := range []float64{99.3, 138.9, 167.95, 197.0, 226.0, 255.05, 284.1, 313.15, 342.2, 371.2, 400.25, 429.3, 458.35} {
-			out = append(out, sourceMenuHitRect(mapButtonLocal, -883, y, 1, 1.3199920654296875))
-		}
-		out = append(out,
-			sourceMenuHitRect(wideButtonLocal, -880, 520.05, 0.3125, 0.9991607666015625),
-			sourceMenuHitRect(wideButtonLocal, -660, 520.05, 1, 0.9991607666015625),
-		)
-	case customPagePlayers:
-		out = append(out,
-			sourceMenuHitRect(wideButtonLocal, 20, 520.05, 0.3125, 0.9991607666015625),
-			sourceMenuHitRect(wideButtonLocal, 240, 520.05, 1, 0.9991607666015625),
-		)
+		hot = st.hot
 	}
-	return out
+	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("MENU DEBUG  mouse=%d,%d  hot=%s  pressed=%d  page=%d", mx, my, hot, g.menuPressed, g.customPage), 8, 8)
 }

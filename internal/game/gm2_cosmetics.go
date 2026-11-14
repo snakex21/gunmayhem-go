@@ -2,6 +2,7 @@ package game
 
 import (
 	"image/color"
+	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -132,7 +133,15 @@ var gm2PlayerPalette = [...]color.NRGBA{
 // The developed cosmetic editor is only exposed when every source family it
 // needs is present. This prevents offering an item that can be selected but not
 // rendered in a packaged build.
-func gm2CosmeticsAvailable() bool {
+//
+// The answer depends only on the install (exe / working directory), so it is
+// resolved once: the old per-call version did eight file lookups and was hit
+// by every player draw and every card hit test.
+func gm2CosmeticsAvailable() bool { return gm2CosmeticsAvailableOnce() }
+
+var gm2CosmeticsAvailableOnce = sync.OnceValue(probeGM2Cosmetics)
+
+func probeGM2Cosmetics() bool {
 	checks := [][]string{
 		{"fla", "LIBRARY", "Symbol 148.xml"},
 		{"fla", "LIBRARY", "Symbol 201.xml"},

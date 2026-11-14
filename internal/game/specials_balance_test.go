@@ -124,7 +124,7 @@ func TestSpecialWeaponStats(t *testing.T) {
 	}{
 		{185, 26, 24}, // Energy Rifle
 		{180, 12, 40}, // Nail Gun
-		{181, 30, 4},  // Flare Gun
+		{181, 35, 4},  // Flare Gun
 		{178, 37, 8},  // Compound Bow
 		{193, 68, 3},  // Martini-Henry
 	}
@@ -170,10 +170,20 @@ func TestFlareNailBowPickupPush(t *testing.T) {
 	bow := sbPickupPush(178, 300)
 	crossbow := sbPickupPush(177, 300)
 	t.Logf("per pickup @300 px: flare %.0f, nail %.0f, bow %.0f, crossbow %.0f", flare, nail, bow, crossbow)
-	// Burn now panics the victim instead of pushing it, so a pinned target
-	// only takes the four direct flare hits (4 x 30) plus the ignite nudge.
-	if flare < 120 || flare > 160 {
-		t.Errorf("Flare Gun pickup push %.0f, want about 130 (4 flares x 30)", flare)
+	// Burn panics the victim instead of pushing it, so a pinned target only
+	// takes the four direct flare hits (4 x 35) plus the ignite nudge.
+	if flare < 150 || flare > 185 {
+		t.Errorf("Flare Gun pickup push %.0f, want about 167 (4 flares x 35)", flare)
+	}
+	// Pure push stays below the Crossbow; the flare's threat is the long burn.
+	if flare >= crossbow {
+		t.Errorf("Flare Gun pickup push %.0f matches the Crossbow (%.0f)", flare, crossbow)
+	}
+	if spec, _ := developedWeaponSpec(181); spec.IgniteFrames != 135 {
+		t.Errorf("Flare Gun burn %d ticks, want 135 (4.5 s)", spec.IgniteFrames)
+	}
+	for _, d := range []float64{150, 300, 500} {
+		t.Logf("ring-out %.0f px: flare %.2fs, crossbow %.2fs", d, sbAverageRingOut(t, 181, d)/30, sbAverageRingOut(t, 177, d)/30)
 	}
 	if nail < 440 || nail > 520 {
 		t.Errorf("Nail Gun pickup push %.0f, want about 480", nail)

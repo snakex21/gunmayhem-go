@@ -2,8 +2,6 @@ package game
 
 import (
 	"math"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type CustomPlayerConfig struct {
@@ -171,37 +169,4 @@ func (g *Game) activeCustomPlayerCount() int {
 		}
 	}
 	return n
-}
-
-func (g *Game) drawCustomGameInteractions(screen *ebiten.Image) {
-	if g.customPage == customPageGame {
-		g.drawCustomModeButtons(screen)
-		g.drawCustomModeOptions(screen)
-	}
-	if g.customPage == customPageMaps {
-		g.drawCustomMapButtons(screen)
-		g.drawCustomMapPreview(screen)
-	}
-	if g.customPage == customPagePlayers {
-		for i, cfg := range g.customPlayers {
-			cardX := g.customMenuX + 20 + float64(i)*220
-			g.drawPlayerSetupCardMasked(screen, cfg, g.customEditor[i], i, cardX, g.customCardY[i], 1, g.customColorMask[i], false)
-		}
-		g.drawCustomOnlineSlotOverlay(screen)
-	}
-	g.drawCustomSessionControls(screen)
-
-	if g.customWarningFrame <= 0 {
-		return
-	}
-	switch g.customWarning {
-	case 1:
-		// Symbol1309.warning1 at local (-1397.35,388.1).
-		drawSourceRaster(screen, g.assets.CustomWarningLives[g.customWarningFrame],
-			g.customMenuX-1397.35, 388.1, 1, 1, 1)
-	case 2:
-		// Symbol1309.warning2 at local (312.6,249.3).
-		drawSourceRaster(screen, g.assets.CustomWarningPlayers[g.customWarningFrame],
-			g.customMenuX+312.6, 249.3, 1, 1, 1)
-	}
 }

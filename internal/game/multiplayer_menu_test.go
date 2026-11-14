@@ -2,12 +2,18 @@ package game
 
 import "testing"
 
-func TestMainMenuNoLongerHasSeparateMultiplayerButton(t *testing.T) {
-	if got := mainMenuHitAt(mainMultiplayerRect.X+20, mainMultiplayerRect.Y+20); got != menuHitNone {
-		t.Fatalf("old multiplayer area still activates hit=%d", got)
+// ONLINE is a main-menu tile now (it used to hide behind Custom Game ->
+// ONLINE); VERSUS opens the local Custom Game.
+func TestMainMenuHasOnlineAndVersusTiles(t *testing.T) {
+	g := newMainMenuGame()
+	for _, id := range []string{"main.versus", "main.online"} {
+		if _, ok := g.mainMenuUI.item(id); !ok {
+			t.Fatalf("main menu has no %s tile", id)
+		}
 	}
-	if got := mainMenuHitAt(590, 315); got != menuHitMainCustom {
-		t.Fatalf("Custom Game main-menu hit=%d want %d", got, menuHitMainCustom)
+	mainMenuClick(g, mainTileVersusRect.X+60, mainTileVersusRect.Y+60)
+	if !g.fadeActive || g.fadeTarget != screenCustomGame || g.customOnlineMode {
+		t.Fatalf("VERSUS: fade=%v target=%d online=%v", g.fadeActive, g.fadeTarget, g.customOnlineMode)
 	}
 }
 

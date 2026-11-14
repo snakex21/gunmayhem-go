@@ -32,7 +32,6 @@ var (
 	multiplayerAddressRect    = Rect{X: 180, Y: 414, W: 355, H: 44}
 	multiplayerDirectJoinRect = Rect{X: 550, Y: 414, W: 170, H: 44}
 	multiplayerBackRect       = Rect{X: 180, Y: 492, W: 540, H: 50}
-	mainMultiplayerRect       = Rect{X: 572.05, Y: 205, W: 300, H: 40}
 )
 
 func multiplayerMenuHitAt(x, y float64) int {
@@ -238,13 +237,6 @@ func drawDevelopedMenuButton(screen *ebiten.Image, r Rect, label string) {
 	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x24, G: 0x27, B: 0x2d, A: 0xee})
 	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, color.NRGBA{R: 0xf2, G: 0x8c, B: 0x00, A: 0xff})
 	drawSourceMenuText(screen, label, menuFontTwCen, 22, color.NRGBA{A: 0xff}, r.X+14, r.Y+10)
-}
-
-func (g *Game) drawMainMultiplayerButton(screen *ebiten.Image) {
-	r := mainMultiplayerRect
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x24, G: 0x27, B: 0x2d, A: 0xee})
-	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, color.NRGBA{R: 0x00, G: 0x66, B: 0xff, A: 0xff})
-	drawSourceMenuText(screen, "MULTIPLAYER", menuFontTwCen, 22, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, r.X+14, r.Y+10)
 }
 
 func (g *Game) drawMultiplayerServerList(screen *ebiten.Image) {

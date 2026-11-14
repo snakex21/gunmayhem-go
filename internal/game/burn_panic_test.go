@@ -217,12 +217,16 @@ func TestFlamethrowerIgnitionIsShorterThanOtherFire(t *testing.T) {
 	if p.BurnTime != 50 {
 		t.Fatalf("flamethrower burn=%d want50", p.BurnTime)
 	}
-	// Flare keeps its full burn.
+	// Flare keeps its full (Flare Gun spec) burn: 135 ticks = 4.5 s.
+	flareSpec, _ := developedWeaponSpec(181)
+	if flareSpec.IgniteFrames != 135 {
+		t.Fatalf("flare gun ignite=%d want135", flareSpec.IgniteFrames)
+	}
 	q := burnTestPlayer(3)
-	fl := Bullet{DevelopedProjectile: DevelopedProjectileFlare, X: 300, Y: 80, VX: 1, Firepower: 10, Facing: 1, OwnerID: 1, Lifetime: 20, IgniteFrames: 90}
+	fl := Bullet{DevelopedProjectile: DevelopedProjectileFlare, X: 300, Y: 80, VX: 1, Firepower: 10, Facing: 1, OwnerID: 1, Lifetime: 20, IgniteFrames: flareSpec.IgniteFrames}
 	updateDevelopedProjectile(Map{}, &fl, []*Player{q}, nil, nil)
-	if q.BurnTime != 90 {
-		t.Fatalf("flare burn=%d want90", q.BurnTime)
+	if q.BurnTime != 135 {
+		t.Fatalf("flare burn=%d want135", q.BurnTime)
 	}
 }
 

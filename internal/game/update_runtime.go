@@ -3,17 +3,12 @@ package game
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"gunmayhem-go/internal/updater"
 )
-
-var mainUpdateNoticeRect = Rect{X: 20, Y: 536, W: 500, H: 44}
 
 const (
 	updatePhaseIdle = iota
@@ -275,29 +270,4 @@ func (g *Game) updateNoticeLabel() string {
 	default:
 		return ""
 	}
-}
-
-func (g *Game) drawUpdateNotice(screen *ebiten.Image) {
-	if screen == nil || !g.updateNoticeVisible() {
-		return
-	}
-	r := mainUpdateNoticeRect
-	border := color.NRGBA{R: 0xff, G: 0x98, B: 0x00, A: 0xff}
-	fill := color.NRGBA{R: 0x1d, G: 0x21, B: 0x28, A: 0xf4}
-	if g.updateRuntime.phase == updatePhaseFailed {
-		border = color.NRGBA{R: 0xd6, G: 0x55, B: 0x43, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, border)
-	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
-	if g.updateRuntime.phase == updatePhaseDownloading && g.updateRuntime.total > 0 {
-		frac := float64(g.updateRuntime.done) / float64(g.updateRuntime.total)
-		if frac < 0 {
-			frac = 0
-		}
-		if frac > 1 {
-			frac = 1
-		}
-		ebitenutil.DrawRect(screen, r.X+2, r.Y+r.H-6, (r.W-4)*frac, 4, border)
-	}
-	drawSourceMenuText(screen, g.updateNoticeLabel(), menuFontCondensedExtraBold, 15.5, color.White, r.X+12, r.Y+12)
 }
