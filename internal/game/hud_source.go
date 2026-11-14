@@ -3,7 +3,6 @@ package game
 import (
 	"fmt"
 	"image/color"
-	"os"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -28,36 +27,41 @@ var (
 	hudFaces    = map[int]font.Face{}
 )
 
+// sourceHUDSystemFont is Office's Tw Cen MT Condensed Extra Bold. Clean
+// Windows installs do not have it; tests override it to simulate that.
+var sourceHUDSystemFont = `C:\Windows\Fonts\TCCEB.TTF`
+
+func sourceHUDFontCandidates() []string {
+	var candidates []string
+	if path, err := findOriginalPath("fonts", "20_Tw Cen MT Condensed Extra Bold.ttf"); err == nil {
+		candidates = append(candidates, path)
+	}
+	candidates = append(candidates, sourceHUDSystemFont)
+	if path, err := findOriginalPath("fonts", "49_Tw Cen MT Condensed.ttf"); err == nil {
+		candidates = append(candidates, path)
+	}
+	return candidates
+}
+
+// loadSourceHUDFont picks the HUD typeface. Flash used Tw Cen MT Condensed
+// Extra Bold. A normally parsing candidate (the native Office TCCEB.TTF) wins;
+// otherwise the FFDec export, whose metadata is malformed, is used through a
+// private normalized copy (source_font_compat.go). If no candidate works at
+// all, the embedded Barlow Condensed Bold keeps the HUD readable.
+func loadSourceHUDFont(candidates []string) (*opentype.Font, error) {
+	parsed, err := loadSourceFontCandidates(candidates)
+	if err == nil && parsed != nil {
+		return parsed, nil
+	}
+	if fallback, fallbackErr := embeddedUIFont(true); fallbackErr == nil {
+		return fallback, nil
+	}
+	return nil, err
+}
+
 func sourceHUDFace(size float64) (font.Face, error) {
 	hudFontOnce.Do(func() {
-		// FFDec exported the embedded Tw Cen MT Condensed Extra Bold file with
-		// a malformed `head` table, so x/image/opentype correctly rejects it.
-		// Flash used this exact Windows font family for the HUD. Prefer the
-		// extracted asset when it is valid, then the native Windows TCCEB font,
-		// and finally the bundled condensed face as a portable fallback.
-		var candidates []string
-		if path, err := findOriginalPath("fonts", "20_Tw Cen MT Condensed Extra Bold.ttf"); err == nil {
-			candidates = append(candidates, path)
-		}
-		candidates = append(candidates, `C:\Windows\Fonts\TCCEB.TTF`)
-		if path, err := findOriginalPath("fonts", "49_Tw Cen MT Condensed.ttf"); err == nil {
-			candidates = append(candidates, path)
-		}
-		for _, path := range candidates {
-			data, err := os.ReadFile(path)
-			if err != nil {
-				hudFontErr = err
-				continue
-			}
-			parsed, err := opentype.Parse(data)
-			if err != nil {
-				hudFontErr = err
-				continue
-			}
-			hudTTF = parsed
-			hudFontErr = nil
-			return
-		}
+		hudTTF, hudFontErr = loadSourceHUDFont(sourceHUDFontCandidates())
 	})
 	if hudFontErr != nil || hudTTF == nil {
 		return nil, hudFontErr
@@ -316,7 +320,7 @@ func (g *Game) drawSourceHUDCard(screen *ebiten.Image, p *Player, x, y float64) 
 }
 
 func makeSourcePowerupDoubleIcon() *SourceRaster {
-	face, err := sourceHUDFace(46.05)
+	face, err := sourceHUDFaceForText(46.05, "X2")
 	if err != nil || face == nil {
 		return nil
 	}
@@ -336,7 +340,7 @@ func drawSourceHUDText(dst *ebiten.Image, value string, size float64, clr color.
 	if value == "" {
 		return
 	}
-	face, err := sourceHUDFace(size)
+	face, err := sourceHUDFaceForText(size, value)
 	if err != nil || face == nil {
 		return
 	}
@@ -345,7 +349,7 @@ func drawSourceHUDText(dst *ebiten.Image, value string, size float64, clr color.
 }
 
 func drawSourceHUDTextCentered(dst *ebiten.Image, value string, size float64, clr color.Color, x, topY, width float64) {
-	face, err := sourceHUDFace(size)
+	face, err := sourceHUDFaceForText(size, value)
 	if err != nil || face == nil || value == "" {
 		return
 	}
