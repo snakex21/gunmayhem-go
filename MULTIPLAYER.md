@@ -65,6 +65,10 @@ Open **ZOMBIE** from the main menu, choose the mode and the arena, then **HOST O
 
 Every player has their own HP, points and shop. The shop opens between waves on each player's own screen. Purchases are requests that the host checks (points, break time, limits), so a guest can never buy what the rules do not allow.
 
+Zombie sessions carry a green **ZOMBIE** badge in the server browser.
+
+On a multi-zone map (OUTBREAK) every player has their own view and walks through the open doors alone: press DOWN at a door to buy it (the host checks the points and that you stand at it) or to pass it. Each guest receives only the zone it is in, so the network traffic does not grow with the size of the map. Teammates in other zones show an "IN <ZONE>" tag on their HUD card. Playing on one shared screen instead, the whole team moves together: every living player has to stand at the door first.
+
 ## Smoothness and the network overlay
 
 The host runs the match. A guest draws the other players from a small buffer of host snapshots (smooth even when snapshots arrive unevenly) and predicts its own character from its own keys, so movement answers immediately; the host's result (knockback, deaths, portals) always wins and small differences are blended out over a few frames.

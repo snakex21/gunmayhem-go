@@ -729,18 +729,25 @@ func onlineServerIsZombie(s multiplayerServerInfo) bool {
 // drawZombieSessionBadge: a green badge with a zombie head and "ZOMBIE".
 func drawZombieSessionBadge(dst *ebiten.Image, r Rect, alpha float64) {
 	uiFillRound(dst, r, 3, uiWithAlpha(zombieTagColor, alpha))
-	s := zombieSpriteFor(zombieWalker, zombiePoseWalk)
-	op := &ebiten.DrawImageOptions{}
-	op.Filter = ebiten.FilterLinear
-	// Only the head: the sprite's top part, scaled to the badge height.
-	b := s.img.Bounds()
-	head := s.img.SubImage(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+b.Dy()*45/100)).(*ebiten.Image)
-	hb := head.Bounds()
-	scale := (r.H - 4) / float64(hb.Dy())
-	op.GeoM.Scale(scale, scale)
-	op.GeoM.Translate(r.X+3, r.Y+2)
-	op.ColorScale.ScaleAlpha(float32(alpha))
-	dst.DrawImage(head, op)
-	text := Rect{X: r.X + 4 + float64(hb.Dx())*scale, Y: r.Y, W: r.W - 6 - float64(hb.Dx())*scale, H: r.H}
+	rad := (r.H - 6) / 2
+	drawZombieHeadIcon(dst, r.X+4+rad, r.Y+r.H/2, rad, alpha)
+	text := Rect{X: r.X + 6 + 2*rad, Y: r.Y, W: r.W - 8 - 2*rad, H: r.H}
 	uiTextIn(dst, "ZOMBIE", true, uiSizeHint, uiWithAlpha(uiTextLight, alpha), text, uiAlignCenter, 2)
+}
+
+// drawZombieHeadIcon: a small walker head (outline, skin, eyes, stitched
+// mouth) for badges.
+func drawZombieHeadIcon(dst *ebiten.Image, cx, cy, rad, alpha float64) {
+	pal := zombiePalettes[zombieWalker]
+	vector.DrawFilledCircle(dst, float32(cx), float32(cy), float32(rad), withAlpha(zombieInk, alpha), true)
+	vector.DrawFilledCircle(dst, float32(cx), float32(cy), float32(rad*0.8), withAlpha(pal.skin, alpha), true)
+	e := rad * 0.22
+	vector.DrawFilledCircle(dst, float32(cx-rad*0.32), float32(cy-rad*0.15), float32(e), withAlpha(pal.eye, alpha), true)
+	vector.DrawFilledCircle(dst, float32(cx+rad*0.32), float32(cy-rad*0.15), float32(e), withAlpha(pal.eye, alpha), true)
+	my := cy + rad*0.38
+	vector.StrokeLine(dst, float32(cx-rad*0.4), float32(my), float32(cx+rad*0.4), float32(my), 1.2, withAlpha(zombieInk, alpha), true)
+	for i := -1; i <= 1; i++ {
+		x := cx + float64(i)*rad*0.22
+		vector.StrokeLine(dst, float32(x), float32(my-rad*0.12), float32(x), float32(my+rad*0.12), 1, withAlpha(zombieInk, alpha), true)
+	}
 }
