@@ -259,7 +259,6 @@ type netplayPeer struct {
 	postGameReady atomic.Bool
 
 	zombieMu   sync.Mutex
-	zombieSeen uint32
 	zombieReqs []netZombieReq
 
 	stateSend chan *netHostFrame

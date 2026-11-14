@@ -335,6 +335,12 @@ func (g *Game) beginMultiplayerServerBrowser() {
 	if g == nil {
 		return
 	}
+	// A previous zombie session's flag must not turn the next hosted session
+	// into a zombie one (HOST ONLINE sets it again after this call).
+	g.onlineZombie = false
+	if g.zombie != nil && !g.zombie.host {
+		g.zombie = nil
+	}
 	g.multiplayerServers = nil
 	g.multiplayerServerScroll = 0
 	g.multiplayerSelectedServer = -1

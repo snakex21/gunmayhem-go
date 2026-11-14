@@ -707,7 +707,7 @@ func (g *Game) drawMainZombieArt(dst *ebiten.Image, r Rect, alpha float64) {
 		op.ColorScale.ScaleAlpha(float32(alpha))
 		dst.DrawImage(s.img, op)
 	}
-	draw(zombieBrute, zombiePoseWalk+2, r.X+r.W*0.68, 0.62, true)
-	draw(zombieWalker, zombiePoseWalk+5, r.X+r.W*0.86, 0.8, true)
-	draw(zombieRunner, zombiePoseWalk+1, r.X+r.W*0.48, 0.8, true)
+	draw(zombieBrute, zombiePoseWalk+2, r.X+r.W*0.6, 0.95, true)
+	draw(zombieWalker, zombiePoseWalk+5, r.X+r.W*0.82, 1.15, true)
+	draw(zombieRunner, zombiePoseWalk+1, r.X+r.W*0.36, 1.15, true)
 }

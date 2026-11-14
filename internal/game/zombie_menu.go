@@ -274,6 +274,15 @@ func (g *Game) buildZombieResults(ctx *uiCtx) {
 	switch {
 	case online && !host:
 		ctx.Button("zr.wait", uiActionPrimaryRect(240), "WAITING FOR HOST", uiButtonOpts{Kind: uiButtonPrimary, Disabled: true})
+		if ctx.Button("zr.leave", uiActionBackRect(), "LEAVE", uiButtonOpts{Kind: uiButtonDanger,
+			InfoTitle: "LEAVE", InfoBody: "Disconnect from the host and return to the server browser."}) || ctx.Back() {
+			g.zombie = nil
+			g.zombieUI.reset()
+			_ = g.CloseNetplay()
+			g.returnToOnlineServerBrowser()
+			g.screen = screenCustomGame
+			g.multiplayerMessage = "DISCONNECTED"
+		}
 	case host:
 		if ctx.Button("zr.lobby", uiActionPrimaryRect(240), "BACK TO LOBBY", uiButtonOpts{Kind: uiButtonPrimary,
 			InfoTitle: "BACK TO LOBBY", InfoBody: "Return everybody to the session lobby."}) {

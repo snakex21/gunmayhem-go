@@ -1280,3 +1280,207 @@ func TestZombieHordePerformance(t *testing.T) {
 	}
 	t.Logf("%v per tick with %d zombies", per, m.livingZombies())
 }
+
+// TestZombieOnlineShopRequestLoopback sends a guest purchase over a real
+// loopback session: client message -> host reader -> game thread rule check
+// -> snapshot back to the guest with the acknowledgement.
+func TestZombieOnlineShopRequestLoopback(t *testing.T) {
+	host, err := newHostNetplay("127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer host.Close()
+	client, err := newClientNetplay(host.listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	waitFor(t, "host connection", host.connected)
+	waitFor(t, "client player assignment", func() bool { return client.assignedPlayer() == 2 })
+
+	g := newZombieTestGame(t, 1, [4]int{1, 1, 0, 0})
+	g.netplay = host
+	defer func() { g.netplay = nil }()
+	openZombieBreak(g)
+	pistol := shopItemFor(t, zombieItemWeapon, 6)
+	reqs := []netZombieReq{{Seq: 1, Action: netZombieReqBuy, Item: pistol.ID}, {Seq: 2, Action: netZombieReqClose}}
+	client.queueClientMessage(netWireMessage{Type: netMessageZombie, ZombieReqs: reqs})
+	zp := g.zombie.playerState(2)
+	waitFor(t, "host applies the guest purchase", func() bool {
+		g.processZombieRequests()
+		return zp.ReqAck == 2
+	})
+	if zp.Gun != 6 || zp.Points != zombieStartPoints-pistol.Price || zp.ShopOpen || !zp.Ready {
+		t.Fatalf("guest purchase: gun=%d points=%d open=%v ready=%v", zp.Gun, zp.Points, zp.ShopOpen, zp.Ready)
+	}
+	// A replay of the same requests changes nothing.
+	client.queueClientMessage(netWireMessage{Type: netMessageZombie, ZombieReqs: reqs})
+	time.Sleep(50 * time.Millisecond)
+	g.processZombieRequests()
+	if zp.Points != zombieStartPoints-pistol.Price {
+		t.Fatalf("replayed request charged again: %d", zp.Points)
+	}
+	host.queueState(g.makeNetSnapshot())
+	waitFor(t, "zombie snapshot on the guest", func() bool {
+		got, ok := client.latestState()
+		return ok && got.ZombieHUD.Active && got.ZombieHUD.Players[1].ReqAck == 2 && got.ZombieHUD.Players[1].Gun == 6
+	})
+}
+
+// --- review fixes ----------------------------------------------------------------------
+
+func TestZombieHostAcceptsRestartedRequestNumbers(t *testing.T) {
+	peer := &netplayPeer{}
+	peer.receiveZombieRequests([]netZombieReq{{Seq: 5, Action: netZombieReqClose}})
+	peer.receiveZombieRequests([]netZombieReq{{Seq: 5, Action: netZombieReqClose}})
+	if len(peer.zombieReqs) != 1 {
+		t.Fatalf("an exact repeat was queued twice: %+v", peer.zombieReqs)
+	}
+	peer.zombieReqs = nil
+	// A new match restarts at 1: those requests must not be dropped.
+	peer.receiveZombieRequests([]netZombieReq{{Seq: 1, Action: netZombieReqBuy, Item: 2}})
+	if len(peer.zombieReqs) != 1 {
+		t.Fatal("a restarted request number was dropped by the connection")
+	}
+}
+
+func TestZombieFallOutsideAWaveIsNotADown(t *testing.T) {
+	g := newZombieTestGame(t, 1, [4]int{1, 0, 0, 0})
+	m := g.zombie
+	openZombieBreak(g)
+	p := g.players[0]
+	zp := m.playerState(1)
+	zp.SelfRevives = 0
+	placePlayer(p, 130, 511)
+	updateN(t, g, 2)
+	p.VX = -40
+	for i := 0; i < 90; i++ {
+		updateN(t, g, 1)
+	}
+	if zp.State != zombiePlayerAlive || !p.Active || m.hud.Phase != zombiePhaseBreak || zp.Downs != 0 {
+		t.Fatalf("break ring-out: state=%d active=%v phase=%d downs=%d", zp.State, p.Active, m.hud.Phase, zp.Downs)
+	}
+}
+
+func TestZombieRejoiningPlayerComesBackStanding(t *testing.T) {
+	g := newZombieTestGame(t, 1, [4]int{1, 1, 0, 0})
+	m := g.zombie
+	zp := m.playerState(2)
+	zp.State, zp.HP, zp.Points = zombiePlayerDead, 0, 1234
+	p := NewPlayer(2, g.arena)
+	g.zombieJoinPlayer(p)
+	if zp.State != zombiePlayerAlive || zp.HP != zp.MaxHP || zp.Points != 1234 || p.Team != 1 {
+		t.Fatalf("rejoin: state=%d hp=%d points=%d team=%d", zp.State, zp.HP, zp.Points, p.Team)
+	}
+}
+
+func TestZombieBotsDoNotUseTheBox(t *testing.T) {
+	g := newZombieTestGame(t, 1, [4]int{1, 2, 0, 0})
+	holdZombieWave(g)
+	m := g.zombie
+	bot := g.players[1]
+	m.hud.Box = ZombieBoxState{X: 484, Y: 331}
+	placePlayer(bot, 484, 331)
+	m.playerState(2).Points = 5000
+	bot.AIDown = true
+	g.updateZombiePreInput()
+	if m.hud.Box.State != zombieBoxIdle || m.playerState(2).Points != 5000 {
+		t.Fatal("an AI bot dropping through rolled the mystery box")
+	}
+}
+
+func TestZombieShopCloseKeyIsHeldBack(t *testing.T) {
+	g := newZombieTestGame(t, 1, [4]int{1, 0, 0, 0})
+	m := g.zombie
+	m.hostPlayer(1).remote = false
+	openZombieBreak(g)
+	p := g.players[0]
+	r := zombieShopRects(1)[0]
+	g.runZombieShopPanel(p, PlayerInputState{}, false, uiInput{}, r)
+	g.runZombieShopPanel(p, PlayerInputState{Grenade: true}, false, uiInput{}, r)
+	g.runZombieShopPanel(p, PlayerInputState{Grenade: true}, false, uiInput{}, r)
+	ui := &m.shop[0]
+	if m.playerState(1).ShopOpen || !ui.holdKeys {
+		t.Fatalf("closing: open=%v hold=%v", m.playerState(1).ShopOpen, ui.holdKeys)
+	}
+	if !ui.holdingKeys(PlayerInputState{Grenade: true, Left: true}) {
+		t.Fatal("the held GRENADE was released to the game")
+	}
+	if ui.holdingKeys(PlayerInputState{Left: true}) || ui.holdKeys {
+		t.Fatal("the hold did not end when the keys were released")
+	}
+	// Guest side: the same hold strips the action keys from the input.
+	guest := &Game{zombie: &zombieMatch{}, netplay: &netplaySession{mode: netplayClient}}
+	guest.netplay.assignedPlayerID.Store(2)
+	guest.zombie.shop[1].holdKeys = true
+	in := guest.zombieGuestInputMask(PlayerInputState{Grenade: true, Right: true})
+	if in.Grenade || !in.Right {
+		t.Fatalf("guest mask: %+v", in)
+	}
+}
+
+func TestZombieChainFlagClearedWhenAnExploderSurvives(t *testing.T) {
+	g := newZombieTestGame(t, 1, [4]int{1, 0, 0, 0})
+	holdZombieWave(g)
+	placePlayer(g.players[0], 150, 511)
+	z := spawnTestZombie(g, zombieExploder, 500, 511, 5000)
+	g.zombieExplode(zombiePendingBlast{x: 480, y: 511, ownerID: 1})
+	if z.Dead || z.chained {
+		t.Fatalf("survivor: dead=%v chained=%v", z.Dead, z.chained)
+	}
+}
+
+func TestZombieBrowserResetsTheZombieSessionFlag(t *testing.T) {
+	g := New()
+	g.onlineZombie = true
+	g.zombie = &zombieMatch{}
+	g.beginMultiplayerServerBrowser()
+	if g.onlineZombie || g.zombie != nil {
+		t.Fatal("server browser kept the zombie session state")
+	}
+	g.openZombieOnlineHost()
+	if !g.onlineZombie || !g.customHostSetupOpen {
+		t.Fatal("HOST ONLINE lost the zombie flag")
+	}
+	_ = g.CloseNetplay()
+}
+
+func TestZombieGuestCanLeaveResults(t *testing.T) {
+	g := newZombieTestGame(t, 1, [4]int{1, 0, 0, 0})
+	g.zombie.hud.Phase = zombiePhaseOver
+	g.netplay = &netplaySession{mode: netplayClient}
+	g.runZombieResultsUpdate(uiInput{})
+	_, leave := g.zombieUI.item("zr.leave")
+	g.netplay = nil
+	if !leave {
+		t.Fatal("a guest has no way off the results screen")
+	}
+}
+
+func TestZombieSnapshotRejectsUnknownWeapons(t *testing.T) {
+	s := netSnapshot{ZombieHUD: ZombieHUD{Active: true, Wave: 1}}
+	if err := validateZombieSnapshot(s); err != nil {
+		t.Fatal(err)
+	}
+	s.ZombieHUD.Box.Weapon = 99999
+	if validateZombieSnapshot(s) == nil {
+		t.Fatal("unknown box weapon accepted")
+	}
+	s.ZombieHUD.Box.Weapon = 0
+	s.ZombieHUD.Players[0] = ZombiePlayerState{ID: 1, Gun: -4}
+	if validateZombieSnapshot(s) == nil {
+		t.Fatal("unknown player gun accepted")
+	}
+}
+
+func TestZombieFloorBelowIsAlwaysFinite(t *testing.T) {
+	arena := OriginalMap1()
+	if y, ok := zombieFloorBelow(arena, -5000, -1000); ok || math.IsInf(y, 0) || math.IsNaN(y) {
+		t.Fatalf("no platform: y=%v ok=%v", y, ok)
+	}
+	g := New()
+	g.arena = Map{Number: 1}
+	if _, y := g.zombieSafeGround(100); math.IsInf(y, 0) {
+		t.Fatal("safe ground infinite on an empty arena")
+	}
+}

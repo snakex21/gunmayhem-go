@@ -411,6 +411,16 @@ func (g *Game) zombieJoinPlayer(p *Player) {
 	if zp.ID != p.ID {
 		*zp = ZombiePlayerState{ID: p.ID, HP: zombiePlayerHP, MaxHP: zombiePlayerHP, Points: zombieStartPoints, Zone: m.arena.StartZone}
 	}
+	// A player who left while DOWN / DEAD comes back standing (the new body
+	// is active); points and stats are kept.
+	if zp.State != zombiePlayerAlive || zp.HP <= 0 {
+		zp.State = zombiePlayerAlive
+		zp.HP = zp.MaxHP
+		zp.ReviveProgress = 0
+		zp.DownTimer = 0
+	}
+	zp.ShopOpen, zp.Ready = false, false
+	zp.Gun, zp.Reserve = 0, 0 // the new body has only its starter pistol
 	gx, gy := g.zombieSafeGround(p.X)
 	m.players[p.ID-1] = zombieHostPlayer{seenSerial: p.DeathSerial, groundX: gx, groundY: gy, remote: p.RemoteControlled}
 	if m.hud.Phase == zombiePhaseBreak && !p.AI {
@@ -453,7 +463,20 @@ func (g *Game) updateZombiePreInput() {
 		}
 		p.Lives, p.TotalLives = zombieLives, zombieLives
 		masked := zp.ShopOpen && !p.AI
+		hold := false
+		var held PlayerInputState
+		if !masked && !hp.remote && !p.AI {
+			held = capturePlayerInput(p.Controls)
+			// The key that closed the shop (GRENADE / ABILITY / SHOOT) is
+			// still held: it must not throw, dash or shoot on release.
+			hold = m.shop[p.ID-1].holdingKeys(held)
+		}
 		switch {
+		case hold:
+			held.Shoot, held.Grenade, held.Ability = false, false, false
+			p.RemoteControlled = true
+			p.RemoteInput = held
+			hp.masked = true
 		case hp.remote:
 			p.RemoteControlled = true
 			if masked {
@@ -472,7 +495,7 @@ func (g *Game) updateZombiePreInput() {
 			continue
 		}
 		_, _, _, down := p.movementInput()
-		if down && m.boxInReach(p) {
+		if down && !p.AI && m.boxInReach(p) {
 			p.DownHeld = true // no drop-through while using the box
 			if !hp.downHeld {
 				g.zombieUseBox(p)
@@ -568,7 +591,7 @@ func (g *Game) markZombieHeadshots(alive []int) {
 			if head.Contains(b.X, b.Y) {
 				if !z.headshot {
 					z.headshot = true
-					z.applyDamage(b.Firepower*zombieHeadshotShare, b.OwnerID)
+					z.applyDamage(b.Firepower*zombieHeadshotShare*zombieBlastDamageScale, b.OwnerID)
 				}
 				break
 			}
@@ -904,7 +927,7 @@ func (g *Game) endZombieWave() {
 		case zombiePlayerDown:
 			g.zombieRevive(p, zp, zombieReviveHP)
 		case zombiePlayerDead:
-			g.zombieRespawnDead(p, zp)
+			g.zombieRespawnDead(p, zp, zp.MaxHP)
 		}
 	}
 	m.hud.Phase = zombiePhaseBreak
@@ -971,6 +994,13 @@ func (g *Game) updateZombiePlayers() {
 		}
 		switch zp.State {
 		case zombiePlayerAlive:
+			if m.hud.Phase != zombiePhaseWave && (p.DeathSerial != hp.seenSerial || zp.HP <= 0) {
+				// No zombies around (intro, break, end): a fall is not a down,
+				// the player just drops back in.
+				zp.HP = max(zp.HP, zombieReviveHP)
+				g.zombieRespawnDead(p, zp, zp.HP)
+				continue
+			}
 			if p.DeathSerial != hp.seenSerial {
 				// Ring-out (Player.Kill respawned the body): down at the edge
 				// the player last stood on.
@@ -1125,14 +1155,10 @@ func (g *Game) zombieRevive(p *Player, zp *ZombiePlayerState, hpValue int) {
 
 // zombieRespawnDead brings a bled-out player back at the start of a break,
 // dropping in from the top like a normal respawn.
-func (g *Game) zombieRespawnDead(p *Player, zp *ZombiePlayerState) {
-	x := (g.arena.SpawnMinX + g.arena.SpawnMaxX) / 2
-	y := -200.0
-	if top, ok := zombieFloorBelow(g.arena, x, -1000); ok {
-		y = top
-	}
+func (g *Game) zombieRespawnDead(p *Player, zp *ZombiePlayerState, hpValue int) {
+	x, y := g.zombieSafeGround((g.arena.SpawnMinX + g.arena.SpawnMaxX) / 2)
 	zp.DownX, zp.DownY = x, y
-	g.zombieRevive(p, zp, zp.MaxHP)
+	g.zombieRevive(p, zp, hpValue)
 }
 
 // zombieSafeGround is a down position on the highest platform under x (a
@@ -1147,6 +1173,8 @@ func (g *Game) zombieSafeGround(x float64) (float64, float64) {
 }
 
 // zombieFloorBelow is the top of the first platform at or below y at x.
+// When no platform is there it returns the arena's lowest platform line (a
+// finite fallback) and false.
 func zombieFloorBelow(arena Map, x, y float64) (float64, bool) {
 	best := math.Inf(1)
 	for _, r := range arena.Platforms {
@@ -1154,7 +1182,10 @@ func zombieFloorBelow(arena Map, x, y float64) (float64, bool) {
 			best = r.Y
 		}
 	}
-	return best, !math.IsInf(best, 1)
+	if math.IsInf(best, 1) {
+		return arena.LowestY, false
+	}
+	return best, true
 }
 
 // zombieHurtPlayer applies zombie damage to a player's HP and the knockback

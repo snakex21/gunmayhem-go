@@ -670,6 +670,8 @@ func (g *Game) updateNetClient() error {
 		input := netClientInputForFocus(capturePlayerInput(g.controlConfigs[0]), ebiten.IsFocused())
 		if zombieShop {
 			input = PlayerInputState{} // the host masks it too
+		} else {
+			input = g.zombieGuestInputMask(input)
 		}
 		g.sendZombieRequests()
 		if seq, ok := g.netplay.queueInput(input); ok {

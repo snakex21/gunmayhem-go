@@ -25,6 +25,21 @@ type zombieShopUI struct {
 	scroll  int
 	prev    PlayerInputState
 	wasOpen bool
+	// holdKeys: the shop just closed; SHOOT / GRENADE / ABILITY stay masked
+	// until released so the closing key does not also throw or dash.
+	holdKeys bool
+}
+
+// holdingKeys reports (and ends) the post-close key hold.
+func (ui *zombieShopUI) holdingKeys(cur PlayerInputState) bool {
+	if ui == nil || !ui.holdKeys {
+		return false
+	}
+	if cur.Shoot || cur.Grenade || cur.Ability {
+		return true
+	}
+	ui.holdKeys = false
+	return false
 }
 
 // zombieShopKeys are this frame's shop key edges of one player.
@@ -141,6 +156,20 @@ func (g *Game) updateZombieGuestShop() bool {
 	return g.zombieShopIsOpen(p)
 }
 
+// zombieGuestInputMask clears the keys a guest's closed shop still holds.
+func (g *Game) zombieGuestInputMask(in PlayerInputState) PlayerInputState {
+	m := g.zombie
+	if m == nil || m.host {
+		return in
+	}
+	id := g.onlineLocalPlayerID()
+	if id < 1 || id > 4 || !m.shop[id-1].holdingKeys(in) {
+		return in
+	}
+	in.Shoot, in.Grenade, in.Ability = false, false, false
+	return in
+}
+
 func (g *Game) zombieShopIsOpen(p *Player) bool {
 	zp := g.zombie.playerState(p.ID)
 	return zp != nil && zp.ShopOpen && zp.State == zombiePlayerAlive && g.zombie.hud.Phase == zombiePhaseBreak
@@ -164,6 +193,9 @@ func (g *Game) runZombieShopPanel(p *Player, cur PlayerInputState, esc bool, poi
 		return
 	}
 	open := g.zombieShopIsOpen(p)
+	if !open && ui.wasOpen {
+		ui.holdKeys = true
+	}
 	if open && !ui.wasOpen {
 		ui.prev = cur // keys held when the shop opened do not buy
 		ui.st.reset()

@@ -1040,6 +1040,9 @@ func (g *Game) zombieExplode(bl zombiePendingBlast) {
 				z.chained = true
 			}
 			g.zombieDamage(z, int(math.Round(90*k)), bl.ownerID, false)
+			if !z.Dead {
+				z.chained = false // survived: a later bullet kill blows at once
+			}
 			continue
 		}
 		g.zombieHurtPlayer(t, int(math.Round(zombieExploderDamage*k)), dir*zombieExploderPush*k, zombieExploderPush*0.5*k, 0)

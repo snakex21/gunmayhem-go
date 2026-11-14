@@ -68,11 +68,17 @@ func validateNetZombieRequests(reqs []netZombieReq) error {
 func (peer *netplayPeer) receiveZombieRequests(reqs []netZombieReq) {
 	peer.zombieMu.Lock()
 	defer peer.zombieMu.Unlock()
+	// No per-connection "newest seen" filter: a new match restarts the
+	// numbering from that match's ReqAck, and the game thread drops every
+	// request at or below the player's ReqAck anyway. Only exact repeats
+	// already waiting in the queue are skipped.
+next:
 	for _, r := range reqs {
-		if r.Seq <= peer.zombieSeen {
-			continue
+		for _, q := range peer.zombieReqs {
+			if q == r {
+				continue next
+			}
 		}
-		peer.zombieSeen = r.Seq
 		peer.zombieReqs = append(peer.zombieReqs, r)
 	}
 	if len(peer.zombieReqs) > netZombieReqQueue {
@@ -277,6 +283,16 @@ func validateZombieSnapshot(s netSnapshot) error {
 	for i, zp := range h.Players {
 		if zp.ID != 0 && zp.ID != i+1 {
 			return errors.New("invalid zombie player in host snapshot")
+		}
+		if zp.Gun != 0 {
+			if _, ok := WeaponByNumber(zp.Gun); !ok {
+				return errors.New("invalid zombie player weapon in host snapshot")
+			}
+		}
+	}
+	if h.Box.Weapon != 0 {
+		if _, ok := WeaponByNumber(h.Box.Weapon); !ok {
+			return errors.New("invalid mystery box weapon in host snapshot")
 		}
 	}
 	for _, z := range s.Zombies {
