@@ -370,7 +370,7 @@ func (g *Game) zombieBuy(p *Player, itemID int) int {
 		zp.SelfRevives++
 	}
 	zp.Points -= price
-	g.zombie.addPop(p.X, p.Y-90, -price, zombiePopSpend)
+	g.zombie.addPopIn(zp.Zone, p.X, p.Y-90, -price, zombiePopSpend)
 	g.playSourceSFX("bolt2.wav", true)
 	return code
 }
@@ -448,8 +448,11 @@ func (m *zombieMatch) placeBox(avoid int) {
 	if len(spots) == 0 {
 		return
 	}
+	// avoid >= 0: not the spot the box is leaving (compared by place: the
+	// list grows when zones unlock, so indices are not stable).
+	old := m.hud.Box
 	i := m.rng.Intn(len(spots))
-	if len(spots) > 1 && i == avoid {
+	if avoid >= 0 && len(spots) > 1 && spots[i].zone == old.Zone && spots[i].pt.X == old.X && spots[i].pt.Y == old.Y {
 		i = (i + 1 + m.rng.Intn(len(spots)-1)) % len(spots)
 	}
 	s := spots[i]
@@ -501,7 +504,7 @@ func (g *Game) zombieUseBox(p *Player) {
 			return
 		}
 		zp.Points -= zombieBoxPrice
-		m.addPop(box.X, box.Y-70, -zombieBoxPrice, zombiePopSpend)
+		m.addPopIn(box.Zone, box.X, box.Y-70, -zombieBoxPrice, zombiePopSpend)
 		box.Uses++
 		box.State = zombieBoxRolling
 		box.Timer = zombieBoxRollFrames

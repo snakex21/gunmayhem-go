@@ -191,9 +191,17 @@ type zombieHostPlayer struct {
 	remote           bool // online guest (RemoteInput comes from the network)
 	masked           bool // local player whose game input is masked by the shop
 	reviverID        int
+	// Online door passing: doorCooldown blocks another pass, doorInvulnWait
+	// withholds the arrival invulnerability from a door hopper.
+	doorCooldown   int
+	doorInvulnWait int
 	// AI teammates: path to a downed teammate (zombie_bots.go).
 	botNav      zombieNavState
 	botReviveID int
+	botBestDist float64 // closest the bot got to the marker
+	botStall    int     // frames without getting closer
+	botGiveUpID int     // marker the bot gave up on ...
+	botGiveUp   int     // ... for this many frames
 }
 
 type zombiePendingBlast struct {
@@ -226,15 +234,18 @@ type zombieMatch struct {
 	stuckRespawns int
 
 	// Zones (zombie_zones.go, host / local only).
-	zoneMaps   map[int]Map
-	worlds     map[int]*zombieZoneWorld
-	resident   int // zone whose lists are in the Game fields
-	viewZone   int // zone this screen shows
-	passZone   int // zone being simulated (-1 outside a zone pass)
-	zoneCount  [zombieMaxZones]int
-	zoneRoute  [zombieMaxZones]int // door toward the nearest player (-1 none)
-	allPlayers []*Player           // every player while a zone pass runs
-	doorPasses int                 // zombies that came through a door (tests)
+	zoneMaps  map[int]Map
+	worlds    map[int]*zombieZoneWorld
+	resident  int                 // zone whose lists are in the Game fields
+	viewZone  int                 // zone this screen shows
+	passZone  int                 // zone being simulated (-1 outside a zone pass)
+	zoneCount [zombieMaxZones]int // living, standing players per zone
+	// zonePresent: standing or downed players per zone (spawn weights).
+	zonePresent [zombieMaxZones]int
+	otherLiving int                 // during a zone pass: living zombies of the other zones
+	zoneRoute   [zombieMaxZones]int // door toward the nearest player (-1 none)
+	allPlayers  []*Player           // every player while a zone pass runs
+	doorPasses  int                 // zombies that came through a door (tests)
 
 	// Shop UI (local and guest): one panel per local player.
 	shop [4]zombieShopUI
@@ -495,6 +506,12 @@ func (g *Game) updateZombiePreInput() {
 			continue
 		}
 		p.Lives, p.TotalLives = zombieLives, zombieLives
+		if hp.doorCooldown > 0 {
+			hp.doorCooldown--
+		}
+		if hp.doorInvulnWait > 0 {
+			hp.doorInvulnWait--
+		}
 		masked := zp.ShopOpen && !p.AI
 		hold := false
 		var held PlayerInputState
@@ -769,12 +786,23 @@ func (g *Game) zombieCreditOwner(id int) *Player {
 	if id <= 0 || id >= zombieIDBase {
 		return nil
 	}
-	p := g.playerByID(id)
+	// Every player of the match: during a zone pass g.players holds only
+	// that zone, but a grenade, a burn or a chain can credit a shooter who
+	// has gone through a door since.
+	byID := func(id int) *Player {
+		for _, p := range g.zombiePlayersAll() {
+			if p != nil && p.ID == id {
+				return p
+			}
+		}
+		return nil
+	}
+	p := byID(id)
 	if p == nil {
 		return nil
 	}
 	if p.IsDouble && p.OwnerPlayerID > 0 {
-		p = g.playerByID(p.OwnerPlayerID)
+		p = byID(p.OwnerPlayerID)
 	}
 	return p
 }
@@ -794,8 +822,13 @@ func (g *Game) zombieAward(id, amount, kind int, x, y float64) {
 		zp.Earned += amount
 		owner.Score += amount
 	}
-	// The popup shows where the points were earned: the owner's zone.
-	g.zombie.addPopIn(zp.Zone, x, y, amount, kind)
+	// The popup shows where the points were earned: the zone being
+	// simulated (the zombie's), else the owner's zone.
+	zone := zp.Zone
+	if g.zombie.passZone >= 0 {
+		zone = g.zombie.passZone
+	}
+	g.zombie.addPopIn(zone, x, y, amount, kind)
 }
 
 func (m *zombieMatch) addPop(x, y float64, amount, kind int) {

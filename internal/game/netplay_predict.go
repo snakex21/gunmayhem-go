@@ -296,6 +296,13 @@ func (g *Game) applyNetPrediction(latest uint32) {
 		g.netPredict.reset()
 		return
 	}
+	if g.zombieActive() && arena.Number != g.arena.Number {
+		// A zone change (multi-zone zombie map): the newest snapshot is in
+		// another zone than the playout state on screen. Wait until the
+		// playout catches up instead of mixing the two maps.
+		g.netPredict.reset()
+		return
+	}
 	env := netPredictEnv{arena: arena, noDrop: g.zombieNoDropAreas()}
 	if g.assets != nil {
 		env.leg1, env.leg2 = len(g.assets.Leg1Timeline), len(g.assets.Leg2Timeline)

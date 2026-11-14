@@ -1064,7 +1064,7 @@ func (g *Game) zombieBossSlam(z *Zombie) {
 func (g *Game) zombieBossSummon(z *Zombie, phase2 bool) {
 	m := g.zombie
 	b := &z.body
-	if m.livingZombies() >= zombieMaxActive {
+	if m.livingZombies()+m.otherLiving >= zombieMaxActive {
 		return
 	}
 	nav := m.navFor(z.Zone, g.zombieZoneMap(z.Zone), zombieNavNormal)

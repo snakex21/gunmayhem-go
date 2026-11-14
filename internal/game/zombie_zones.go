@@ -41,6 +41,8 @@ const (
 	zombieDoorZombieSpread = 26.0 // zombies come out of a door spread by up to this
 	zombieSpawnWeightHere  = 6    // spawn weight per living player in a zone
 	zombieSpawnWeightNear  = 2    // spawn weight of an open neighbour zone
+	zombieDoorPassCooldown = 45   // online: frames before the same player passes again
+	zombieDoorInvulnWait   = 300  // online: arrival invulnerability at most this often
 )
 
 // ZombieDoorState is the synced state of one door (ZombieHUD.Doors).
@@ -255,15 +257,21 @@ func (m *zombieMatch) refreshZoneInfo(players []*Player) {
 		return
 	}
 	m.zoneCount = [zombieMaxZones]int{}
+	m.zonePresent = [zombieMaxZones]int{}
 	for _, p := range players {
-		if p == nil || p.IsDouble || !p.Active {
+		if p == nil || p.IsDouble {
 			continue
 		}
 		zp := m.playerState(p.ID)
-		if zp == nil || zp.State != zombiePlayerAlive || zp.Zone < 0 || zp.Zone >= zombieMaxZones {
+		if zp == nil || zp.Zone < 0 || zp.Zone >= zombieMaxZones {
 			continue
 		}
-		m.zoneCount[zp.Zone]++
+		if zp.State != zombiePlayerDead {
+			m.zonePresent[zp.Zone]++ // standing or downed: spawns come here
+		}
+		if p.Active && zp.State == zombiePlayerAlive {
+			m.zoneCount[zp.Zone]++
+		}
 	}
 	dist := [zombieMaxZones]int{}
 	for i := range dist {
@@ -348,6 +356,12 @@ func (g *Game) runZombieZoneTick() bool {
 		g.players = append([]*Player(nil), zonePlayers...)
 		m.zombies = append([]*Zombie(nil), zoneZombies...)
 		m.passZone = zone
+		m.otherLiving = 0
+		for i, z := range allZombies {
+			if zombieZone[i] != zone && !z.Dead {
+				m.otherLiving++
+			}
+		}
 		primary := zone == m.viewZone
 		g.sfxLocalMute = !primary
 		g.sfxZoneTag = zone + 1
@@ -377,6 +391,7 @@ func (g *Game) runZombieZoneTick() bool {
 	g.sfxLocalMute = false
 	g.sfxZoneTag = 0
 	m.passZone = -1
+	m.otherLiving = 0
 	m.allPlayers = nil
 	g.players = all
 	m.zombies = next
@@ -485,7 +500,18 @@ func (g *Game) zombieUseDoor(p *Player, di int) {
 		g.zombieStartGather(di)
 		return
 	}
+	hp := m.hostPlayer(p.ID)
+	if hp.doorCooldown > 0 {
+		return // the arrival spot is at the same door: no door hopping
+	}
+	invuln := hp.doorInvulnWait == 0
+	keep := zp.Invuln
 	g.zombiePassPlayer(p, di)
+	if !invuln {
+		zp.Invuln = keep // a quick pass back does not protect again
+	}
+	hp.doorCooldown = zombieDoorPassCooldown
+	hp.doorInvulnWait = zombieDoorInvulnWait
 }
 
 func (g *Game) zombieStartGather(di int) {
@@ -736,19 +762,19 @@ func (m *zombieMatch) pickZombieSpawnZone(farthest bool) int {
 	zones := m.unlockedZones()
 	weights := make([]int, len(zones))
 	total := 0
-	best, bestN := m.viewZone, -1
+	best, bestN := m.viewZone, 0
 	for i, z := range zones {
 		if z < 0 || z >= zombieMaxZones {
 			continue
 		}
-		n := m.zoneCount[z]
+		n := m.zonePresent[z]
 		w := zombieSpawnWeightHere * n
 		if n == 0 {
 			for di := range m.arena.Doors {
 				if !m.doorOpen(di) {
 					continue
 				}
-				if _, other, _, ok := m.arena.Doors[di].end(z); ok && other >= 0 && other < zombieMaxZones && m.zoneCount[other] > 0 {
+				if _, other, _, ok := m.arena.Doors[di].end(z); ok && other >= 0 && other < zombieMaxZones && m.zonePresent[other] > 0 {
 					w = zombieSpawnWeightNear
 					break
 				}

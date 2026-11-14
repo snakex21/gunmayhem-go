@@ -396,9 +396,30 @@ func TestZombieOnlineZonesAreIndependent(t *testing.T) {
 		t.Fatalf("decoded guest view: map %d view %d", dec.state.Arena.Number, dec.state.ZombieHUD.View)
 	}
 	c := New()
-	c.applyZombieSnapshot(&dec.state)
+	c.netplay = &netplaySession{mode: netplayClient}
+	defer func() { c.netplay = nil }()
+	c.applyNetSnapshot(dec.state)
 	if c.zombieViewZone() != 1 || !c.zombieInView(1) || c.zombieInView(0) {
 		t.Fatal("guest view zone")
+	}
+	// The guest draws its zone only (no host-side zone worlds exist there).
+	end := c.beginZombieViewDraw()
+	if len(c.players) != 1 || c.players[0].ID != 2 {
+		t.Fatalf("guest draws %d players", len(c.players))
+	}
+	end()
+	img := ebiten.NewImage(ScreenWidth, ScreenHeight)
+	c.drawZombieWorld(img)
+	c.drawZombieHUD(img)
+	// DOWN at the door the guest stands at must not be predicted as a drop.
+	found := false
+	for _, r := range c.zombieNoDropAreas() {
+		if r.Contains(m.arena.Doors[0].To.X, m.arena.Doors[0].To.Y) {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("no no-drop area at the guest's door")
 	}
 }
 
@@ -803,5 +824,214 @@ func TestZombieMultiZoneTickPerformance(t *testing.T) {
 	t.Logf("%d zombies over %d zones: %v per tick", zombieMaxActive, len(m.arena.Zones), per)
 	if per > 15*time.Millisecond {
 		t.Fatalf("multi-zone tick too slow: %v", per)
+	}
+}
+
+func TestZombieSingleZoneArenasKeepTheStepOneTick(t *testing.T) {
+	for _, arena := range []int{0, 1} {
+		g := newZombieTestGame(t, arena, [4]int{1, 0, 0, 0})
+		if g.zombie.multiZone() || g.runZombieZoneTick() {
+			t.Fatalf("arena %d runs zone passes", arena)
+		}
+		if g.zombie.doorNear(g.players[0]) != -1 {
+			t.Fatal("doors on a single-zone arena")
+		}
+	}
+}
+
+func TestZombieSnapshotRejectsBadZones(t *testing.T) {
+	g := newZoneTestGame(t, [4]int{1, 0, 0, 0})
+	s := g.makeNetSnapshot()
+	if err := validateZombieSnapshot(s); err != nil {
+		t.Fatal(err)
+	}
+	bad := s
+	bad.ZombieHUD.View = 9
+	if validateZombieSnapshot(bad) == nil {
+		t.Fatal("view zone 9 accepted")
+	}
+	bad = s
+	bad.ZombieHUD.Gather.Door = 50
+	if validateZombieSnapshot(bad) == nil {
+		t.Fatal("gather door 50 accepted")
+	}
+	bad = s
+	bad.Zombies = []Zombie{{Kind: int(zombieWalker), Zone: -1}}
+	if validateZombieSnapshot(bad) == nil {
+		t.Fatal("zombie zone -1 accepted")
+	}
+}
+
+// --- review fixes -------------------------------------------------------------------------------
+
+func TestZombieZoneIDsAreIndices(t *testing.T) {
+	for _, a := range zombieArenas {
+		if len(a.Zones) > zombieMaxZones || len(a.Doors) > zombieMaxDoors {
+			t.Fatalf("%s: %d zones, %d doors", a.Name, len(a.Zones), len(a.Doors))
+		}
+		for i, z := range a.Zones {
+			if z.ID != i {
+				t.Fatalf("%s: zone %d has ID %d (zone IDs index arrays and the wire)", a.Name, i, z.ID)
+			}
+		}
+		for _, d := range a.Doors {
+			if d.Zone < 0 || d.Zone >= len(a.Zones) || d.ToZone < 0 || d.ToZone >= len(a.Zones) || d.Zone == d.ToZone {
+				t.Fatalf("%s: door %s joins zones %d and %d", a.Name, d.Name, d.Zone, d.ToZone)
+			}
+		}
+	}
+}
+
+// A kill credited to a shooter who is in another zone (a grenade still
+// flying after a door pass, a burn) still pays, and the popup shows where the
+// zombie died.
+func TestZombieCreditAcrossZones(t *testing.T) {
+	g := newZoneTestGame(t, [4]int{1, 1, 0, 0})
+	g.netplay = &netplaySession{mode: netplayHost}
+	defer func() { g.netplay = nil }()
+	m := g.zombie
+	holdZombieWave(g)
+	openAllDoors(g)
+	putPlayerInZone(g, g.players[1], 1, 450, 477)
+	placePlayer(g.players[0], 120, 540)
+	z := g.newZombie(zombieWalker, 30, zombiePoint{700, 540}, 0)
+	z.State = zombieStateWalk
+	z.creditID, z.creditTimer = 2, zombieCreditFrames
+	z.bonusDamage = 1000
+	before := m.playerState(2).Points
+	g.runZombieZoneTick()
+	if !z.Dead {
+		t.Fatal("zombie survived")
+	}
+	zp := m.playerState(2)
+	if zp.Points <= before || zp.Kills != 1 {
+		t.Fatalf("cross-zone kill lost: points %d->%d kills %d", before, zp.Points, zp.Kills)
+	}
+	for _, p := range m.pops {
+		if p.Zone != 0 {
+			t.Fatalf("kill popup in zone %d, the zombie died in zone 0", p.Zone)
+		}
+	}
+}
+
+// Online, tapping DOWN at a door cannot hop back and forth for invulnerability.
+func TestZombieOnlineDoorHoppingIsLimited(t *testing.T) {
+	g := newZoneTestGame(t, [4]int{1, 1, 0, 0})
+	g.netplay = &netplaySession{mode: netplayHost}
+	defer func() { g.netplay = nil }()
+	m := g.zombie
+	holdZombieWave(g)
+	openAllDoors(g)
+	guest := g.players[1]
+	zp := m.playerState(2)
+	d := m.arena.Doors[0]
+	placePlayer(guest, d.At.X, d.At.Y)
+	passes, last := 0, zp.Zone
+	for f := 0; f < 120; f++ {
+		pressDown(g, guest, f%2 == 0)
+		g.updateZombiePreInput()
+		if zp.Zone != last {
+			passes++
+			last = zp.Zone
+			if passes > 1 && zp.Invuln > 1 {
+				t.Fatalf("pass %d granted invulnerability again", passes)
+			}
+		}
+		if zp.Invuln > 0 {
+			zp.Invuln--
+		}
+	}
+	if passes < 2 || passes > 3 {
+		t.Fatalf("%d passes in 4 s of tapping (cooldown %d frames)", passes, zombieDoorPassCooldown)
+	}
+}
+
+func TestZombieShopPopupInBuyersZone(t *testing.T) {
+	g := newZoneTestGame(t, [4]int{1, 1, 0, 0})
+	g.netplay = &netplaySession{mode: netplayHost}
+	defer func() { g.netplay = nil }()
+	m := g.zombie
+	openAllDoors(g)
+	putPlayerInZone(g, g.players[1], 2, 400, 450)
+	openZombieBreak(g)
+	m.pops = nil
+	g.zombieBuy(g.players[1], shopItemFor(t, zombieItemWeapon, 5).ID)
+	if len(m.pops) != 1 || m.pops[0].Zone != 2 {
+		t.Fatalf("spend popup %+v", m.pops)
+	}
+}
+
+func TestZombieSpawnZoneWithOnlyDownedPlayers(t *testing.T) {
+	g := newZoneTestGame(t, [4]int{1, 0, 0, 0})
+	m := g.zombie
+	openAllDoors(g)
+	p := g.players[0]
+	putPlayerInZone(g, p, 2, 400, 450)
+	g.zombieDownPlayer(p, m.playerState(1), m.hostPlayer(1), 400, 450, false)
+	m.playerState(1).SelfRevives = 1
+	m.refreshZoneInfo(g.players)
+	for i := 0; i < 200; i++ {
+		if z := m.pickZombieSpawnZone(false); z < 1 || z > 3 {
+			t.Fatalf("spawn in zone %d while the player lies in zone 2", z)
+		}
+	}
+	if m.pickZombieSpawnZone(true) != 2 {
+		t.Fatal("boss not in the downed player's zone")
+	}
+}
+
+func TestZombieBossSummonRespectsTheGlobalCap(t *testing.T) {
+	g := newZoneTestGame(t, [4]int{1, 0, 0, 0})
+	m := g.zombie
+	holdZombieWave(g)
+	openAllDoors(g)
+	for i := 0; i < zombieMaxActive-1; i++ {
+		g.newZombie(zombieWalker, 100, m.arena.Zones[1].Spawns[0], 1).State = zombieStateWalk
+	}
+	boss := g.newZombie(zombieBoss, 1000, zombiePoint{420, 454}, 0)
+	boss.State = zombieStateWalk
+	m.passZone, m.otherLiving = 0, zombieMaxActive-1
+	n := len(m.zombies)
+	g.zombieBossSummon(boss, false)
+	m.passZone, m.otherLiving = -1, 0
+	if len(m.zombies) != n {
+		t.Fatal("the boss summoned past the global cap")
+	}
+}
+
+func TestZombieBotGivesUpWhenStuck(t *testing.T) {
+	g := newZombieTestGame(t, 1, [4]int{1, 2, 0, 0})
+	m := g.zombie
+	holdZombieWave(g)
+	bot := g.players[1]
+	zp1 := m.playerState(1)
+	zp1.SelfRevives = 0
+	g.zombieDownPlayer(g.players[0], zp1, m.hostPlayer(1), 483, 151, false)
+	hp := m.hostPlayer(2)
+	for f := 0; f < zombieBotStallFrames+5; f++ {
+		placePlayer(bot, 200, 511) // held in place: never gets closer
+		g.zombieBotAssist(bot)
+	}
+	if hp.botGiveUpID != 1 || hp.botReviveID != 0 {
+		t.Fatalf("bot did not give up: giveUp=%d revive=%d", hp.botGiveUpID, hp.botReviveID)
+	}
+	g.zombieBotAssist(bot)
+	if hp.botReviveID != 0 {
+		t.Fatal("bot went back at once")
+	}
+}
+
+func TestZombieBoxNeverStaysOnItsSpot(t *testing.T) {
+	g := newZoneTestGame(t, [4]int{1, 0, 0, 0})
+	m := g.zombie
+	for i := 0; i < 300; i++ {
+		if i == 150 {
+			m.hud.Doors[0].Open = true // the spot list grows
+		}
+		old := m.hud.Box
+		m.placeBox(old.Spot)
+		if b := m.hud.Box; b.Zone == old.Zone && b.X == old.X && b.Y == old.Y {
+			t.Fatalf("box stayed at %v", b)
+		}
 	}
 }

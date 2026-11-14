@@ -13,6 +13,8 @@ const (
 	zombieBotDangerAbort   = 5     // this many: give up an ongoing revive
 	zombieBotReviveSlackX  = 16.0  // stand this far inside the revive box
 	zombieBotReviveMaxDist = 1400.0
+	zombieBotStallFrames   = 240 // no progress this long: give up on that marker ...
+	zombieBotGiveUpFrames  = 450 // ... for this long
 )
 
 // zombieBotAssist runs after a bot's AI decided its keys this frame.
@@ -24,6 +26,12 @@ func (g *Game) zombieBotAssist(p *Player) {
 	zp, hp := m.playerState(p.ID), m.hostPlayer(p.ID)
 	if zp == nil || hp == nil {
 		return
+	}
+	if hp.botGiveUp > 0 {
+		hp.botGiveUp--
+		if hp.botGiveUp == 0 {
+			hp.botGiveUpID = 0
+		}
 	}
 	if zp.State != zombiePlayerAlive || zp.HP < zombieBotReviveMinHP {
 		hp.botReviveID = 0
@@ -37,10 +45,23 @@ func (g *Game) zombieBotAssist(p *Player) {
 	if hp.botReviveID != target.ID {
 		hp.botReviveID = target.ID
 		hp.botNav = zombieNavState{cur: -1, lastPlat: -1}
+		hp.botBestDist = math.Inf(1)
+		hp.botStall = 0
 	}
 	p.AILeft, p.AIRight, p.AIUp, p.AIDown = false, false, false, false
 	dx := target.DownX - p.X
-	if p.JumpNum == 2 && math.Abs(dx) <= zombieReviveRadiusX-zombieBotReviveSlackX && math.Abs(target.DownY-p.Y) <= zombieReviveRadiusY-10 {
+	onMarker := p.JumpNum == 2 && math.Abs(dx) <= zombieReviveRadiusX-zombieBotReviveSlackX && math.Abs(target.DownY-p.Y) <= zombieReviveRadiusY-10
+	// The nav graph is built for zombie physics: a bot that stops getting
+	// closer gives up on that marker for a while instead of looping.
+	if d := math.Abs(dx) + math.Abs(target.DownY-p.Y); onMarker || d < hp.botBestDist-4 {
+		hp.botBestDist = math.Min(hp.botBestDist, d)
+		hp.botStall = 0
+	} else if hp.botStall++; hp.botStall >= zombieBotStallFrames {
+		hp.botGiveUpID, hp.botGiveUp = target.ID, zombieBotGiveUpFrames
+		hp.botReviveID = 0
+		return
+	}
+	if onMarker {
 		// On the marker: stay (keep shooting whatever the AI aims at).
 		hp.botNav.upPrev = false
 		return
@@ -58,7 +79,7 @@ func (g *Game) zombieBotReviveTarget(p *Player, hp *zombieHostPlayer) *ZombiePla
 	bestD := math.Inf(1)
 	for i := range m.hud.Players {
 		o := &m.hud.Players[i]
-		if o.ID == 0 || o.ID == p.ID || o.State != zombiePlayerDown || o.SelfRevives > 0 || o.Zone != zone {
+		if o.ID == 0 || o.ID == p.ID || o.State != zombiePlayerDown || o.SelfRevives > 0 || o.Zone != zone || o.ID == hp.botGiveUpID {
 			continue
 		}
 		d := math.Abs(o.DownX-p.X) + math.Abs(o.DownY-p.Y)

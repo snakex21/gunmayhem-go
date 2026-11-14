@@ -83,7 +83,7 @@ speed multiplier.
   The boss has its own HP bar at the top. A boss wave has half the usual adds.
 
 **Spawning**: zombies come out of the spawn points of a zone. On a multi-zone
-map the zone is picked by weight: 6 per living player in an unlocked zone, 2
+map the zone is picked by weight: 6 per standing or downed player in an unlocked zone, 2
 for an unlocked zone next to (one open door away from) a zone with players,
 0 otherwise; the boss comes in the zone with the most players. Spawn points
 within 200 px of a player are skipped. Each spawn shows a glowing crack and a
@@ -266,7 +266,9 @@ nearest downed teammate of its zone (not one that gets up by itself) and
 stands on the marker until the revive is done. It keeps aiming and shooting;
 only its movement keys are taken over, along the zombie nav graph
 (`navSteer`). It does not start when 3 or more zombies are within 150 px of
-itself or of the marker, and gives up an ongoing revive at 5. Bots do not use
+itself or of the marker, and gives up an ongoing revive at 5. A bot that has
+not got closer to the marker for 8 s (the nav graph is built for zombie
+physics) gives up on that teammate for 15 s. Bots do not use
 doors: on a shared screen they move with the team, online they follow a
 human who leaves their zone.
 
@@ -413,7 +415,13 @@ costs one image draw per zombie.
   left in a zone without humans follows the human who left. The HUD card of
   a teammate in another zone shows "IN <ZONE>". The host's screen shows the
   host player's zone.
-* Arriving players get 1 s of invulnerability.
+* Arriving players get 1 s of invulnerability. Online, a player can pass
+  again only after 1.5 s, and gets the arrival invulnerability at most once
+  every 10 s, so hopping back and forth at a door is no shield.
+* Points always reach their owner, also when the shooter has gone through a
+  door since (a grenade still flying, a burn, an exploder chain); the popup
+  shows in the zone where the zombie was hit. Spend popups show in the
+  buyer's zone (shop) or the box's zone.
 
 Design choice: zones are separate arenas (each an existing GM1 map with its
 own art, platforms and death bounds) linked by door transitions, not one big
@@ -476,8 +484,10 @@ guests of that zone. So a snapshot is bounded by one zone's lists and the
 same `netSnapshotListCaps`, however many zones a map has.
 
 `ZombieHUD.View` tells the guest which zone the snapshot shows. The guest's
-playout never blends two snapshots of different zones, and the render
-interpolation snaps when the view zone changes (`renderInterpState.zone`),
+playout never blends two snapshots of different zones. After a pass the guest's
+own-player prediction pauses until the playout reaches the new zone (the
+newest snapshot and the state on screen are then on different maps); the
+render interpolation snaps when the view zone changes (`renderInterpState.zone`),
 when a zombie came through a door (`Zombie.DoorPasses`) and when a player
 changed zone.
 
