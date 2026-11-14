@@ -221,8 +221,17 @@ func (g *Game) drawZombieShops(screen *ebiten.Image) {
 	}
 }
 
+// zombieShopFooterH: big panels show a key-hint line, the small 2x2 ones
+// only the info line next to READY.
+func zombieShopFooterH(r Rect) float64 {
+	if r.H < 300 {
+		return 44
+	}
+	return 62
+}
+
 func zombieShopRowsVisible(r Rect) int {
-	listH := r.H - 74 - 62
+	listH := r.H - 74 - zombieShopFooterH(r)
 	return max(1, int(listH/30))
 }
 
@@ -310,7 +319,13 @@ func (g *Game) buildZombieShopPanel(ctx *uiCtx, p *Player, zp *ZombiePlayerState
 	}
 
 	// Footer: item info or the last purchase result, then READY.
-	footY := r.Y + r.H - 58
+	small := r.H < 300
+	footY := r.Y + r.H - zombieShopFooterH(r) + 4
+	secs := (g.zombie.hud.PhaseTimer + TicksPerSecond - 1) / TicksPerSecond
+	readyRect := Rect{X: r.X + r.W - 128, Y: footY + 14, W: 118, H: 36}
+	if small {
+		readyRect = Rect{X: r.X + r.W - 128, Y: footY, W: 118, H: 32}
+	}
 	if ctx.drawing() {
 		info := ""
 		infoCol := uiTextMuted
@@ -323,16 +338,18 @@ func (g *Game) buildZombieShopPanel(ctx *uiCtx, p *Player, zp *ZombiePlayerState
 		} else if ui.sel >= 0 && ui.sel < len(items) {
 			info = items[ui.sel].Info
 		}
-		uiText(ctx.dst, uiFit(info, false, uiSizeHint, r.W-160), false, uiSizeHint, infoCol, r.X+12, footY+10, uiAlignLeft)
-		hint := "UP/DOWN pick  LEFT/RIGHT tab  SHOOT buy  GRENADE ready"
-		if !g.zombie.host {
-			hint = "UP/DOWN pick  LEFT/RIGHT tab  SHOOT buy  GRENADE/ESC ready"
+		if small {
+			uiText(ctx.dst, uiFit(info, false, uiSizeHint, r.W-150), false, uiSizeHint, infoCol, r.X+12, footY+16, uiAlignLeft)
+		} else {
+			uiText(ctx.dst, uiFit(info, false, uiSizeHint, r.W-150), false, uiSizeHint, infoCol, r.X+12, footY+10, uiAlignLeft)
+			hint := "UP/DOWN pick  LEFT/RIGHT tab  SHOOT buy  GRENADE ready"
+			if !g.zombie.host {
+				hint = "UP/DOWN pick  LEFT/RIGHT tab  SHOOT buy  GRENADE/ESC ready"
+			}
+			uiText(ctx.dst, uiFit(hint, false, uiSizeHint, r.W-150), false, uiSizeHint, uiTextMuted, r.X+12, footY+34, uiAlignLeft)
 		}
-		uiText(ctx.dst, uiFit(hint, false, uiSizeHint, r.W-160), false, uiSizeHint, uiTextMuted, r.X+12, footY+34, uiAlignLeft)
-		secs := (g.zombie.hud.PhaseTimer + TicksPerSecond - 1) / TicksPerSecond
-		uiText(ctx.dst, strconv.Itoa(secs)+"s", true, uiSizeButton, uiTextLight, r.X+r.W-136, footY+30, uiAlignRight)
 	}
-	if ctx.Button(prefix+".ready", Rect{X: r.X + r.W - 128, Y: footY + 14, W: 118, H: 36}, "READY", uiButtonOpts{Kind: uiButtonPrimary,
+	if ctx.Button(prefix+".ready", readyRect, "READY  "+strconv.Itoa(secs)+"s", uiButtonOpts{Kind: uiButtonPrimary,
 		InfoTitle: "READY", InfoBody: "Close the shop. The next wave starts when everybody is ready."}) {
 		g.zombieShopAction(p, netZombieReqClose, 0)
 	}

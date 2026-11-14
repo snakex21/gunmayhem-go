@@ -131,7 +131,7 @@ func (g *Game) drawZombiePlayerCard(screen *ebiten.Image, zp *ZombiePlayerState,
 	uiText(screen, "PTS", false, uiSizeHint, uiTextMuted, r.X+r.W-8, r.Y+13, uiAlignRight)
 
 	// HP bar.
-	bar := Rect{X: r.X + 12, Y: r.Y + 24, W: 118, H: 9}
+	bar := Rect{X: r.X + 12, Y: r.Y + 24, W: 100, H: 9}
 	uiFillRound(screen, bar, 3, color.NRGBA{R: 0x3a, G: 0x10, B: 0x10, A: 0xff})
 	frac := 0.0
 	if zp.MaxHP > 0 {
@@ -153,7 +153,7 @@ func (g *Game) drawZombiePlayerCard(screen *ebiten.Image, zp *ZombiePlayerState,
 		uiText(screen, fmt.Sprintf("G x%d", p.Grenades), true, uiSizeHint, uiTextMuted, r.X+r.W-8, bar.Y+bar.H/2, uiAlignRight)
 	}
 	if zp.SelfRevives > 0 {
-		uiText(screen, "+"+strconv.Itoa(zp.SelfRevives), true, uiSizeHint, uiOK, r.X+r.W-48, bar.Y+bar.H/2, uiAlignRight)
+		uiText(screen, "REV "+strconv.Itoa(zp.SelfRevives), true, uiSizeHint, uiOK, r.X+146, bar.Y+bar.H/2, uiAlignLeft)
 	}
 	// Weapon and ammo.
 	if p != nil {

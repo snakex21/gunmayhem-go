@@ -357,6 +357,7 @@ func (g *Game) startZombieMatch() bool {
 		hp := g.zombie.hostPlayer(p.ID)
 		if hp != nil {
 			hp.remote = p.RemoteControlled
+			hp.groundX, hp.groundY = g.zombieSafeGround(p.X)
 		}
 	}
 	g.beginFade(screenGameplay, fadePurposeScreen)
@@ -410,7 +411,8 @@ func (g *Game) zombieJoinPlayer(p *Player) {
 	if zp.ID != p.ID {
 		*zp = ZombiePlayerState{ID: p.ID, HP: zombiePlayerHP, MaxHP: zombiePlayerHP, Points: zombieStartPoints, Zone: m.arena.StartZone}
 	}
-	m.players[p.ID-1] = zombieHostPlayer{seenSerial: p.DeathSerial, groundX: p.X, groundY: p.Y, remote: p.RemoteControlled}
+	gx, gy := g.zombieSafeGround(p.X)
+	m.players[p.ID-1] = zombieHostPlayer{seenSerial: p.DeathSerial, groundX: gx, groundY: gy, remote: p.RemoteControlled}
 	if m.hud.Phase == zombiePhaseBreak && !p.AI {
 		zp.ShopOpen = true
 	}
@@ -972,15 +974,17 @@ func (g *Game) updateZombiePlayers() {
 			if p.DeathSerial != hp.seenSerial {
 				// Ring-out (Player.Kill respawned the body): down at the edge
 				// the player last stood on.
-				g.zombieDownPlayer(p, zp, hp, hp.groundX, hp.groundY)
+				g.zombieDownPlayer(p, zp, hp, hp.groundX, hp.groundY, false)
 				continue
 			}
 			if zp.HP <= 0 {
-				x, y := p.X, p.Y
-				if !p.Grounded {
-					x, y = hp.groundX, hp.groundY
+				// Down on the platform under the player (in the air: the one
+				// below; above the void: where they last stood).
+				x, y := hp.groundX, hp.groundY
+				if top, ok := zombieFloorBelow(g.arena, p.X, p.Y-2); ok {
+					x, y = p.X, top
 				}
-				g.zombieDownPlayer(p, zp, hp, x, y)
+				g.zombieDownPlayer(p, zp, hp, x, y, true)
 				continue
 			}
 			if p.Active && p.Grounded && p.JumpNum == 2 {
@@ -1014,7 +1018,10 @@ func (g *Game) zombieKeepBoughtGun(p *Player, zp *ZombiePlayerState) {
 	// Out of magazines: the gun stays "owned" (AMMO REFILL re-equips it).
 }
 
-func (g *Game) zombieDownPlayer(p *Player, zp *ZombiePlayerState, hp *zombieHostPlayer, x, y float64) {
+// zombieDownPlayer puts a player DOWN at (x, y). effects: play the death
+// sound and burst (a ring-out already got them from the player loop).
+func (g *Game) zombieDownPlayer(p *Player, zp *ZombiePlayerState, hp *zombieHostPlayer, x, y float64, effects bool) {
+	fellX, fellY := p.X, p.Y
 	zp.State = zombiePlayerDown
 	zp.HP = 0
 	zp.DownX, zp.DownY = x, y
@@ -1032,8 +1039,10 @@ func (g *Game) zombieDownPlayer(p *Player, zp *ZombiePlayerState, hp *zombieHost
 	p.GrenadePower = 0
 	hp.seenSerial = p.DeathSerial
 	hp.reviverID = 0
-	g.playRandomDeathSound()
-	g.explosions = append(g.explosions, Explosion{X: x, Y: y - 20, Life: 18})
+	if effects {
+		g.playRandomDeathSound()
+		g.explosions = append(g.explosions, Explosion{X: fellX, Y: fellY - 20, Life: 18})
+	}
 }
 
 func (g *Game) updateZombieDowned(p *Player, zp *ZombiePlayerState, hp *zombieHostPlayer) {
@@ -1124,6 +1133,17 @@ func (g *Game) zombieRespawnDead(p *Player, zp *ZombiePlayerState) {
 	}
 	zp.DownX, zp.DownY = x, y
 	g.zombieRevive(p, zp, zp.MaxHP)
+}
+
+// zombieSafeGround is a down position on the highest platform under x (a
+// player who falls before ever landing is downed there, not in the sky).
+func (g *Game) zombieSafeGround(x float64) (float64, float64) {
+	if y, ok := zombieFloorBelow(g.arena, x, -2000); ok {
+		return x, y
+	}
+	cx := (g.arena.SpawnMinX + g.arena.SpawnMaxX) / 2
+	y, _ := zombieFloorBelow(g.arena, cx, -2000)
+	return cx, y
 }
 
 // zombieFloorBelow is the top of the first platform at or below y at x.

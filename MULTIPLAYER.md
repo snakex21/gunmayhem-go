@@ -59,6 +59,12 @@ The Quick Tunnel uses outbound TCP/UDP `7844` for the tunnel and HTTPS/TCP `443`
 
 Quick Tunnel traffic passes through Cloudflare. Do not share an invite code publicly: possession of the code grants access to the session.
 
+## Zombie co-op
+
+Open **ZOMBIE** from the main menu, choose the mode and the arena, then **HOST ONLINE**. This opens the normal session setup (LAN or Internet, OPEN or INVITE CODE). The lobby shows the zombie settings, and the host may start alone; friends can join while the match is running.
+
+Every player has their own HP, points and shop. The shop opens between waves on each player's own screen. Purchases are requests that the host checks (points, break time, limits), so a guest can never buy what the rules do not allow.
+
 ## Smoothness and the network overlay
 
 The host runs the match. A guest draws the other players from a small buffer of host snapshots (smooth even when snapshots arrive unevenly) and predicts its own character from its own keys, so movement answers immediately; the host's result (knockback, deaths, portals) always wins and small differences are blended out over a few frames.
