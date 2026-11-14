@@ -31,6 +31,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if g.screen != screenGameplay {
 		g.drawMenu(screen)
 		g.drawNetPingOverlay(screen)
+		g.drawNetDebugOverlay(screen)
 		g.drawGlobalFade(screen)
 		return
 	}
@@ -108,6 +109,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawViewerBlindWhiteout(screen)
 	g.drawGameplayInteractions(screen)
 	g.drawNetPingOverlay(screen)
+	g.drawNetDebugOverlay(screen)
 	g.drawGlobalFade(screen)
 }
 

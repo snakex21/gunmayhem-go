@@ -25,6 +25,9 @@ import (
 // Client (reader goroutine):
 //   inflate -> decode -> sanitize -> playout buffer. The game thread plays the
 //   buffer ~1 snapshot behind and interpolates players across gaps.
+//   Protocol 21: the envelope carries InputAck (this peer's newest simulated
+//   input frame) and the snapshot the arena's runtime gravity/friction, for
+//   the guest's own-player prediction (netplay_predict.go).
 //
 // Registering new state: new fields of Player/effect structs are sent
 // automatically. A new effect LIST on netSnapshot is sent automatically too;
@@ -49,6 +52,9 @@ type netStateEnvelope struct {
 	Tick     uint32
 	ArenaSeq uint32 // non-zero: an encoded Map follows the snapshot body
 	SFX      []netSFXEvent
+	// InputAck (protocol 21) is the newest input frame of THIS peer that the
+	// host had simulated when it built the snapshot (client-side prediction).
+	InputAck uint32
 }
 
 type netListCap struct {
@@ -149,6 +155,9 @@ type netHostFrame struct {
 	arenaSeq uint32
 	arena    []byte
 	sfx      []netSFXEvent // recent SFX ring (immutable copy)
+	// inputAck[playerID] is that peer's netInputReplay.appliedSeq at the
+	// moment the snapshot was taken (filled before the frame is shared).
+	inputAck [maxOnlinePlayers + 1]uint32
 }
 
 type netHostEncoder struct {
@@ -201,8 +210,11 @@ func newNetPeerStream() *netPeerStream {
 }
 
 // message builds this peer's compressed state message for frame f.
-func (p *netPeerStream) message(f *netHostFrame) (payload []byte, rawLen int, err error) {
+func (p *netPeerStream) message(f *netHostFrame, playerID int) (payload []byte, rawLen int, err error) {
 	env := netStateEnvelope{Tick: f.tick}
+	if playerID >= 0 && playerID < len(f.inputAck) {
+		env.InputAck = f.inputAck[playerID]
+	}
 	if !p.sfxSynced {
 		// A newly joined peer must not replay sounds from before it joined.
 		p.sfxSynced = true
@@ -294,9 +306,10 @@ func newNetClientStream() *netClientStream {
 }
 
 type netDecodedState struct {
-	tick  uint32
-	state netSnapshot
-	sfx   []netSFXEvent
+	tick     uint32
+	inputAck uint32
+	state    netSnapshot
+	sfx      []netSFXEvent
 }
 
 func (c *netClientStream) decode(payload []byte, rawLen int) (netDecodedState, error) {
@@ -336,7 +349,7 @@ func (c *netClientStream) decode(payload []byte, rawLen int) (netDecodedState, e
 	}
 	state.Arena = c.arena
 	restoreNetSnapshotFromWire(&state)
-	return netDecodedState{tick: env.Tick, state: state, sfx: env.SFX}, nil
+	return netDecodedState{tick: env.Tick, inputAck: env.InputAck, state: state, sfx: env.SFX}, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -496,6 +509,7 @@ const (
 	netInputQueueMax      = 32
 	netInputSilentAfter   = 300 * time.Millisecond
 	netInputBacklogKeep   = 4
+	netInputDebtMax       = 8
 )
 
 // netInputButtonMask keeps the seven defined button bits (left, right, up,
@@ -561,7 +575,14 @@ func (h *netInputHistory) record(in PlayerInputState) (uint32, []uint8) {
 // press/release timing (taps, semi-auto re-press, grenade charge) matches what
 // the client player did.
 type netInputReplay struct {
-	lastSeq  uint32
+	lastSeq uint32
+	// appliedSeq is the sequence number of the newest client frame a host
+	// tick has consumed. Snapshots echo it (netStateEnvelope.InputAck) so the
+	// client can replay only the frames the host has not simulated yet.
+	appliedSeq uint32
+	// debt counts host ticks that repeated `applied` while the next frame
+	// was late (at most netInputDebtMax).
+	debt     uint32
 	queue    []uint8
 	applied  uint8
 	newest   uint8
@@ -590,11 +611,23 @@ func (r *netInputReplay) receive(seq uint32, frames []uint8, now time.Time) {
 
 // take returns the input for one host tick.
 func (r *netInputReplay) take(now time.Time) uint8 {
+	// Ticks that repeated the held input because the next frame was late
+	// already simulated the frames that later arrive with that same input:
+	// skip them, so a network stall does not leave the player running
+	// behind (and the client's prediction stays aligned, see ackSeq).
+	for r.debt > 0 && len(r.queue) > 0 && r.queue[0] == r.applied {
+		r.queue = r.queue[1:]
+		r.debt--
+	}
 	if len(r.queue) == 0 {
+		r.appliedSeq = r.lastSeq
 		if r.lastRecv.IsZero() || now.Sub(r.lastRecv) > netInputSilentAfter {
 			// The client went silent (frozen, alt-tabbed on an old build,
 			// or the link stalled): never keep a key held.
 			r.applied = 0
+			r.debt = 0
+		} else if r.debt < netInputDebtMax {
+			r.debt++
 		}
 		return r.applied
 	}
@@ -607,5 +640,13 @@ func (r *netInputReplay) take(now time.Time) uint8 {
 	}
 	r.applied = r.queue[0]
 	r.queue = r.queue[1:]
+	r.appliedSeq = r.lastSeq - uint32(len(r.queue))
 	return r.applied
+}
+
+// ackSeq is the input acknowledgement sent with snapshots: the newest frame
+// the host state accounts for. Repeated ticks (debt) stand for the frames
+// that were late, so the client does not replay them on top.
+func (r *netInputReplay) ackSeq() uint32 {
+	return r.appliedSeq + r.debt
 }

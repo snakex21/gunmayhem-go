@@ -11,7 +11,7 @@ func measureNetSnapshot(t testing.TB, state netSnapshot) int {
 	t.Helper()
 	var enc netHostEncoder
 	frame := enc.encode(state)
-	body, rawLen, err := newNetPeerStream().message(frame)
+	body, rawLen, err := newNetPeerStream().message(frame, 2)
 	if err != nil {
 		t.Fatal(err)
 	}

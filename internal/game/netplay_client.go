@@ -217,7 +217,10 @@ func (s *netplaySession) clientReadLoop(link *netplayLink) {
 			s.playout.push(decoded.tick, decoded.state)
 			s.stateMu.Lock()
 			s.state = decoded.state
+			s.stateTick = decoded.tick
+			s.stateInputAck = decoded.inputAck
 			s.stateMu.Unlock()
+			s.snapshotMeter.note(time.Now())
 			s.hasState.Store(true)
 		default:
 			s.setErr(errors.New("unexpected host message"))
@@ -654,7 +657,13 @@ func (g *Game) updateNetClient() error {
 	}
 	g.sendOnlineLocalConfigIfChanged()
 	if g.screen == screenGameplay {
-		g.netplay.queueInput(netClientInputForFocus(capturePlayerInput(g.controlConfigs[0]), ebiten.IsFocused()))
+		input := netClientInputForFocus(capturePlayerInput(g.controlConfigs[0]), ebiten.IsFocused())
+		if seq, ok := g.netplay.queueInput(input); ok {
+			g.netPredict.record(seq, input)
+			g.applyNetPrediction(seq)
+		}
+	} else {
+		g.netPredict.reset()
 	}
 	return nil
 }

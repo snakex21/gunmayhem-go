@@ -228,7 +228,7 @@ func (s *netplaySession) hostPeerWriteLoop(peer *netplayPeer) {
 		if peer.sentTick.Load() != 0 && peer.inflightTicks() >= maxNetInflightTicks {
 			continue
 		}
-		payload, rawLen, err := stream.message(pending)
+		payload, rawLen, err := stream.message(pending, peer.playerID)
 		if err != nil {
 			s.setErr(err)
 			peer.close()
@@ -419,6 +419,15 @@ func (s *netplaySession) queueState(state netSnapshot) {
 		peers = append(peers, peer)
 	}
 	s.peersMu.RUnlock()
+	// The frame is shared read-only once queued: record every peer's input
+	// acknowledgement first.
+	for _, peer := range peers {
+		if peer.playerID > 0 && peer.playerID < len(frame.inputAck) {
+			peer.inputMu.Lock()
+			frame.inputAck[peer.playerID] = peer.input.ackSeq()
+			peer.inputMu.Unlock()
+		}
+	}
 	for _, peer := range peers {
 		peer.queueState(frame)
 	}
@@ -550,6 +559,7 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		}
 		onlineCount = 1 + g.netplay.connectedCount()
 	}
+	runtimeArena := g.customRuntimeArena()
 	state := netSnapshot{
 		Screen:                         int(g.screen),
 		Arena:                          g.arena,
@@ -578,6 +588,8 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		MapFXFrame:                     g.mapFXFrame,
 		CameraX:                        g.cameraX,
 		CameraY:                        g.cameraY,
+		RuntimeGravity:                 runtimeArena.Gravity,
+		RuntimeLowFriction:             runtimeArena.LowFriction,
 		GameMode:                       g.GameMode,
 		TotalLives:                     g.TotalLives,
 		TeamGame:                       g.TeamGame,

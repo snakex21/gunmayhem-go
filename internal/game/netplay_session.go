@@ -17,7 +17,7 @@ import (
 const (
 	// 19: compact streamed snapshots, per-frame input history, heartbeat,
 	// game version in the handshake.
-	netplayProtocolVersion = 20
+	netplayProtocolVersion = 21
 	maxOnlinePlayers       = 4
 )
 
@@ -159,6 +159,11 @@ type netSnapshot struct {
 	MapFXFrame int     `cbor:",omitempty"`
 	CameraX    float64 `cbor:",omitempty"`
 	CameraY    float64 `cbor:",omitempty"`
+	// Runtime physics of the arena (protocol 21): gravity and friction after
+	// match modifiers and Chaos effects. The guest needs them to predict its
+	// own movement; match modifiers themselves are host-only state.
+	RuntimeGravity     float64 `cbor:",omitempty"`
+	RuntimeLowFriction bool    `cbor:",omitempty"`
 
 	GameMode   int  `cbor:",omitempty"`
 	TotalLives int  `cbor:",omitempty"`
@@ -283,6 +288,10 @@ type netplaySession struct {
 	stateMu  sync.RWMutex
 	state    netSnapshot
 	hasState atomic.Bool
+	// Client: tick and input acknowledgement of the newest snapshot (state).
+	stateTick     uint32
+	stateInputAck uint32
+	snapshotMeter netRateMeter
 
 	// Host: shared per-tick snapshot encoder (game thread).
 	hostEncMu sync.Mutex

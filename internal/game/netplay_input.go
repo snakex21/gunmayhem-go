@@ -26,12 +26,14 @@ func (s *netplaySession) takeInputFor(playerID int) PlayerInputState {
 
 // queueInput records one client frame of input. Call it exactly once per
 // client update during gameplay: the host replays frames one per tick.
-func (s *netplaySession) queueInput(input PlayerInputState) {
+// It returns the frame's sequence number (used by client-side prediction).
+func (s *netplaySession) queueInput(input PlayerInputState) (uint32, bool) {
 	if s == nil || s.closed.Load() || s.mode != netplayClient || !s.connected() || s.outbox == nil {
-		return
+		return 0, false
 	}
 	seq, frames := s.inputHistory.record(input)
 	s.outbox.Push(netWireMessage{Type: netMessageInput, InputSeq: seq, InputFrames: frames})
+	return seq, true
 }
 
 func capturePlayerInput(c Controls) PlayerInputState {

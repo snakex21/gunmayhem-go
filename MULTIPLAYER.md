@@ -59,6 +59,12 @@ The Quick Tunnel uses outbound TCP/UDP `7844` for the tunnel and HTTPS/TCP `443`
 
 Quick Tunnel traffic passes through Cloudflare. Do not share an invite code publicly: possession of the code grants access to the session.
 
+## Smoothness and the network overlay
+
+The host runs the match. A guest draws the other players from a small buffer of host snapshots (smooth even when snapshots arrive unevenly) and predicts its own character from its own keys, so movement answers immediately; the host's result (knockback, deaths, portals) always wins and small differences are blended out over a few frames.
+
+Press **F6** to show the network overlay: frame rate, snapshots per second, arrival jitter, buffer depth, ping and the size of prediction corrections. **Ctrl+F6** switches the guest's own-player prediction off and on for comparison. Options > DISPLAY > SMOOTH MOTION and FRAME RATE control drawing between game ticks on 60/120/144 Hz screens.
+
 ## Security model
 
 The host is authoritative for gameplay. Remote clients do not run authoritative combat simulation.

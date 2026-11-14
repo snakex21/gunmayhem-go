@@ -231,8 +231,11 @@ type Game struct {
 	shakeSeen           []shakeBlastKey
 	renderInterp        renderInterpState
 	frameLimiter        frameLimiter
-	powerSaveDrawn      bool
-	powerSaveTick       int64
+	// Online guest: own-player prediction and the F6 network overlay.
+	netPredict      netPredictor
+	netDebugOverlay bool
+	powerSaveDrawn  bool
+	powerSaveTick   int64
 
 	gunLibrarySelected          int
 	gunLibraryPressed           int
@@ -409,6 +412,7 @@ func (g *Game) Update() error {
 	g.captureRenderPrev(time.Now())
 	g.trackWindowPersistence()
 	g.updateUnfocusedRunPolicy()
+	g.updateNetDebugKeys()
 	if g.updatePendingNetJoin() {
 		g.updateUnfocusedRunPolicy()
 		return nil

@@ -191,7 +191,7 @@ func runNetStream(t *testing.T, scene netSnapshot, ticks int) netStreamStats {
 		copyState := scene
 		copyState.Players = append([]Player(nil), scene.Players...)
 		frame := enc.encode(copyState)
-		payload, rawLen, err := peer.message(frame)
+		payload, rawLen, err := peer.message(frame, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -277,7 +277,7 @@ func TestNetSnapshotEffectStormIsTrimmedNotRejected(t *testing.T) {
 		state.BlastFX[i].X = float64(i)
 	}
 	frame := enc.encode(state)
-	payload, rawLen, err := newNetPeerStream().message(frame)
+	payload, rawLen, err := newNetPeerStream().message(frame, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -308,7 +308,7 @@ func TestNetSFXSurvivesDroppedSnapshotsAndIsNotReplayed(t *testing.T) {
 	// Sound before the peer's first frame: must not be replayed on join.
 	enc.encode(netSnapshot{SFXEvents: []netSFXEvent{{Seq: 1, Name: "old.wav"}}})
 	first := enc.encode(netSnapshot{})
-	payload, n, _ := peer.message(first)
+	payload, n, _ := peer.message(first, 2)
 	d, err := client.decode(payload, n)
 	if err != nil || len(d.sfx) != 0 {
 		t.Fatalf("join replayed old sounds: %+v err=%v", d.sfx, err)
@@ -317,7 +317,7 @@ func TestNetSFXSurvivesDroppedSnapshotsAndIsNotReplayed(t *testing.T) {
 	enc.encode(netSnapshot{SFXEvents: []netSFXEvent{{Seq: 2, Name: "a.wav"}}})
 	enc.encode(netSnapshot{SFXEvents: []netSFXEvent{{Seq: 3, Name: "b.wav"}}})
 	latest := enc.encode(netSnapshot{})
-	payload, n, _ = peer.message(latest)
+	payload, n, _ = peer.message(latest, 2)
 	d, err = client.decode(payload, n)
 	if err != nil || len(d.sfx) != 2 || d.sfx[0].Seq != 2 || d.sfx[1].Seq != 3 {
 		t.Fatalf("sounds lost with dropped snapshots: %+v err=%v", d.sfx, err)
