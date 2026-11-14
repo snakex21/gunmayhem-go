@@ -48,8 +48,8 @@ func decodeCampaignDevelopedGunHit(hit int) (slot, number int, ok bool) {
 		return 0, 0, false
 	}
 	slot, number = v/developedWeaponSlotCount, 98+v%developedWeaponSlotCount
-	spec, exists := developedWeaponSpec(number)
-	return slot, number, slot >= 0 && slot < 2 && exists && spec.Category == DevelopedCategoryPistol
+	_, exists := developedWeaponSpec(number)
+	return slot, number, slot >= 0 && slot < 2 && exists && isStarterHandgunNumber(number)
 }
 
 func (g *Game) initCampaignPlayerSetup() {

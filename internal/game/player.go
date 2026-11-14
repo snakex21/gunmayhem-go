@@ -123,6 +123,19 @@ type Player struct {
 	// AbilityKeyHeld is host-side edge detection for the ability key.
 	AbilityKeyHeld bool `cbor:",omitempty" net:"-"`
 
+	// Second added arsenal (arsenal2_*.go). Synced for the HUD and visuals
+	// (protocol 24); the two pending flags are host-only hit-phase state.
+	AkimboTime       int  `cbor:",omitempty"` // AKIMBO powerup frames left
+	AkimboHand       int  `cbor:",omitempty"` // 1: the next akimbo shot is the off-hand gun's
+	ShieldGearPickup bool `cbor:",omitempty"` // BALLISTIC SHIELD crate powerup (this life)
+	ShieldGearSpark  int  `cbor:",omitempty"` // ballistic shield ricochet FX frames
+	MeleeSwing       int  `cbor:",omitempty"` // bat swing animation frames left
+	BlowerTime       int  `cbor:",omitempty"` // leaf blower stream visible frames
+	HarpoonTether    int  `cbor:",omitempty"` // harpoon rope visible frames (victim side)
+	HarpoonTetherID  int  `cbor:",omitempty"` // player ID at the rope's other end
+	MeleeHitPending  bool `cbor:",omitempty" net:"-"`
+	BlowerPulse      bool `cbor:",omitempty" net:"-"`
+
 	// Developed Custom Game modifiers. Zero multipliers mean the original 1x
 	// behavior so source/campaign players are unchanged unless a rule enables
 	// them explicitly.
@@ -416,11 +429,11 @@ func (p *Player) UpdateWithFire(m Map, beforeMove, afterPhysics, fire func()) {
 	if jumpMultiplier <= 0 {
 		jumpMultiplier = 1
 	}
-	moveSpeed := MoveSpeed * moveMultiplier * tearGasMoveMultiplier(p) * abilityMoveMultiplier(p)
+	moveSpeed := MoveSpeed * moveMultiplier * tearGasMoveMultiplier(p) * abilityMoveMultiplier(p) * ballisticShieldMoveMultiplier(p)
 	if p.CampaignMoveScale > 0 {
 		moveSpeed *= p.CampaignMoveScale
 	}
-	jumpPower := JumpPower * jumpMultiplier * tearGasJumpMultiplier(p) * abilityJumpMultiplier(p)
+	jumpPower := JumpPower * jumpMultiplier * tearGasJumpMultiplier(p) * abilityJumpMultiplier(p) * ballisticShieldJumpMultiplier(p)
 	if p.SpeedTime >= 0 {
 		moveSpeed *= 2
 	}
@@ -843,6 +856,7 @@ func (p *Player) updatePowerupTimers() {
 		}
 	}
 	p.updateShieldSource()
+	p.tickArsenal2Timers()
 	if p.JetFuel > 0 {
 		// Late source tick: this happens after the jetpack drop/visibility checks.
 		// It can make fuel slightly negative; the pack is dropped next frame.
@@ -913,6 +927,7 @@ func (p *Player) Kill(m Map) {
 		p.clearBurn()
 		clearBlind(p)
 		p.TearGasTime = 0
+		p.clearArsenal2State()
 		return
 	}
 	p.Respawn(m)
@@ -975,6 +990,7 @@ func (p *Player) Respawn(m Map) {
 		p.Grenades += grenadierBonusThrowables
 	}
 	p.resetAbilityForLife()
+	p.clearArsenal2State()
 	p.GrenadeHeld = false
 	p.GrenadePower = 0
 	if p.PortalNextColor != PortalBlue && p.PortalNextColor != PortalOrange {

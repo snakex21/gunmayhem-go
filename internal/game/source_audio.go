@@ -430,9 +430,14 @@ func sourceGunSound(number int) string {
 			return "dev_javelin.wav"
 		}
 		return "dev_launcher_rpg.wav"
+	case DevelopedCategoryMelee:
+		return "dev_bat.wav"
 	case DevelopedCategorySpecial:
 		if spec.Projectile == DevelopedProjectileFlame {
 			return "dev_flame.wav"
+		}
+		if spec.Projectile == DevelopedProjectileGust {
+			return "dev_blower.wav"
 		}
 		if spec.Projectile == DevelopedProjectilePortal {
 			return "dev_portal.wav"

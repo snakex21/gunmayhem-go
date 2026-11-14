@@ -27,8 +27,10 @@ const (
 	abilityThermalGoggles = 10 // gear: sees through smoke
 	abilityGasMask        = 11 // gear: shock gas / tear gas immunity
 	abilityKevlar         = 12 // gear: -25% bullet knockback, a bit slower
+	// gear: riot shield, always up (arsenal2_defs.go)
+	abilityBallisticShield = 13
 	// abilityCount bounds per-ability tables (index = ability id).
-	abilityCount = 13
+	abilityCount = 14
 	// abilityRandom is a config-only choice. It is resolved to a real ability
 	// when the player spawns into a match and never stored on a Player. It is
 	// far above abilityCount so new abilities can be appended.
@@ -86,6 +88,7 @@ func selectableAbilityNumbers() []int {
 		abilityHeavy, abilityLight, abilityShield,
 		abilityGrenadier, abilityScavenger, abilityFlashGoggles,
 		abilityThermalGoggles, abilityGasMask, abilityKevlar,
+		abilityBallisticShield,
 		abilityRandom,
 	}
 }
@@ -151,6 +154,8 @@ func abilityName(n int) string {
 		return "GAS MASK"
 	case abilityKevlar:
 		return "KEVLAR"
+	case abilityBallisticShield:
+		return "BALLISTIC SHIELD"
 	case abilityRandom:
 		return "RANDOM"
 	}
@@ -166,6 +171,8 @@ func abilityShortName(n int) string {
 		return "FLASH G."
 	case abilityThermalGoggles:
 		return "THERMAL"
+	case abilityBallisticShield:
+		return "B.SHIELD"
 	}
 	return abilityName(n)
 }
@@ -193,11 +200,13 @@ func abilityDescription(n int) string {
 	case abilityFlashGoggles:
 		return "Immune to flashbangs."
 	case abilityThermalGoggles:
-		return "See players through smoke."
+		return "See players through smoke and spot invisible players as a heat shimmer."
 	case abilityGasMask:
 		return "Immune to shock gas and tear gas."
 	case abilityKevlar:
 		return "-25% bullet knockback. A bit slower."
+	case abilityBallisticShield:
+		return "Riot shield, always up: front bullets push only 22%. Two-handed guns or akimbo sling it on your back. Slower, lower jump."
 	case abilityRandom:
 		return "A random ability every match."
 	}
@@ -721,6 +730,8 @@ func aiGrenadeAboutToBlow(p *Player, g *Game) bool {
 	return false
 }
 
+const campaignAbilityRing = 12
+
 // campaignEnemyAbility gives campaign bots a fixed, mission-appropriate
 // ability so a mission plays the same every time. set: 1 GM1, 2 GM2,
 // 3 EXTRA; index is the enemy's order in the mission.
@@ -747,7 +758,9 @@ func campaignEnemyAbility(set, level, index int) int {
 	if index > 0 && n != abilityNone {
 		// A second enemy in the same mission gets a different, still fixed
 		// ability so pairs do not mirror each other.
-		n = realAbilityNumbers()[(n-1+index*3)%(abilityCount-1)]
+		// Fixed 12-ability ring (the abilities that existed when the
+		// missions were authored) so later abilities never reshuffle them.
+		n = realAbilityNumbers()[(n-1+index*3)%campaignAbilityRing]
 	}
 	return n
 }

@@ -63,8 +63,8 @@ func decodeCustomDevelopedGunHit(hit int) (slot, number int, ok bool) {
 		return 0, 0, false
 	}
 	slot, number = v/developedWeaponSlotCount, 98+v%developedWeaponSlotCount
-	spec, exists := developedWeaponSpec(number)
-	return slot, number, slot >= 0 && slot < 4 && exists && spec.Category == DevelopedCategoryPistol
+	_, exists := developedWeaponSpec(number)
+	return slot, number, slot >= 0 && slot < 4 && exists && isStarterHandgunNumber(number)
 }
 
 func decodeCustomSelectHit(hit int) (slot, editor, number int, ok bool) {

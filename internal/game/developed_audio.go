@@ -76,6 +76,22 @@ func developedSoundPCM(name string) []byte {
 			env := decay(t, .105, 2.4)
 			return env * (.42*noise(i) + .28*math.Sin(2*math.Pi*76*t) + .13*math.Sin(2*math.Pi*151*t))
 		}}
+	case "dev_bat.wav":
+		// Bat swing: a short airy whoosh with a wooden knock at the end.
+		spec = soundSpec{.16, func(t float64, i int) float64 {
+			swell := math.Sin(math.Pi * math.Min(1, t/.12))
+			knock := 0.0
+			if t > .10 {
+				knock = decay(t-.10, .06, 6) * math.Sin(2*math.Pi*210*t)
+			}
+			return .42*swell*noise(i)*(.5+.5*math.Sin(2*math.Pi*38*t)) + .35*knock
+		}}
+	case "dev_blower.wav":
+		// Leaf blower: a two-stroke buzz under a fan hiss (played every 6 ticks).
+		spec = soundSpec{.22, func(t float64, i int) float64 {
+			env := .85 + .15*math.Sin(2*math.Pi*9*t)
+			return env * (.30*math.Sin(2*math.Pi*96*t) + .16*math.Sin(2*math.Pi*192*t) + .28*noise(i))
+		}}
 	case "dev_portal.wav":
 		spec = soundSpec{.31, func(t float64, i int) float64 {
 			env := decay(t, .31, 4.2)

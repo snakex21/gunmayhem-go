@@ -702,7 +702,7 @@ func (g *Game) spawnChaosCrates(count int) {
 
 func (g *Game) spawnChaosPowerups(count int) {
 	for i := 0; i < count; i++ {
-		pu := spawnPowerup(g.arena, g.hasActiveDouble() || g.campaignMode)
+		pu := spawnPowerup(g.arena, g.hasActiveDouble() || g.campaignMode, g.extendedPickups())
 		if pu.Dead {
 			continue
 		}

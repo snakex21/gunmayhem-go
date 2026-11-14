@@ -282,6 +282,8 @@ func (g *Game) loadoutGearChoices(slot int) []loadoutChoice {
 			body += " Gear: worn instead of your hat."
 		case a == abilityKevlar:
 			body += " Gear: a vest over your shirt."
+		case a == abilityBallisticShield:
+			body += " Gear: carried in the off hand (or on the back); your hat stays."
 		}
 		out = append(out, loadoutChoice{
 			id: fmt.Sprintf("lo.ability.%d", a), label: abilityName(a), selected: cfg.Ability == a,
@@ -341,7 +343,14 @@ func weaponStatsLine(n int) string {
 	if def.Bullets >= 9999 {
 		rounds = "INFINITE"
 	}
-	return fmt.Sprintf("%s rounds, %.1f shots/s, push %.0f.", rounds, weaponShotsPerSecond(def), def.Firepower)
+	if isMeleeWeapon(n) {
+		return fmt.Sprintf("Melee, %.1f swings/s, push %.0f. %s", weaponShotsPerSecond(def), def.Firepower, weaponArsenal2Description(n))
+	}
+	line := fmt.Sprintf("%s rounds, %.1f shots/s, push %.0f.", rounds, weaponShotsPerSecond(def), def.Firepower)
+	if desc := weaponArsenal2Description(n); desc != "" {
+		line += " " + desc
+	}
+	return line
 }
 
 func weaponShotsPerSecond(def WeaponDef) float64 {

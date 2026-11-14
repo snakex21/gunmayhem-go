@@ -295,8 +295,8 @@ func TestMG42FireDelayAtLeastTwoFrames(t *testing.T) {
 	}
 	for _, number := range allDevelopedWeaponNumbers() {
 		spec, _ := developedWeaponSpec(number)
-		if spec.Projectile == DevelopedProjectileFlame {
-			continue // flame particles are emitted every tick by design
+		if spec.Projectile == DevelopedProjectileFlame || spec.Projectile == DevelopedProjectileGust {
+			continue // flame particles / blower gusts are emitted every tick by design
 		}
 		if def := developedWeaponCatalog[number]; def.ROF < developedMinFireDelay {
 			t.Errorf("%s ROF=%d faster than the source minigun", def.Name, def.ROF)
@@ -309,6 +309,7 @@ func TestDevelopedFireDelaysFollowRealRateMapping(t *testing.T) {
 		87: true, 88: true, 89: true, 90: true, 165: true, 168: true, 169: true, 170: true, 171: true,
 		172: true, 173: true, 174: true, 175: true, 176: true, 177: true, 178: true, 179: true, 180: true,
 		181: true, 182: true, 183: true, 184: true, 185: true, 187: true, 188: true, 189: true, 192: true, 193: true,
+		232: true, 233: true, // leaf blower and bat are not firearms
 	}
 	for _, number := range allDevelopedWeaponNumbers() {
 		rate, ok := developedFireRates[number]

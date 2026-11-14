@@ -24,7 +24,11 @@ type Powerup struct {
 // spawnPowerup ports frame_10/DoAction.as literally for normal arena mode:
 // sample an integer point in ground.platform's bounds, retry until hitTest is
 // true, walk upward in 2 px steps until leaving collision, then spawn 40 px up.
-func spawnPowerup(arena Map, doubleActive bool) Powerup {
+//
+// extended (the developed arsenal is in the crate pool) adds the AKIMBO and
+// BALLISTIC SHIELD powerups: after the source roll, 2 in 9 spawns become one
+// of them. Source/GM1 campaign pools keep the exact source roll.
+func spawnPowerup(arena Map, doubleActive bool, extended ...bool) Powerup {
 	minX, minY, maxX, maxY, ok := platformBounds(arena.Platforms)
 	if !ok {
 		return Powerup{Dead: true}
@@ -59,6 +63,9 @@ func spawnPowerup(arena Map, doubleActive bool) Powerup {
 	// campaignmode is not active in the current normal-arena state.
 	if kind == 4 && doubleActive {
 		kind = 2
+	}
+	if len(extended) > 0 && extended[0] && rand.Intn(9) < 2 {
+		kind = powerupAkimbo + rand.Intn(2)
 	}
 	return Powerup{
 		X: x, Y: y - 40, Type: kind,
@@ -148,6 +155,11 @@ func applyPowerup(p *Player, kind int) {
 		p.SpeedTime = 300
 	case 6:
 		p.MiniTime = 400
+	case powerupAkimbo:
+		p.AkimboTime = akimboFrames
+		p.AkimboHand = 0
+	case powerupBallisticShield:
+		p.ShieldGearPickup = true
 	}
 }
 
@@ -167,6 +179,10 @@ func powerupName(kind int) string {
 		return "SPEED"
 	case 6:
 		return "MINI"
+	case powerupAkimbo:
+		return "AKIMBO"
+	case powerupBallisticShield:
+		return "BALLISTIC SHIELD"
 	default:
 		return "POWERUP"
 	}

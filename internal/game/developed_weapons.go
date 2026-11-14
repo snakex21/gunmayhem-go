@@ -22,6 +22,7 @@ const (
 	DevelopedCategoryShotgun
 	DevelopedCategoryLauncher
 	DevelopedCategorySpecial
+	DevelopedCategoryMelee
 )
 
 type DevelopedFireMode int
@@ -47,6 +48,10 @@ const (
 	DevelopedProjectileEnergy
 	DevelopedProjectileFlame
 	DevelopedProjectilePortal
+	// DevelopedProjectileHarpoon is a hooked bolt that pulls (arsenal2).
+	DevelopedProjectileHarpoon
+	// DevelopedProjectileGust: no projectile, a blower cone (arsenal2).
+	DevelopedProjectileGust
 )
 
 type DevelopedWeaponSpec struct {
@@ -117,9 +122,9 @@ var developedWeaponSpecs = map[int]DevelopedWeaponSpec{}
 var customWeaponAssetsOnce sync.Once
 var customWeaponAssets = map[int]bool{}
 
-// Highest developed weapon ID is 231; index zero stays unused in the runtime
+// Highest developed weapon ID is 233; index zero stays unused in the runtime
 // selection/blocklist arrays.
-const developedWeaponSlotCount = 232
+const developedWeaponSlotCount = 234
 
 func init() {
 	// Recoil (the shooter's own push per round) never exceeds the strongest
@@ -256,7 +261,7 @@ func init() {
 	// Gun Mayhem instead of just a catalogue of near-identical rifles.
 	addSpecialProjectile(177, "Crossbow", "crossbow", 18, 40, 3, 6, DevelopedProjectileBolt, 20, .16)
 	addSpecialProjectile(178, "Compound Bow", "compound_bow", 16, 37, 2, 8, DevelopedProjectileBolt, 18, .28)
-	addSpecialProjectile(179, "Harpoon Gun", "harpoon_gun", 28, 78, 8, 1, DevelopedProjectileBolt, 22, .06)
+	// 179 Harpoon Gun: defined by addArsenal2Weapons (pull on a rope).
 	addSpecialProjectile(180, "Nail Gun", "nail_gun", 3, 12, .25, 40, DevelopedProjectileBolt, 23, .03)
 	addSpecialProjectile(181, "Flare Gun", "flare_gun", 30, 35, 3, 4, DevelopedProjectileFlare, 14, .20)
 	addSpecialProjectile(182, "Musket", "musket", 38, 64, 10, 1, DevelopedProjectileBullet, 30, 0)
@@ -348,6 +353,8 @@ func init() {
 	bar := developedWeaponSpecs[145]
 	bar.Spread = 2.5
 	developedWeaponSpecs[145] = bar
+
+	addArsenal2Weapons()
 }
 
 func addDevelopedWeapon(def WeaponDef, spec DevelopedWeaponSpec) {
@@ -487,6 +494,8 @@ func starterHandgunNumbers() []int {
 			out = append(out, number)
 		}
 	}
+	// The baseball bat is the one melee starter, after the handguns.
+	out = append(out, weaponBaseballBat)
 	return out
 }
 
@@ -502,6 +511,10 @@ func isStarterHandgunNumber(number int) bool {
 func customWeaponAssetAvailable(number int) bool {
 	customWeaponAssetsOnce.Do(func() {
 		for n, spec := range developedWeaponSpecs {
+			if proceduralWeapon(n) {
+				customWeaponAssets[n] = true
+				continue
+			}
 			_, err := findOriginalPathIn("custom", "weapons", spec.AssetDir, "1.png")
 			customWeaponAssets[n] = err == nil
 		}
@@ -520,6 +533,9 @@ func availableCustomWeaponNumbers() []int {
 }
 
 func loadCustomWeaponRaster(number, frame int) *SourceRaster {
+	if proceduralWeapon(number) {
+		return proceduralWeaponRaster(number)
+	}
 	spec, ok := developedWeaponSpecs[number]
 	if !ok {
 		return nil

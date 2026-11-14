@@ -20,7 +20,11 @@ const (
 	// (snapshot lists Zombies / ZombiePops, ZombieHUD, netMessageZombie).
 	// 23: zombie zones and doors (ZombieHUD.Doors / Gather / View,
 	// ZombiePop.Zone; per-peer zone views of the snapshot).
-	netplayProtocolVersion = 23
+	// 24: second added arsenal (Player.Akimbo*/ShieldGear*/MeleeSwing/
+	// BlowerTime/HarpoonTether*, Bullet.ShooterID, weapons 232-233 and
+	// projectile kinds Harpoon/Gust, ability 13, powerup kinds 7-8,
+	// OnlineBlockedWeapons/Abilities array sizes).
+	netplayProtocolVersion = 24
 	maxOnlinePlayers       = 4
 )
 

@@ -88,6 +88,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.drawPlayer(screen, &drawP)
 		}
 	}
+	g.drawHarpoonRopes(screen)
+	g.drawThermalInvisibleShimmer(screen)
 	g.drawCampaignEnemies(screen)
 	g.drawHazardMarkers(screen)
 	g.drawPlayerStatusEffects(screen)
@@ -339,7 +341,11 @@ func (g *Game) drawPowerups(screen *ebiten.Image) {
 			if pu.Frame >= 0 && pu.Frame < len(g.assets.PowerupStuffTimeline) {
 				f := g.assets.PowerupStuffTimeline[pu.Frame]
 				if f.Valid {
-					drawPowerupChild(screen, g.assets.PowerupIcons[pu.Type], f.Matrix, g.worldX(pu.X), g.worldY(pu.Y), 1)
+					icon := g.assets.PowerupIcons[pu.Type]
+					if icon == nil {
+						icon = arsenal2PowerupIcon(pu.Type)
+					}
+					drawPowerupChild(screen, icon, f.Matrix, g.worldX(pu.X), g.worldY(pu.Y), 1)
 				}
 			}
 			if pu.Frame >= 0 && pu.Frame < len(g.assets.PowerupAuraTimeline) {

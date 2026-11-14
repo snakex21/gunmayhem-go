@@ -92,7 +92,8 @@ func TestCustomEditorSelectsDevelopedStarterPistol(t *testing.T) {
 	g.customPlayers = sourceDefaultCustomPlayers()
 	g.customPlayers[0].Type = 1
 	items := developedCustomSelectionItems(customEditGun)
-	item := items[len(items)-1]
+	// The last developed pistol (Peacekeeper); the bat follows it.
+	item := items[len(items)-2]
 	hit := customDevelopedGunHit(0, item.Number)
 	slot, number, ok := decodeCustomDevelopedGunHit(hit)
 	if !ok || slot != 0 || number != 231 {

@@ -160,6 +160,8 @@ func (g *Game) drawDevelopedProjectile(screen *ebiten.Image, b *Bullet) bool {
 		scale = .95
 	case DevelopedProjectileBolt:
 		img = developedBoltImage
+	case DevelopedProjectileHarpoon:
+		img = harpoonProjectileImage()
 	case DevelopedProjectileFlare:
 		img = developedFlareFrames[b.Time%len(developedFlareFrames)]
 	case DevelopedProjectileEnergy:

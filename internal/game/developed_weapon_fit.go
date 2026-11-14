@@ -163,6 +163,8 @@ var customWeaponGripOrigins = map[int][2]float64{
 	229: {.350, .600},
 	230: {.365, .417},
 	231: {.220, .570},
+	232: {.224, .647}, // leaf blower: pistol grip under the fan housing (procedural art)
+	233: {.175, .5},   // baseball bat: taped handle above the knob (procedural art)
 }
 
 // WeaponPose{ShootX, ShootY, HandX, HandY} per developed weapon.
@@ -312,6 +314,8 @@ var developedWeaponPoses = map[int]WeaponPose{
 	229: {7, -5, 47, -16.5},
 	230: {13, -3, 41, -14},
 	231: {24, -3.5, 31, -10.5},
+	232: {8, 2, 40, -12}, // blower: support hand on the tube
+	233: {22, 2, 30, -5}, // bat: one-handed like a pistol
 }
 
 // {FlashX, FlashY} per developed weapon.
@@ -461,6 +465,8 @@ var developedWeaponMuzzles = map[int][2]float64{
 	229: {64, -38},
 	230: {48, -38},
 	231: {58, -38},
+	232: {52, -36}, // blower nozzle (blowerNozzle)
+	233: {58, -38}, // bat tip (no flash)
 }
 
 // developedFlashY returns the muzzle-flash height of a developed weapon

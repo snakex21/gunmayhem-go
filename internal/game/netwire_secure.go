@@ -415,6 +415,24 @@ func validateNetSnapshot(s netSnapshot) error {
 		if len(p.Name) > 96 || !utf8.ValidString(p.Name) {
 			return errors.New("invalid player name in host snapshot")
 		}
+		if err := validateArsenal2Player(&p); err != nil {
+			return err
+		}
+	}
+	for _, pu := range s.Powerups {
+		if pu.Type < 0 || pu.Type >= powerupKindCount {
+			return errors.New("invalid powerup kind in host snapshot")
+		}
+	}
+	for _, e := range s.PowerupNameFX {
+		if e.Kind < 0 || e.Kind >= powerupKindCount {
+			return errors.New("invalid powerup name in host snapshot")
+		}
+	}
+	for i := range s.Bullets {
+		if k := s.Bullets[i].DevelopedProjectile; k < DevelopedProjectileBullet || k > DevelopedProjectileGust {
+			return errors.New("invalid projectile kind in host snapshot")
+		}
 	}
 	for _, ev := range s.SFXEvents {
 		if len(ev.Name) > 96 || !utf8.ValidString(ev.Name) {

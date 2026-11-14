@@ -20,7 +20,8 @@ func TestCampaignSetupSelectsDevelopedStarterPistol(t *testing.T) {
 	g.campaignEditor[0] = customEditGun
 	g.campaignCardY[0] = -300
 	items := developedCustomSelectionItems(customEditGun)
-	item := items[len(items)-1]
+	// The last developed pistol (Peacekeeper); the bat follows it.
+	item := items[len(items)-2]
 	x := campaignCardX(0) + item.Rect.X + item.Rect.W/2
 	y := -300 + item.Rect.Y + item.Rect.H/2
 	hit := g.campaignPlayerHitAt(x, y)

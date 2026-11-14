@@ -32,11 +32,18 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 			hand = g.assets.HandColors[0]
 		}
 	}
-	drawPlayerPartAlpha(screen, hand, p,
-		p.VisualHand2X+p.VisualHand2ChildX,
-		p.VisualHand2Y+p.VisualHand2ChildY,
-		p.VisualHand2Alpha,
-	)
+	if akimboActive(p) {
+		// AKIMBO: the off hand holds the second handgun.
+		g.drawAkimboOffHandGun(screen, p)
+		_, _, hx, hy := akimboOffHandLocal(p)
+		drawPlayerPartAlpha(screen, hand, p, hx, hy, p.VisualHand2Alpha)
+	} else {
+		drawPlayerPartAlpha(screen, hand, p,
+			p.VisualHand2X+p.VisualHand2ChildX,
+			p.VisualHand2Y+p.VisualHand2ChildY,
+			p.VisualHand2Alpha,
+		)
+	}
 
 	var leg *SourceRaster
 	if useGM2Color {
@@ -59,6 +66,10 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 
 	if p.JetpackAlpha > 0 {
 		g.drawPlayerJetpack(screen, p)
+	}
+	shieldFront := ballisticShieldInFront(p)
+	if hasBallisticShield(p) && !shieldFront {
+		g.drawBallisticShieldBack(screen, p)
 	}
 	g.drawPlayerBody(screen, p)
 	g.drawPlayerKevlar(screen, p, g.playerTorsoRaster(p))
@@ -97,6 +108,9 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 	// Symbol688 (`instagib`) is above the front-leg layer and below the gun /
 	// front-hand layers in Symbol697.
 	g.drawPlayerInstagib(screen, p)
+	if shieldFront {
+		g.drawBallisticShieldFront(screen, p)
+	}
 	g.drawGun(screen, p)
 	drawPlayerPartAlpha(screen, hand, p,
 		p.VisualHand1X+p.VisualHand1ChildX,
@@ -104,6 +118,7 @@ func (g *Game) drawPlayer(screen *ebiten.Image, p *Player) {
 		p.VisualHand1Alpha,
 	)
 
+	g.drawLeafBlowerGust(screen, p)
 	g.drawPlayerBurn(screen, p)
 	g.drawPlayerShield(screen, p)
 	g.drawPlayerAbilityFX(screen, p)
@@ -330,7 +345,7 @@ func (g *Game) drawGun(screen *ebiten.Image, p *Player) {
 	op := &ebiten.DrawImageOptions{}
 	applySourceRenderQuality(op)
 	op.GeoM.Translate(gun.Bounds.X, gun.Bounds.Y)
-	op.GeoM.Rotate(p.VisualGunRotation * math.Pi / 180)
+	op.GeoM.Rotate(gunDrawRotation(p) * math.Pi / 180)
 	op.GeoM.Translate(p.VisualGunX, p.VisualGunY)
 	op.GeoM.Scale(float64(p.Facing), 1)
 	op.GeoM.Translate(p.VisualHand1X, p.VisualHand1Y)

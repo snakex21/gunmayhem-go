@@ -47,8 +47,8 @@ func TestCombinedGunLibraryExposesWholePlayableCatalogue(t *testing.T) {
 
 func TestCustomGunLibraryPagesExposeEveryAvailableDefinedWeapon(t *testing.T) {
 	want := availableCustomWeaponNumbers()
-	if len(want) != 145 {
-		t.Fatalf("available custom weapon count=%d want145", len(want))
+	if len(want) != 147 {
+		t.Fatalf("available custom weapon count=%d want147", len(want))
 	}
 	g := &Game{}
 	for i := range g.campaignGuns {

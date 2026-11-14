@@ -99,6 +99,10 @@ var zombieShopGuns = []struct{ number, price int }{
 	{5, 350}, {6, 500}, {12, 800}, {13, 900}, {22, 1000}, {11, 1000},
 	{19, 1100}, {17, 1100}, {10, 1200}, {85, 1400}, {59, 1500}, {63, 1600},
 	{14, 1800}, {57, 2000}, {65, 2400}, {55, 3000},
+	// arsenal2: the bat one-hits wave-1 walkers; the blower is crowd control
+	// (it pushes zombies off ledges but deals no damage). The harpoon is
+	// box-only: reeling zombies in is rarely what you want.
+	{weaponBaseballBat, 450}, {weaponLeafBlower, 700},
 }
 
 var zombieThrowablePrices = [throwableTypeCount]int{
@@ -111,6 +115,7 @@ var zombieGearPrices = map[int]int{
 	abilityDash: 750, abilityAnchor: 900, abilityTripleJump: 750, abilityHeavy: 1000,
 	abilityLight: 500, abilityShield: 1250, abilityGrenadier: 800, abilityFlashGoggles: 400,
 	abilityThermalGoggles: 400, abilityGasMask: 500, abilityKevlar: 1000,
+	abilityBallisticShield: 1100,
 }
 
 var (
@@ -147,8 +152,12 @@ func buildZombieShop() {
 		if !ok {
 			continue
 		}
+		info := "Weapon + spare magazines."
+		if d := weaponArsenal2Description(gn.number); d != "" {
+			info = d
+		}
 		add(zombieShopItem{Tab: zombieTabGuns, Kind: zombieItemWeapon, Value: gn.number, Price: gn.price,
-			Name: def.DisplayName(), Info: "Weapon + spare magazines."})
+			Name: def.DisplayName(), Info: info})
 	}
 	for kind := 0; kind < throwableTypeCount; kind++ {
 		add(zombieShopItem{Tab: zombieTabThrowables, Kind: zombieItemThrowable, Value: kind, Price: zombieThrowablePrices[kind],
@@ -178,7 +187,7 @@ func buildZombieShop() {
 			continue
 		}
 		if spec, ok := developedWeaponSpec(n); ok {
-			if spec.Category == DevelopedCategoryPistol || spec.Projectile == DevelopedProjectilePortal || !customWeaponAssetAvailable(n) {
+			if spec.Category == DevelopedCategoryPistol || spec.Category == DevelopedCategoryMelee || spec.Projectile == DevelopedProjectilePortal || !customWeaponAssetAvailable(n) {
 				continue
 			}
 		}
@@ -402,6 +411,9 @@ func (g *Game) zombieBotShop(p *Player, zp *ZombiePlayerState) {
 	}
 	best := -1
 	for _, it := range zombieShopTab(zombieTabGuns) {
+		if isLeafBlower(it.Value) {
+			continue // no damage: bots leave crowd control to the humans
+		}
 		if it.Price > current && it.Price <= zp.Points && g.zombieCheckBuy(p, it) == zombieMsgBought {
 			best = it.ID
 		}

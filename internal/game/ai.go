@@ -249,14 +249,14 @@ func decideAIController(p *Player, g *Game) {
 		if ty <= p.Y+10 && ty >= p.Y-80 && p.JumpNum == 2 {
 			optimalX := tx
 			approachMargin := 40.0
-			leftLimit := groundLeft + 200
-			rightLimit := groundRight - 200
+			leftLimit := groundLeft + aiEdgeLimit(p)
+			rightLimit := groundRight - aiEdgeLimit(p)
 			if targetPlayer != nil {
 				dir := -1.0
 				if tx >= groundMiddle {
 					dir = 1
 				}
-				optimalX = tx - 150*dir
+				optimalX = tx - aiPreferredRange(p)*dir
 			} else if p.AITargetKind == aiTargetPowerup {
 				// Powerup pickup frame is only 10x10. The old generic ±40 stop
 				// distance let AI stand visibly beside MINI/INVISIBILITY forever
@@ -440,6 +440,8 @@ func decideAIController(p *Player, g *Game) {
 			}
 		}
 	}
+	// Developed: bat / blower / harpoon / shield behaviour (arsenal2_ai.go).
+	aiArsenal2Decide(p, g, targetPlayer)
 	// Developed: bots charge and throw their throwable (ai_throw.go).
 	aiDecideThrow(p, g)
 	aiApplyFlashAvoid(p)
@@ -542,7 +544,12 @@ func aiCanDetectPlayer(observer, target *Player) bool {
 	if observer == nil || target == nil || target.InvisibleTime <= 0 {
 		return true
 	}
-	return math.Hypot(target.X-observer.X, target.Y-observer.Y) <= 135
+	reach := aiInvisibleDetectRange
+	if observer.AbilityNumber == abilityThermalGoggles {
+		// THERMAL GOGGLES: the heat shimmer gives the target away further.
+		reach = aiThermalDetectRange
+	}
+	return math.Hypot(target.X-observer.X, target.Y-observer.Y) <= reach
 }
 
 // aiFleeGrenade ports the AI dodge from DefineSprite_665_wep_grenade

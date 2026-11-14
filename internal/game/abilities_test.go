@@ -52,13 +52,14 @@ func TestAbilityIDsAreAppendOnly(t *testing.T) {
 		abilityNone: 0, abilityDash: 1, abilityAnchor: 2, abilityTripleJump: 3, abilityHeavy: 4,
 		abilityLight: 5, abilityShield: 6, abilityGrenadier: 7, abilityScavenger: 8,
 		abilityFlashGoggles: 9, abilityThermalGoggles: 10, abilityGasMask: 11, abilityKevlar: 12,
+		abilityBallisticShield: 13,
 	}
 	for got, n := range want {
 		if got != n {
 			t.Fatalf("ability id moved: got %d want %d", got, n)
 		}
 	}
-	if abilityCount != 13 || abilityRandom < abilityCount {
+	if abilityCount != 14 || abilityRandom < abilityCount {
 		t.Fatalf("abilityCount %d random %d", abilityCount, abilityRandom)
 	}
 	seen := map[int]bool{}

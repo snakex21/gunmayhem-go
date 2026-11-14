@@ -54,6 +54,9 @@ type Bullet struct {
 	// GuidanceLost: a Javelin in its terminal phase (or one that lost its
 	// target) no longer steers; it only falls.
 	GuidanceLost bool `cbor:",omitempty"`
+	// ShooterID is the player (or double) that fired: the harpoon rope is
+	// drawn from that player's gun and reels toward it (protocol 24).
+	ShooterID int `cbor:",omitempty"`
 
 	Time        int
 	Alpha       float64
@@ -143,7 +146,9 @@ func updateWeapon(p *Player, bullets *[]Bullet, shells *[]Shell, flashes *[]Muzz
 	// DefineSprite_697_player: source shots are accepted only while the weapon
 	// movie clip is stopped on Flash frame 2. Custom weapons use the same rest
 	// frame but their animation is optional until assets are supplied.
-	if !pressed || w.WaitTime < w.Def.ROF || w.Bullets <= 0 || w.Frame != 1 {
+	// AKIMBO (arsenal2) halves the cooldown and lets the second gun fire while
+	// the first one's shot timeline still plays (never during a reload).
+	if !pressed || w.WaitTime < effectiveWeaponROF(p) || w.Bullets <= 0 || !weaponReadyToFire(p) {
 		return
 	}
 	// Every source weapon 1-86 is hold-to-fire (the AS only tests
@@ -210,6 +215,8 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 		recoil = 0
 	}
 	p.VX -= recoil * float64(p.Facing)
+	offHand := akimboActive(p) && p.AkimboHand == 1
+	bulletsBefore, flashesBefore := len(*bullets), len(*flashes)
 
 	mini := p.MiniMulti
 	if mini <= 0 {
@@ -220,7 +227,11 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 
 	// FIREBULLET() from DefineSprite_697_player/frame_1/DoAction.as, extended
 	// for the optional 87+ developed arsenal.
-	if developed {
+	if developed && spec.Category == DevelopedCategoryMelee {
+		fireMeleeSwing(p)
+	} else if developed && spec.Projectile == DevelopedProjectileGust {
+		fireLeafBlower(p)
+	} else if developed {
 		if w.Def.Shotgun > 0 {
 			naturalWidth := sourceBulletTrailNaturalWidth()
 			for i := 0; i < w.Def.Shotgun; i++ {
@@ -285,7 +296,7 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 				if spec.Projectile == DevelopedProjectileArcRocket || spec.Projectile == DevelopedProjectileGrenade {
 					b.VY = -speed * 0.22
 				}
-				if spec.Projectile == DevelopedProjectileBolt || spec.Projectile == DevelopedProjectileFlare {
+				if spec.Projectile == DevelopedProjectileBolt || spec.Projectile == DevelopedProjectileFlare || spec.Projectile == DevelopedProjectileHarpoon {
 					// Bolts/flares are near-flat shots: zeroed at ~420 px with an
 					// apex of at most 14 px, so they never clear the 18 px between
 					// the muzzle (p.Y-38) and the hitbox top (p.Y-56). The grenade
@@ -311,13 +322,14 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 					b.VX = 0
 					b.VY = speed
 				}
+				b.ShooterID = p.ID
 				*bullets = append(*bullets, b)
 			}
 		}
 		flashX, flashY := p.X+w.Def.FlashX*mini*float64(facing), p.Y+developedFlashY(w.Def.Number)*mini
 		// Bows, crossbow and harpoon have no powder charge: no muzzle flash.
 		// The nail gun keeps its small flash.
-		silentBolt := spec.Projectile == DevelopedProjectileBolt && w.Def.Number != 180
+		silentBolt := (spec.Projectile == DevelopedProjectileBolt && w.Def.Number != 180) || spec.Projectile == DevelopedProjectileHarpoon
 		if spec.Projectile != DevelopedProjectileFlame && spec.Projectile != DevelopedProjectilePortal && !silentBolt {
 			appendMuzzleFlash(flashes, flashX, flashY, facing)
 		}
@@ -382,6 +394,12 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 		}
 	}
 
+	if akimboActive(p) {
+		// The off-hand gun fires from a little behind and below the main one.
+		shiftAkimboShot(p, offHand, (*bullets)[bulletsBefore:], (*flashes)[flashesBefore:])
+		p.AkimboHand = 1 - p.AkimboHand
+	}
+
 	// Source increments pgsdata[player-1][3] once per accepted trigger shot,
 	// after FIREBULLET() (shotguns still count as one shot, not one per pellet).
 	// Each round of a developed burst is a separate shot with its own sound
@@ -395,6 +413,15 @@ func fireWeaponRound(p *Player, w *WeaponState, spec DevelopedWeaponSpec, develo
 				w.BurstWait = developedBurstGap(spec)
 			}
 		}
+	}
+	if offHand {
+		// The off-hand gun has its own magazine: AKIMBO doubles the fire
+		// rate, not the reload count.
+		return
+	}
+	if developed && spec.Category == DevelopedCategoryMelee && p.DefaultWeapon == w.Def.Number {
+		// A starter bat never breaks.
+		return
 	}
 	w.Bullets--
 	if w.Bullets <= 0 {
@@ -638,7 +665,9 @@ func hitDevelopedPlayerAlongSegment(arena Map, b *Bullet, x0, y0, x1, y1 float64
 			if !bulletCanHitPlayer(b, p) || !p.Hitbox().Contains(b.X, b.Y) {
 				continue
 			}
-			if b.ExplosionRadius > 0 {
+			if b.DevelopedProjectile == DevelopedProjectileHarpoon {
+				hitPlayerWithHarpoon(b, p, players)
+			} else if b.ExplosionRadius > 0 {
 				explodeDevelopedProjectileWithDirectHit(b, p, players, explosions, blast)
 			} else {
 				hitPlayerWithBullet(arena, b, players, false)
@@ -840,6 +869,12 @@ func updateInstagibBullet(arena Map, b *Bullet, players []*Player, instatrails *
 			push *= p.DamageMulti
 		}
 		push *= kevlarBulletKnockbackMultiplier(p)
+		// A BALLISTIC SHIELD (arsenal2) stops the de-materializer bolt too.
+		shieldBlocked := ballisticShieldCovers(p, b.VX, b.VY)
+		if shieldBlocked {
+			push *= ballisticShieldBulletScale
+			p.ShieldGearSpark = ballisticShieldSparkFrames
+		}
 		p.VX += push
 		p.HitNumber++
 		p.HitTimer = 0
@@ -850,7 +885,9 @@ func updateInstagibBullet(arena Map, b *Bullet, players []*Player, instatrails *
 		// victim's Symbol688 `instagib` child; that timeline runs for 60 frames
 		// and only then executes _parent.SELFDESTRUCT(). The target remains fully
 		// active during the countdown.
-		p.startInstagibTimeline()
+		if !shieldBlocked {
+			p.startInstagibTimeline()
+		}
 		b.Dead = true
 		return
 	}
@@ -916,6 +953,13 @@ func hitPlayerWithBullet(arena Map, b *Bullet, players []*Player, minigun bool) 
 			}
 		}
 		push *= kevlarBulletKnockbackMultiplier(p)
+		// BALLISTIC SHIELD (arsenal2): a round into the raised plate keeps 22%
+		// of its push and cannot set the bearer on fire.
+		shieldBlocked := ballisticShieldCovers(p, b.VX, b.VY)
+		if shieldBlocked {
+			push *= ballisticShieldBulletScale
+			p.ShieldGearSpark = ballisticShieldSparkFrames
+		}
 		p.VX += push
 		p.HitNumber++
 		p.HitTimer = 0
@@ -927,7 +971,7 @@ func hitPlayerWithBullet(arena Map, b *Bullet, players []*Player, minigun bool) 
 			// invisibletime=-30 and playerAI counts it back toward invisibility.
 			p.InvisibleTime = -30
 		}
-		if b.IgniteFrames > 0 && p.ShieldTime <= 0 {
+		if b.IgniteFrames > 0 && p.ShieldTime <= 0 && !shieldBlocked {
 			p.igniteWithPower(b.OwnerID, b.Facing, b.IgniteFrames, b.Firepower)
 		}
 		incrementOwnerHit(players, b.OwnerID)

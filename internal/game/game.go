@@ -664,10 +664,17 @@ func (g *Game) simulateArenaTick(primary bool) {
 	if g.deflectShieldBullets(targets) > 0 {
 		g.playSourceSFX("bolt1.wav", false)
 	}
+	// Bat swings and leaf blower gusts (arsenal2_combat.go).
+	g.applyArsenal2Hits(targets)
+	shieldSparksBefore := countBallisticShieldSparks(targets)
 	g.zombieBulletScratch = g.zombieBulletsAlive(g.zombieBulletScratch)
 	updateBullets(runtimeArena, g.bullets, targets, &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
 	g.markZombieHeadshots(g.zombieBulletScratch)
 	shieldBroke := endAbilityKnockbackWindow(targets, bulletKnockback, true)
+	if countBallisticShieldSparks(targets) > shieldSparksBefore {
+		// A round rang off a BALLISTIC SHIELD.
+		g.playSourceSFX("bolt1.wav", false)
+	}
 	if len(g.blastFX) > projectileBlastBefore {
 		g.playRandomExplosionSound()
 	}
@@ -767,7 +774,7 @@ func (g *Game) simulateArenaTick(primary bool) {
 	if primary && g.powerupTimer >= 600 && g.GameMode != SourceGameModeGunGame && g.GameMode != SourceGameModeSurvival && g.PowerON {
 		// DefineSprite_734 replaces the Double powerup with shield whenever a
 		// helper already exists OR campaignmode is active.
-		pu := spawnPowerup(runtimeArena, g.hasActiveDouble() || g.campaignMode)
+		pu := spawnPowerup(runtimeArena, g.hasActiveDouble() || g.campaignMode, g.extendedPickups())
 		pu.Serial = g.nextPickupSerial
 		g.nextPickupSerial++
 		g.powerups = append(g.powerups, pu)
@@ -1063,7 +1070,7 @@ func (g *Game) updatePlayerWeapon(p *Player) {
 	}
 	if p.Weapon.Bullets < ammoBefore || p.ShotsFired > shotsBefore {
 		playSound := true
-		if spec, ok := developedWeaponSpec(weaponBefore); ok && spec.Projectile == DevelopedProjectileFlame {
+		if spec, ok := developedWeaponSpec(weaponBefore); ok && (spec.Projectile == DevelopedProjectileFlame || spec.Projectile == DevelopedProjectileGust) {
 			// The flame loop is built from overlapping short bursts. Starting a
 			// new PCM clip every (30 Hz) tick would stack six copies and clip.
 			playSound = p.ShotsFired%6 == 1

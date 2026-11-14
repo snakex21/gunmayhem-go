@@ -527,7 +527,7 @@ func (g *Game) updateZombie(z *Zombie, arena Map, nav *zombieNav) {
 		if z.StateTimer <= 0 {
 			if target != nil && zombieInReach(z, target, st.Reach+10) {
 				dir := float64(b.Facing)
-				g.zombieHurtPlayer(target, st.Damage, st.Push*dir, st.Lift, b.ID)
+				g.zombieClawPlayer(target, st.Damage, st.Push*dir, st.Lift, b.ID)
 			}
 			z.cooldown = st.Cooldown
 			z.State = zombieStateWalk
@@ -542,7 +542,7 @@ func (g *Game) updateZombie(z *Zombie, arena Map, nav *zombieNav) {
 	case zombieStateLeap:
 		if !z.leapHit && target != nil && rectsOverlap(b.Hitbox(), target.Hitbox()) {
 			z.leapHit = true
-			g.zombieHurtPlayer(target, st.Damage, float64(b.Facing)*st.Push, st.Lift, b.ID)
+			g.zombieClawPlayer(target, st.Damage, float64(b.Facing)*st.Push, st.Lift, b.ID)
 		}
 	case zombieStateSlam:
 	}

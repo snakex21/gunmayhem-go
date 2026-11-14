@@ -41,8 +41,8 @@ func nearestOpaqueDistance(img image.Image, px, py float64) float64 {
 // fit; category fallbacks put the hands in empty space on most sprites.
 func TestDevelopedWeaponsHaveExplicitGripAndMuzzleFit(t *testing.T) {
 	numbers := allDevelopedWeaponNumbers()
-	if len(numbers) != 145 {
-		t.Fatalf("developed weapons=%d want145", len(numbers))
+	if len(numbers) != 147 {
+		t.Fatalf("developed weapons=%d want147", len(numbers))
 	}
 	for _, number := range numbers {
 		origin, okOrigin := customWeaponGripOrigins[number]
@@ -83,6 +83,9 @@ func TestDevelopedWeaponsHaveExplicitGripAndMuzzleFit(t *testing.T) {
 func TestDevelopedWeaponFitMatchesSpriteAlpha(t *testing.T) {
 	for _, number := range allDevelopedWeaponNumbers() {
 		spec, _ := developedWeaponSpec(number)
+		if proceduralWeapon(number) {
+			continue // drawn in code; covered by TestArsenal2ProceduralArtFit
+		}
 		img := decodeOriginalPNGIn("custom", "weapons", spec.AssetDir, "1.png")
 		if img == nil {
 			t.Fatalf("weapon %d sprite missing", number)

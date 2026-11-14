@@ -146,7 +146,11 @@ func (g *Game) drawPowerupPickupEffects(screen *ebiten.Image) {
 		if e.Dead || e.Alpha <= 0 {
 			continue
 		}
-		drawSourceRaster(screen, g.assets.PowerupNameFrame(e.Kind), g.worldX(e.X), g.worldY(e.Y), 1, 1, e.Alpha)
+		name := g.assets.PowerupNameFrame(e.Kind)
+		if name == nil {
+			name = arsenal2PowerupNameRaster(e.Kind)
+		}
+		drawSourceRaster(screen, name, g.worldX(e.X), g.worldY(e.Y), 1, 1, e.Alpha)
 	}
 	for i := range g.lifeBlingFX {
 		e := &g.lifeBlingFX[i]

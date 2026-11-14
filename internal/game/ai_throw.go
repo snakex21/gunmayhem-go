@@ -566,6 +566,11 @@ func aiScoreThrow(p *Player, g *Game, arena Map, res throwSimResult, profile thr
 		if aiThrowBulletsBlocked(p, g, arena, t) {
 			reason = true
 		}
+		if aiShotIntoShield(p, t.P) {
+			// A raised ballistic shield soaks bullets: throw over it.
+			reason = true
+			v += 0.15
+		}
 		if t.P.ID == p.AIThrowCampID && p.AIThrowCampFrames >= aiThrowCampFrames {
 			reason = true
 		}

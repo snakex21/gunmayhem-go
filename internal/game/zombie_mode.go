@@ -43,33 +43,36 @@ type Zombie struct {
 	// interpolation snaps on a change).
 	DoorPasses int
 
-	body          Player
-	preVX, preVY  float64
-	preHits       int
-	headshot      bool
-	creditID      int
-	creditTimer   int
-	cooldown      int
-	targetID      int
-	targetTimer   int
-	nav           zombieNavState
-	slamTimer     int
-	summonTimer   int
-	leapHit       bool
-	burnTick      int
-	bonusDamage   float64
-	chained       bool // killed by another exploder's blast
-	finished      bool
-	stuckFrames   int
-	stuckBestDist float64
-	boxFrames     int
-	boxMinX       float64
-	boxMaxX       float64
-	boxMinY       float64
-	boxMaxY       float64
-	unstickDir    int
-	unstickTimer  int
-	lastX         float64
+	body         Player
+	preVX, preVY float64
+	preHits      int
+	headshot     bool
+	creditID     int
+	creditTimer  int
+	cooldown     int
+	targetID     int
+	targetTimer  int
+	nav          zombieNavState
+	slamTimer    int
+	summonTimer  int
+	leapHit      bool
+	burnTick     int
+	bonusDamage  float64
+	// windVX/VY: leaf blower push this tick (arsenal2). Wind moves zombies
+	// but deals no damage, so it is taken out of the impulse.
+	windVX, windVY float64
+	chained        bool // killed by another exploder's blast
+	finished       bool
+	stuckFrames    int
+	stuckBestDist  float64
+	boxFrames      int
+	boxMinX        float64
+	boxMaxX        float64
+	boxMinY        float64
+	boxMaxY        float64
+	unstickDir     int
+	unstickTimer   int
+	lastX          float64
 }
 
 // Zombie states.
@@ -604,6 +607,7 @@ func (g *Game) beginZombieHitPhase() {
 			continue
 		}
 		z.preVX, z.preVY = z.body.VX, z.body.VY
+		z.windVX, z.windVY = 0, 0
 		z.preHits = z.body.HitNumber
 		z.headshot = false
 	}
@@ -677,17 +681,18 @@ func (g *Game) endZombieHitPhase() {
 		}
 		b := &z.body
 		hits := max(0, b.HitNumber-z.preHits)
-		impulse := math.Hypot(b.VX-z.preVX, b.VY-z.preVY)
+		scale := abilityKnockbackScale(b)
+		if scale <= 0.001 {
+			scale = 0.001
+		}
+		impulse := math.Hypot(b.VX-z.preVX-z.windVX*scale, b.VY-z.preVY-z.windVY*scale)
+		z.windVX, z.windVY = 0, 0
 		if hits > 0 || impulse > 0.5 {
 			z.HitFlash = 5
 			if b.LastHitBy > 0 && b.LastHitBy < zombieIDBase {
 				z.creditID = b.LastHitBy
 				z.creditTimer = zombieCreditFrames
 			}
-		}
-		scale := abilityKnockbackScale(b)
-		if scale <= 0.001 {
-			scale = 0.001
 		}
 		damage := impulse / scale * zombieBlastDamageScale
 		if hits > 0 && damage < float64(hits)*4 {

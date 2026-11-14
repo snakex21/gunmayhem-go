@@ -8,8 +8,8 @@ import (
 
 func TestAllDevelopedWeaponsHavePackagedSprites(t *testing.T) {
 	numbers := allDevelopedWeaponNumbers()
-	if len(numbers) != 145 || numbers[0] != 87 || numbers[len(numbers)-1] != 231 {
-		t.Fatalf("developed catalogue=%d weapons, range %d..%d; want 145 weapons, 87..231", len(numbers), numbers[0], numbers[len(numbers)-1])
+	if len(numbers) != 147 || numbers[0] != 87 || numbers[len(numbers)-1] != 233 {
+		t.Fatalf("developed catalogue=%d weapons, range %d..%d; want 147 weapons, 87..233", len(numbers), numbers[0], numbers[len(numbers)-1])
 	}
 	for _, number := range numbers {
 		if !customWeaponAssetAvailable(number) {
@@ -396,8 +396,8 @@ func TestDevelopedPistolSpritesFaceRight(t *testing.T) {
 
 func TestStarterHandgunRosterIncludesAllDevelopedPistols(t *testing.T) {
 	got := starterHandgunNumbers()
-	if len(got) != 27 {
-		t.Fatalf("starter handgun count=%d want27", len(got))
+	if len(got) != 28 || got[27] != weaponBaseballBat {
+		t.Fatalf("starter handgun count=%d want27 pistols + the bat", len(got))
 	}
 	for i, number := range []int{1, 2, 3, 4, 5, 6} {
 		if got[i] != number {
@@ -405,7 +405,7 @@ func TestStarterHandgunRosterIncludesAllDevelopedPistols(t *testing.T) {
 		}
 	}
 	developed := []int{98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 190, 206, 207, 216, 219, 231}
-	for i, number := range got[6:] {
+	for i, number := range got[6:27] {
 		want := developed[i]
 		if number != want {
 			t.Fatalf("developed starter index%d=%d want%d", i, number, want)
@@ -561,7 +561,7 @@ func TestDevelopedOneShotPickupsAreDiscardedWhenEmpty(t *testing.T) {
 			t.Fatalf("one-shot weapon %d (%s) was not discarded: weapon=%d ammo=%d wait=%d", number, def.Name, p.Weapon.Def.Number, p.Weapon.Bullets, p.Weapon.WaitTime)
 		}
 	}
-	if oneShotCount < 9 {
+	if oneShotCount < 8 {
 		t.Fatalf("developed one-shot audit found only %d weapons", oneShotCount)
 	}
 }
@@ -749,8 +749,10 @@ func TestHeavyWeaponBalanceCorrections(t *testing.T) {
 	if ks23.Firepower < 16 || ks23.Shotgun < 7 {
 		t.Fatalf("KS-23 remains underpowered: %+v", ks23)
 	}
-	if harpoon.Bullets != 1 || harpoon.Firepower < 75 {
-		t.Fatalf("harpoon is not a powerful single-shot: %+v", harpoon)
+	// The harpoon became the arsenal2 pull weapon: three hooks, a tiny
+	// direct push, the reel does the work (arsenal2_test.go).
+	if harpoon.Bullets != 3 || harpoon.Firepower > 5 {
+		t.Fatalf("harpoon is not the 3-hook pull weapon: %+v", harpoon)
 	}
 	img := image.NewNRGBA(image.Rect(0, 0, 110, 50))
 	got := normalizeCustomWeaponScale(img, 183, DevelopedCategoryShotgun)

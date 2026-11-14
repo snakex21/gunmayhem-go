@@ -233,8 +233,8 @@ func TestAIReacquiresVisiblePlayerDuringSearch(t *testing.T) {
 
 func TestOrganizedGunLibraryIncludesWholeCatalogueAndNewSpecials(t *testing.T) {
 	all := organizedGunLibraryNumbers(0)
-	if len(all) != 228 {
-		t.Fatalf("organized catalogue=%d want228", len(all))
+	if len(all) != 230 {
+		t.Fatalf("organized catalogue=%d want230", len(all))
 	}
 	special := organizedGunLibraryNumbers(DevelopedCategorySpecial)
 	seen := map[int]bool{}

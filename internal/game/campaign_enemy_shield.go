@@ -53,8 +53,10 @@ func (e *CampaignEnemy) shieldBlocksBullet(bl *Bullet) bool {
 		return false
 	}
 	switch bl.DevelopedProjectile {
-	case DevelopedProjectileFlame, DevelopedProjectilePortal:
-		return false // fire licks around the plate; portals are not hits
+	case DevelopedProjectileFlame, DevelopedProjectilePortal, DevelopedProjectileHarpoon:
+		// fire licks around the plate; portals are not hits; the harpoon
+		// hooks the plate and reels the bearer in
+		return false
 	}
 	f := float64(e.Body.Facing)
 	if f == 0 {

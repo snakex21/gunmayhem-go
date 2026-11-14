@@ -40,6 +40,8 @@ func abilityColor(n int) color.NRGBA {
 		return color.NRGBA{R: 0xcc, G: 0xdd, B: 0x44, A: 0xff}
 	case abilityKevlar:
 		return color.NRGBA{R: 0x88, G: 0x99, B: 0x66, A: 0xff}
+	case abilityBallisticShield:
+		return color.NRGBA{R: 0x9c, G: 0xb4, B: 0xcc, A: 0xff}
 	case abilityRandom:
 		return color.NRGBA{R: 0xdd, G: 0xaa, B: 0xff, A: 0xff}
 	}
@@ -139,6 +141,8 @@ func drawAbilityIcon(dst *ebiten.Image, n int, cx, cy, s, alpha float64) {
 		vector.StrokeLine(dst, x+7*k, y+1.5*k, x+10.5*k, y+6*k, 2.4*k, clr, true)
 	case abilityFlashGoggles, abilityThermalGoggles, abilityGasMask, abilityKevlar:
 		drawGearIcon(dst, n, cx, cy, alpha)
+	case abilityBallisticShield:
+		drawBallisticShieldIcon(dst, cx, cy, s, alpha)
 	case abilityRandom:
 		vector.StrokeCircle(dst, x, y, 9*k, 2*k, clr, true)
 		size := 15 * s / 10
