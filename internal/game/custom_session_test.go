@@ -2,8 +2,6 @@ package game
 
 import (
 	"testing"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func TestCustomGameSessionToggleHitboxes(t *testing.T) {
@@ -123,17 +121,6 @@ func TestOnlineCustomCanStartWithBotWhileOnlineSlotWaits(t *testing.T) {
 	if g.customPlayers[1].Type != 1 {
 		t.Fatal("waiting ONLINE slot was destroyed at match start")
 	}
-}
-
-func TestUnifiedCustomSessionControlsRender(t *testing.T) {
-	g := New()
-	screen := ebiten.NewImage(900, 600)
-	g.drawCustomSessionControls(screen)
-
-	g.customOnlineMode = true
-	g.customNetworkOpen = true
-	g.multiplayerDiscoveryDone = true
-	g.drawCustomSessionControls(screen)
 }
 
 func TestLeavingCustomNetworkPanelClosesHostedSession(t *testing.T) {

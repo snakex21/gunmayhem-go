@@ -1,12 +1,6 @@
 package game
 
-import (
-	"image/color"
-	"strings"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-)
+import ()
 
 const (
 	menuHitCustomHostBack = 9950 + iota
@@ -128,78 +122,4 @@ func (g *Game) createConfiguredOnlineSession() {
 	g.customMenuX = customPageTargetX(customPageGame)
 	g.screen = screenCustomGame
 	g.beginFade(screenCustomGame, fadePurposeScreen)
-}
-
-func drawHostTypeCard(screen *ebiten.Image, r Rect, title, subtitle string, selected bool) {
-	border := color.NRGBA{R: 0x46, G: 0x4b, B: 0x53, A: 0xff}
-	fill := color.NRGBA{R: 0x29, G: 0x2d, B: 0x34, A: 0xff}
-	accent := color.NRGBA{R: 0x7d, G: 0x84, B: 0x8e, A: 0xff}
-	if selected {
-		border = color.NRGBA{R: 0xff, G: 0x91, B: 0x00, A: 0xff}
-		fill = color.NRGBA{R: 0x38, G: 0x30, B: 0x25, A: 0xff}
-		accent = color.NRGBA{R: 0xff, G: 0x91, B: 0x00, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, border)
-	ebitenutil.DrawRect(screen, r.X+3, r.Y+3, r.W-6, r.H-6, fill)
-	ebitenutil.DrawRect(screen, r.X+3, r.Y+3, r.W-6, 5, accent)
-	drawSourceMenuText(screen, title, menuFontCondensedExtraBold, 17, color.White, r.X+14, r.Y+16)
-	drawSourceMenuText(screen, subtitle, menuFontCondensed, 11.5, color.NRGBA{R: 0xc8, G: 0xcc, B: 0xd3, A: 0xff}, r.X+14, r.Y+47)
-}
-
-func (g *Game) drawCustomHostSetupPanel(screen *ebiten.Image) {
-	editingExisting := g.netplay != nil && g.netplay.mode == netplayHost
-	ebitenutil.DrawRect(screen, 0, 0, 900, 600, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xff})
-	ebitenutil.DrawRect(screen, 25, 20, 850, 70, color.NRGBA{R: 0xf5, G: 0xf5, B: 0xf5, A: 0xff})
-	title := "CREATE SESSION"
-	if editingExisting {
-		title = "SESSION SETTINGS"
-	}
-	drawSourceMenuText(screen, title, menuFontTwCen, 32, color.Black, 45, 32)
-
-	drawSourceMenuText(screen, "SESSION NAME", menuFontCondensedExtraBold, 13, color.White, customHostNameRect.X, 116)
-	field := color.NRGBA{R: 0xee, G: 0xee, B: 0xee, A: 0xff}
-	if g.multiplayerNameFocus {
-		field = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, customHostNameRect.X, customHostNameRect.Y, customHostNameRect.W, customHostNameRect.H, field)
-	name := g.multiplayerSessionName
-	if g.multiplayerNameFocus {
-		name += "_"
-	}
-	drawSourceMenuText(screen, name, menuFontTwCen, 18, color.Black, customHostNameRect.X+10, customHostNameRect.Y+10)
-
-	drawSourceMenuText(screen, "NETWORK REACH", menuFontCondensedExtraBold, 16, color.White, 180, 205)
-	drawHostTypeCard(screen, customHostScopeLANRect, "LAN ONLY", "Players on your local network.", g.customHostScope == onlineSessionScopeLAN)
-	drawHostTypeCard(screen, customHostScopeInternetRect, "INTERNET", "Cloudflare WSS tunnel + LAN.", g.customHostScope == onlineSessionScopeInternet)
-
-	drawSourceMenuText(screen, "ACCESS", menuFontCondensedExtraBold, 16, color.White, 180, 332)
-	drawHostTypeCard(screen, customHostAccessOpenRect, "OPEN", "Visible in the selected scope.", g.customHostAccess == onlineSessionOpen)
-	drawHostTypeCard(screen, customHostAccessInviteRect, "INVITE CODE", "Hidden; only players with code join.", g.customHostAccess == onlineSessionInviteOnly)
-
-	scopeInfo := "LAN stays direct. INTERNET uses a temporary Cloudflare WSS tunnel; INVITE CODE is the most reliable access mode."
-	drawSourceMenuText(screen, scopeInfo, menuFontCondensed, 11.5,
-		color.NRGBA{R: 0xb9, G: 0xbf, B: 0xc8, A: 0xff}, 180, 458)
-	info := "Returning to the server browser closes the host but keeps these settings until the game is closed."
-	backLabel := "BACK TO SERVERS"
-	applyLabel := "CREATE SESSION"
-	if editingExisting {
-		info = "CANCEL keeps the host. LEAVE SESSION / ESC closes it and opens the server browser."
-		backLabel = "CANCEL"
-		applyLabel = "APPLY & RESTART"
-	}
-	drawSourceMenuText(screen, info, menuFontCondensed, 11,
-		color.NRGBA{R: 0x9f, G: 0xa6, B: 0xb0, A: 0xff}, 180, 477)
-
-	if editingExisting {
-		drawDevelopedMenuButton(screen, customHostLeaveRect, "LEAVE SESSION")
-		drawDevelopedMenuButton(screen, customHostCancelEditRect, backLabel)
-		drawDevelopedMenuButton(screen, customHostApplyEditRect, applyLabel)
-	} else {
-		drawDevelopedMenuButton(screen, customHostBackRect, backLabel)
-		drawDevelopedMenuButton(screen, customHostCreateRect, applyLabel)
-	}
-	if strings.HasPrefix(g.multiplayerMessage, "HOST ERROR") {
-		drawWrappedMenuText(screen, g.multiplayerMessage, menuFontCondensed, 11, color.NRGBA{R: 0xff, G: 0x9a, B: 0x8a, A: 0xff},
-			80, 556, 740, 13, 3, nil)
-	}
 }

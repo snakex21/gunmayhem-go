@@ -1,45 +1,39 @@
 package game
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/hajimehoshi/ebiten/v2"
-)
-
-// B2: the online rules overlay was live for input but never drawn in the v2
-// online wizard, and its RULES button was unreachable there.
+// B2: the online rules overlay used to be live for input but undrawn, and its
+// RULES button unreachable. On the Mayhem UI it is the host's CONFIGURE
+// button in the MATCH tab's ONLINE RULES row; guests see the row read-only.
 func TestOnlineWizardRulesOverlayIsReachableAndDrawn(t *testing.T) {
 	g := New()
 	g.screen = screenCustomGame
 	g.customOnlineMode = true
 	g.onlineMatchSetup = true
 	g.netplay = &netplaySession{mode: netplayHost}
-	for _, page := range []int{customPageGame, customPageMaps, customPagePlayers} {
-		g.setCustomV2Page(page)
-		r := customSessionRulesRect
-		if hit := g.customV2HitAt(r.X+r.W/2, r.Y+r.H/2); hit != menuHitCustomSessionRules {
-			t.Fatalf("page %d: RULES hit=%d", page, hit)
-		}
-	}
-	g.setCustomV2Page(customPageGame)
-
-	g.activateCustomV2Hit(menuHitCustomSessionRules)
+	g.setOnlineLobbyTab(onlineLobbyTabMatch)
+	g.runOnlineLobbyUpdate(uiInput{X: -10, Y: -10})
+	k := onlineLobbyKit(g)
+	k.click(t, "on.rules")
 	if !g.onlineRulesOpen || !g.customOnlineRulesOverlayActive() {
 		t.Fatal("RULES did not open the rules overlay")
 	}
-	// Drawn on top of every wizard page (visual check: menucheck/phase01).
-	screen := ebiten.NewImage(ScreenWidth, ScreenHeight)
-	for _, page := range []int{customPageGame, customPageMaps, customPagePlayers} {
-		g.setCustomV2Page(page)
-		g.drawCustomGameV2(screen)
+	if !k.has("on.rules.done") {
+		t.Fatal("the rules modal is not on screen")
 	}
 
-	// Clients have no RULES button.
 	c := New()
+	c.screen = screenCustomGame
 	c.customOnlineMode = true
 	c.netplay = &netplaySession{mode: netplayClient}
-	r := customSessionRulesRect
-	if hit := c.customV2HitAt(r.X+r.W/2, r.Y+r.H/2); hit == menuHitCustomSessionRules {
-		t.Fatal("client got the host RULES button")
+	c.netplay.assignedPlayerID.Store(2)
+	c.setOnlineLobbyTab(onlineLobbyTabMatch)
+	c.runOnlineLobbyUpdate(uiInput{X: -10, Y: -10})
+	onlineLobbyKit(c).click(t, "on.rules")
+	if c.onlineRulesOpen {
+		t.Fatal("a guest opened the host RULES")
+	}
+	if it, _ := c.customUI.item("on.rules"); !it.disabled {
+		t.Fatal("the guest RULES button is interactive")
 	}
 }

@@ -192,6 +192,16 @@ type Game struct {
 	mainMenuQuitOpen        bool
 	quitRequested           bool
 	customUI                uiState
+	// Online Mayhem UI (online_browser_menu.go, online_lobby_menu.go). The
+	// lobby itself shares customUI with the local Custom Game builders.
+	onlineUI               uiState
+	onlineUIScreen         int  // 1 + onlineScreen* shown last (0: none yet)
+	onlineSessionTab       bool // host lobby shows the SESSION tab
+	onlineClientTab        int  // guest lobby tab (view only, see setOnlineLobbyTab)
+	onlineClientTabSet     bool
+	onlineLeaveConfirm     bool
+	onlineBrowserLastFocus string // server row focused before this frame's key
+	onlineLastMessage      string // multiplayerMessage already shown as a toast
 	// customLoadoutSlot is 1-based: the player whose Loadout screen
 	// (loadout_menu.go) is open over the PLAYERS tab; 0 when closed.
 	customLoadoutSlot         int
@@ -1075,9 +1085,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.flushNetClientSFX()
 	screen.Fill(color.RGBA{R: 30, G: 35, B: 41, A: 255})
 	if g.netClientNeedsWaitingScreen() {
-		ebitenutil.DebugPrintAt(screen, "MULTIPLAYER", 20, 20)
-		ebitenutil.DebugPrintAt(screen, g.NetplayStatus(), 20, 42)
-		ebitenutil.DebugPrintAt(screen, "Waiting for the host to start a game...", 20, 64)
+		g.drawNetClientWaitingScreen(screen)
 		return
 	}
 	if g.screen != screenGameplay {

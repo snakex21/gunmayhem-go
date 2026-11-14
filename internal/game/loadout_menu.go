@@ -385,7 +385,11 @@ func (g *Game) buildCustomLoadout(ctx *uiCtx) {
 	if name == "" {
 		name = fmt.Sprintf("PLAYER %d", slot+1)
 	}
-	ctx.Header("LOADOUT", fmt.Sprintf("MAIN MENU  /  VERSUS  /  PLAYERS  /  P%d %s", slot+1, strings.ToUpper(name)))
+	trail := "MAIN MENU  /  VERSUS  /  PLAYERS"
+	if g.customOnlineMode {
+		trail = "ONLINE  /  LOBBY  /  PLAYERS"
+	}
+	ctx.Header("LOADOUT", fmt.Sprintf("%s  /  P%d %s", trail, slot+1, strings.ToUpper(name)))
 
 	tab := g.customLoadoutTab
 	if t := ctx.TabBar("lo.tabs", loadoutTabBarRect, loadoutTabLabels, tab); t != tab {
@@ -416,7 +420,10 @@ func (g *Game) buildCustomLoadout(ctx *uiCtx) {
 	g.drawLoadoutPreview(ctx, slot)
 	g.drawLoadoutInfo(ctx, slot, info)
 
-	if d := ctx.Stepper("lo.player", loadoutPlayerRect, fmt.Sprintf("P%d  %s", slot+1, strings.ToUpper(name)), g.activeCustomPlayerCount() > 1, g.activeCustomPlayerCount() > 1, false,
+	// A guest only has its own loadout; the host may look at every slot
+	// (remote ones read-only, see onlineMayEditCustomCharacterSlot).
+	switchable := g.activeCustomPlayerCount() > 1 && !g.onlineLobbyIsClient()
+	if d := ctx.Stepper("lo.player", loadoutPlayerRect, fmt.Sprintf("P%d  %s", slot+1, strings.ToUpper(name)), switchable, switchable, g.onlineLobbyIsClient(),
 		"PLAYER", "Switch to another player's loadout."); d != 0 {
 		g.loadoutSwitchPlayer(d)
 		return

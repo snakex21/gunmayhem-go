@@ -11,8 +11,8 @@ import (
 // MAPS / PLAYERS, the modifiers and chaos setup as modals. Every action goes
 // through the existing activation API (activateCustomV2Hit and friends), so
 // the match state, CustomPlayerConfig and slot semantics are exactly the ones
-// the online host setup shares. The online browser, host setup and online
-// wizard still use custom_game_v2.go / custom_session.go.
+// the online host setup shares. The online server browser, host setup and
+// lobby (online_browser_menu.go, online_lobby_menu.go) reuse these builders.
 //
 // EDIT LOADOUT opens the full-screen Loadout screen (loadout_menu.go), which
 // writes through the same player-editor activation codes.
@@ -135,7 +135,7 @@ func (g *Game) drawCustomLocalMenu(screen *ebiten.Image) {
 // drawCustomGameMenu routes screenCustomGame drawing like updateCustomGameMenu.
 func (g *Game) drawCustomGameMenu(screen *ebiten.Image) {
 	if g.customOnlineMode || g.customNetworkOpen {
-		g.drawCustomGameV2(screen)
+		g.drawOnlineCustomGame(screen)
 		return
 	}
 	g.drawCustomLocalMenu(screen)
@@ -144,6 +144,11 @@ func (g *Game) drawCustomGameMenu(screen *ebiten.Image) {
 // customLocalActivate runs an existing Custom Game action and turns the
 // source warnings (lives / player count) into toasts.
 func (g *Game) customLocalActivate(code int) {
+	if g.onlineLobbyIsClient() {
+		// A guest only ever edits its own slot (the old client click path).
+		g.onlineClientActivate(code)
+		return
+	}
 	before := g.customWarningFrame
 	g.activateCustomV2Hit(code)
 	if g.customWarningFrame == 2 && before != 2 {
@@ -197,7 +202,7 @@ func (g *Game) buildCustomLocal(ctx *uiCtx) {
 	case customPagePlayers:
 		g.buildCustomLocalPlayers(ctx)
 	default:
-		g.buildCustomLocalMatch(ctx)
+		g.buildCustomLocalMatch(ctx, false)
 	}
 
 	backLabel, nextLabel := "BACK", "START MATCH"
@@ -274,7 +279,9 @@ func (g *Game) customChaosSummary() string {
 	return fmt.Sprintf("ON - %d EVENTS - EVERY %ds", g.chaosSelectedCount(), g.customChaosInterval)
 }
 
-func (g *Game) buildCustomLocalMatch(ctx *uiCtx) {
+// buildCustomLocalMatch is the MATCH tab. online adds the host's ONLINE
+// RULES row (the online lobby uses ctx.readOnly for guests).
+func (g *Game) buildCustomLocalMatch(ctx *uiCtx, online bool) {
 	ctx.Panel(customLocalModePanel, "GAME MODE")
 	for i, row := range customV2ModeRows {
 		desc := strings.Join(developedModeDescription(row.mode), " ")
@@ -313,7 +320,9 @@ func (g *Game) buildCustomLocalMatch(ctx *uiCtx) {
 		if g.customLivesFocus && ctx.PressedOutside("cust.lives") {
 			g.customLivesFocus = false
 		}
-		ctx.Label("CLICK THE NUMBER TO TYPE", false, uiSizeHint, uiTextMuted, stepR.X+stepR.W+12, stepR.Y+stepR.H/2, uiAlignLeft)
+		if !ctx.readOnly {
+			ctx.Label("CLICK THE NUMBER TO TYPE", false, uiSizeHint, uiTextMuted, stepR.X+stepR.W+12, stepR.Y+stepR.H/2, uiAlignLeft)
+		}
 	} else {
 		rule := "SET BY THE MODE"
 		if g.customMode == SourceGameModeSurvival {
@@ -358,6 +367,10 @@ func (g *Game) buildCustomLocalMatch(ctx *uiCtx) {
 		g.customLocalActivate(menuHitChaosSetup)
 	}
 
+	if online {
+		g.buildOnlineRulesRow(ctx, customLocalSettingRow(6))
+		return
+	}
 	if ctx.drawing() {
 		_, body := ctx.FocusInfo()
 		if body != "" {

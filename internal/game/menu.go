@@ -187,11 +187,11 @@ func (g *Game) updatePostGameMenu() {
 }
 
 func (g *Game) updateCustomGameMenu() {
-	// The online browser, host setup and online wizard keep their own screens
-	// until the online phase of the Mayhem UI migration; local Custom Game is
-	// the kit screen in custom_local_menu.go.
+	// Online (server browser, host setup, lobby) and local Custom Game are
+	// Mayhem UI kit screens: online_browser_menu.go / online_lobby_menu.go
+	// and custom_local_menu.go. Guests run the lobby from updateNetClient.
 	if g.customOnlineMode || g.customNetworkOpen {
-		g.updateCustomGameV2()
+		g.updateOnlineCustomGame()
 		return
 	}
 	g.updateCustomLocalMenu()

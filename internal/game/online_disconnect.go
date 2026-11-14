@@ -22,6 +22,7 @@ func (g *Game) openOnlineCustomSlots(message string) {
 	g.menuPressed = menuHitNone
 	g.pausePressed = pauseHitNone
 	g.setCustomV2Page(customPagePlayers)
+	g.onlineSessionTab = false
 	g.customMenuX = 0
 	g.screen = screenCustomGame
 	g.multiplayerMessage = message

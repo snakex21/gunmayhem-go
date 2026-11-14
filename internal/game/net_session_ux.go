@@ -10,7 +10,6 @@ import (
 	"unicode"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // Player-facing text for netplay version checks, disconnect reasons and the
@@ -113,14 +112,28 @@ func (g *Game) netPingLabel() string {
 	return ""
 }
 
-// drawNetPingOverlay draws the ping in the top-right corner during online
-// sessions (lobby, setup and gameplay).
+// drawNetPingOverlay draws the ping chip in the top-right corner during
+// online sessions (lobby, setup and gameplay).
 func (g *Game) drawNetPingOverlay(screen *ebiten.Image) {
 	label := g.netPingLabel()
 	if label == "" || screen == nil {
 		return
 	}
-	w := screen.Bounds().Dx()
-	// DebugPrint glyphs are 6 px wide.
-	ebitenutil.DebugPrintAt(screen, label, w-len(label)*6-8, 4)
+	w := uiMeasure(true, uiSizeHint, label) + 26
+	r := Rect{X: float64(screen.Bounds().Dx()) - w - 6, Y: 4, W: w, H: 20}
+	uiFillRound(screen, r, 4, uiWithAlpha(uiInk900, 0.85))
+	uiFillRound(screen, Rect{X: r.X + 7, Y: r.Y + 6, W: 8, H: 8}, 4, uiNetBlue)
+	uiTextIn(screen, label, true, uiSizeHint, uiTextLight, Rect{X: r.X + 20, Y: r.Y, W: r.W - 22, H: r.H}, uiAlignLeft, 0)
+}
+
+// drawNetClientWaitingScreen is the guest's fallback view before the first
+// snapshot of a match (or on a screen guests have no menu for).
+func (g *Game) drawNetClientWaitingScreen(screen *ebiten.Image) {
+	ctx := (&uiState{}).begin(uiPassDraw, screen, uiInput{X: -1, Y: -1})
+	ctx.Page(1)
+	ctx.Header("ONLINE", "ONLINE  /  "+strings.ToUpper(g.NetplayStatus()))
+	ctx.Badge(Rect{X: uiMargin + uiMeasure(true, uiSizeTitle, "ONLINE") + 14, Y: 31, W: 44, H: 22}, "NET", uiNetBlue)
+	ctx.Panel(Rect{X: 250, Y: 230, W: 400, H: 110}, "")
+	ctx.Label("WAITING FOR THE HOST", true, uiSizeSection, uiTextLight, ScreenWidth/2, 270, uiAlignCenter)
+	ctx.Label("The match starts as soon as the host's game arrives.", false, uiSizeBody, uiTextMuted, ScreenWidth/2, 304, uiAlignCenter)
 }

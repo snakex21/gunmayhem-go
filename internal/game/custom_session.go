@@ -2,12 +2,7 @@ package game
 
 import (
 	"fmt"
-	"image/color"
 	"strings"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const (
@@ -76,31 +71,6 @@ func (g *Game) customBrowserServerHitAt(x, y float64) int {
 	return menuHitCustomNetworkServerBase + index
 }
 
-func (g *Game) updateCustomBrowserServerScroll(x, y float64) {
-	if !customNetworkServerListRect.Contains(x, y) {
-		return
-	}
-	_, wheelY := ebiten.Wheel()
-	if wheelY == 0 {
-		return
-	}
-	if wheelY > 0 {
-		g.multiplayerServerScroll--
-	} else {
-		g.multiplayerServerScroll++
-	}
-	maxScroll := len(g.multiplayerServers) - 6
-	if maxScroll < 0 {
-		maxScroll = 0
-	}
-	if g.multiplayerServerScroll < 0 {
-		g.multiplayerServerScroll = 0
-	}
-	if g.multiplayerServerScroll > maxScroll {
-		g.multiplayerServerScroll = maxScroll
-	}
-}
-
 func (g *Game) customNetworkHitAt(x, y float64) int {
 	if customNetworkMainMenuRect.Contains(x, y) {
 		return menuHitCustomNetworkMainMenu
@@ -121,100 +91,6 @@ func (g *Game) customNetworkHitAt(x, y float64) int {
 		return hit
 	}
 	return menuHitNone
-}
-
-func (g *Game) updateCustomSessionInput(x, y float64) bool {
-	if g.customOnlineMode {
-		g.pollMultiplayerServerBrowser()
-	}
-	if g.customNetworkOpen {
-		if g.customHostSetupOpen {
-			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-				g.multiplayerNameFocus = customHostNameRect.Contains(x, y)
-				g.multiplayerFocus = false
-			}
-			g.updateMultiplayerSessionNameInput()
-			hit := g.customHostSetupHitAt(x, y)
-			activated, ok := g.resolveMenuRelease(hit)
-			if !ok {
-				return true
-			}
-			g.activateCustomHostSetupHit(activated)
-			return true
-		}
-
-		g.multiplayerNameFocus = false
-		g.updateCustomBrowserServerScroll(x, y)
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			g.multiplayerFocus = customNetworkAddressRect.Contains(x, y)
-		}
-		g.updateMultiplayerAddressInput()
-
-		// LOCAL / ONLINE remain real controls on the full network page.
-		if sessionHit := g.customSessionHitAt(x, y); sessionHit == menuHitCustomSessionLocal || sessionHit == menuHitCustomSessionOnline {
-			activated, ok := g.resolveMenuRelease(sessionHit)
-			if !ok {
-				return true
-			}
-			switch activated {
-			case menuHitCustomSessionLocal:
-				_ = g.CloseNetplay()
-				g.customOnlineMode = false
-				g.customNetworkOpen = false
-				g.customHostSetupOpen = false
-				g.onlineMatchSetup = false
-				g.multiplayerFocus = false
-				g.multiplayerMessage = "LOCAL CUSTOM GAME"
-			case menuHitCustomSessionOnline:
-				g.customOnlineMode = true
-			}
-			return true
-		}
-
-		hit := g.customNetworkHitAt(x, y)
-		activated, ok := g.resolveMenuRelease(hit)
-		if !ok {
-			return true
-		}
-		g.activateCustomNetworkHit(activated)
-		return true
-	}
-
-	hit := g.customSessionHitAt(x, y)
-	if hit == menuHitNone {
-		return false
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if !ok {
-		return true
-	}
-	switch activated {
-	case menuHitCustomSessionLocal:
-		_ = g.CloseNetplay()
-		g.customOnlineMode = false
-		g.customNetworkOpen = false
-		g.onlineMatchSetup = false
-		g.multiplayerMessage = "LOCAL CUSTOM GAME"
-	case menuHitCustomSessionOnline:
-		// ONLINE starts from the server browser/session creation flow. A host then
-		// configures the match sequentially: session -> game mode -> maps -> slots.
-		g.customOnlineMode = true
-		g.returnToOnlineServerBrowser()
-	case menuHitCustomSessionNetwork:
-		// While a session exists the status bar is a route back to the lobby,
-		// never a destructive leave. Without a session it opens the server
-		// browser/create flow.
-		if g.netplay != nil {
-			g.returnToOnlineLobbyFromCustomSetup()
-		} else {
-			g.returnToOnlineServerBrowser()
-		}
-	case menuHitCustomSessionRules:
-		if g.netplay != nil && g.netplay.mode == netplayHost {
-			g.onlineRulesOpen = true
-		}
-	}
-	return true
 }
 
 func (g *Game) returnToOnlineServerBrowser() {
@@ -321,6 +197,8 @@ func (g *Game) enterOnlineCustomGameAsClient() {
 	// through the browser preview and synchronized snapshots; the client mainly
 	// chooses their own character in the SLOTS step.
 	g.setCustomV2Page(customPagePlayers)
+	g.onlineClientTab = onlineLobbyTabPlayers
+	g.onlineClientTabSet = true
 	g.multiplayerMessage = "CONNECTED - CHOOSE YOUR CHARACTER"
 	g.screen = screenCustomGame
 }
@@ -392,174 +270,8 @@ func (g *Game) customSessionStatus() string {
 	return "ONLINE - CONNECTING"
 }
 
-func drawCustomSessionButton(dst *ebiten.Image, r Rect, label string, selected bool, online bool) {
-	border := color.NRGBA{R: 0x24, G: 0x27, B: 0x2d, A: 0xee}
-	fill := color.NRGBA{R: 0xdd, G: 0xdd, B: 0xdd, A: 0xff}
-	text := color.NRGBA{A: 0xff}
-	if selected {
-		if online {
-			fill = color.NRGBA{R: 0x00, G: 0x66, B: 0xff, A: 0xff}
-			text = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-		} else {
-			fill = color.NRGBA{R: 0xff, G: 0x99, A: 0xff}
-		}
-	}
-	ebitenutil.DrawRect(dst, r.X, r.Y, r.W, r.H, border)
-	ebitenutil.DrawRect(dst, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
-	drawSourceMenuText(dst, label, menuFontTwCen, 14.5, text, r.X+10, r.Y+6)
-}
-
-func (g *Game) drawCustomSessionControls(screen *ebiten.Image) {
-	drawCustomSessionButton(screen, customSessionLocalRect, "LOCAL", !g.customOnlineMode, false)
-	drawCustomSessionButton(screen, customSessionOnlineRect, "ONLINE", g.customOnlineMode, true)
-	if g.customOnlineMode {
-		if g.netplay != nil && g.netplay.mode == netplayHost {
-			drawCustomSessionButton(screen, customSessionRulesRect, "RULES", false, true)
-		}
-		fill := color.NRGBA{R: 0x28, G: 0x32, B: 0x42, A: 0xf4}
-		ebitenutil.DrawRect(screen, customSessionNetworkRect.X, customSessionNetworkRect.Y, customSessionNetworkRect.W, customSessionNetworkRect.H, fill)
-		status := g.customSessionStatus()
-		if len(status) > 27 {
-			status = status[:27]
-		}
-		drawSourceMenuText(screen, status, menuFontCondensedExtraBold, 11.5, color.White, customSessionNetworkRect.X+8, customSessionNetworkRect.Y+6)
-		if g.netplay != nil {
-			mapSummary := onlineMapRotationLabel(g.onlineMapRotation)
-			if g.customSeriesPlaylistConfigured {
-				mapSummary = fmt.Sprintf("PLAYLIST %d ROUNDS", clampCustomSeriesRounds(g.customSeriesRounds))
-			}
-			summary := mapSummary + " | " + g.onlineRulesSummary()
-			if len(summary) > 57 {
-				summary = summary[:57]
-			}
-			ebitenutil.DrawRect(screen, 540, 81, 314, 17, color.NRGBA{R: 0x1d, G: 0x25, B: 0x32, A: 0xe8})
-			drawSourceMenuText(screen, summary, menuFontCondensed, 9.5, color.White, 546, 84)
-		}
-	}
-	if g.customNetworkOpen {
-		g.drawCustomNetworkPanel(screen)
-		return
-	}
-	// The online rules/picker overlays are drawn last by drawCustomGameV2, on
-	// top of the page content (drawing them here put them underneath it).
-}
-
 func (g *Game) customOnlineRulesOverlayActive() bool {
 	return g.onlineRulesOpen || g.onlineBlocklistOpen || g.onlinePerkBlocklistOpen || g.onlineVisualPicker != onlineVisualNone
-}
-
-func (g *Game) drawCustomBrowserServerList(screen *ebiten.Image) {
-	ebitenutil.DrawRect(screen, customNetworkServerListRect.X, customNetworkServerListRect.Y, customNetworkServerListRect.W, customNetworkServerListRect.H,
-		color.NRGBA{R: 0x22, G: 0x27, B: 0x30, A: 0xff})
-	if len(g.multiplayerServers) == 0 {
-		label := "SEARCHING..."
-		if g.multiplayerDiscoveryDone && g.multiplayerDiscoveryCh == nil {
-			label = "NO OPEN SERVERS - USE JOIN CODE"
-		}
-		drawSourceMenuText(screen, label, menuFontTwCen, 18, color.NRGBA{R: 0xaa, G: 0xb0, B: 0xb8, A: 0xff}, customNetworkServerListRect.X+18, customNetworkServerListRect.Y+85)
-		return
-	}
-	const rowH = 34.0
-	for row := 0; row < 6; row++ {
-		index := g.multiplayerServerScroll + row
-		if index >= len(g.multiplayerServers) {
-			break
-		}
-		server := g.multiplayerServers[index]
-		y := customNetworkServerListRect.Y + float64(row)*rowH
-		fill := color.NRGBA{R: 0x34, G: 0x3a, B: 0x45, A: 0xff}
-		if server.Full() {
-			fill = color.NRGBA{R: 0x49, G: 0x31, B: 0x34, A: 0xff}
-		}
-		if index == g.multiplayerSelectedServer {
-			fill = color.NRGBA{R: 0x08, G: 0x63, B: 0xc9, A: 0xff}
-		}
-		ebitenutil.DrawRect(screen, customNetworkServerListRect.X+2, y+1, customNetworkServerListRect.W-4, rowH-2, fill)
-		name := server.Name
-		if len([]rune(name)) > 24 {
-			name = string([]rune(name)[:24])
-		}
-		drawSourceMenuText(screen, name, menuFontTwCen, 14.5, color.White, customNetworkServerListRect.X+10, y+7)
-		source := strings.TrimSpace(server.Sources)
-		if source == "" {
-			source = "NETWORK"
-		}
-		drawSourceMenuText(screen, source, menuFontCondensedExtraBold, 10.5, color.NRGBA{R: 0xc9, G: 0xd0, B: 0xda, A: 0xff}, customNetworkServerListRect.X+245, y+9)
-		players := fmt.Sprintf("%d/%d", server.Players, server.MaxPlayers)
-		if server.Players < 0 {
-			players = fmt.Sprintf("?/%d", server.MaxPlayers)
-		}
-		drawSourceMenuText(screen, players, menuFontCondensedExtraBold, 12, color.White, customNetworkServerListRect.X+335, y+8)
-	}
-}
-
-func (g *Game) drawCustomServerPreview(screen *ebiten.Image) {
-	r := customNetworkPreviewRect
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x22, G: 0x27, B: 0x30, A: 0xff})
-	if g.multiplayerSelectedServer < 0 || g.multiplayerSelectedServer >= len(g.multiplayerServers) {
-		drawSourceMenuText(screen, "SELECT A SERVER", menuFontCondensedExtraBold, 19, color.White, r.X+18, r.Y+18)
-		drawSourceMenuText(screen, "Click a server to preview its maps and rules before joining.", menuFontCondensed, 11.5,
-			color.NRGBA{R: 0xac, G: 0xb4, B: 0xbf, A: 0xff}, r.X+18, r.Y+52)
-		return
-	}
-	server := g.multiplayerServers[g.multiplayerSelectedServer]
-	name := server.Name
-	if len([]rune(name)) > 30 {
-		name = string([]rune(name)[:30])
-	}
-	drawSourceMenuText(screen, name, menuFontCondensedExtraBold, 19, color.White, r.X+16, r.Y+12)
-	players := fmt.Sprintf("%d/%d", server.Players, server.MaxPlayers)
-	if server.Players < 0 {
-		players = fmt.Sprintf("?/%d", server.MaxPlayers)
-	}
-	drawSourceMenuText(screen, fmt.Sprintf("%s   PLAYERS %s", strings.TrimSpace(server.Sources), players), menuFontCondensedExtraBold, 10.5,
-		color.NRGBA{R: 0x77, G: 0xb7, B: 0xff, A: 0xff}, r.X+16, r.Y+39)
-
-	if !server.HasRulePreview() {
-		label := "MATCH DETAILS UNAVAILABLE"
-		detail := "The host did not provide preview metadata."
-		if server.Players < 0 {
-			label = "UNVERIFIED DHT SESSION"
-			detail = "Join to verify the host and retrieve maps and rules."
-		}
-		drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 14, color.NRGBA{R: 0xd2, G: 0xd6, B: 0xdc, A: 0xff}, r.X+16, r.Y+80)
-		drawSourceMenuText(screen, detail, menuFontCondensed, 11, color.NRGBA{R: 0x9f, G: 0xa7, B: 0xb1, A: 0xff}, r.X+16, r.Y+108)
-	} else {
-		drawSourceMenuText(screen, developedModeTitle(server.GameMode), menuFontCondensedExtraBold, 15.5, color.White, r.X+16, r.Y+61)
-		drawSourceMenuText(screen, fmt.Sprintf("LIVES %d   ROUNDS %d   CRATES %s   PICKUPS %s", server.Lives, server.Rounds, onOff(server.Crates), onOff(server.Pickups)), menuFontCondensed, 10.5,
-			color.NRGBA{R: 0xca, G: 0xd0, B: 0xd8, A: 0xff}, r.X+16, r.Y+84)
-		rules := strings.TrimSpace(server.RuleSummary)
-		if rules == "" {
-			rules = "NO MODIFIERS"
-		}
-		if len([]rune(rules)) > 46 {
-			rules = string([]rune(rules)[:46])
-		}
-		drawSourceMenuText(screen, rules, menuFontCondensedExtraBold, 10.5, color.NRGBA{R: 0xff, G: 0xae, B: 0x3c, A: 0xff}, r.X+16, r.Y+102)
-
-		thumbY := r.Y + 124
-		shown := server.Rounds
-		if shown > 3 {
-			shown = 3
-		}
-		for i := 0; i < shown; i++ {
-			mapValue := server.Maps[i]
-			thumb := Rect{X: r.X + 16 + float64(i)*105, Y: thumbY, W: 95, H: 57}
-			g.drawOnlineMapThumb(screen, mapValue, thumb)
-			drawSourceMenuText(screen, fmt.Sprintf("R%d", i+1), menuFontCondensedExtraBold, 9.5, color.White, thumb.X+4, thumb.Y+42)
-		}
-		if server.Rounds > 3 {
-			drawSourceMenuText(screen, fmt.Sprintf("+ %d MORE", server.Rounds-3), menuFontCondensedExtraBold, 10, color.NRGBA{R: 0xb5, G: 0xbc, B: 0xc6, A: 0xff}, r.X+332, thumbY+20)
-		}
-	}
-
-	if server.Full() {
-		ebitenutil.DrawRect(screen, customNetworkJoinSelectedRect.X, customNetworkJoinSelectedRect.Y, customNetworkJoinSelectedRect.W, customNetworkJoinSelectedRect.H, color.NRGBA{R: 0x4b, G: 0x3a, B: 0x3a, A: 0xff})
-		drawSourceMenuText(screen, "SERVER FULL", menuFontTwCen, 14, color.NRGBA{R: 0xc8, G: 0xb5, B: 0xb5, A: 0xff}, customNetworkJoinSelectedRect.X+45, customNetworkJoinSelectedRect.Y+8)
-	} else {
-		ebitenutil.DrawRect(screen, customNetworkJoinSelectedRect.X, customNetworkJoinSelectedRect.Y, customNetworkJoinSelectedRect.W, customNetworkJoinSelectedRect.H, color.NRGBA{R: 0x06, G: 0x68, B: 0xe8, A: 0xff})
-		drawSourceMenuText(screen, "JOIN SESSION", menuFontTwCen, 14.5, color.White, customNetworkJoinSelectedRect.X+34, customNetworkJoinSelectedRect.Y+8)
-	}
 }
 
 func onOff(v bool) string {
@@ -567,55 +279,6 @@ func onOff(v bool) string {
 		return "ON"
 	}
 	return "OFF"
-}
-
-func (g *Game) drawCustomNetworkPanel(screen *ebiten.Image) {
-	if g.customHostSetupOpen {
-		g.drawCustomHostSetupPanel(screen)
-		return
-	}
-
-	// Dedicated server browser. Session naming and visibility live on the
-	// separate CREATE SESSION page so this screen stays focused on discovery.
-	ebitenutil.DrawRect(screen, 0, 0, 900, 600, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xff})
-	ebitenutil.DrawRect(screen, 25, 20, 850, 70, color.NRGBA{R: 0xf5, G: 0xf5, B: 0xf5, A: 0xff})
-	drawSourceMenuText(screen, "CUSTOM GAME", menuFontTwCen, 34, color.Black, 45, 30)
-	drawCustomSessionButton(screen, customSessionLocalRect, "LOCAL", false, false)
-	drawCustomSessionButton(screen, customSessionOnlineRect, "ONLINE", true, true)
-
-	drawSourceMenuText(screen, "NETWORK SERVER BROWSER", menuFontTwCen, 27, color.White, 55, 101)
-	drawDevelopedMenuButton(screen, customNetworkCreateRect, "CREATE SESSION")
-	drawDevelopedMenuButton(screen, customNetworkRefreshRect, "REFRESH")
-
-	drawSourceMenuText(screen, "OPEN SESSIONS", menuFontCondensedExtraBold, 14, color.White, customNetworkServerListRect.X, 187)
-	drawSourceMenuText(screen, "MAPS + RULES PREVIEW", menuFontCondensedExtraBold, 14, color.White, customNetworkPreviewRect.X, 187)
-	g.drawCustomBrowserServerList(screen)
-	g.drawCustomServerPreview(screen)
-
-	drawSourceMenuText(screen, "JOIN INVITE CODE / IP:PORT", menuFontCondensedExtraBold, 12.5, color.White, customNetworkAddressRect.X, 448)
-	ebitenutil.DrawRect(screen, customNetworkAddressRect.X, customNetworkAddressRect.Y, customNetworkAddressRect.W, customNetworkAddressRect.H, color.NRGBA{R: 0xee, G: 0xee, B: 0xee, A: 0xff})
-	address := g.multiplayerAddress
-	if address == "" {
-		address = "PASTE INVITE CODE OR IP:PORT"
-	}
-	if g.multiplayerFocus {
-		address += "_"
-	}
-	drawSourceMenuText(screen, address, menuFontTwCen, 15, color.Black, customNetworkAddressRect.X+10, customNetworkAddressRect.Y+9)
-	drawDevelopedMenuButton(screen, customNetworkDirectJoinRect, "JOIN")
-	if g.multiplayerMessage != "" {
-		msg := g.multiplayerMessage
-		msgColor := color.NRGBA{R: 0xcc, G: 0xcc, B: 0xcc, A: 0xff}
-		if wrappedLineCount(msg, menuFontCondensed, 10.5, 820) <= 1 {
-			drawSourceMenuText(screen, msg, menuFontCondensed, 10.5, msgColor, 55, 512)
-		} else {
-			// Long errors (for example Cloudflare join failures) are shown in
-			// full beside MAIN MENU instead of being cut at 82 characters.
-			drawWrappedMenuText(screen, msg, menuFontCondensed, 10.5, msgColor, 322, 515, 550, 13, 6,
-				color.NRGBA{R: 0x22, G: 0x27, B: 0x2f, A: 0xff})
-		}
-	}
-	drawDevelopedMenuButton(screen, customNetworkMainMenuRect, "MAIN MENU")
 }
 
 func customPlayerEditorHitSlot(hit int) (int, bool) {
@@ -701,106 +364,5 @@ func (g *Game) removeOnlineCustomSlot(slot int) {
 		g.multiplayerMessage = fmt.Sprintf("PLAYER %d KICKED", slot+1)
 	default:
 		g.multiplayerMessage = fmt.Sprintf("ONLINE SLOT %d CLOSED", slot+1)
-	}
-}
-
-func (g *Game) updateOnlineClientCustomGame() {
-	g.customOnlineMode = true
-	g.onlineMatchSetup = true
-	mx, my := g.cursorPos()
-	id := g.onlineLocalPlayerID()
-	if id < 2 || id > maxOnlinePlayers {
-		return
-	}
-	slot := id - 1
-
-	if g.customPage == customPagePlayers {
-		g.updateCustomPlayerCards()
-		g.updateCustomNameInput()
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		if g.customPage == customPagePlayers && g.customEditor[slot] != 0 {
-			g.customEditor[slot] = 0
-			g.customNameFocus = 0
-			return
-		}
-		_ = g.CloseNetplay()
-		g.returnToOnlineServerBrowser()
-		g.multiplayerMessage = "DISCONNECTED"
-		return
-	}
-
-	hit := menuHitNone
-	if customV2BackRect.Contains(float64(mx), float64(my)) {
-		hit = menuHitCustomV2Back
-	} else if g.customPage == customPagePlayers {
-		// The original NAME field on the player's card is the only nickname
-		// field; there is no second overlay competing with the color palette.
-		hit = g.customPlayerEditorHitAt(float64(mx), float64(my))
-		if target, ok := customPlayerEditorHitSlot(hit); !ok || target != slot {
-			hit = menuHitNone
-		}
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if !ok {
-		return
-	}
-	if activated == menuHitCustomV2Back {
-		_ = g.CloseNetplay()
-		g.returnToOnlineServerBrowser()
-		g.multiplayerMessage = "DISCONNECTED"
-		return
-	}
-	if g.activateCustomPlayerEditorHit(activated) {
-		g.customPlayers[slot].Type = 1
-		g.sendOnlineLocalConfigIfChanged()
-	}
-}
-
-func (g *Game) drawCustomOnlineSlotOverlay(screen *ebiten.Image) {
-	if !g.customOnlineMode || g.customPage != customPagePlayers {
-		return
-	}
-	localID := g.onlineLocalPlayerID()
-	for slot, cfg := range g.customPlayers {
-		cardX := g.customMenuX + 20 + float64(slot)*220
-		cardY := g.customCardY[slot]
-		label := ""
-		switch {
-		case slot == 0 && g.netplay != nil && g.netplay.mode == netplayHost:
-			label = "HOST"
-		case slot == 0 && cfg.Type == 1:
-			label = "HOST - READ ONLY"
-		case cfg.Type == 2:
-			label = "AI BOT"
-		case cfg.Type == 1 && slot > 0:
-			if g.onlinePlayerSlots[slot] {
-				if localID == slot+1 {
-					label = "ONLINE"
-				} else {
-					label = "ONLINE - READ ONLY"
-				}
-			} else {
-				label = "WAITING ONLINE"
-			}
-		case cfg.Type == 0:
-			label = "EMPTY"
-		}
-		if localID == slot+1 {
-			label += "  YOU"
-		}
-		if label != "" && cfg.Type != 0 {
-			// Fully opaque: the old source CLEAR SLOT text underneath must not bleed
-			// through the status badge (HOST / YOU / READ ONLY).
-			ebitenutil.DrawRect(screen, cardX+18, cardY+7, 164, 22, color.NRGBA{R: 0x00, G: 0x66, B: 0xff, A: 0xff})
-			drawSourceMenuText(screen, strings.TrimSpace(label), menuFontCondensedExtraBold, 11.5, color.White, cardX+25, cardY+11)
-		}
-		if cfg.Type == 0 && g.netplay != nil && g.netplay.mode == netplayHost && slot > 0 {
-			// Cover the source HUMAN label so in online Custom Game it is clear
-			// that the human button opens a network slot rather than a local keyboard player.
-			r := sourceMenuHitRect(customPlayerTypeButtonLocal, cardX+20, cardY-254.95, 1.0775146484375, 1)
-			ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0xee, G: 0xee, B: 0xee, A: 0xff})
-			drawSourceMenuText(screen, "ONLINE PLAYER", menuFontTwCen, 12, color.Black, r.X+12, r.Y+5)
-		}
 	}
 }

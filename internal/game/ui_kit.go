@@ -150,6 +150,10 @@ type uiCtx struct {
 	adjust   int // -1/+1 Left/Right for a focused horizontal item
 	vadjust  int // -1/+1 Up/Down for a focused vertical item
 	back     bool
+	// readOnly registers every widget as inert (no hover, focus or action)
+	// while still drawing its current value: a guest viewing the host's
+	// online match settings.
+	readOnly bool
 }
 
 func (st *uiState) begin(pass uiPass, dst *ebiten.Image, in uiInput) *uiCtx {
@@ -326,13 +330,19 @@ func (ctx *uiCtx) Back() bool { return ctx.pass == uiPassUpdate && ctx.back }
 
 func (ctx *uiCtx) register(it uiItem) {
 	it.layer = ctx.layer
+	if ctx.readOnly {
+		it.disabled = true
+		it.focusable = false
+	}
 	ctx.items = append(ctx.items, it)
 }
 
 func (ctx *uiCtx) live(id string) bool { return ctx.layer == ctx.topLayer }
 
-func (ctx *uiCtx) hot(id string) bool     { return ctx.live(id) && ctx.st.hot == id }
-func (ctx *uiCtx) pressed(id string) bool { return ctx.live(id) && ctx.st.active == id }
+func (ctx *uiCtx) hot(id string) bool { return ctx.live(id) && !ctx.readOnly && ctx.st.hot == id }
+func (ctx *uiCtx) pressed(id string) bool {
+	return ctx.live(id) && !ctx.readOnly && ctx.st.active == id
+}
 func (ctx *uiCtx) focused(id string) bool {
 	return ctx.live(id) && ctx.st.focus == id
 }
@@ -340,7 +350,7 @@ func (ctx *uiCtx) showFocus(id string) bool { return ctx.focused(id) && ctx.st.k
 
 // triggered is true in the update pass when id was clicked or activated.
 func (ctx *uiCtx) triggered(id string) bool {
-	if ctx.pass != uiPassUpdate || !ctx.live(id) {
+	if ctx.pass != uiPassUpdate || !ctx.live(id) || ctx.readOnly {
 		return false
 	}
 	return ctx.clicked == id || ctx.activate == id
@@ -1423,4 +1433,42 @@ func (ctx *uiCtx) SettingRow(row Rect, label, controlID string, labelW float64) 
 		uiText(ctx.dst, label, true, uiSizeButton, uiTextLight, row.X+14, row.Y+row.H/2, uiAlignLeft)
 	}
 	return Rect{X: row.X + labelW, Y: row.Y + 3, W: row.W - labelW - 6, H: row.H - 6}
+}
+
+type uiRowOpts struct {
+	Selected  bool
+	Disabled  bool
+	InfoTitle string
+	InfoBody  string
+	// Draw renders the row's content on top of its background; fg is the
+	// text colour that contrasts with that background.
+	Draw func(dst *ebiten.Image, r Rect, fg color.NRGBA, alpha float64)
+}
+
+// Row is one focusable list row whose content the caller draws (server
+// browser, player lists). It returns true when clicked or activated.
+func (ctx *uiCtx) Row(id string, r Rect, o uiRowOpts) bool {
+	ctx.register(uiItem{id: id, rect: r, focusable: true, disabled: o.Disabled, infoTitle: o.InfoTitle, infoBody: o.InfoBody})
+	if ctx.drawing() {
+		hover := !o.Disabled && ctx.hot(id)
+		alpha := 1.0
+		if o.Disabled {
+			alpha = 0.5
+		}
+		fill, fg := uiInk600, uiTextLight
+		if hover {
+			fill = uiInk500
+		}
+		if o.Selected {
+			fill, fg = uiOrange, uiTextDark
+		}
+		uiFillRound(ctx.dst, r, 4, uiWithAlpha(fill, alpha))
+		if o.Draw != nil {
+			o.Draw(ctx.dst, r, fg, alpha)
+		}
+		if ctx.showFocus(id) {
+			uiFocusRing(ctx.dst, r)
+		}
+	}
+	return !o.Disabled && ctx.triggered(id)
 }

@@ -430,7 +430,7 @@ func TestOnlineVisualPickerPagesCoverWholeCatalog(t *testing.T) {
 	}
 }
 
-func TestOnlineVisualScreensRenderWithoutPanic(t *testing.T) {
+func TestOnlineRulesModalsRenderEveryPage(t *testing.T) {
 	host, err := newHostNetplay("127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -438,39 +438,36 @@ func TestOnlineVisualScreensRenderWithoutPanic(t *testing.T) {
 	defer host.Close()
 	g := New()
 	g.netplay = host
+	g.customOnlineMode = true
+	g.onlineMatchSetup = true
+	g.screen = screenCustomGame
 	g.onlinePlayerSlots[0] = true
 	g.customPlayers[0].Type = 1
 	screen := ebiten.NewImage(900, 600)
-
-	g.onlineLobbyCustomize = true
-	g.drawOnlineCharacterEditor(screen)
-	for _, picker := range []int{
-		onlineVisualCharacterColor,
-		onlineVisualCharacterShirt,
-		onlineVisualCharacterHat,
-		onlineVisualCharacterFace,
-		onlineVisualCharacterGun,
-		onlineVisualCharacterPerk,
-		onlineVisualCharacterTeam,
-		onlineVisualOnlyWeapon,
-		onlineVisualFixedMap,
-	} {
+	draw := func() {
+		g.runOnlineLobbyUpdate(uiInput{X: -10, Y: -10})
+		g.drawCustomGameMenu(screen)
+	}
+	g.onlineRulesOpen = true
+	for _, picker := range []int{onlineVisualOnlyWeapon, onlineVisualFixedMap} {
 		g.onlineVisualPicker = picker
 		g.onlineVisualPage = 0
-		g.drawOnlineVisualPicker(screen)
+		draw()
 		if max := g.onlineVisualMaxPage(); max > 0 {
 			g.onlineVisualPage = max
-			g.drawOnlineVisualPicker(screen)
+			draw()
 		}
 	}
 	g.onlineVisualPicker = onlineVisualNone
-	g.onlineRulesOpen = true
-	g.drawOnlineRules(screen)
+	draw()
+	g.onlineBlocklistOpen = true
 	g.onlineBlocklistPage = 0
-	g.drawOnlineBlocklist(screen)
+	draw()
 	g.onlineBlocklistPage = g.onlineBlocklistMaxPage()
-	g.drawOnlineBlocklist(screen)
-	g.drawOnlinePerkBlocklist(screen)
+	draw()
+	g.onlineBlocklistOpen = false
+	g.onlinePerkBlocklistOpen = true
+	draw()
 }
 
 func TestNetSnapshotMirrorsOnlineHostSetupToClient(t *testing.T) {

@@ -19,10 +19,6 @@ import (
 
 const inviteCopyFeedbackDuration = 2500 * time.Millisecond
 
-// customV2JoinCodeBarRect is the status bar on the Custom Game SLOTS page that
-// shows the host's invite code. Clicking it copies the code.
-var customV2JoinCodeBarRect = Rect{X: 20, Y: 501, W: 860, H: 20}
-
 // ---------------------------------------------------------------------------
 // Focus policy
 
@@ -157,19 +153,13 @@ func (g *Game) pasteIntoMultiplayerAddress() {
 	g.multiplayerMessage = "PASTED - PRESS ENTER OR JOIN"
 }
 
-// updateInviteCodeClipboard lets the host copy the invite code with Ctrl+C (any
-// non-gameplay screen) or by clicking the code bar on the SLOTS page.
+// updateInviteCodeClipboard lets the host copy the invite code with Ctrl+C on
+// any non-gameplay screen (the lobby also has COPY LINK buttons).
 func (g *Game) updateInviteCodeClipboard() {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost || g.screen == screenGameplay {
 		return
 	}
-	copyRequested := isClipboardModifierPressed() && inpututil.IsKeyJustPressed(ebiten.KeyC)
-	if !copyRequested && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
-		g.screen == screenCustomGame && !g.customNetworkOpen && g.customPage == customPagePlayers {
-		mx, my := g.cursorPos()
-		copyRequested = customV2JoinCodeBarRect.Contains(float64(mx), float64(my))
-	}
-	if copyRequested {
+	if isClipboardModifierPressed() && inpututil.IsKeyJustPressed(ebiten.KeyC) {
 		g.copyHostInviteCode()
 	}
 }
