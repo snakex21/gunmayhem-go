@@ -100,7 +100,8 @@ func (p *netPredictor) reset() {
 
 // predictStep advances a predicted player by one host tick with one input
 // frame, exactly like the host's per-player step in Game.Update (movement,
-// shooting/recoil inside the update, then the visual timelines). It reports
+// shooting/recoil inside the update, grenade wind-up, then the visual
+// timelines). It reports
 // false, leaving p untouched, when the step would kill or respawn the player:
 // deaths are decided by the host only.
 func predictStep(p *Player, in PlayerInputState, env *netPredictEnv) bool {
@@ -124,6 +125,10 @@ func predictStep(p *Player, in PlayerInputState, env *netPredictEnv) bool {
 		updateWeapon(p, &bullets, &shells, &flashes)
 	}
 	p.PendingSounds = p.PendingSounds[:0]
+	// Grenade wind-up (the charge indicator); a thrown grenade itself is
+	// the host's, so it goes to a scratch list.
+	var grenades []Grenade
+	updateGrenadeInput(p, &grenades)
 	p.advanceLegTimelines(env.leg1, env.leg2)
 	p.advanceHeadTimeline(env.head)
 	p.updateSourceVisualState()
