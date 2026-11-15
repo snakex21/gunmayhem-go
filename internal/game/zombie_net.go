@@ -315,7 +315,7 @@ func validateZombieSnapshot(s netSnapshot) error {
 		if badZone(z.Zone) {
 			return errors.New("invalid zombie zone in host snapshot")
 		}
-		if z.HarpoonTether < 0 || z.HarpoonTether > harpoonTetherFrames || z.HarpoonTetherID < 0 || z.HarpoonTetherID > 64 {
+		if z.HarpoonTether < 0 || z.HarpoonTether > harpoonTetherFrames || z.HarpoonTetherID < 0 || z.HarpoonTetherID > 1<<20 {
 			return errors.New("invalid zombie harpoon rope in host snapshot")
 		}
 	}

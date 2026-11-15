@@ -109,13 +109,13 @@ boss bars). Tests: `campaign_stageb_test.go`. Missions 26-28 in `extra_campaign.
 | Hitbox | 70 x 120 px. The art is drawn at 1.25x and fills the box. |
 | Resistance | `KnockbackScale` 0.12: a pistol round slides it about 34 px |
 | Movement | Moves at 0.34 of normal speed and jumps at 0.92. It uses the heavy zombie platform graph (`zombieNavHeavy`): hops of at most 60 px, and it climbs and drops. |
-| Weak spot | The exposed reactor on its back. A push that comes from behind (along its facing) is multiplied by 2.5, and so is the damage, with sparks. The mech turns in 26 ticks, which gives you a window to flank it. |
+| Weak spot | The exposed reactor on its back. A hit from an attacker standing behind it (or, with no known attacker, a push along its facing) is multiplied by 2.5, and so is the damage, with sparks. A grenade thrown from the front that lands behind it does not count, and neither does a harpoon reel. The mech turns in 26 ticks, which gives you a window to flank it. |
 | Ring-out | It can still be rung out (normal walker bounds). |
-| Twin MG | A red laser shows at chest height for 26 ticks, then a burst of 6 SMG rounds (gun 21, firepower x0.85) alternates between two barrels. Jump over the burst. |
+| Twin MG | A red laser shows at chest height for 26 ticks, then a burst of 6 SMG rounds (gun 21, firepower x0.85) alternates between two barrels. Jump over the burst. The rounds stop on platforms; a jammed gun (reload, blindness) leaves the fire state after the burst time. |
 | Stomp | The target must be within 140 px. A leg rises and an orange ring grows for 30 ticks. Then everyone standing on that surface within 175 px is pushed away: 12.5 to 6.25 push plus 5.5 lift (x0.4 with BLAST SHIELD or the shield powerup). Anyone in the air is safe. Recovery takes 26 ticks. |
 | Mortar | `Rockets` units only. The pod glows for 32 ticks, then 2 shells are marked at target x ±46 and land 50 ticks later. Cooldown 210 ticks. |
 | Harpoon | A fresh hook jams a leg and cancels the current wind-up. The pull itself is x0.12. |
-| Stuck | If it walks without moving for 75 ticks, it hops and re-plans its path. |
+| Stuck | It turns toward where its route goes (a way up often starts away from the target), toward the target only on the same platform or with no route step. If it walks without moving for 75 ticks, it hops and re-plans its path. |
 
 ### GUNSHIP (`campaignEnemyHelicopter`)
 
@@ -133,8 +133,9 @@ the arena x range ±60 and cannot go below the bottom platform.
      7 HP.
   3. The HARPOON drags it down. For 90 ticks it is held beside the shooter (150 px
      to the side, hull 30 px above the shooter's feet), within reach of guns and
-     bats. A salvo already planned keeps its timing. A strafing run or a drop is
-     broken off. After the drag it ignores hooks for 120 ticks.
+     bats. The hook breaks off any attack: rockets of a salvo that have not left
+     the pods are called off and their markers removed (rockets already in the
+     air keep theirs). After the drag it ignores hooks for 120 ticks.
   4. Explosives that hit the hull count their full push.
 * **Phases** (boss bar ticks at 2/3 and 1/3 HP, with a banner at each phase):
   1. **Strafing runs.** A red band, dashes and chevrons cover 260 px each side of the
@@ -146,7 +147,8 @@ the arena x range ±60 and cannot go below the bottom platform.
      at 7 px/tick in a straight line (radius 120, power 26). The impact point is the
      first platform on that line.
   3. **Drops troops.** It drops a shield-bearer, then a drone, in turn. At most 3 of
-     its adds are alive at once and 6 in total. Salvos grow to 4 rockets and
+     its adds are alive at once and 6 in total. It gives up a drop point it
+     cannot reach within 150 ticks. Salvos grow to 4 rockets and
      strafing runs speed up to 8.5 px/tick.
 * At 0 HP, the "GOING DOWN!" banner shows. It spins down trailing smoke and small
   explosions, then explodes when it hits a platform or after 80 ticks.
@@ -183,7 +185,7 @@ to draw it:
   the hooker, the nav state and `Player.hitW/hitH`.
 * No new snapshot list. Mechs, the gunship and its adds all use `CampaignEnemies`
   (cap 32). A gunship can have at most 3 adds alive, so it stays far below the cap.
-* `validateCampaignSnapshot` bounds the kind, HP, phase and state, the hook, the
+* `validateCampaignSnapshot` bounds the list length (64), the kind, HP, phase and the state per kind, the hook, the
   names, finite positions, the body's arsenal2 fields, and the banner.
 * Render interpolation already covers every `CampaignEnemy` body, matched by ID. A
   new enemy snaps (tested).

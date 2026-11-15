@@ -30,40 +30,41 @@ import "math"
 // At zero HP it spins down trailing smoke and explodes on impact.
 
 const (
-	heliHitW           = 128.0
-	heliHitH           = 54.0
-	heliKnockbackScale = 0.15
-	heliHoverAbove     = 175.0 // hull bottom above the target's feet
-	heliStrafeAbove    = 112.0 // hull bottom above the strafed platform
-	heliHookedAbove    = 30.0  // hull bottom above a harpoon shooter's feet
-	heliHookedSide     = 150.0
-	heliMaxSpeed       = 5.5
-	heliStrafeSpeed    = 7.0
-	heliStrafeSpeedP3  = 8.5
-	heliAccel          = 0.55
-	heliDrag           = 0.93
-	heliStrafeWarn     = 50
-	heliStrafeHalf     = 260.0
-	heliRoundEvery     = 3
-	heliRoundPush      = 7.0
-	heliRoundVX        = 6.0
-	heliRoundVY        = 15.0
-	heliSalvoWind      = 40
-	heliSalvoGap       = 9
-	heliMaxSalvo       = 4
-	heliRocketSpeed    = 7.0
-	heliRocketRadius   = 120.0
-	heliRocketPower    = 26.0
-	heliRocketPush     = 24.0
-	heliRocketDamage   = 7.0
-	heliReturnSpeed    = 13.0
-	heliHookFrames     = 90
-	heliHookCooldown   = 120
-	heliDropHover      = 34
-	heliMaxAdds        = 3
-	heliMaxDrops       = 6
-	heliCrashFrames    = 80
-	heliDropDroneHP    = 6
+	heliHitW            = 128.0
+	heliHitH            = 54.0
+	heliKnockbackScale  = 0.15
+	heliHoverAbove      = 175.0 // hull bottom above the target's feet
+	heliStrafeAbove     = 112.0 // hull bottom above the strafed platform
+	heliHookedAbove     = 30.0  // hull bottom above a harpoon shooter's feet
+	heliHookedSide      = 150.0
+	heliMaxSpeed        = 5.5
+	heliStrafeSpeed     = 7.0
+	heliStrafeSpeedP3   = 8.5
+	heliAccel           = 0.55
+	heliDrag            = 0.93
+	heliStrafeWarn      = 50
+	heliStrafeHalf      = 260.0
+	heliRoundEvery      = 3
+	heliRoundPush       = 7.0
+	heliRoundVX         = 6.0
+	heliRoundVY         = 15.0
+	heliSalvoWind       = 40
+	heliSalvoGap        = 9
+	heliMaxSalvo        = 4
+	heliRocketSpeed     = 7.0
+	heliRocketRadius    = 120.0
+	heliRocketPower     = 26.0
+	heliRocketPush      = 24.0
+	heliRocketDamage    = 7.0
+	heliReturnSpeed     = 13.0
+	heliHookFrames      = 90
+	heliHookCooldown    = 120
+	heliDropHover       = 34
+	heliMaxAdds         = 3
+	heliMaxDrops        = 6
+	heliCrashFrames     = 80
+	heliDropDroneHP     = 6
+	heliDropMaxApproach = 150
 )
 
 const (
@@ -211,29 +212,27 @@ func (g *Game) updateHeli(e *CampaignEnemy, arena Map) {
 			}
 		case heliStateDrop:
 			desiredX, desiredY = e.AimX0, hoverY+40
+			e.approach++
 			if math.Abs(b.X-e.AimX0) < 30 {
 				e.StateTimer++
 			}
 			if e.StateTimer >= heliDropHover {
 				g.heliDropAdd(e, arena)
 				g.heliEndAttack(e)
+			} else if e.approach > heliDropMaxApproach {
+				g.heliEndAttack(e) // never reached the drop point: give up
 			}
 		}
 	}
-	// A salvo keeps its timing even while hooked: its markers are down.
 	if e.State == heliStateSalvoWind {
-		if e.Hooked == 0 {
-			desiredX, desiredY = e.HomeX, e.AimY
-		}
+		desiredX, desiredY = e.HomeX, e.AimY
 		e.StateTimer--
 		if e.StateTimer <= 0 {
 			e.State, e.StateTimer = heliStateSalvo, 0
 		}
 	}
 	if e.State == heliStateSalvo {
-		if e.Hooked == 0 {
-			desiredX, desiredY = e.HomeX, e.AimY
-		}
+		desiredX, desiredY = e.HomeX, e.AimY
 		e.StateTimer++
 		if e.StateTimer%heliSalvoGap == 1 {
 			g.heliLaunchRocket(e)
@@ -280,8 +279,13 @@ func (g *Game) updateHeliHook(e *CampaignEnemy) {
 	if b.HarpoonTether > 0 && e.hookPrev == 0 && e.Hooked == 0 && e.hookCD == 0 && e.State != heliStateEnter {
 		e.Hooked = heliHookFrames
 		e.hookBy = b.HarpoonTetherID
-		// A hook breaks off a strafing run or a drop.
+		// A hook breaks off any attack. Rockets not yet fired are called
+		// off and their markers removed (every impact stays marked, and
+		// nothing launches from a spot the markers were not planned for).
 		switch e.State {
+		case heliStateSalvoWind, heliStateSalvo:
+			g.heliCancelSalvo(e)
+			g.heliEndAttack(e)
 		case heliStateStrafeLine, heliStateStrafe, heliStateDrop:
 			g.heliEndAttack(e)
 		}
@@ -361,6 +365,7 @@ func (g *Game) heliNextAttack(e *CampaignEnemy, target *Player, arena Map) {
 			x = target.X
 		}
 		e.AimX0 = x
+		e.approach = 0
 		e.State, e.StateTimer = heliStateDrop, 0
 	}
 }
@@ -469,6 +474,28 @@ func segmentImpact(arena Map, x0, y0, x1, y1 float64) (float64, float64) {
 		}
 	}
 	return x1, y1
+}
+
+// heliCancelSalvo drops the rockets of the current salvo that have not left
+// the pods, together with their ground markers.
+func (g *Game) heliCancelSalvo(e *CampaignEnemy) {
+	if e.salvo <= 0 {
+		return
+	}
+	for i := e.burst; i < e.burst+e.salvo && i < heliMaxSalvo; i++ {
+		pt := e.rocketPts[i]
+		out := g.extraHazardMarkers[:0]
+		removed := false
+		for _, m := range g.extraHazardMarkers {
+			if !removed && m.Kind == hazardMarkerStrike && m.X == pt[0] && m.Y == pt[1] {
+				removed = true
+				continue
+			}
+			out = append(out, m)
+		}
+		g.extraHazardMarkers = out
+	}
+	e.salvo = 0
 }
 
 // heliPod is the launch point of rocket i (pods alternate sides).

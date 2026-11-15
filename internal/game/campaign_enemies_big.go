@@ -79,7 +79,7 @@ func (g *Game) endBigEnemyHitPhase(e *CampaignEnemy) {
 	raw := math.Hypot(dvx, dvy) / scale
 	hits := b.HitNumber - e.preHits
 	if campaignEnemyKind(e.Kind) == campaignEnemyMech && raw > 0.5 {
-		if back := mechBackHit(e, dvx); back {
+		if back := g.mechBackHit(e, dvx); back {
 			b.VX += dvx * (mechBackMult - 1)
 			b.VY += dvy * (mechBackMult - 1)
 			raw *= mechBackMult
@@ -308,6 +308,23 @@ func (g *Game) steerReturnedRocket(bl *Bullet) {
 	e.HitFlash = 10
 }
 
+// campaignEnemySnapshotMax: twice the trim cap (netSnapshotListCaps).
+const campaignEnemySnapshotMax = 64
+
+// maxState is the highest State a kind uses (the shield-bearer counts its
+// shield turn in State).
+func (k campaignEnemyKind) maxState() int {
+	switch k {
+	case campaignEnemyShieldBearer:
+		return shieldBearerTurnFrames
+	case campaignEnemyMech:
+		return mechStateMeltdown
+	case campaignEnemyHelicopter:
+		return heliStateCrash
+	}
+	return 0
+}
+
 // validateCampaignSnapshot bounds the campaign enemies and the boss banner
 // a host sends (netwire_secure.go).
 func validateCampaignSnapshot(s netSnapshot) error {
@@ -322,6 +339,9 @@ func validateCampaignSnapshot(s netSnapshot) error {
 		}
 		return true
 	}
+	if len(s.CampaignEnemies) > campaignEnemySnapshotMax {
+		return errors.New("host snapshot campaign enemies exceed safe limit")
+	}
 	for i := range s.CampaignEnemies {
 		e := &s.CampaignEnemies[i]
 		switch {
@@ -329,7 +349,7 @@ func validateCampaignSnapshot(s netSnapshot) error {
 			return errors.New("invalid campaign enemy kind in host snapshot")
 		case e.MaxHP < 0 || e.MaxHP > 100000 || e.HP < 0 || e.HP > e.MaxHP:
 			return errors.New("invalid campaign enemy HP in host snapshot")
-		case e.Phase < 0 || e.Phase > 2 || e.State < 0 || e.State > 16:
+		case e.Phase < 0 || e.Phase > 2 || e.State < 0 || e.State > campaignEnemyKind(e.Kind).maxState():
 			return errors.New("invalid campaign enemy state in host snapshot")
 		case e.Hooked < 0 || e.Hooked > heliHookFrames:
 			return errors.New("invalid campaign enemy hook in host snapshot")

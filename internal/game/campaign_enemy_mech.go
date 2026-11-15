@@ -95,11 +95,21 @@ func setupMechBody(body *Player, e *CampaignEnemy, arena Map, side int) {
 	e.attackCD = mechAttackCooldown
 }
 
-// mechBackHit: a push along the mech's facing came from behind.
-func mechBackHit(e *CampaignEnemy, dvx float64) bool {
-	f := float64(e.Body.Facing)
+// mechBackHit: this tick's push came from behind. The attacker's position
+// decides (a grenade thrown from the front that lands behind the mech is not
+// a back hit); without a known attacker the push direction does. A harpoon
+// reel never counts: it pulls, it does not strike the reactor.
+func (g *Game) mechBackHit(e *CampaignEnemy, dvx float64) bool {
+	b := &e.Body
+	if b.HarpoonTether > e.preTether {
+		return false
+	}
+	f := float64(b.Facing)
 	if f == 0 {
 		f = 1
+	}
+	if a := g.playerByID(b.LastHitBy); a != nil && b.LastHitBy != e.preLastHit {
+		return (a.X-b.X)*f < -4 && dvx*f > 0.05
 	}
 	return dvx*f > 0.05
 }
@@ -177,7 +187,7 @@ func (g *Game) updateMech(e *CampaignEnemy, arena Map) {
 		e.AimX0 = b.X + f*mechMuzzleX*mechDrawScale
 		e.AimX1 = b.X + f*mechMGRange
 		if e.StateTimer <= 0 {
-			e.State = mechStateFire
+			e.State, e.StateTimer = mechStateFire, 0
 			e.burst = mechBurstRounds
 			if b.Weapon.Bullets < mechBurstRounds || b.Weapon.Def.Number != b.DefaultWeapon {
 				b.EquipWeapon(b.DefaultWeapon)
@@ -185,7 +195,9 @@ func (g *Game) updateMech(e *CampaignEnemy, arena Map) {
 			b.Weapon.WaitTime = b.Weapon.Def.ROF
 		}
 	case mechStateFire:
-		pull = e.burst > 0 && b.BlindTime <= 0
+		e.StateTimer++
+		// A jammed gun (reload, blindness) never holds the mech in place.
+		pull = e.burst > 0 && b.BlindTime <= 0 && e.StateTimer <= mechBurstRounds*b.Weapon.Def.ROF+20
 		if !pull {
 			e.State = mechStateIdle
 			e.attackCD = mechAttackCooldown
@@ -263,17 +275,32 @@ func (g *Game) mechIdle(e *CampaignEnemy, target *Player, nav *zombieNav, ground
 			return
 		}
 	}
-	if behind && grounded {
-		e.State, e.StateTimer = mechStateTurn, mechTurnFrames
-		return
-	}
 	if samePlat && adx <= mechHoldMax {
 		e.stuckFrames = 0
+		if behind && grounded {
+			e.State, e.StateTimer = mechStateTurn, mechTurnFrames
+		}
 		return // in range: plant and wait for the guns / the stomp
 	}
 	navSteer(b, &e.nav, e.Frame, target.X, target.Y, nav)
+	if !grounded {
+		g.mechTrackStuck(e)
+		return
+	}
+	// Turn toward where the route goes, not toward the target: a path to an
+	// upper floor often starts away from it (turning to the target there
+	// would flip-flop forever). With no route step, face the target.
+	move := 0
+	if b.AILeft {
+		move = -1
+	} else if b.AIRight {
+		move = 1
+	}
+	if move == 0 && behind && (samePlat || !e.nav.hasLink) {
+		move = dir
+	}
 	// Never spin on the spot: a key against the facing becomes a slow turn.
-	if grounded && ((b.AILeft && b.Facing > 0) || (b.AIRight && b.Facing < 0)) {
+	if move != 0 && move != b.Facing {
 		b.AILeft, b.AIRight, b.AIUp, b.AIDown = false, false, false, false
 		e.State, e.StateTimer = mechStateTurn, mechTurnFrames
 		return
@@ -311,6 +338,7 @@ func (g *Game) mechFire(e *CampaignEnemy, pull bool) {
 		if bl.OwnerID != b.ID {
 			continue
 		}
+		bl.bossShot = bossShotRound // stops on platforms like the gunship's
 		if e.burst%2 == 0 {
 			bl.Y -= mechBarrelSeparateY
 		} else {

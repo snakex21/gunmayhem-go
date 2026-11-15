@@ -117,6 +117,9 @@ type CampaignEnemy struct {
 	stuckX      float64
 	cycle       int
 	hookBy      int
+	preTether   int
+	preLastHit  int
+	approach    int // gunship ticks spent flying to a drop point
 	rocketPts   [heliMaxSalvo][2]float64
 }
 
@@ -542,6 +545,8 @@ func (g *Game) beginCampaignEnemyHitPhase() {
 		e.preVX, e.preVY = e.Body.VX, e.Body.VY
 		e.windVX, e.windVY = 0, 0
 		e.preHits = e.Body.HitNumber
+		e.preTether = e.Body.HarpoonTether
+		e.preLastHit = e.Body.LastHitBy
 	}
 }
 
@@ -617,6 +622,10 @@ func (g *Game) finishCampaignEnemy(e *CampaignEnemy) {
 	e.Dead = true
 	e.DeadFrames = 0
 	b := &e.Body
+	if b.LastDeathBy == 0 && e.crashCredit > 0 {
+		// A melting mech that falls off still belongs to its destroyer.
+		b.LastDeathBy = e.crashCredit
+	}
 	if killer := g.playerByID(b.LastDeathBy); killer != nil && killer.Team != b.Team && !killer.IsDouble {
 		killer.Kills++
 		score := campaignEnemyKind(e.Kind).killScore()
