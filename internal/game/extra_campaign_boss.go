@@ -162,6 +162,8 @@ func (g *Game) drawExtraCampaignBossHUD(screen *ebiten.Image) {
 		drawBossBar(screen, p.Name, boss.Title, frac, ticks, p.BossPhase, p.Active, y)
 		y += 44
 	}
+	// HP bosses: elite mechs and the gunship (campaign_enemies_visuals_big.go).
+	g.drawCampaignBigEnemyBars(screen, y)
 	if g.bossBannerFrame > 0 && g.bossBanner != "" {
 		a := math.Min(1, float64(g.bossBannerFrame)/25)
 		w := measureMenuText(menuFontCondensedExtraBold, 22, g.bossBanner)

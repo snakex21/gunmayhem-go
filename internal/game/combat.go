@@ -71,6 +71,13 @@ type Bullet struct {
 	// point-blank targets between the old +23 origin and the nozzle are still
 	// hit (developedFlameStart).
 	FlameSweepBack float64 `net:"-"`
+
+	// Stage B campaign rounds (host only, unexported: never on the wire).
+	// bossShot marks gunship / mech machine-gun rounds (stop on platforms)
+	// and gunship rockets (fly back at the gunship once batted or blown);
+	// bossFrom is the body ID of the gunship that fired the rocket.
+	bossShot int8
+	bossFrom int
 }
 
 type InstagibTrailEffect struct {

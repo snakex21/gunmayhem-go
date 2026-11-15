@@ -20,6 +20,8 @@ const (
 	campaignEnemyNone campaignEnemyKind = iota
 	campaignEnemyDrone
 	campaignEnemyShieldBearer
+	campaignEnemyMech       // campaign_enemy_mech.go (Stage B)
+	campaignEnemyHelicopter // campaign_boss_heli.go (Stage B)
 	campaignEnemyKindCount
 )
 
@@ -35,6 +37,8 @@ const (
 	// gas, shove) into HP damage: one point per this much velocity change.
 	campaignEnemyBlastDamageImpulse = 14.0
 	campaignEnemyDeathFXFrames      = 24
+	// Big enemies (mech, helicopter) leave their wreck on screen longer.
+	campaignBigWreckFrames = 60
 )
 
 // extraCampaignUnit is the mission-data description of one enemy wave.
@@ -48,6 +52,10 @@ type extraCampaignUnit struct {
 	Delay     int // frames before the first one arrives
 	Interval  int // frames between reinforcements (0 = 150)
 	ShotDelay int // frames between shots (0 = the kind's default)
+	// Title shows a named boss bar for an HP enemy (mech elite, gunship).
+	Title string
+	// Rockets arms a mech with its shoulder mortar (marked strikes).
+	Rockets bool
 }
 
 // CampaignEnemy is one live non-player enemy. Exported fields are carried by
@@ -72,15 +80,44 @@ type CampaignEnemy struct {
 	HomeY       float64
 	Dead        bool
 	DeadFrames  int
+	// Stage B (protocol 25): big enemies. Phase is the gunship phase (0-2);
+	// Elite draws the named boss bar (Title); AimX0/AimX1/AimY are the
+	// telegraph of the current attack (laser, stomp ring, strafing line);
+	// Hooked counts down while a harpoon drags the gunship down.
+	Phase  int     `cbor:",omitempty"`
+	Elite  bool    `cbor:",omitempty"`
+	Title  string  `cbor:",omitempty"`
+	AimX0  float64 `cbor:",omitempty"`
+	AimX1  float64 `cbor:",omitempty"`
+	AimY   float64 `cbor:",omitempty"`
+	Hooked int     `cbor:",omitempty"`
+	// Mortar: this mech carries the shoulder mortar (drawn as a pod).
+	Mortar bool `cbor:",omitempty"`
 
 	// Host-only bookkeeping (unexported: never on the wire).
 	preVX, preVY float64
 	// windVX/VY: leaf blower push this tick (arsenal2): it moves the enemy
 	// but is not a hit (no flash, no credit, no HP).
 	windVX, windVY float64
-	preHits      int
-	creditTimer  int
-	finished     bool
+	preHits        int
+	creditTimer    int
+	finished       bool
+	// Big-enemy bookkeeping (host only).
+	dmgAcc      float64 // fractional push damage carried to the next tick
+	attackCD    int
+	burst       int
+	salvo       int
+	crashCredit int
+	hookCD      int
+	hookPrev    int
+	drops       int
+	summoner    int // body ID of the gunship that dropped this add
+	nav         zombieNavState
+	stuckFrames int
+	stuckX      float64
+	cycle       int
+	hookBy      int
+	rocketPts   [heliMaxSalvo][2]float64
 }
 
 type campaignEnemyWave struct {
@@ -97,6 +134,10 @@ func (k campaignEnemyKind) defaultName() string {
 		return "Drone"
 	case campaignEnemyShieldBearer:
 		return "Shield-Bearer"
+	case campaignEnemyMech:
+		return "Mech"
+	case campaignEnemyHelicopter:
+		return "Gunship"
 	}
 	return "Enemy"
 }
@@ -107,6 +148,8 @@ func (k campaignEnemyKind) defaultGun() int {
 		return 99 // Glock 18C: light, quick taps
 	case campaignEnemyShieldBearer:
 		return 108 // Makarov PM held past the shield edge
+	case campaignEnemyMech:
+		return mechGun
 	}
 	return 1
 }
@@ -125,6 +168,32 @@ func (e *CampaignEnemy) alive() bool {
 	return e != nil && !e.Dead && e.Body.Active
 }
 
+// hittable: alive and not in a death sequence (a crashing gunship or a
+// melting-down mech still counts as standing, but takes no more hits).
+func (e *CampaignEnemy) hittable() bool {
+	if !e.alive() {
+		return false
+	}
+	switch campaignEnemyKind(e.Kind) {
+	case campaignEnemyMech:
+		return e.State != mechStateMeltdown
+	case campaignEnemyHelicopter:
+		return e.State != heliStateCrash && e.State != heliStateEnter
+	}
+	return true
+}
+
+// bigEnemy: HP comes from the raw push (damage = knockback) instead of hit
+// counts, and the de-materializer cannot erase it (campaign_enemies_big.go).
+func (k campaignEnemyKind) bigEnemy() bool {
+	return k == campaignEnemyMech || k == campaignEnemyHelicopter
+}
+
+// flyer: never lands, so kill credit simply expires.
+func (k campaignEnemyKind) flyer() bool {
+	return k == campaignEnemyDrone || k == campaignEnemyHelicopter
+}
+
 // --- setup -----------------------------------------------------------------
 
 func (g *Game) resetCampaignEnemies() {
@@ -132,6 +201,7 @@ func (g *Game) resetCampaignEnemies() {
 	g.campaignEnemyWaves = g.campaignEnemyWaves[:0]
 	g.nextCampaignEnemyID = campaignEnemyIDBase + 1
 	g.campaignEnemyFrame = 0
+	g.campaignStrikes = g.campaignStrikes[:0]
 }
 
 func (g *Game) setupCampaignEnemyWaves(units []extraCampaignUnit) {
@@ -175,7 +245,7 @@ func (g *Game) hitTargets() []*Player {
 	out := make([]*Player, 0, len(g.players)+len(g.campaignEnemies)+zombieMaxActive)
 	out = append(out, g.players...)
 	for _, e := range g.campaignEnemies {
-		if e.alive() {
+		if e.hittable() {
 			out = append(out, &e.Body)
 		}
 	}
@@ -254,7 +324,12 @@ func (g *Game) spawnCampaignEnemy(unit extraCampaignUnit, side int, arena Map) *
 	if side == 0 {
 		side = 1
 	}
-	e := &CampaignEnemy{Kind: int(kind), HP: unit.HP, MaxHP: unit.HP, ShotDelay: shotDelay, ShotTimer: shotDelay / 2}
+	hp := unit.HP
+	if kind.bigEnemy() && hp > 0 {
+		hp = g.campaignCoopHP(hp)
+	}
+	e := &CampaignEnemy{Kind: int(kind), HP: hp, MaxHP: hp, ShotDelay: shotDelay, ShotTimer: shotDelay / 2,
+		Elite: unit.Title != "", Title: unit.Title, Mortar: unit.Rockets}
 	switch kind {
 	case campaignEnemyDrone:
 		body.PlayerScale = droneHitboxScale
@@ -287,6 +362,10 @@ func (g *Game) spawnCampaignEnemy(unit extraCampaignUnit, side int, arena Map) *
 		body.JumpNum = 1
 		body.Facing = -side
 		e.HomeX = body.X
+	case campaignEnemyMech:
+		setupMechBody(&body, e, arena, side)
+	case campaignEnemyHelicopter:
+		setupHeliBody(&body, e, arena, side)
 	}
 	e.Body = body
 	g.campaignEnemies = append(g.campaignEnemies, e)
@@ -350,10 +429,12 @@ func (g *Game) updateCampaignEnemies(arena Map) {
 			e.Body.AIShoot = false
 		}
 		g.advanceCampaignEnemyDeathFX()
+		g.campaignStrikes = g.campaignStrikes[:0]
 		return
 	}
 	g.campaignEnemyFrame++
 	g.spawnCampaignEnemyWaves(arena)
+	g.updateCampaignStrikes(arena)
 	for _, e := range g.campaignEnemies {
 		if e.Dead {
 			continue
@@ -373,7 +454,7 @@ func (g *Game) updateCampaignEnemies(arena Map) {
 		}
 		if e.creditTimer > 0 {
 			e.creditTimer--
-			if e.creditTimer == 0 && campaignEnemyKind(e.Kind) == campaignEnemyDrone {
+			if e.creditTimer == 0 && campaignEnemyKind(e.Kind).flyer() {
 				// Walkers lose credit on landing like players (resolvePlatforms);
 				// a flyer never lands, so its credit simply expires.
 				e.Body.LastHitBy = 0
@@ -385,6 +466,10 @@ func (g *Game) updateCampaignEnemies(arena Map) {
 			g.updateDrone(e, arena)
 		case campaignEnemyShieldBearer:
 			g.updateShieldBearer(e, arena)
+		case campaignEnemyMech:
+			g.updateMech(e, arena)
+		case campaignEnemyHelicopter:
+			g.updateHeli(e, arena)
 		}
 		if !e.Body.Active && !e.finished {
 			g.finishCampaignEnemy(e)
@@ -398,7 +483,7 @@ func (g *Game) advanceCampaignEnemyDeathFX() {
 	for _, e := range g.campaignEnemies {
 		if e.Dead {
 			e.DeadFrames++
-			if e.DeadFrames > campaignEnemyDeathFXFrames {
+			if e.DeadFrames > campaignEnemyKind(e.Kind).wreckFrames() {
 				continue
 			}
 		}
@@ -451,7 +536,7 @@ func (g *Game) fireCampaignEnemyWeapon(e *CampaignEnemy, pull bool) {
 // difference into HP damage and refresh the kill-credit timer.
 func (g *Game) beginCampaignEnemyHitPhase() {
 	for _, e := range g.campaignEnemies {
-		if !e.alive() {
+		if !e.hittable() {
 			continue
 		}
 		e.preVX, e.preVY = e.Body.VX, e.Body.VY
@@ -462,7 +547,11 @@ func (g *Game) beginCampaignEnemyHitPhase() {
 
 func (g *Game) endCampaignEnemyHitPhase(arena Map) {
 	for _, e := range g.campaignEnemies {
-		if !e.alive() {
+		if !e.hittable() {
+			continue
+		}
+		if campaignEnemyKind(e.Kind).bigEnemy() {
+			g.endBigEnemyHitPhase(e)
 			continue
 		}
 		b := &e.Body
@@ -530,19 +619,23 @@ func (g *Game) finishCampaignEnemy(e *CampaignEnemy) {
 	b := &e.Body
 	if killer := g.playerByID(b.LastDeathBy); killer != nil && killer.Team != b.Team && !killer.IsDouble {
 		killer.Kills++
-		score := 100
-		if b.LastDeathMod == 3 {
+		score := campaignEnemyKind(e.Kind).killScore()
+		if b.LastDeathMod == 3 && score == 100 {
 			score = 50
 		}
 		killer.Score += score
 	} else if killer != nil && killer.IsDouble && killer.OwnerPlayerID > 0 {
 		if owner := g.playerByID(killer.OwnerPlayerID); owner != nil {
 			owner.Kills++
-			owner.Score += 100
+			owner.Score += campaignEnemyKind(e.Kind).killScore()
 		}
 	}
 	g.appendSourceKillFeed(b)
 	x, y := b.LastDeathX, b.LastDeathY
+	if campaignEnemyKind(e.Kind).bigEnemy() {
+		g.bigEnemyDeathFX(e)
+		return
+	}
 	if campaignEnemyKind(e.Kind) == campaignEnemyDrone {
 		y -= 16
 		g.blastFX = append(g.blastFX, spawnGrenadeBlastEffects(x, y)...)

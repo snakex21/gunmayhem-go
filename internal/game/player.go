@@ -242,6 +242,9 @@ type Player struct {
 	KnockbackScale    float64 `cbor:",omitempty"`
 	CampaignMoveScale float64 `cbor:",omitempty"`
 	BossPhase         int     `cbor:",omitempty"`
+	// hitW / hitH override the hitbox of a big campaign enemy body (host
+	// only: clients never hit-test).
+	hitW, hitH float64
 
 	Team                   int      `cbor:",omitempty"`
 	OwnerPlayerID          int      `cbor:",omitempty"`
@@ -739,6 +742,10 @@ func (p *Player) Hitbox() Rect {
 	// Exact XFL hierarchy:
 	// Symbol 691 shape = [-25,+25] x [-35,+35]
 	// Symbol 697 instance `frame` = (0,-35), then player _xscale/_yscale.
+	if p.hitW > 0 && p.hitH > 0 {
+		// Big campaign enemies (mech, gunship): a box of their own size.
+		return Rect{X: p.X - p.hitW/2, Y: p.Y - p.hitH, W: p.hitW, H: p.hitH}
+	}
 	s := p.PlayerScale
 	if s <= 0 {
 		s = 0.8

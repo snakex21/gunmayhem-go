@@ -596,6 +596,8 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		LifeBlingFX:                    append([]LifeBlingEffect(nil), g.lifeBlingFX...),
 		CampaignEnemies:                g.campaignEnemySnapshot(),
 		HazardMarkers:                  append([]HazardMarker(nil), g.extraHazardMarkers...),
+		BossBanner:                     g.bossBanner,
+		BossBannerFrame:                g.bossBannerFrame,
 		Zombies:                        g.zombieSnapshot(),
 		ZombiePops:                     g.zombiePopSnapshot(),
 		ZombieHUD:                      g.zombieHUDSnapshot(),

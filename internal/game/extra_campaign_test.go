@@ -9,6 +9,25 @@ func TestExtraCampaignHasVariedRespawnMissions(t *testing.T) {
 	singleEnemyMissions := 0
 	twoEnemyMissions := 0
 	for i, spec := range extraCampaignMissions {
+		bigHP := 0
+		for _, u := range spec.Units {
+			if u.Kind.bigEnemy() {
+				bigHP += u.HP * u.Count
+			}
+		}
+		if bigHP > 0 {
+			// Stage B boss missions (mech, gunship) are measured by the HP
+			// pool of their big enemies, not by bot lives.
+			if extraCampaignTitles[i] == "" || spec.Mode == "" || spec.Briefing == "" || spec.MapNumber < 1 || spec.MapNumber > 12 || len(spec.Enemies) > 2 || bigHP < 50 {
+				t.Fatalf("EXTRA boss mission %d invalid: title=%q spec=%+v", i+1, extraCampaignTitles[i], spec)
+			}
+			for _, enemy := range spec.Enemies {
+				if enemy.ID < 3 || enemy.ID > 4 || enemy.Lives < 3 || !isGunLibraryGunNumber(enemy.Gun) {
+					t.Fatalf("EXTRA mission %d bad enemy=%+v", i+1, enemy)
+				}
+			}
+			continue
+		}
 		if extraCampaignTitles[i] == "" || spec.Mode == "" || spec.Briefing == "" || spec.MapNumber < 1 || spec.MapNumber > 12 || len(spec.Enemies) < 1 || len(spec.Enemies) > 2 {
 			t.Fatalf("EXTRA mission %d invalid: title=%q spec=%+v", i+1, extraCampaignTitles[i], spec)
 		}

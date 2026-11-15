@@ -167,8 +167,12 @@ type Game struct {
 	campaignEnemyWaves  []campaignEnemyWave
 	nextCampaignEnemyID int
 	campaignEnemyFrame  int
-	bossBanner          string
-	bossBannerFrame     int
+	// Stage B: marked mortar strikes waiting to drop (host only) and the
+	// heavy mech's platform graph (built once per arena).
+	campaignStrikes []campaignStrike
+	mechNav         *zombieNav
+	bossBanner      string
+	bossBannerFrame int
 
 	// ZOMBIE mode (zombie_*.go). zombie is nil outside a zombie match.
 	zombie              *zombieMatch
@@ -668,6 +672,9 @@ func (g *Game) simulateArenaTick(primary bool) {
 	shieldSparksBefore := countBallisticShieldSparks(targets)
 	// Bat swings and leaf blower gusts (arsenal2_combat.go).
 	g.applyArsenal2Hits(targets)
+	// Gunship / mech rounds stop on platforms; bounced gunship rockets fly
+	// back at it (campaign_enemies_big.go).
+	g.updateCampaignBossBullets(targets)
 	g.zombieBulletScratch = g.zombieBulletsAlive(g.zombieBulletScratch)
 	updateBullets(runtimeArena, g.bullets, targets, &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
 	g.markZombieHeadshots(g.zombieBulletScratch)

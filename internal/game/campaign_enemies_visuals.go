@@ -39,7 +39,11 @@ func (g *Game) drawCampaignEnemies(screen *ebiten.Image) {
 			continue
 		}
 		if e.Dead {
-			g.drawCampaignEnemyWreck(screen, e)
+			if campaignEnemyKind(e.Kind).bigEnemy() {
+				g.drawBigWreck(screen, e)
+			} else {
+				g.drawCampaignEnemyWreck(screen, e)
+			}
 			continue
 		}
 		switch campaignEnemyKind(e.Kind) {
@@ -47,6 +51,10 @@ func (g *Game) drawCampaignEnemies(screen *ebiten.Image) {
 			g.drawDrone(screen, e)
 		case campaignEnemyShieldBearer:
 			g.drawShieldBearer(screen, e)
+		case campaignEnemyMech:
+			g.drawMech(screen, e)
+		case campaignEnemyHelicopter:
+			g.drawHeli(screen, e)
 		}
 	}
 }
@@ -285,6 +293,10 @@ func campaignEnemyRopePoint(e *CampaignEnemy) (float64, float64) {
 	switch campaignEnemyKind(e.Kind) {
 	case campaignEnemyDrone:
 		return droneCenter(b)
+	case campaignEnemyHelicopter:
+		return b.X, b.Y - 8 // the belly
+	case campaignEnemyMech:
+		return b.X, b.Y - 70
 	}
 	return b.X, b.Y - 36*playerRenderScale(b)/0.8
 }

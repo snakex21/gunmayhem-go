@@ -495,6 +495,7 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 	g.lifeBlingFX = append(g.lifeBlingFX[:0], state.LifeBlingFX...)
 	g.applyCampaignEnemySnapshot(state.CampaignEnemies)
 	g.extraHazardMarkers = append(g.extraHazardMarkers[:0], state.HazardMarkers...)
+	g.bossBanner, g.bossBannerFrame = state.BossBanner, state.BossBannerFrame
 	g.applyZombieSnapshot(&state)
 	g.onlineZombie = state.OnlineZombie
 	g.zombieSetup.Mode = state.ZombieSetupMode

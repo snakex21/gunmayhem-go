@@ -165,6 +165,9 @@ type netSnapshot struct {
 	// future online co-op campaign rendering correctly with no extra work.
 	CampaignEnemies []CampaignEnemy `cbor:",omitempty"`
 	HazardMarkers   []HazardMarker  `cbor:",omitempty"`
+	// Boss phase banner (bots and the gunship; protocol 25).
+	BossBanner      string `cbor:",omitempty"`
+	BossBannerFrame int    `cbor:",omitempty"`
 	// Zombie mode (protocol 22, zombie_net.go). Zombies carry no physics
 	// body; the HUD value holds waves, points, HP and the mystery box.
 	Zombies          []Zombie    `cbor:",omitempty"`

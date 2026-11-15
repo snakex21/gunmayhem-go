@@ -447,6 +447,9 @@ func validateNetSnapshot(s netSnapshot) error {
 	if err := validateZombieSnapshot(s); err != nil {
 		return err
 	}
+	if err := validateCampaignSnapshot(s); err != nil {
+		return err
+	}
 	if s.CustomSeriesRounds != 0 && (s.CustomSeriesRounds < customSeriesMinRounds || s.CustomSeriesRounds > customSeriesMaxRounds) {
 		return errors.New("invalid custom series length in host snapshot")
 	}

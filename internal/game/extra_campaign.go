@@ -14,7 +14,7 @@ const (
 	extraCampaignHitStart       = 3100
 	extraCampaignHitPrevPage    = 3101
 	extraCampaignHitNextPage    = 3102
-	extraCampaignMissionCount   = 25
+	extraCampaignMissionCount   = 28
 	extraCampaignPageSize       = 12
 )
 
@@ -44,6 +44,9 @@ var extraCampaignTitles = [extraCampaignMissionCount]string{
 	"Riot Line",
 	"Breach Point",
 	"Combined Arms",
+	"Iron Stride",
+	"Steel Rain",
+	"Gunship",
 }
 
 type extraCampaignEnemy struct {
@@ -94,7 +97,14 @@ type extraCampaignMission struct {
 	// Units are non-player campaign enemies (drones, shield-bearers) spawned
 	// in waves; every one of them must be defeated to win.
 	Units []extraCampaignUnit
+	// CratePool replaces the developed crate pool (the gunship finale drops
+	// an anti-air kit).
+	CratePool []int
 }
+
+// extraAntiAirCrates: bats and blowers send gunship rockets back, the
+// harpoon drags it down, launchers and rifles hit it when it is low.
+var extraAntiAirCrates = []int{weaponBaseballBat, weaponBaseballBat, weaponLeafBlower, weaponHarpoonGun, weaponHarpoonGun, 87, 168, 11, 10, 19}
 
 // EXTRA is an original continuation built for this port. Enemy life pools are
 // deliberately independent from the human life count: later missions contain
@@ -209,6 +219,21 @@ var extraCampaignMissions = [extraCampaignMissionCount]extraCampaignMission{
 	}, Units: []extraCampaignUnit{
 		{Kind: campaignEnemyDrone, Name: "Drone", Count: 3, MaxActive: 1, HP: 6, Delay: 300, Interval: 420},
 		{Kind: campaignEnemyShieldBearer, Name: "Shield-Bearer", Count: 2, MaxActive: 1, Delay: 600, Interval: 600},
+	}},
+	// 26-28 (Stage B): the mech walker and the gunship finale
+	// (campaign_enemy_mech.go, campaign_boss_heli.go).
+	{MapNumber: 1, PlayerLives: 7, Crates: true, Powerups: true, Mode: "WALKER ASSAULT", Briefing: "A walking tank: flank it, its reactor is on its back.", RuleText: "ELITE MECH + DRONE COVER", Enemies: []extraCampaignEnemy{
+		xe(3, "Spotter", 7, 4, 9, 113, 0, 3),
+	}, Units: []extraCampaignUnit{
+		{Kind: campaignEnemyMech, Name: "Strider", Count: 1, HP: 70, Title: "ELITE MECH", Delay: 60},
+		{Kind: campaignEnemyDrone, Name: "Drone", Count: 2, MaxActive: 1, HP: 6, Delay: 420, Interval: 450},
+	}},
+	{MapNumber: 7, PlayerLives: 7, Crates: true, Powerups: true, Mode: "ARTILLERY WALKERS", Briefing: "Mortar mechs mark their strikes: keep moving, hit their backs.", RuleText: "MORTAR MECHS + RIOT SHIELDS", Units: []extraCampaignUnit{
+		{Kind: campaignEnemyMech, Name: "Howitzer", Count: 2, MaxActive: 1, HP: 55, Rockets: true, Delay: 60, Interval: 240},
+		{Kind: campaignEnemyShieldBearer, Name: "Shield-Bearer", Count: 3, MaxActive: 1, Delay: 360, Interval: 420},
+	}},
+	{MapNumber: 5, PlayerLives: 8, Crates: true, Powerups: true, Mode: "GUNSHIP FINALE", Briefing: "Bat or blow its rockets back, harpoon it down, hit it low.", RuleText: "HELICOPTER BOSS + ANTI-AIR CRATES", CratePool: extraAntiAirCrates, Units: []extraCampaignUnit{
+		{Kind: campaignEnemyHelicopter, Name: "Black Kite", Count: 1, HP: 90, Title: "GUNSHIP", Delay: 90},
 	}},
 }
 
@@ -414,6 +439,16 @@ func extraCampaignOpponentLines(spec extraCampaignMission) []string {
 			line += " - flying, light"
 		case campaignEnemyShieldBearer:
 			line += " - front riot shield"
+		case campaignEnemyMech:
+			line += " - walker, weak back"
+			if u.Rockets {
+				line += ", mortar"
+			}
+		case campaignEnemyHelicopter:
+			line += " - rockets, strafing, drops troops"
+		}
+		if u.Title != "" {
+			line = "BOSS " + line
 		}
 		lines = append(lines, line)
 	}
@@ -587,6 +622,9 @@ func (g *Game) startExtraCampaignMission() {
 		g.matchModifiers[modifier] = true
 	}
 	g.applyCustomModifierSetup()
+	if len(spec.CratePool) > 0 {
+		g.crateWeapons = append([]int(nil), spec.CratePool...)
+	}
 	g.campaignMode = true
 	g.campaignSetGM2 = false
 	g.campaignSetExtra = true
