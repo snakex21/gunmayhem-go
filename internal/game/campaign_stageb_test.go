@@ -656,3 +656,72 @@ func TestStageBFinalePerformance(t *testing.T) {
 		t.Fatalf("finale tick too slow: %v", per)
 	}
 }
+
+// TestStageBCoopDoesNotWinWhileUnitsRemain: two humans (TeamGame) against
+// a bot-less mission must not get the generic "all active on one team" win.
+func TestStageBCoopDoesNotWinWhileUnitsRemain(t *testing.T) {
+	for _, level := range []int{21, 27, 28} {
+		g := New()
+		g.campaignPlayers[1].Type = 1
+		g.extraCampaignLevels[level-1] = 1
+		g.campaignLevel = level
+		g.startExtraCampaignMission()
+		g.screen = screenGameplay
+		g.fadeActive = false
+		for _, p := range g.players {
+			if p.AI {
+				p.Active = false // every bot out: only units remain
+			} else {
+				p.RemoteControlled = true
+			}
+		}
+		if !g.TeamGame {
+			t.Fatal("co-op is not a team game")
+		}
+		for i := 0; i < 30; i++ {
+			_ = g.Update()
+		}
+		if g.teamGameWin || g.GameWin {
+			t.Fatalf("mission %d: co-op won with %d units remaining", level, g.campaignEnemiesRemaining())
+		}
+	}
+}
+
+// TestMechMortarLandsOnTheTargetsFloor: on a tiered map the marked shells
+// come down on the target's platform, not on the roof above it.
+func TestMechMortarLandsOnTheTargetsFloor(t *testing.T) {
+	g, human := stageBGame(t, 7)
+	standOn(g, human, 650, 511)
+	m := spawnMechAt(g, 250, 151, 100, 1)
+	m.Mortar = true
+	g.mechLaunchMortar(m, human, g.arena)
+	if len(g.extraHazardMarkers) != 2 || len(g.campaignStrikes) != 2 {
+		t.Fatalf("markers=%d strikes=%d", len(g.extraHazardMarkers), len(g.campaignStrikes))
+	}
+	for _, mk := range g.extraHazardMarkers {
+		if math.Abs(mk.Y-511) > 1 {
+			t.Fatalf("marker on y=%.0f, want the target's floor 511", mk.Y)
+		}
+	}
+	booms := 0
+	for tick := 0; tick < 200 && booms < 2; tick++ {
+		standOn(g, human, 900, 511)
+		g.updateCampaignStrikes(g.arena)
+		before := len(g.explosions)
+		updateBullets(g.arena, g.bullets, g.hitTargets(), &g.instagibTrails, &g.explosions, &g.blastFX, &g.portals)
+		for _, ex := range g.explosions[before:] {
+			booms++
+			if tick < mechRocketWarn-1 {
+				t.Fatalf("a shell landed at tick %d, before its warning ran out", tick)
+			}
+			if math.Abs(ex.Y+20-511) > 30 {
+				t.Fatalf("shell exploded at y=%.0f, not on the floor", ex.Y+20)
+			}
+		}
+		g.updateHazardMarkers()
+		g.bullets = compactDeadBullets(g.bullets)
+	}
+	if booms != 2 {
+		t.Fatalf("%d of 2 shells landed", booms)
+	}
+}

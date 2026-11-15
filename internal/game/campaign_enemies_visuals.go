@@ -296,7 +296,7 @@ func campaignEnemyRopePoint(e *CampaignEnemy) (float64, float64) {
 	case campaignEnemyHelicopter:
 		return b.X, b.Y - 8 // the belly
 	case campaignEnemyMech:
-		return b.X, b.Y - 70
+		return b.X, b.Y - 90
 	}
 	return b.X, b.Y - 36*playerRenderScale(b)/0.8
 }

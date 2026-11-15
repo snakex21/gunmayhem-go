@@ -158,10 +158,10 @@ func (g *Game) bigEnemyDeathFX(e *CampaignEnemy) {
 
 // campaignStrike is a strike waiting for its warning to run out.
 type campaignStrike struct {
-	x, landY float64
-	delay    int
-	ownerID  int
-	facing   int
+	x, landY, startY float64
+	delay            int
+	ownerID          int
+	facing           int
 }
 
 const (
@@ -172,16 +172,34 @@ const (
 	campaignStrikePush       = 18.0
 )
 
-// queueCampaignStrike marks (x, top surface) now and drops a strike there
-// after warn ticks. The marker stays until the shell has landed.
-func (g *Game) queueCampaignStrike(arena Map, x float64, warn, ownerID, facing int) {
-	landY := hazardLandingY(arena, x)
-	fall := himarsStrikeFallTicks(landY-campaignStrikeStartAbove, campaignStrikeFallSpeed, landY)
+// queueCampaignStrike marks the surface under (x, refY) now and drops a
+// strike there after warn ticks. The shell appears just under the next
+// platform above (a mortar round comes down onto the target's floor, not on
+// the roof of a tiered map). The marker stays until the shell has landed.
+func (g *Game) queueCampaignStrike(arena Map, x, refY float64, warn, ownerID, facing int) {
+	landY := surfaceUnder(arena, x, refY)
+	if !platformAtX(arena, x) {
+		landY = hazardLandingY(arena, x)
+	}
+	startY := campaignStrikeStart(arena, x, landY)
+	fall := himarsStrikeFallTicks(startY, campaignStrikeFallSpeed, landY)
 	life := warn + fall + campaignStrikeLinger
 	g.extraHazardMarkers = append(g.extraHazardMarkers, HazardMarker{
 		Kind: hazardMarkerStrike, X: x, Y: landY, Life: life, MaxLife: life, Drop: fall + campaignStrikeLinger,
 	})
-	g.campaignStrikes = append(g.campaignStrikes, campaignStrike{x: x, landY: landY, delay: warn, ownerID: ownerID, facing: facing})
+	g.campaignStrikes = append(g.campaignStrikes, campaignStrike{x: x, landY: landY, startY: startY, delay: warn, ownerID: ownerID, facing: facing})
+}
+
+// campaignStrikeStart: campaignStrikeStartAbove over the landing surface, or
+// just under the closest platform above it.
+func campaignStrikeStart(arena Map, x, landY float64) float64 {
+	start := landY - campaignStrikeStartAbove
+	for _, r := range arena.Platforms {
+		if r.ContainsX(x) && r.Y+r.H <= landY-1 && r.Y+r.H+8 > start {
+			start = r.Y + r.H + 8
+		}
+	}
+	return math.Min(start, landY-40)
 }
 
 func (g *Game) updateCampaignStrikes(arena Map) {
@@ -197,7 +215,7 @@ func (g *Game) updateCampaignStrikes(arena Map) {
 			f = 1
 		}
 		g.bullets = append(g.bullets, Bullet{
-			Kind: BulletNormal, X: s.x, Y: s.landY - campaignStrikeStartAbove, VY: campaignStrikeFallSpeed,
+			Kind: BulletNormal, X: s.x, Y: s.startY, VY: campaignStrikeFallSpeed,
 			Firepower: campaignStrikePush, OwnerID: s.ownerID, Team: campaignEnemyTeam, Facing: f,
 			Time: 1, Alpha: 1, TrailWidth: 20, TrailFrame: 1, ShooterID: s.ownerID,
 			DevelopedProjectile: DevelopedProjectileStrike, ExplosionRadius: campaignStrikeRadius,

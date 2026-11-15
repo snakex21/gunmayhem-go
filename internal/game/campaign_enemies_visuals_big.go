@@ -66,9 +66,19 @@ func (g *Game) drawMech(screen *ebiten.Image, e *CampaignEnemy) {
 		x += math.Sin(float64(e.Frame)*2.3) * 2
 		y += math.Cos(float64(e.Frame)*1.9) * 1
 	}
+	// Body-local points (x forward) scaled to the hitbox size.
+	const s = mechDrawScale
+	P := func(lx, ly float64) (float64, float64) { return x + f*lx*s, y + ly*s }
+	poly := func(pts ...[2]float64) [][2]float64 {
+		out := make([][2]float64, len(pts))
+		for i, p := range pts {
+			out[i][0], out[i][1] = P(p[0], p[1])
+		}
+		return out
+	}
 	airborne := b.JumpNum != 2
 	moving := !airborne && math.Abs(b.VX) > 0.25
-	phase := b.X * 0.055
+	phase := b.X * 0.05
 	hull := flashColor(e, bigSteel)
 	if melt {
 		hull = color.NRGBA{R: 0x5a, G: 0x34, B: 0x2c, A: 0xff}
@@ -78,76 +88,88 @@ func (g *Game) drawMech(screen *ebiten.Image, e *CampaignEnemy) {
 	for i, side := range []float64{-1, 1} {
 		swing, lift := 0.0, 0.0
 		if moving {
-			swing = math.Sin(phase+side*math.Pi/2) * 9
-			lift = math.Max(0, math.Cos(phase+side*math.Pi/2)) * 6
+			swing = math.Sin(phase+side*math.Pi/2) * 8
+			lift = math.Max(0, math.Cos(phase+side*math.Pi/2)) * 5
 		}
 		if e.State == mechStateStompWind && side > 0 {
 			k := math.Min(1, float64(e.StateTimer)/mechStompWind)
-			lift = 28 * k
-			swing = 6 * k
+			lift = 22 * k
+			swing = 5 * k
 		}
 		if airborne {
-			lift, swing = 8, -4*side
+			lift, swing = 6, -3*side
 		}
 		clr := bigSteelDark
 		if i == 1 {
 			clr = flashColor(e, bigSteelHi)
 		}
-		hipX, hipY := x-f*4+side*5, y-60
-		kneeX, kneeY := x-f*14+swing*0.5+side*4, y-36-lift*0.5
-		ankX, ankY := x+f*4+swing+side*3, y-10-lift
-		vector.StrokeLine(screen, float32(hipX), float32(hipY), float32(kneeX), float32(kneeY), 9, bigRim, true)
-		vector.StrokeLine(screen, float32(hipX), float32(hipY), float32(kneeX), float32(kneeY), 6.5, clr, true)
-		vector.StrokeLine(screen, float32(kneeX), float32(kneeY), float32(ankX), float32(ankY), 7, bigRim, true)
-		vector.StrokeLine(screen, float32(kneeX), float32(kneeY), float32(ankX), float32(ankY), 4.5, clr, true)
-		vector.DrawFilledCircle(screen, float32(kneeX), float32(kneeY), 5, bigRim, true)
-		foot := [][2]float64{{ankX - f*10, ankY + 7}, {ankX + f*16, ankY + 7}, {ankX + f*12, ankY + 10}, {ankX - f*12, ankY + 10}}
+		hipX, hipY := P(-3+side*4, -58)
+		kneeX, kneeY := P(-15+swing*0.5+side*3, -34-lift*0.5)
+		ankX, ankY := P(3+swing+side*2, -9-lift)
+		w := float32(s)
+		vector.StrokeLine(screen, float32(hipX), float32(hipY), float32(kneeX), float32(kneeY), 11*w, bigRim, true)
+		vector.StrokeLine(screen, float32(hipX), float32(hipY), float32(kneeX), float32(kneeY), 8*w, clr, true)
+		vector.StrokeLine(screen, float32(kneeX), float32(kneeY), float32(ankX), float32(ankY), 9*w, bigRim, true)
+		vector.StrokeLine(screen, float32(kneeX), float32(kneeY), float32(ankX), float32(ankY), 6*w, clr, true)
+		vector.DrawFilledCircle(screen, float32(kneeX), float32(kneeY), 6*w, bigRim, true)
+		vector.DrawFilledCircle(screen, float32(kneeX), float32(kneeY), 3.5*w, clr, true)
+		// Foot: a wide clawed plate from the ankle down to the ground.
+		ax, ay := ankX, ankY
+		foot := [][2]float64{{ax - f*9*s, ay - 2*s}, {ax + f*4*s, ay - 3*s}, {ax + f*17*s, ay + 7*s}, {ax + f*17*s, ay + 9*s}, {ax - f*12*s, ay + 9*s}}
 		fillPolygon(screen, foot, clr)
-		strokeClosed(screen, foot, 1.2, bigRim)
+		strokeClosed(screen, foot, 1.3, bigRim)
 	}
 	// Jump jets while rising.
 	if airborne && b.VY < 0 {
-		for _, s := range []float64{-1, 1} {
-			drawPuff(screen, x-f*24+s*4, y-50, 9, 1, 0.6, 0.2, 0.5)
+		for _, sd := range []float64{-1, 1} {
+			jx, jy := P(-24+sd*4, -50)
+			drawPuff(screen, jx, jy, 10, 1, 0.6, 0.2, 0.5)
 		}
 	}
 	// Torso.
-	torso := [][2]float64{{x - f*32, y - 96}, {x + f*20, y - 104}, {x + f*34, y - 86}, {x + f*30, y - 60}, {x - f*24, y - 56}, {x - f*36, y - 72}}
+	torso := poly([2]float64{-32, -96}, [2]float64{20, -104}, [2]float64{34, -86}, [2]float64{30, -60}, [2]float64{-24, -56}, [2]float64{-36, -72})
 	fillPolygon(screen, torso, hull)
-	strokeClosed(screen, torso, 1.8, bigRim)
-	vector.StrokeLine(screen, float32(x-f*28), float32(y-80), float32(x+f*28), float32(y-82), 1.2, bigSteelDark, true)
+	strokeClosed(screen, torso, 2, bigRim)
+	l0x, l0y := P(-28, -80)
+	l1x, l1y := P(28, -82)
+	vector.StrokeLine(screen, float32(l0x), float32(l0y), float32(l1x), float32(l1y), 1.3, bigSteelDark, true)
+	for _, rv := range [][2]float64{{-20, -66}, {-6, -67}, {8, -68}, {20, -69}} {
+		rx, ry := P(rv[0], rv[1])
+		vector.DrawFilledCircle(screen, float32(rx), float32(ry), 1.6, bigRim, true)
+	}
 	// Cockpit glass (red eye while attacking).
-	glass := [][2]float64{{x + f*14, y - 99}, {x + f*30, y - 87}, {x + f*27, y - 78}, {x + f*12, y - 84}}
+	glass := poly([2]float64{14, -99}, [2]float64{30, -87}, [2]float64{27, -78}, [2]float64{12, -84})
 	fillPolygon(screen, glass, color.NRGBA{R: 0xd8, G: 0x9a, B: 0x30, A: 0xd0})
 	strokeClosed(screen, glass, 1.2, bigRim)
 	if e.State == mechStateAim || e.State == mechStateFire || e.State == mechStateRocketWind {
-		vector.DrawFilledCircle(screen, float32(x+f*22), float32(y-88), 2.6, bigLaser, true)
+		ex, ey := P(22, -88)
+		vector.DrawFilledCircle(screen, float32(ex), float32(ey), 3, bigLaser, true)
 	}
 	// Exposed reactor on the back: the weak spot.
 	pulse := 0.6 + 0.4*math.Sin(float64(e.Frame)*0.25)
-	rx0, rx1 := x-f*37, x-f*27
+	rx0, ry0 := P(-37, -92)
+	rx1, ry1 := P(-27, -66)
 	if rx0 > rx1 {
 		rx0, rx1 = rx1, rx0
 	}
-	vector.DrawFilledRect(screen, float32(rx0), float32(y-92), float32(rx1-rx0), 26, color.NRGBA{R: 0x30, G: 0x10, B: 0x08, A: 0xff}, true)
-	vector.DrawFilledRect(screen, float32(rx0+2), float32(y-89), float32(rx1-rx0-4), 20, withAlpha(color.NRGBA{R: 0xff, G: 0x88, B: 0x20, A: 0xff}, pulse), true)
-	for i := 0; i < 4; i++ {
-		yy := float32(y - 87 + float64(i)*5)
-		vector.StrokeLine(screen, float32(rx0), yy, float32(rx1), yy, 1.2, bigRim, true)
+	vector.DrawFilledRect(screen, float32(rx0), float32(ry0), float32(rx1-rx0), float32(ry1-ry0), color.NRGBA{R: 0x30, G: 0x10, B: 0x08, A: 0xff}, true)
+	vector.DrawFilledRect(screen, float32(rx0+2), float32(ry0+3), float32(rx1-rx0-4), float32(ry1-ry0-6), withAlpha(color.NRGBA{R: 0xff, G: 0x88, B: 0x20, A: 0xff}, pulse), true)
+	for i := 1; i < 5; i++ {
+		yy := float32(ry0 + (ry1-ry0)*float64(i)/5)
+		vector.StrokeLine(screen, float32(rx0), yy, float32(rx1), yy, 1.3, bigRim, true)
 	}
-	vector.StrokeRect(screen, float32(rx0), float32(y-92), float32(rx1-rx0), 26, 1.4, bigRim, true)
+	vector.StrokeRect(screen, float32(rx0), float32(ry0), float32(rx1-rx0), float32(ry1-ry0), 1.5, bigRim, true)
 	if e.ShieldSpark > 0 {
 		k := float64(e.ShieldSpark) / 8
-		sx, sy := x-f*38, y-80
+		sx, sy := P(-38, -80)
 		for i := -1; i <= 1; i++ {
-			vector.StrokeLine(screen, float32(sx), float32(sy), float32(sx-f*12*k), float32(sy+float64(i)*8*k), 1.8,
-				color.NRGBA{R: 0xff, G: 0xe0, B: 0x60, A: uint8(255 * k)}, true)
+			vector.StrokeLine(screen, float32(sx), float32(sy), float32(sx-f*14*k), float32(sy+float64(i)*9*k), 2, color.NRGBA{R: 0xff, G: 0xe0, B: 0x60, A: uint8(255 * k)}, true)
 		}
-		vector.DrawFilledCircle(screen, float32(sx), float32(sy), float32(4*k+1), color.NRGBA{R: 0xff, G: 0xff, B: 0xc0, A: uint8(220 * k)}, true)
+		vector.DrawFilledCircle(screen, float32(sx), float32(sy), float32(5*k+1), color.NRGBA{R: 0xff, G: 0xff, B: 0xc0, A: uint8(220 * k)}, true)
 	}
 	// Shoulder mortar pod.
 	if e.Mortar {
-		pod := [][2]float64{{x - f*26, y - 118}, {x - f*2, y - 118}, {x - f*2, y - 101}, {x - f*26, y - 99}}
+		pod := poly([2]float64{-26, -118}, [2]float64{-2, -118}, [2]float64{-2, -101}, [2]float64{-26, -99})
 		fillPolygon(screen, pod, bigSteelDark)
 		strokeClosed(screen, pod, 1.4, bigRim)
 		glow := color.NRGBA{R: 0x18, G: 0x18, B: 0x1c, A: 0xff}
@@ -155,25 +177,33 @@ func (g *Game) drawMech(screen *ebiten.Image, e *CampaignEnemy) {
 			glow = bigWarn
 		}
 		for _, ox := range []float64{-19, -9} {
-			vector.DrawFilledCircle(screen, float32(x+f*ox), float32(y-110), 3.6, glow, true)
+			tx, ty := P(ox, -110)
+			vector.DrawFilledCircle(screen, float32(tx), float32(ty), float32(3.6*s), glow, true)
 		}
 	}
-	// Twin machine-gun arm at chest height (where the rounds leave).
-	arm := [][2]float64{{x + f*6, y - 48}, {x + f*30, y - 46}, {x + f*30, y - 30}, {x + f*6, y - 32}}
+	// Twin machine-gun pod at a player's chest height (where rounds leave).
+	gy := y - mechMuzzleY
+	ax0, _ := P(6, 0)
+	ax1, _ := P(30, 0)
+	arm := [][2]float64{{ax0, gy - 11}, {ax1, gy - 9}, {ax1, gy + 9}, {ax0, gy + 7}}
+	sx, sy := P(10, -62)
+	vector.StrokeLine(screen, float32(sx), float32(sy), float32(ax0+f*6), float32(gy), 6, bigRim, true)
 	fillPolygon(screen, arm, flashColor(e, bigSteelHi))
 	strokeClosed(screen, arm, 1.4, bigRim)
-	for _, s := range []float64{-1, 1} {
-		by := y - mechMuzzleY + s*mechBarrelSeparateY
-		vector.StrokeLine(screen, float32(x+f*28), float32(by), float32(x+f*mechMuzzleX+f*6), float32(by), 3, bigRim, true)
+	for _, sd := range []float64{-1, 1} {
+		by := gy + sd*mechBarrelSeparateY
+		vector.StrokeLine(screen, float32(ax1-f*2), float32(by), float32(x+f*(mechMuzzleX*s+6)), float32(by), 3.2, bigRim, true)
 	}
 	if melt {
 		for i := 0; i < 3; i++ {
 			a := float64(e.Frame+i*9) * 0.08
-			drawPuff(screen, x+math.Sin(a)*16-f*10, y-110-float64((e.Frame*2+i*14)%40), 12, 0.25, 0.25, 0.27, 0.45)
+			px, py := P(-10, -110)
+			drawPuff(screen, px+math.Sin(a)*16, py-float64((e.Frame*2+i*14)%40), 13, 0.25, 0.25, 0.27, 0.45)
 		}
 	}
 	if !e.Elite {
-		drawEnemyHPPips(screen, e, x, y-128)
+		_, hy := P(0, -128)
+		drawEnemyHPPips(screen, e, x, hy)
 	}
 }
 
@@ -236,7 +266,13 @@ func (g *Game) drawHeli(screen *ebiten.Image, e *CampaignEnemy) {
 		d := math.Hypot(dx, dy)
 		if d > 1 {
 			px, py := -dy/d*46, dx/d*46
-			fillPolygon(screen, [][2]float64{{nx, ny}, {gx + px, gy + py}, {gx - px, gy - py}}, color.NRGBA{R: 0xff, G: 0xf4, B: 0xc8, A: 0x22})
+			fillPolygon(screen, [][2]float64{{nx, ny}, {gx + px, gy + py}, {gx - px, gy - py}}, color.NRGBA{R: 0xff, G: 0xf4, B: 0xc8, A: 0x30})
+			spot := make([][2]float64, 0, 16)
+			for i := 0; i < 16; i++ {
+				a := float64(i) / 16 * 2 * math.Pi
+				spot = append(spot, [2]float64{gx + math.Cos(a)*48, gy + math.Sin(a)*9})
+			}
+			fillPolygon(screen, spot, color.NRGBA{R: 0xff, G: 0xf8, B: 0xd8, A: 0x40})
 		}
 	}
 	hull := flashColor(e, bigOlive)
@@ -342,7 +378,7 @@ func (g *Game) drawHeli(screen *ebiten.Image, e *CampaignEnemy) {
 		for i := 0; i < n; i++ {
 			a := float64(e.Frame*3+i*17) * 0.05
 			sx, sy := rotPt(cx, cy, cx-f*20, cy-26, rot)
-			drawPuff(screen, sx-f*float64(i)*14+math.Sin(a)*6, sy-float64(i)*8, 10+float64(i)*3, 0.22, 0.22, 0.24, 0.5)
+			drawPuff(screen, sx-f*float64(i)*16+math.Sin(a)*6, sy-float64(i)*10, 12+float64(i)*4, 0.16, 0.16, 0.18, 0.7)
 		}
 		if crash {
 			fx, fy := rotPt(cx, cy, cx-f*14, cy-20, rot)
@@ -372,21 +408,25 @@ func (g *Game) drawHeliStrafeLine(screen *ebiten.Image, e *CampaignEnemy) {
 			return
 		}
 	}
-	y := g.worldY(e.AimY) - 2
+	y := g.worldY(e.AimY) - 3
 	pulse := 0.55 + 0.45*math.Sin(float64(e.Frame)*0.5)
-	a := 0.5 + 0.5*pulse
+	a := 0.6 + 0.4*pulse
 	sx0, sx1 := g.worldX(x0), g.worldX(x1)
+	lo, hi := math.Min(sx0, sx1), math.Max(sx0, sx1)
+	// A danger band on the walkway, then bold dashes and moving chevrons.
+	vector.DrawFilledRect(screen, float32(lo), float32(y-16), float32(hi-lo), 16, withAlpha(bigLaser, 0.18*a), true)
 	step := 18.0
 	n := int(math.Abs(sx1-sx0) / step)
 	for i := 0; i < n; i += 2 {
 		p0 := sx0 + f*float64(i)*step
 		p1 := sx0 + f*float64(i+1)*step
-		vector.StrokeLine(screen, float32(p0), float32(y), float32(p1), float32(y), 3, withAlpha(bigLaser, a), true)
+		vector.StrokeLine(screen, float32(p0), float32(y), float32(p1), float32(y), 6, withAlpha(bigRim, 0.6*a), true)
+		vector.StrokeLine(screen, float32(p0), float32(y), float32(p1), float32(y), 4, withAlpha(bigLaser, a), true)
 	}
 	for i := 1; i < n; i += 4 {
 		px := sx0 + f*float64(i)*step + f*float64(e.Frame%8)
-		vector.StrokeLine(screen, float32(px-f*7), float32(y-12), float32(px), float32(y-6), 2.2, withAlpha(bigLaser, a), true)
-		vector.StrokeLine(screen, float32(px-f*7), float32(y), float32(px), float32(y-6), 2.2, withAlpha(bigLaser, a), true)
+		vector.StrokeLine(screen, float32(px-f*9), float32(y-24), float32(px), float32(y-15), 3, withAlpha(bigLaser, a), true)
+		vector.StrokeLine(screen, float32(px-f*9), float32(y-6), float32(px), float32(y-15), 3, withAlpha(bigLaser, a), true)
 	}
 }
 

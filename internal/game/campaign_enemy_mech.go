@@ -23,8 +23,9 @@ import "math"
 
 const (
 	mechGun            = 21 // COMPACT SMG feeding the twin barrels
-	mechHitW           = 62.0
-	mechHitH           = 96.0
+	mechHitW           = 70.0
+	mechHitH           = 120.0
+	mechDrawScale      = 1.25 // procedural art units -> px (fills the hitbox)
 	mechKnockbackScale = 0.12
 	mechMoveScale      = 0.34
 	mechJumpScale      = 0.92
@@ -173,7 +174,7 @@ func (g *Game) updateMech(e *CampaignEnemy, arena Map) {
 	case mechStateAim:
 		e.StateTimer--
 		e.AimY = b.Y - mechMuzzleY
-		e.AimX0 = b.X + f*mechMuzzleX
+		e.AimX0 = b.X + f*mechMuzzleX*mechDrawScale
 		e.AimX1 = b.X + f*mechMGRange
 		if e.StateTimer <= 0 {
 			e.State = mechStateFire
@@ -372,7 +373,7 @@ func (g *Game) mechLaunchMortar(e *CampaignEnemy, target *Player, arena Map) {
 	}
 	for _, off := range []float64{-mechRocketSpread, mechRocketSpread} {
 		x := math.Max(minX+10, math.Min(maxX-10, target.X+off))
-		g.queueCampaignStrike(arena, x, mechRocketWarn, b.ID, dir)
+		g.queueCampaignStrike(arena, x, target.Y, mechRocketWarn, b.ID, dir)
 	}
 	g.playSourceSFX("dev_javelin.wav", false)
 }

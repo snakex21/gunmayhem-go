@@ -290,8 +290,10 @@ func (g *Game) updateMatchInteractions() {
 	}
 
 	// Root frame10 teamgame test: if all active players have the same team,
-	// teamgamewin is set immediately and fx_teamwin is attached.
-	if g.TeamGame && !g.teamGameWin && len(active) > 0 {
+	// teamgamewin is set immediately and fx_teamwin is attached. The EXTRA
+	// campaign decided by side above: its co-op humans are all on team 1
+	// while the enemies may be non-player units (mech, gunship, drones).
+	if g.TeamGame && !g.teamGameWin && len(active) > 0 && !(g.campaignMode && g.campaignSetExtra) {
 		team := active[0].Team
 		same := true
 		for _, p := range active[1:] {

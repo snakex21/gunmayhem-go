@@ -33,10 +33,10 @@ const (
 	heliHitW           = 128.0
 	heliHitH           = 54.0
 	heliKnockbackScale = 0.15
-	heliHoverAbove     = 200.0 // hull bottom above the target's feet
+	heliHoverAbove     = 175.0 // hull bottom above the target's feet
 	heliStrafeAbove    = 112.0 // hull bottom above the strafed platform
 	heliHookedAbove    = 30.0  // hull bottom above a harpoon shooter's feet
-	heliHookedSide     = 110.0
+	heliHookedSide     = 150.0
 	heliMaxSpeed       = 5.5
 	heliStrafeSpeed    = 7.0
 	heliStrafeSpeedP3  = 8.5
@@ -576,7 +576,8 @@ func (g *Game) updateHeliCrash(e *CampaignEnemy, arena Map) {
 	b.VX *= 0.995
 	b.X += b.VX
 	b.Y += b.VY
-	e.Tilt += 0.11 * sign(b.VX)
+	// Nose drops toward the fall while the hull wobbles (no cartwheels).
+	e.Tilt = sign(b.VX)*math.Min(0.75, float64(e.StateTimer)*0.025) + math.Sin(float64(e.StateTimer)*0.6)*0.12
 	cx, cy := heliCenter(b)
 	if e.StateTimer%4 == 0 {
 		spawnMolotovSparks(&g.dynamiteFX, cx-sign(b.VX)*40, cy, 2)
