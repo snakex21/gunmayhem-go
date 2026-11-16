@@ -782,3 +782,8 @@ func TestNetHostGameSnapshotsReachClientWithoutSharingState(t *testing.T) {
 	}
 	waitFor(t, "sounds", func() bool { return len(client.drainClientSFX()) > 0 })
 }
+
+// encode builds a single-view frame (tests only; the host uses encodeViews).
+func (h *netHostEncoder) encode(state netSnapshot) *netHostFrame {
+	return h.encodeViews([]netSnapshot{state}, []int{0}, nil)
+}

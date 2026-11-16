@@ -99,8 +99,8 @@ func TestCustomEditorSelectsDevelopedStarterPistol(t *testing.T) {
 	if !ok || slot != 0 || number != 231 {
 		t.Fatalf("developed pistol cell hit=%d decoded slot=%d gun=%d ok=%v", hit, slot, number, ok)
 	}
-	if !g.activateCustomPlayerEditorHit(hit) || g.customPlayers[0].Gun != 231 || g.customEditor[0] != 0 {
-		t.Fatalf("developed pistol selection failed: cfg=%+v editor=%d", g.customPlayers[0], g.customEditor[0])
+	if !g.activateCustomPlayerEditorHit(hit) || g.customPlayers[0].Gun != 231 {
+		t.Fatalf("developed pistol selection failed: cfg=%+v", g.customPlayers[0])
 	}
 }
 

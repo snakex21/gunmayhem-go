@@ -203,12 +203,6 @@ func (h *netHostEncoder) arenaSeqFor(raw []byte) (uint32, []byte) {
 	return h.arenaSeq, raw
 }
 
-// encode builds the shared frame. state must be a snapshot copy owned by the
-// caller; it is modified (trimmed/stripped).
-func (h *netHostEncoder) encode(state netSnapshot) *netHostFrame {
-	return h.encodeViews([]netSnapshot{state}, []int{0}, nil)
-}
-
 // encodeViews builds one frame with several views (zones[i] is the zombie
 // zone of states[i]). peerView maps a player ID to its view index; peers
 // that are not listed get view 0. The SFX of the first state are used.

@@ -91,7 +91,6 @@ func (g *Game) activateCustomPlayerSlot(hit int) bool {
 		}
 	case playerSlotActionClear:
 		g.customPlayers[slot].Type = 0
-		g.customEditor[slot] = 0
 		if g.customNameFocus == slot+1 {
 			g.customNameFocus = 0
 		}

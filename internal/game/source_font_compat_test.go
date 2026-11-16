@@ -392,3 +392,18 @@ func TestSourceFontCandidatesUseFirstKnownFallback(t *testing.T) {
 		t.Fatalf("first known fallback not selected: font=%v err=%v", got, err)
 	}
 }
+
+// parseSourceFont mirrors the runtime loader for one candidate (tests only):
+// ordinary fonts go to the normal parser; only the exact five legacy assets
+// may take the compatibility path after parsing fails.
+func parseSourceFont(data []byte) (*opentype.Font, error) {
+	parsed, err := opentype.Parse(data)
+	if err == nil {
+		return parsed, nil
+	}
+	if normalized, ok := normalizeLegacySourceFont(data); ok {
+		// Metadata normalization is not a substitute for normal validation.
+		return opentype.Parse(normalized)
+	}
+	return nil, err
+}

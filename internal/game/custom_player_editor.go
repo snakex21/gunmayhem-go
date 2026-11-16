@@ -213,7 +213,6 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 			return true
 		}
 		g.customPlayers[slot].Gun = number
-		g.customEditor[slot] = 0
 		return true
 	}
 	if slot, editor, number, ok := decodeCustomSelectHit(hit); ok {
@@ -246,7 +245,6 @@ func (g *Game) activateCustomPlayerEditorHit(hit int) bool {
 				cfg.Ability = ability
 			}
 		}
-		g.customEditor[slot] = 0
 		return true
 	}
 	if hit >= menuHitPlayerTeamBase && hit < menuHitPlayerTeamBase+40 {

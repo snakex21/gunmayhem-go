@@ -176,8 +176,8 @@ func TestLoadoutWeaponPerkGearThrowableWriteConfig(t *testing.T) {
 			t.Fatalf("throwable=%d want %d", g.customPlayers[2].Throwable, kind)
 		}
 	}
-	if g.customLoadoutSlot != 3 || g.customEditor != [4]int{} {
-		t.Fatalf("picks must keep the loadout open and leave the classic editor closed: slot=%d editor=%v", g.customLoadoutSlot, g.customEditor)
+	if g.customLoadoutSlot != 3 {
+		t.Fatalf("picks must keep the loadout open: slot=%d", g.customLoadoutSlot)
 	}
 }
 

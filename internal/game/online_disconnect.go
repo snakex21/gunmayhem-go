@@ -46,7 +46,6 @@ func (g *Game) clearDisconnectedOnlineHumanSlots() {
 			continue
 		}
 		g.customPlayers[slot].Type = 0
-		g.customEditor[slot] = 0
 		g.onlinePlayerSlots[slot] = false
 		if g.customNameFocus == slot+1 {
 			g.customNameFocus = 0

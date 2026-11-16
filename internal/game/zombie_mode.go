@@ -479,10 +479,6 @@ func (g *Game) zombieJoinPlayer(p *Player) {
 	}
 }
 
-func (m *zombieMatch) zone() *zombieZoneDef {
-	return m.arena.zone(m.arena.StartZone)
-}
-
 func (m *zombieMatch) navFor(zone int, arena Map, class int) *zombieNav {
 	key := zone*4 + class
 	if nav, ok := m.navs[key]; ok && nav.mapNumber == arena.Number {

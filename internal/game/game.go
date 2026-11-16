@@ -74,7 +74,6 @@ type Game struct {
 	customMapThumbCache            map[int]*ebiten.Image
 	customMapThumbPreloadCursor    int
 	customPlayers                  [4]CustomPlayerConfig
-	customEditor                   [4]int
 	customNameFocus                int
 	customLivesFocus               bool
 	customWarning                  int

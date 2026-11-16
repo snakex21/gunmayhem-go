@@ -221,7 +221,6 @@ func TestOnlineClientCanSelectDevelopedPistolOnOwnSlot(t *testing.T) {
 	g.customPage = customPagePlayers
 	g.customPlayers[1].Type = 1
 	g.customPlayers[1].Gun = 1
-	g.customEditor[1] = customEditGun
 	g.netplay = &netplaySession{mode: netplayClient}
 	g.netplay.assignedPlayerID.Store(2)
 
@@ -235,9 +234,6 @@ func TestOnlineClientCanSelectDevelopedPistolOnOwnSlot(t *testing.T) {
 	}
 	if g.customPlayers[1].Gun != 231 {
 		t.Fatalf("client selected gun=%d want Peacekeeper 231", g.customPlayers[1].Gun)
-	}
-	if g.customEditor[1] != 0 {
-		t.Fatalf("client gun editor remained open: %d", g.customEditor[1])
 	}
 }
 

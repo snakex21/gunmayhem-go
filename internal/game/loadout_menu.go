@@ -87,8 +87,7 @@ func (g *Game) openCustomLoadout(slot int) {
 }
 
 func (g *Game) closeCustomLoadout() {
-	if slot := g.loadoutSlot(); slot >= 0 && slot < len(g.customEditor) {
-		g.customEditor[slot] = 0
+	if slot := g.loadoutSlot(); slot >= 0 && slot < len(g.customPlayers) {
 		g.customLoadoutReturn = slot + 1
 	}
 	g.customLoadoutSlot = 0
@@ -104,7 +103,6 @@ func (g *Game) loadoutSwitchPlayer(delta int) {
 		s := ((slot+delta*i)%n + n) % n
 		if g.customPlayers[s].Type != 0 {
 			g.customNameFocus = 0
-			g.customEditor[slot] = 0
 			g.customLoadoutSlot = s + 1
 			return
 		}

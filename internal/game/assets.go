@@ -106,8 +106,6 @@ type Assets struct {
 	HUDCard                 *SourceRaster
 	HUDCardBG               *SourceRaster
 	HUDCardDivider          *SourceRaster
-	HUDGameOver             *SourceRaster
-	HUDLevelUp              *SourceRaster
 	HUDLastLifeFrames       map[int]*SourceRaster
 	HUDLastLifeTimelines    [3][]SourceTransformFrame
 	WeaponFrames            map[int]map[int]*SourceRaster
@@ -195,8 +193,6 @@ func (a *Assets) EnsureGameplay() {
 	}
 	a.EnsurePlayerVisuals()
 	a.HUDCard = loadSourceRaster("Symbol 1480", 0, "sprites", "DefineSprite_1480", "1.png")
-	a.HUDGameOver = loadSourceRaster("Symbol 1453", 0, "sprites", "DefineSprite_1453", "1.png")
-	a.HUDLevelUp = loadSourceRaster("Symbol 1455", 0, "sprites", "DefineSprite_1455", "1.png")
 	if r, err := renderSolidXFLFrame("Symbol 1459", 0); err == nil {
 		a.HUDCardBG = r
 	}

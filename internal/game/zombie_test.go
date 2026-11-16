@@ -1473,3 +1473,8 @@ func TestZombieFloorBelowIsAlwaysFinite(t *testing.T) {
 		t.Fatal("safe ground infinite on an empty arena")
 	}
 }
+
+// zone is the start zone of the match arena (tests only).
+func (m *zombieMatch) zone() *zombieZoneDef {
+	return m.arena.zone(m.arena.StartZone)
+}

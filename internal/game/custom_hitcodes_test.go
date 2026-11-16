@@ -133,7 +133,6 @@ func TestCustomPlayerEditorCodesReachTheEditor(t *testing.T) {
 			g := New()
 			g.customPage = customPagePlayers
 			g.customPlayers[slot].Type = 1
-			g.customEditor[slot] = customEditGun
 			g.activateCustomV2Hit(customDevelopedGunHit(slot, item.Number))
 			if g.customPlayers[slot].Gun != item.Number {
 				t.Fatalf("slot %d pistol %d: gun=%d", slot, item.Number, g.customPlayers[slot].Gun)

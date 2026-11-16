@@ -41,20 +41,6 @@ func loadSourceFontCandidates(paths []string) (*opentype.Font, error) {
 	return nil, lastErr
 }
 
-// parseSourceFont leaves ordinary fonts to the normal parser. Only the exact
-// five legacy assets below may take the compatibility path after parsing fails.
-func parseSourceFont(data []byte) (*opentype.Font, error) {
-	parsed, err := opentype.Parse(data)
-	if err == nil {
-		return parsed, nil
-	}
-	if normalized, ok := normalizeLegacySourceFont(data); ok {
-		// Metadata normalization is not a substitute for normal validation.
-		return opentype.Parse(normalized)
-	}
-	return nil, err
-}
-
 func isKnownLegacySourceFont(data []byte) bool {
 	// These hashes identify checked-in asset versions, not authenticity or a
 	// security guarantee. A changed/replaced font gets ordinary parser handling.
