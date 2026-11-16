@@ -32,7 +32,7 @@ func (g *Game) pauseRestart() (bool, string) {
 	case g.onlineMatchSetup && (g.netplay == nil || g.netplay.mode != netplayHost):
 		return false, "Only the host can restart."
 	}
-	return true, "Start this round again from the beginning: same map, players and rules."
+	return true, "Start this round again from the beginning with the same players and rules."
 }
 
 // pauseContext is the line under the PAUSED title.
@@ -59,6 +59,8 @@ func (g *Game) pauseQuitLabel() (string, string) {
 		return "END RUN", "End the run now and see the results (the record still counts)."
 	case g.gototest:
 		return "BACK TO LIBRARY", "Leave the test range."
+	case g.campaignMode && g.campaignQuitCompletes():
+		return "FINISH MISSION", "No enemy bots are left in this mission, so leaving now counts as completed."
 	case g.campaignMode:
 		return "QUIT MISSION", "Back to the mission list. The mission is not completed."
 	case g.onlineMatchSetup:
@@ -107,8 +109,18 @@ func (g *Game) restartFromPause() {
 		return
 	}
 	test, campaign := g.gototest, g.campaignMode
+	testDisabled, testRespawn, testFrame := g.testGunDisabled, g.testGunRespawn, g.testGunFrame
 	g.resetMatchEndState()
 	g.pauseOptions = false
+	defer func() {
+		if !g.fadeActive {
+			// The start function refused (preconditions): keep the paused match.
+			g.paused = true
+			g.gototest = test
+			g.testGunDisabled, g.testGunRespawn, g.testGunFrame = testDisabled, testRespawn, testFrame
+			g.pauseUI.pushToast("CANNOT RESTART THIS MATCH", uiToastWarning)
+		}
+	}()
 	switch {
 	case test:
 		g.startGunLibraryTest()
@@ -227,6 +239,7 @@ func (g *Game) buildPause(ctx *uiCtx) {
 		}
 	}
 	ctx.KeyHintBar([]uiKeyHint{{"ESC", "Resume"}, {"UP/DOWN", "Move"}, {"ENTER", "Select"}})
+	ctx.Toasts()
 	if ctx.Back() {
 		g.resumeFromPause()
 	}
@@ -338,4 +351,35 @@ func (g *Game) buildPauseOptions(ctx *uiCtx, prefix string) {
 		g.pauseOptions = false
 		g.pauseUI.focus = ""
 	}
+}
+
+// guestZombieShopOpen reports whether the guest's own zombie shop is open.
+func (g *Game) guestZombieShopOpen() bool {
+	m := g.zombie
+	if g.screen != screenGameplay || m == nil || m.host {
+		return false
+	}
+	p := g.playerByID(g.onlineLocalPlayerID())
+	return p != nil && g.zombieShopIsOpen(p)
+}
+
+// guestMenuMayOpen: ESC opens the guest menu only in a running match, never
+// over the winner / fade sequence or on the press that closed the zombie shop.
+func (g *Game) guestMenuMayOpen(shopWasOpen bool) bool {
+	return g.screen == screenGameplay && !g.GameWin && !g.teamGameWin && !g.fadeActive && !shopWasOpen && !g.guestZombieShopOpen()
+}
+
+// campaignQuitCompletes mirrors finishSourceGameBeforeScreenChange: leaving
+// a campaign match with no active enemy bot counts as a win (the GM2
+// tutorial has no opponents).
+func (g *Game) campaignQuitCompletes() bool {
+	if !g.campaignMode {
+		return false
+	}
+	for _, p := range g.players {
+		if p.Active && p.AI && !p.IsDouble {
+			return false
+		}
+	}
+	return true
 }

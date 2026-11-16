@@ -103,9 +103,9 @@ func (g *Game) finishSourceGameBeforeScreenChange() {
 				g.campaignShowUnlock = g.campaignLevel
 			}
 		}
-		// Results modal (campaign_ui.go) only for a match that ended by
-		// itself; leaving through the pause menu returns to the list.
-		if g.GameWin || g.teamGameWin {
+		// Results modal (campaign_ui.go) for a match that ended by itself or
+		// was left as a win (FINISH MISSION); a plain QUIT returns to the list.
+		if g.GameWin || g.teamGameWin || playerWin {
 			g.recordCampaignResult(playerWin)
 		}
 	}
@@ -169,7 +169,9 @@ func (g *Game) openPause() {
 func (g *Game) updateGameplayInteractionInput() bool {
 	if g.fadeActive {
 		g.updateFade()
-		if g.screen != screenGameplay {
+		// A pause-menu RESTART fades gameplay into gameplay: the new round
+		// stays frozen until the fade covers the screen (source frame 10).
+		if g.screen != screenGameplay || (g.fadeTarget == screenGameplay && g.fadeFrame < 10) {
 			return true
 		}
 	}

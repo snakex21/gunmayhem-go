@@ -416,6 +416,11 @@ func (g *Game) campaignPageRange(set int) (first, last int) {
 func campaignMissionID(level int) string { return fmt.Sprintf("camp.m.%d", level) }
 
 func (g *Game) buildCampaignList(ctx *uiCtx) {
+	// The result modal blocks the list from its first frame (the registry of
+	// the previous frame may not contain the modal yet).
+	if g.campaignResultVisible() && ctx.topLayer < 1 {
+		ctx.topLayer = 1
+	}
 	set := g.campaignSet()
 	done := g.campaignCompletedCount(set)
 	ctx.Header("CAMPAIGN", fmt.Sprintf("MAIN MENU  /  CAMPAIGN  /  %s  -  %d / %d COMPLETED", campaignSetNames[set], done, campaignMissionCount(set)))

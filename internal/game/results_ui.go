@@ -67,6 +67,12 @@ func (g *Game) updatePostGameMenu() {
 // runResultsUpdate is one update pass of the post-game or series screen for
 // a frame of input (tests drive it).
 func (g *Game) runResultsUpdate(in uiInput) {
+	// A fresh results screen starts with a fresh kit state (focus, frame
+	// count for the default-focus grace period).
+	if g.resultsUIScreen != g.screen {
+		g.resultsUI.reset()
+		g.resultsUIScreen = g.screen
+	}
 	ctx := g.resultsUI.begin(uiPassUpdate, nil, in)
 	g.buildResults(ctx)
 	ctx.end()
@@ -161,9 +167,7 @@ func (g *Game) buildPostGame(ctx *uiCtx) {
 		hints = append(hints, uiKeyHint{"ESC", "Continue"})
 	}
 	ctx.KeyHintBar(hints)
-	if ctx.pass == uiPassUpdate && ctx.st.focus == "" && !ctx.st.keyboard {
-		ctx.st.focus = "res.continue"
-	}
+	g.resultsDefaultFocus(ctx, "res.continue")
 	// ESC: local = Continue (source); a guest's ESC leaves in
 	// updateOnlineClientPostGame; the host has no ESC action.
 	if ctx.Back() && !online {
@@ -349,17 +353,26 @@ func (g *Game) buildSeriesSummary(ctx *uiCtx) {
 	}
 	label := "BACK TO VERSUS"
 	if g.onlineMatchSetup {
-		label = "BACK TO LOBBY"
+		label = "BACK TO MATCH SETUP"
 	}
 	if ctx.Button("res.done", uiActionPrimaryRect(240), label, uiButtonOpts{Kind: uiButtonPrimary, InfoTitle: label}) {
 		g.backFromSeriesSummary()
 		return
 	}
 	ctx.KeyHintBar([]uiKeyHint{{"ENTER", label}, {"ESC", "Back"}})
-	if ctx.pass == uiPassUpdate && ctx.st.focus == "" && !ctx.st.keyboard {
-		ctx.st.focus = "res.done"
-	}
+	g.resultsDefaultFocus(ctx, "res.done")
 	if ctx.Back() {
 		g.backFromSeriesSummary()
+	}
+}
+
+// resultsFocusGrace is how long (update frames) a results screen ignores
+// ENTER / SPACE before its main button takes the keyboard focus, so a key
+// still pressed from the match cannot skip the results.
+const resultsFocusGrace = 20
+
+func (g *Game) resultsDefaultFocus(ctx *uiCtx, id string) {
+	if ctx.pass == uiPassUpdate && ctx.st.focus == "" && ctx.st.frame >= resultsFocusGrace {
+		ctx.st.focus = id
 	}
 }

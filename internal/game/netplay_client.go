@@ -651,6 +651,11 @@ func (g *Game) updateNetClient() error {
 	state, ok := g.netplay.nextPlayoutState()
 	g.applyNetPlayout(state, ok)
 	g.netClientSFXPending = append(g.netClientSFXPending, g.netplay.drainClientSFX()...)
+	// The guest menu belongs to the match screen only (results, lobby and
+	// series screens have their own controls).
+	if g.screen != screenGameplay {
+		g.closeGuestMenu()
+	}
 	if g.screen == screenMultiplayerLobby {
 		// Compatibility with snapshots from the retired standalone lobby.
 		// Online waiting/setup now always uses the unified Custom Game SLOTS page.
@@ -675,9 +680,6 @@ func (g *Game) updateNetClient() error {
 		g.updateZombieResultsMenu()
 		return nil
 	}
-	if g.screen != screenGameplay {
-		g.closeGuestMenu()
-	}
 	// The guest menu (pause_ui.go) owns the keys while it is open; the match
 	// keeps running and this player stands still.
 	menuWasOpen := g.guestMenuOpen
@@ -688,6 +690,7 @@ func (g *Game) updateNetClient() error {
 		}
 	}
 	// A guest's own zombie shop owns the keys while it is open (ESC closes it).
+	shopWasOpen := g.guestZombieShopOpen()
 	zombieShop := g.screen == screenGameplay && !g.guestMenuOpen && g.updateZombieGuestShop()
 	if !zombieShop && !menuWasOpen && inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		if g.screen != screenGameplay {
@@ -695,7 +698,9 @@ func (g *Game) updateNetClient() error {
 			g.guestLeaveSession()
 			return nil
 		}
-		g.openGuestMenu()
+		if g.guestMenuMayOpen(shopWasOpen) {
+			g.openGuestMenu()
+		}
 	}
 	g.sendOnlineLocalConfigIfChanged()
 	if g.screen == screenGameplay {

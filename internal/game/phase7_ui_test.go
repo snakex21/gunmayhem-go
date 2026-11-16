@@ -337,7 +337,17 @@ func TestPostGameContinueAndNextRound(t *testing.T) {
 	}
 
 	g, k = newPostGame(t, 3)
-	k.key(uiInput{Enter: true}) // CONTINUE has the focus
+	k.key(uiInput{Enter: true}) // inside the grace period: nothing has focus
+	if g.customSeriesRound != 1 || g.fadeActive {
+		t.Fatalf("ENTER right after the match skipped the results: round %d", g.customSeriesRound)
+	}
+	for i := 0; i < resultsFocusGrace; i++ {
+		k.idle()
+	}
+	if g.resultsUI.focus != "res.continue" {
+		t.Fatalf("focus after the grace period = %q", g.resultsUI.focus)
+	}
+	k.key(uiInput{Enter: true}) // CONTINUE has the focus now
 	if g.customSeriesRound != 2 {
 		t.Fatalf("NEXT ROUND (ENTER): round %d", g.customSeriesRound)
 	}
@@ -420,5 +430,156 @@ func TestCreditsLinksAndBack(t *testing.T) {
 	k.key(uiInput{Esc: true})
 	if !g.fadeActive || g.fadeTarget != screenMainMenu {
 		t.Fatal("ESC did not return to the main menu")
+	}
+}
+
+// Review fixes: guest menu lifetime, RESTART per mode and its failure path,
+// FINISH MISSION, the campaign result modal's first frame.
+
+func TestGuestMenuClosesWhenTheScreenChanges(t *testing.T) {
+	g, _ := newPausedMatch(t)
+	g.paused = false
+	g.netplay = &netplaySession{mode: netplayClient}
+	g.onlineMatchSetup = true
+	g.openGuestMenu()
+	g.screen = screenPostGame // the host ended the match
+	_ = g.updateNetClient()
+	if g.guestMenuOpen {
+		t.Fatal("guest menu survived the switch to the results screen")
+	}
+	g.screen = screenGameplay
+	if !g.guestMenuMayOpen(false) {
+		t.Fatal("guest menu cannot open in a running match")
+	}
+	g.GameWin = true
+	if g.guestMenuMayOpen(false) {
+		t.Fatal("guest menu opens over the winner sequence")
+	}
+	g.GameWin = false
+	g.fadeActive = true
+	if g.guestMenuMayOpen(false) {
+		t.Fatal("guest menu opens during a fade")
+	}
+	g.fadeActive = false
+	if g.guestMenuMayOpen(true) {
+		t.Fatal("the ESC that closed the zombie shop opens the guest menu")
+	}
+	g.netplay = nil
+}
+
+func pauseIn(t *testing.T, g *Game) kitScreen {
+	t.Helper()
+	g.fadeActive = false
+	g.fadeFrame = 0
+	g.screen = screenGameplay
+	g.openPause()
+	k := kitScreen{t: t, st: &g.pauseUI, run: g.runPauseUpdate}
+	k.idle()
+	return k
+}
+
+func TestPauseRestartCampaignAndGunTest(t *testing.T) {
+	g := New()
+	g.campaignSetExtra = true
+	g.campaignLevel = 1
+	g.startExtraCampaignMission()
+	old := g.players[0]
+	k := pauseIn(t, g)
+	k.click("pause.restart")
+	if !g.fadeActive || g.fadeTarget != screenGameplay || !g.campaignMode || !g.campaignSetExtra || g.campaignLevel != 1 || g.players[0] == old || g.paused {
+		t.Fatalf("campaign RESTART: fade=%v campaign=%v extra=%v level=%d", g.fadeActive, g.campaignMode, g.campaignSetExtra, g.campaignLevel)
+	}
+	// The restarted round stays frozen under the fade until frame 10.
+	x := g.players[0].X
+	g.players[0].VX = 5
+	for g.fadeFrame < 9 {
+		if !g.updateGameplayInteractionInput() {
+			t.Fatalf("round simulated at fade frame %d", g.fadeFrame)
+		}
+	}
+	if g.players[0].X != x {
+		t.Fatal("player moved under the restart fade")
+	}
+
+	for _, throwables := range []bool{false, true} {
+		g = New()
+		g.gunLibrarySelected = 10
+		g.campaignGuns[0] = true
+		if throwables {
+			g.setGunLibraryView(gunLibraryViewThrowables)
+			g.gunLibraryThrowableSelected = 3
+		}
+		g.startGunLibraryTest()
+		k = pauseIn(t, g)
+		if label, _ := g.pauseQuitLabel(); label != "BACK TO LIBRARY" {
+			t.Fatalf("gun test quit label %q", label)
+		}
+		k.click("pause.restart")
+		if !g.fadeActive || !g.gototest || g.testThrowableMode != throwables || (!throwables && g.testGunNumber != 10) {
+			t.Fatalf("gun test RESTART (throwables=%v): fade=%v test=%v mode=%v gun=%d", throwables, g.fadeActive, g.gototest, g.testThrowableMode, g.testGunNumber)
+		}
+	}
+}
+
+func TestPauseRestartFailureKeepsThePausedMatch(t *testing.T) {
+	g := New()
+	g.gunLibrarySelected = 1
+	g.startGunLibraryTest()
+	k := pauseIn(t, g)
+	g.gunLibrarySelected = 0 // startGunLibraryTest now refuses
+	players := g.players
+	k.click("pause.restart")
+	if g.fadeActive || !g.paused || !g.gototest || g.players[0] != players[0] {
+		t.Fatalf("failed RESTART: fade=%v paused=%v test=%v", g.fadeActive, g.paused, g.gototest)
+	}
+}
+
+func TestPauseRestartOnlineHost(t *testing.T) {
+	g := newOnlineHostLobby(t, onlineSessionOpen)
+	g.customPlayers[1].Type = 2 // an AI bot makes two participants
+	g.customSeriesRounds = 2
+	g.startCustomGame()
+	if !g.fadeActive {
+		t.Fatalf("online match did not start: %s", g.multiplayerMessage)
+	}
+	round := g.customSeriesRound
+	old := g.players[0]
+	k := pauseIn(t, g)
+	g.postGameReady[0] = true
+	k.click("pause.restart")
+	if !g.fadeActive || g.customSeriesRound != round || g.players[0] == old || g.postGameReady[0] {
+		t.Fatalf("host RESTART: fade=%v round=%d ready=%v", g.fadeActive, g.customSeriesRound, g.postGameReady)
+	}
+}
+
+func TestPauseFinishMissionRecordsTheTutorial(t *testing.T) {
+	g := New()
+	g.campaignSetGM2 = true
+	g.campaignLevel = 1
+	g.startGM2CampaignMission()
+	k := pauseIn(t, g)
+	if label, _ := g.pauseQuitLabel(); label != "FINISH MISSION" {
+		t.Fatalf("GM2 tutorial quit label %q", label)
+	}
+	k.click("pause.quit")
+	for i := 0; i < 12; i++ {
+		g.updateFade()
+	}
+	if g.gm2CampaignLevels[0] != 2 || !g.campaignResult.open || !g.campaignResult.won {
+		t.Fatalf("tutorial finish: level=%d result=%+v", g.gm2CampaignLevels[0], g.campaignResult)
+	}
+}
+
+func TestCampaignResultModalBlocksTheListOnItsFirstFrame(t *testing.T) {
+	g, k := newCampaignUIGame(t, campaignSetGM1)
+	k.idle() // list registry without the modal
+	g.recordCampaignResult(true)
+	r := k.item(campaignMissionID(2)).rect
+	x, y := r.X+r.W/2, r.Y+r.H/2
+	k.run(uiInput{X: x, Y: y, Moved: true})
+	k.run(uiInput{X: x, Y: y, Pressed: true, Down: true})
+	k.run(uiInput{X: x, Y: y, Released: true})
+	if g.campaignBriefingOpen() {
+		t.Fatal("a mission opened under the result modal")
 	}
 }
