@@ -97,9 +97,15 @@ func (c simClock) lastStepClock() simClock {
 	return simClock{left: c.left + n}
 }
 
-// validSimClock bounds a clock received from the network.
+// validSFXRate: a net sound event's rate is 0 (normal) or a SLOW-MO rate.
+func validSFXRate(rate float64) bool {
+	return rate == 0 || sanitizeSFXRate(rate) == rate
+}
+
+// validSimClock bounds a clock received from the network: the accumulator
+// only ever holds whole multiples of slowMoScale below 1.
 func validSimClock(left int, acc float64) bool {
-	return left >= 0 && left <= slowMoRealTicks && !math.IsNaN(acc) && acc >= 0 && acc < 1
+	return left >= 0 && left <= slowMoRealTicks && (acc == 0 || acc == slowMoScale)
 }
 
 // startSlowMo starts (or refreshes) the slow motion. A second pickup while
@@ -108,15 +114,22 @@ func (g *Game) startSlowMo() {
 	g.slowMo.left = slowMoRealTicks
 }
 
-// slowMoSounding: gameplay sounds play slowed.
+// slowMoSounding: gameplay sounds play slowed. Only sounds emitted inside a
+// sim step count (menus, the pause screen and the zombie shop UI keep their
+// normal sound).
 func (g *Game) slowMoSounding() bool {
-	return g != nil && g.screen == screenGameplay && (g.slowMo.left > 0 || g.slowMo.acc > 0)
+	return g != nil && g.inSimStep && g.screen == screenGameplay && (g.slowMo.left > 0 || g.slowMo.acc > 0)
 }
 
 // beginSimTick advances the slow-motion clock for one real gameplay tick and
 // reports whether the simulation steps. On a skipped tick it latches the
 // human input and keeps the render interpolation on the last two sim steps.
 func (g *Game) beginSimTick() bool {
+	if g.GameWin || g.teamGameWin {
+		// The match is decided: the winner screen runs at normal speed (a
+		// pending half step still completes).
+		g.slowMo.left = 0
+	}
 	steps, next := g.slowMo.advance()
 	g.slowMo = next
 	g.renderInterp.simPhase, g.renderInterp.simInc = next.renderPhase()
@@ -165,7 +178,7 @@ func (g *Game) onSlowMoPickup() {
 // slowMoFeedbackAlpha is the strength (0..1) of the screen tint and the timer
 // bar: a short fade in after the pickup and a fade out at the end.
 func (g *Game) slowMoFeedbackAlpha() float64 {
-	if g == nil || g.slowMo.left <= 0 {
+	if g == nil || g.slowMo.left <= 0 || g.GameWin || g.teamGameWin {
 		return 0
 	}
 	a := 1.0

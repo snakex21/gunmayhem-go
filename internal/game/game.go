@@ -124,6 +124,7 @@ type Game struct {
 	// skipped the simulation (the host then holds the input acks).
 	slowMo        simClock
 	slowMoSkipped bool
+	inSimStep     bool // sounds emitted now are gameplay sounds (slowed in SLOW-MO)
 
 	// Symbol1480.lastlife keeps an independent 270-frame playhead per HUD card.
 	// Frame indexes here are zero-based XFL frames; stop points are 0, 89, 179, 269.
@@ -435,6 +436,10 @@ func (g *Game) Update() error {
 	g.captureRenderPrev(time.Now())
 	g.slowMoSkipped = false
 	g.renderInterp.simPhase, g.renderInterp.simInc = 0, 1
+	if g.netplay == nil || g.netplay.mode != netplayClient {
+		// Only a guest draws a predicted own player (freeID).
+		g.renderInterp.freeID = 0
+	}
 	g.trackWindowPersistence()
 	g.updateUnfocusedRunPolicy()
 	g.updateNetDebugKeys()
@@ -506,6 +511,7 @@ func (g *Game) Update() error {
 	if !g.beginSimTick() {
 		return nil
 	}
+	g.inSimStep = true
 	g.updateZombiePreInput()
 
 	if !g.runZombieZoneTick() {
@@ -513,7 +519,11 @@ func (g *Game) Update() error {
 	}
 	g.updateZombieMatch()
 	g.updateMatchInteractions()
+	g.inSimStep = false
 	g.clearSlowMoLatches()
+	// A SLOW-MO started (or reset) inside this step changes how the step
+	// just simulated is spread over the real ticks: start it at half rate.
+	g.renderInterp.simPhase, g.renderInterp.simInc = g.slowMo.renderPhase()
 	return nil
 }
 

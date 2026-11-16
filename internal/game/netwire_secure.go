@@ -435,7 +435,7 @@ func validateNetSnapshot(s netSnapshot) error {
 		}
 	}
 	for _, ev := range s.SFXEvents {
-		if len(ev.Name) > 96 || !utf8.ValidString(ev.Name) {
+		if len(ev.Name) > 96 || !utf8.ValidString(ev.Name) || !validSFXRate(ev.Rate) {
 			return errors.New("invalid sound event in host snapshot")
 		}
 	}

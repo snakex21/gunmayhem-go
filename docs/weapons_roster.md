@@ -47,14 +47,18 @@ triggered.
 * Render interpolation draws between the last two sim steps (a skipped tick
   restores the previous capture) with `alpha = phase + f * 0.5`, so motion
   stays smooth at 60/144 Hz.
-* Chaos timers, powerup/crate timers and the winner countdown are sim
-  timers: they also run at half speed.
+* Chaos timers, powerup/crate timers and the zombie wave timers are sim
+  timers: they also run at half speed. Once the match is decided (GameWin /
+  team win) the slow motion ends, so the win screen runs at normal speed.
+* Only sounds emitted inside a sim step are slowed; menus, the pause screen
+  and the zombie shop keep their normal sound.
 
 ### Online (protocol 26)
 
 `netSnapshot.SlowMoTicks` / `SlowMoAcc` (the host clock after the tick,
 bounded by `validSimClock`), powerup kind 9, Chaos event 45 and
-`netSFXEvent.Rate` (the guest plays the host's rate, clamped to 0.25..1).
+`netSFXEvent.Rate` (only the two SLOW-MO rates are accepted; anything else
+plays at normal speed).
 On a skipped tick the host does not advance the guest's `InputAck` (the
 consumed frame is latched, not simulated yet). The guest replays its
 unacknowledged frames from the clock of the host's last sim step, OR-ing

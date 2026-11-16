@@ -241,6 +241,9 @@ func (s *netplaySession) queueClientSFX(events []netSFXEvent) {
 			continue
 		}
 		s.sfxLastSeq = ev.Seq
+		if !validSFXRate(ev.Rate) {
+			ev.Rate = 0 // a rate this build does not use plays at normal speed
+		}
 		s.sfxPending = append(s.sfxPending, ev)
 	}
 	if len(s.sfxPending) > netRecentSFXLimit {
@@ -611,6 +614,24 @@ func (g *Game) flushNetClientSFX() {
 	g.netClientSFXPending = g.netClientSFXPending[:0]
 }
 
+// applyNetPlayout applies this tick's playout state (if any) and sets up the
+// render interpolation for it (SLOW-MO: a host tick that skipped the
+// simulation keeps the previous sim-step pair; the predicted own player,
+// freeID, keeps its fresh capture).
+func (g *Game) applyNetPlayout(state netSnapshot, ok bool) {
+	keepID := g.renderInterp.freeID
+	g.renderInterp.freeID = 0 // set again by applyNetPrediction
+	if ok {
+		g.applyNetSnapshot(state)
+		if g.screen == screenGameplay && state.SlowMoAcc > 0 {
+			g.renderInterp.keepPrevPair(keepID)
+		}
+	}
+	if g.screen == screenGameplay {
+		g.renderInterp.simPhase, g.renderInterp.simInc = g.slowMo.renderPhase()
+	}
+}
+
 func (g *Game) updateNetClient() error {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayClient {
 		return nil
@@ -627,20 +648,8 @@ func (g *Game) updateNetClient() error {
 		networkDiagnostic("CLIENT disconnected err=%v", reason)
 		return nil
 	}
-	// SLOW-MO: the predicted own player (if any) keeps its own interpolation.
-	keepID := g.renderInterp.freeID
-	g.renderInterp.freeID = 0
-	if state, ok := g.netplay.nextPlayoutState(); ok {
-		g.applyNetSnapshot(state)
-		if g.screen == screenGameplay && state.SlowMoAcc > 0 {
-			// The host skipped its simulation on this tick: keep drawing
-			// between the last two sim steps.
-			g.renderInterp.keepPrevPair(keepID)
-		}
-	}
-	if g.screen == screenGameplay {
-		g.renderInterp.simPhase, g.renderInterp.simInc = g.slowMo.renderPhase()
-	}
+	state, ok := g.netplay.nextPlayoutState()
+	g.applyNetPlayout(state, ok)
 	g.netClientSFXPending = append(g.netClientSFXPending, g.netplay.drainClientSFX()...)
 	if g.screen == screenMultiplayerLobby {
 		// Compatibility with snapshots from the retired standalone lobby.

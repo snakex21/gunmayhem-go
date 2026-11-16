@@ -349,6 +349,8 @@ func TestSlowMoSnapshotRoundTripAndValidation(t *testing.T) {
 		{SlowMoTicks: -1},
 		{SlowMoTicks: slowMoRealTicks + 1},
 		{SlowMoAcc: 1},
+		{SlowMoAcc: 0.25},
+		{SFXEvents: []netSFXEvent{{Name: "emp.wav", Rate: 0.3}}},
 		{SlowMoAcc: -0.5},
 		{SlowMoAcc: math.NaN()},
 		{SlowMoAcc: math.Inf(1)},
@@ -372,11 +374,14 @@ func TestSlowMoSnapshotRoundTripAndValidation(t *testing.T) {
 
 func TestSlowMoSFXRateIsSanitized(t *testing.T) {
 	for _, c := range []struct{ in, want float64 }{
-		{0, 1}, {1, 1}, {2, 1}, {-1, 1}, {math.NaN(), 1}, {0.1, 1}, {slowMoSFXRate, slowMoSFXRate}, {slowMoCueRate, slowMoCueRate},
+		{0, 1}, {1, 1}, {2, 1}, {-1, 1}, {math.NaN(), 1}, {0.1, 1}, {0.6, 1}, {slowMoSFXRate, slowMoSFXRate}, {slowMoCueRate, slowMoCueRate},
 	} {
 		if got := sanitizeSFXRate(c.in); got != c.want {
 			t.Fatalf("rate %v -> %v want %v", c.in, got, c.want)
 		}
+	}
+	if !validSFXRate(0) || !validSFXRate(slowMoSFXRate) || !validSFXRate(slowMoCueRate) || validSFXRate(0.6) || validSFXRate(math.NaN()) {
+		t.Fatal("validSFXRate")
 	}
 	pcm := make([]byte, 400) // 100 stereo frames
 	for i := 0; i < 100; i++ {
@@ -463,5 +468,166 @@ func TestSlowMoZombieAndCampaignTickAtHalfRate(t *testing.T) {
 		if math.IsNaN(p.X) || math.IsNaN(p.Y) {
 			t.Fatal("NaN position under slow motion")
 		}
+	}
+}
+
+// Review fixes ------------------------------------------------------------------
+
+// A slow motion picked up inside a real Update must not pull the drawn
+// motion backwards: sampled across every real tick (several Draw fractions
+// each), a player walking right is never drawn further left than before.
+func TestSlowMoPickupInsideUpdateDrawsMonotonic(t *testing.T) {
+	g := newPredSimHost()
+	g.displaySmoothMotion = true
+	p := g.players[0]
+	tick := time.Second / TicksPerSecond
+	last := math.Inf(-1)
+	picked := false
+	for k := 0; k < 30; k++ {
+		if k == 8 {
+			slowMoPowerupAt(g, p)
+		}
+		p.RemoteInput = PlayerInputState{Right: true}
+		g.players[1].RemoteInput = PlayerInputState{}
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+		picked = picked || g.slowMo.active()
+		for _, f := range []float64{0, 0.25, 0.5, 0.75, 0.99} {
+			restore := g.beginRenderInterpolation(g.renderInterp.lastUpdate.Add(time.Duration(f * float64(tick))))
+			x := g.players[0].X
+			restore()
+			if x < last-1e-9 {
+				t.Fatalf("tick %d f=%.2f: drawn %.3f after %.3f (clock %+v)", k, f, x, last, g.slowMo)
+			}
+			last = x
+		}
+	}
+	if !picked {
+		t.Fatal("the SLOW-MO powerup was not picked up")
+	}
+}
+
+// The per-peer envelope carries the SFX playback rate.
+func TestSlowMoSFXRateTravelsInTheEnvelope(t *testing.T) {
+	var enc netHostEncoder
+	peer, client := newNetPeerStream(), newNetClientStream()
+	// The first message only syncs the peer's sound sequence.
+	if payload, rawLen, err := peer.message(enc.encode(netSnapshot{}), 2); err != nil {
+		t.Fatal(err)
+	} else if _, err := client.decode(payload, rawLen); err != nil {
+		t.Fatal(err)
+	}
+	frame := enc.encode(netSnapshot{SFXEvents: []netSFXEvent{{Seq: 1, Name: "emp.wav", Loud: true, Gain: 1, Rate: slowMoCueRate}, {Seq: 2, Name: "hit1.wav", Gain: 1}}})
+	payload, rawLen, err := peer.message(frame, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := client.decode(payload, rawLen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.sfx) != 2 || got.sfx[0].Rate != slowMoCueRate || got.sfx[1].Rate != 0 {
+		t.Fatalf("decoded sfx %+v", got.sfx)
+	}
+	// A rate this build does not use is played at normal speed.
+	s := &netplaySession{mode: netplayClient}
+	s.queueClientSFX([]netSFXEvent{{Seq: 3, Name: "emp.wav", Rate: 0.3}})
+	if ev := s.drainClientSFX(); len(ev) != 1 || ev[0].Rate != 0 {
+		t.Fatalf("unsanitized guest sfx %+v", ev)
+	}
+}
+
+// Guest: on a host tick that skipped its simulation the other players keep
+// the last sim-step pair, while the predicted own player (freeID) is drawn
+// from its fresh capture with the plain tick alpha.
+func TestSlowMoGuestKeepsPairAndOwnPrediction(t *testing.T) {
+	g := newRenderInterpTestGame()
+	arena := g.arena
+	s := &netplaySession{mode: netplayClient}
+	s.assignedPlayerID.Store(2)
+	s.hasState.Store(true)
+	g.netplay = s
+	floor := arena.Platforms[2].Y
+	mk := func(otherX, ownX float64, acc float64) netSnapshot {
+		other := NewPlayer(1, arena)
+		own := NewPlayer(2, arena)
+		other.X, other.Y, other.VX = otherX, floor-1, 6
+		own.X, own.Y = ownX, floor-1
+		own.JumpNum, own.Grounded = 2, true
+		return netSnapshot{Screen: int(screenGameplay), Arena: arena, Players: []Player{*other, *own}, SlowMoTicks: 100, SlowMoAcc: acc}
+	}
+	right := PlayerInputState{Right: true}
+	t0 := time.Unix(3000, 0)
+	tick := time.Second / TicksPerSecond
+	guestTick := func(k int, st netSnapshot, seq uint32) {
+		g.captureRenderPrev(t0.Add(time.Duration(k) * tick))
+		g.applyNetPlayout(st, true)
+		s.state, s.stateTick, s.stateInputAck = st, uint32(k), 0
+		g.netPredict.record(seq, right)
+		g.applyNetPrediction(seq)
+	}
+	guestTick(0, mk(100, 400, 0), 1)   // host stepped
+	guestTick(1, mk(106, 400, 0.5), 2) // host skipped: same state... (other moved by the step before)
+	guestTick(2, mk(106, 400, 0), 3)   // host stepped
+	otherBefore := g.players[0].X
+	ownBefore := g.players[1].X
+	guestTick(3, mk(106, 400, 0.5), 4) // host skipped
+	if g.renderInterp.freeID != 2 {
+		t.Fatalf("freeID %d", g.renderInterp.freeID)
+	}
+	ownNow := g.players[1].X
+	if ownNow == ownBefore {
+		t.Fatal("the predicted own player did not move on a skipped host tick")
+	}
+	restore := g.beginRenderInterpolation(t0.Add(3*tick + tick/2))
+	otherDrawn, ownDrawn := g.players[0].X, g.players[1].X
+	restore()
+	// Other: pair (tick 1 state 106 -> tick 2 state 106) restored: the last
+	// sim-step pair is 106 -> 106 here, so it stays put.
+	if math.Abs(otherDrawn-otherBefore) > 1e-9 {
+		t.Fatalf("other drawn at %.3f, want %.3f", otherDrawn, otherBefore)
+	}
+	if want := ownBefore + (ownNow-ownBefore)*0.5; math.Abs(ownDrawn-want) > 1e-6 {
+		t.Fatalf("own drawn at %.3f, want %.3f (%.3f -> %.3f)", ownDrawn, want, ownBefore, ownNow)
+	}
+	_ = g.CloseNetplay()
+	if g.renderInterp.freeID != 0 {
+		t.Fatal("freeID kept after leaving the session")
+	}
+}
+
+func TestSlowMoEndsOnTheWinScreenAndSparesUISounds(t *testing.T) {
+	g := newPredSimHost()
+	g.startSlowMo()
+	_ = g.Update()
+	if !g.slowMo.active() || g.inSimStep || g.slowMoSounding() {
+		t.Fatal("sounds outside the sim step must not be slowed")
+	}
+	g.inSimStep = true
+	if !g.slowMoSounding() {
+		t.Fatal("gameplay sounds are not slowed")
+	}
+	g.inSimStep = false
+	g.GameWin = true
+	if g.slowMoFeedbackAlpha() != 0 {
+		t.Fatal("tint shown on the win screen")
+	}
+	_ = g.Update()
+	_ = g.Update()
+	if g.slowMo != (simClock{}) {
+		t.Fatalf("slow motion kept on the win screen: %+v", g.slowMo)
+	}
+}
+
+func TestSlowMoLatchClearedWhenZombieInputMasked(t *testing.T) {
+	z := newZombieTestGame(t, 1, [4]int{1, 0, 0, 0})
+	p := z.players[0]
+	zp := z.zombie.playerState(p.ID)
+	zp.ShopOpen = true
+	p.slowMoLatch = packNetInput(PlayerInputState{Shoot: true, Up: true})
+	z.updateZombiePreInput()
+	if p.slowMoLatch != 0 {
+		t.Fatalf("latch %d kept while the shop masks the input", p.slowMoLatch)
 	}
 }

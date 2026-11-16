@@ -534,14 +534,18 @@ func (g *Game) updateZombiePreInput() {
 			p.RemoteControlled = true
 			p.RemoteInput = held
 			hp.masked = true
+			// SLOW-MO latch: the held shop key must not fire either.
+			p.slowMoLatch &^= netInputBitShoot | netInputBitGrenade | netInputBitAbility
 		case hp.remote:
 			p.RemoteControlled = true
 			if masked {
 				p.RemoteInput = PlayerInputState{}
+				p.slowMoLatch = 0
 			}
 		case masked:
 			p.RemoteControlled = true
 			p.RemoteInput = PlayerInputState{}
+			p.slowMoLatch = 0
 			hp.masked = true
 		case hp.masked:
 			p.RemoteControlled = false

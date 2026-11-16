@@ -23,7 +23,12 @@ import (
 // display offset that decays over a few ticks. Large corrections, respawns
 // and new hits snap at once.
 //
-// SLOW-MO (protocol 26): the host consumes one input frame per real tick but
+// SLOW-MO (protocol 26). Assumption: the host consumes one of this guest's
+// input frames per real tick (netInputReplay), so frame ack+k lands on the
+// k-th host tick after the last sim step. Jitter (repeated or dropped
+// frames, netInputReplay debt) can shift that grouping by a frame; the
+// difference is an ordinary small correction, blended like any other.
+// The host consumes one input frame per real tick but
 // simulates only every other tick, OR-ing the frames in between (slowmo.go),
 // and its InputAck stays at the last sim step. The snapshot carries the
 // host's clock, so the replay starts from the clock of that last sim step

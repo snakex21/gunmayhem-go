@@ -262,10 +262,6 @@ func (a *sourceAudioEngine) decodedPCM(name string) []byte {
 	return pcm
 }
 
-func (a *sourceAudioEngine) playSFXGain(name string, volume, gain float64) {
-	a.playSFX(name, volume, gain, 1)
-}
-
 // playSFX plays a sound with a gain and a playback rate (< 1: slower and
 // lower, the SLOW-MO effect; the resampled PCM is cached).
 func (a *sourceAudioEngine) playSFX(name string, volume, gain, rate float64) {
@@ -307,14 +303,14 @@ func (a *sourceAudioEngine) amplifiedSoundPCM(name string, gain float64) []byte 
 	return boosted
 }
 
-// sanitizeSFXRate keeps a playback rate (also from the network) in the
-// supported range; anything else plays at normal speed.
+// sanitizeSFXRate accepts only the SLOW-MO playback rates (also from the
+// network); anything else plays at normal speed. Two rates keep the
+// resample cache bounded by the sound set.
 func sanitizeSFXRate(rate float64) float64 {
-	if !(rate >= 0.25 && rate < 1) {
-		return 1
+	if rate == slowMoSFXRate || rate == slowMoCueRate {
+		return rate
 	}
-	// Few distinct rates keep the resample cache small.
-	return math.Round(rate*100) / 100
+	return 1
 }
 
 func (a *sourceAudioEngine) resampledSoundPCM(name string, gain, rate float64, pcm []byte) []byte {

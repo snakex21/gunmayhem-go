@@ -603,6 +603,7 @@ func (g *Game) CloseNetplay() error {
 		return nil
 	}
 	g.cancelPendingNetJoin()
+	g.renderInterp.freeID = 0 // the predicted own player is gone
 	// These caches belong to one connection/session, not to the user's saved
 	// character. Rejoining in the same process must resend unchanged config
 	// and accept a new host's sound sequence starting at one.
