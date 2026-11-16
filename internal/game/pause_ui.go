@@ -60,7 +60,7 @@ func (g *Game) pauseQuitLabel() (string, string) {
 	case g.gototest:
 		return "BACK TO LIBRARY", "Leave the test range."
 	case g.campaignMode && g.campaignQuitCompletes():
-		return "FINISH MISSION", "No enemy bots are left in this mission, so leaving now counts as completed."
+		return "FINISH MISSION", "Every enemy in this mission is down, so leaving now counts as completed."
 	case g.campaignMode:
 		return "QUIT MISSION", "Back to the mission list. The mission is not completed."
 	case g.onlineMatchSetup:
@@ -369,17 +369,9 @@ func (g *Game) guestMenuMayOpen(shopWasOpen bool) bool {
 	return g.screen == screenGameplay && !g.GameWin && !g.teamGameWin && !g.fadeActive && !shopWasOpen && !g.guestZombieShopOpen()
 }
 
-// campaignQuitCompletes mirrors finishSourceGameBeforeScreenChange: leaving
-// a campaign match with no active enemy bot counts as a win (the GM2
-// tutorial has no opponents).
+// campaignQuitCompletes: leaving a campaign match counts as completed only
+// when the mission's win condition already holds (the GM2 tutorial has no
+// opponents, so FINISH MISSION completes it).
 func (g *Game) campaignQuitCompletes() bool {
-	if !g.campaignMode {
-		return false
-	}
-	for _, p := range g.players {
-		if p.Active && p.AI && !p.IsDouble {
-			return false
-		}
-	}
-	return true
+	return g.campaignWinConditionMet()
 }

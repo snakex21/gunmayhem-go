@@ -78,21 +78,10 @@ func (g *Game) updateFade() {
 }
 
 func (g *Game) finishSourceGameBeforeScreenChange() {
-	// frame10.returntomenu(): a campaign win is determined by whether any AI
-	// player survived. Only a human victory completes the level and unlocks its
-	// two source gunarray entries.
+	// frame10.returntomenu(): only a human victory completes the level and
+	// unlocks its rewards (campaignWinConditionMet).
 	if g.campaignMode {
-		playerWin := true
-		for _, p := range g.players {
-			// Level 4's translucent `double` is a temporary helper and is
-			// deliberately excluded from activeSourcePlayers when deciding the
-			// winner. Ignore it here as well; otherwise the match visibly ends in
-			// a human win but completion is discarded if the helper is still alive.
-			if p.Active && p.AI && !p.IsDouble {
-				playerWin = false
-				break
-			}
-		}
+		playerWin := g.campaignWinConditionMet()
 		if playerWin {
 			if g.campaignSetExtra {
 				if g.campaignLevel >= 1 && g.campaignLevel <= len(g.extraCampaignLevels) {
@@ -114,6 +103,27 @@ func (g *Game) finishSourceGameBeforeScreenChange() {
 		}
 	}
 	g.resetMatchEndState()
+}
+
+// campaignWinConditionMet is the mission's own win check: no enemy bot
+// with lives left AND no campaign enemy (drone, shield-bearer, mech, gunship)
+// alive or still queued, and the match was not lost. Leaving through the
+// pause menu completes the mission only when this holds; the GM2 tutorial
+// has no opponents at all, so FINISH MISSION completes it.
+func (g *Game) campaignWinConditionMet() bool {
+	if !g.campaignMode || g.campaignLoseFrame > 0 {
+		return false
+	}
+	for _, p := range g.players {
+		// Level 4's translucent `double` is a temporary helper and is
+		// deliberately excluded from activeSourcePlayers when deciding the
+		// winner. Ignore it here as well; otherwise the match visibly ends in
+		// a human win but completion is discarded if the helper is still alive.
+		if p.Active && p.AI && !p.IsDouble {
+			return false
+		}
+	}
+	return g.campaignEnemiesRemaining() == 0
 }
 
 // resetMatchEndState clears pause, winner and test-range state when a match
