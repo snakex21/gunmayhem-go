@@ -675,23 +675,33 @@ func (g *Game) updateNetClient() error {
 		g.updateZombieResultsMenu()
 		return nil
 	}
+	if g.screen != screenGameplay {
+		g.closeGuestMenu()
+	}
+	// The guest menu (pause_ui.go) owns the keys while it is open; the match
+	// keeps running and this player stands still.
+	menuWasOpen := g.guestMenuOpen
+	if menuWasOpen {
+		g.runGuestMenuUpdate(g.readUIInput(&g.pauseUI))
+		if g.netplay == nil {
+			return nil // LEAVE SESSION
+		}
+	}
 	// A guest's own zombie shop owns the keys while it is open (ESC closes it).
-	zombieShop := g.screen == screenGameplay && g.updateZombieGuestShop()
-	if !zombieShop && inpututil.IsKeyJustPressed(ebiten.KeyEscape) { // Leave the remote session outside Custom Game.
-		_ = g.CloseNetplay()
-		g.screen = screenCustomGame
-		g.customOnlineMode = true
-		g.onlineMatchSetup = false
-		g.customNetworkOpen = true
-		g.multiplayerMessage = "DISCONNECTED"
-		g.beginMultiplayerServerBrowser()
-		return nil
+	zombieShop := g.screen == screenGameplay && !g.guestMenuOpen && g.updateZombieGuestShop()
+	if !zombieShop && !menuWasOpen && inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		if g.screen != screenGameplay {
+			// Leave the remote session outside Custom Game.
+			g.guestLeaveSession()
+			return nil
+		}
+		g.openGuestMenu()
 	}
 	g.sendOnlineLocalConfigIfChanged()
 	if g.screen == screenGameplay {
 		input := netClientInputForFocus(capturePlayerInput(g.controlConfigs[0]), ebiten.IsFocused())
-		if zombieShop {
-			input = PlayerInputState{} // the host masks it too
+		if zombieShop || g.guestMenuOpen {
+			input = PlayerInputState{} // the host masks the shop too
 		} else {
 			input = g.zombieGuestInputMask(input)
 		}
@@ -704,4 +714,16 @@ func (g *Game) updateNetClient() error {
 		g.netPredict.reset()
 	}
 	return nil
+}
+
+// guestLeaveSession disconnects a guest and returns it to the server browser
+// (ESC outside the match screens, LEAVE in the guest menu and results).
+func (g *Game) guestLeaveSession() {
+	_ = g.CloseNetplay()
+	g.screen = screenCustomGame
+	g.customOnlineMode = true
+	g.onlineMatchSetup = false
+	g.customNetworkOpen = true
+	g.multiplayerMessage = "DISCONNECTED"
+	g.beginMultiplayerServerBrowser()
 }

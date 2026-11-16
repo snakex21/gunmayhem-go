@@ -96,17 +96,8 @@ func (g *Game) updateOnlineHostPostGame() {
 		return
 	}
 
-	mx, my := g.cursorPos()
-	r := sourceMenuHitRect(campaignBackLocal, 638.15, 532.1, 1.86492919921875, 1.0372772216796875)
-	hit := menuHitNone
-	if r.Contains(float64(mx), float64(my)) && !g.localPostGameReady() {
-		hit = menuHitGameContinue
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if ok && activated == menuHitGameContinue {
-		g.playSourceSFX("menu.wav", false)
-		g.markLocalPostGameReady()
-	}
+	// READY button (results_ui.go).
+	g.runResultsUpdate(g.readUIInput(&g.resultsUI))
 
 	g.postGameReady = g.onlinePostGameReadySnapshot()
 	ready, total := g.onlinePostGameReadyCounts()
@@ -140,26 +131,11 @@ func (g *Game) updateOnlineClientPostGame() {
 		return
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		_ = g.CloseNetplay()
-		g.screen = screenCustomGame
-		g.customOnlineMode = true
-		g.onlineMatchSetup = false
-		g.customNetworkOpen = true
-		g.multiplayerMessage = "DISCONNECTED"
-		g.beginMultiplayerServerBrowser()
+		g.guestLeaveSession()
 		return
 	}
-	mx, my := g.cursorPos()
-	r := sourceMenuHitRect(campaignBackLocal, 638.15, 532.1, 1.86492919921875, 1.0372772216796875)
-	hit := menuHitNone
-	if r.Contains(float64(mx), float64(my)) && !g.localPostGameReady() {
-		hit = menuHitGameContinue
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if ok && activated == menuHitGameContinue {
-		g.playSourceSFX("menu.wav", false)
-		g.markLocalPostGameReady()
-	}
+	// READY / LEAVE SESSION buttons (results_ui.go).
+	g.runResultsUpdate(g.readUIInput(&g.resultsUI))
 }
 
 func (g *Game) onlinePostGameStatusText() string {

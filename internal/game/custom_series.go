@@ -7,7 +7,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const (
@@ -146,39 +145,6 @@ func (g *Game) finishCustomSeriesToSummary() {
 		return
 	}
 	g.beginFade(screenSeriesSummary, fadePurposeScreen)
-}
-
-func (g *Game) updateSeriesSummaryMenu() {
-	if g == nil {
-		return
-	}
-	if g.netplay != nil && g.netplay.mode == netplayClient {
-		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-			_ = g.CloseNetplay()
-			g.screen = screenCustomGame
-			g.customOnlineMode = true
-			g.onlineMatchSetup = false
-			g.customNetworkOpen = true
-			g.multiplayerMessage = "DISCONNECTED"
-			g.beginMultiplayerServerBrowser()
-		}
-		return
-	}
-	mx, my := g.cursorPos()
-	button := Rect{X: 615, Y: 525, W: 240, H: 48}
-	hit := menuHitNone
-	if button.Contains(float64(mx), float64(my)) {
-		hit = menuHitGameContinue
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || (ok && activated == menuHitGameContinue) {
-		g.playSourceSFX("menu.wav", false)
-		g.customPage = customPageGame
-		g.customMenuX = 1800
-		g.customSeriesRound = 0
-		g.customSeriesRecordedRound = 0
-		g.beginFade(screenCustomGame, fadePurposeScreen)
-	}
 }
 
 func (g *Game) customSeriesLeaderText() string {

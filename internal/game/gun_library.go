@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type gunLibraryButton struct {
@@ -52,81 +51,6 @@ func (g *Game) gunUnlocked(gun int) bool {
 	}
 	idx := gun - 10
 	return idx >= 0 && idx < len(g.campaignGuns) && g.campaignGuns[idx]
-}
-
-func (g *Game) updateGunLibraryMenu() {
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		g.gunLibraryPressed = 0
-		g.beginFade(screenMainMenu, fadePurposeScreen)
-		return
-	}
-	mx, my := g.cursorPos()
-	x, y := float64(mx), float64(my)
-	backRect := Rect{X: 690, Y: 16, W: 174, H: 48}
-	testRect := Rect{X: 756, Y: 514, W: 108, H: 44}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) || inpututil.IsKeyJustPressed(ebiten.KeyPageUp) || inpututil.IsKeyJustPressed(ebiten.KeyQ) {
-		g.changeGunLibraryPage(-1)
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) || inpututil.IsKeyJustPressed(ebiten.KeyPageDown) || inpututil.IsKeyJustPressed(ebiten.KeyE) {
-		g.changeGunLibraryPage(1)
-	}
-
-	hit := g.organizedGunLibraryHitAt(x, y)
-	const hitBack = -1
-	const hitTest = -2
-	const hitPreviousPage = -3
-	const hitNextPage = -4
-	if category, ok := organizedGunLibraryCategoryAt(x, y); ok {
-		hit = -100 - category
-	}
-	if g.organizedGunLibraryThrowableTab() {
-		if kind, ok := organizedGunLibraryThrowableAt(x, y); ok {
-			hit = -200 - kind
-		}
-	}
-	if backRect.Contains(x, y) {
-		hit = hitBack
-	} else if (g.gunLibrarySelected != 0 || g.organizedGunLibraryThrowableTab()) && testRect.Contains(x, y) {
-		hit = hitTest
-	} else if gunLibraryPreviousPageRect.Contains(x, y) {
-		hit = hitPreviousPage
-	} else if gunLibraryNextPageRect.Contains(x, y) {
-		hit = hitNextPage
-	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.gunLibraryPressed = hit
-	}
-	if !inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		return
-	}
-	pressed := g.gunLibraryPressed
-	g.gunLibraryPressed = 0
-	if pressed == 0 || pressed != hit {
-		return
-	}
-	switch pressed {
-	case hitBack:
-		g.beginFade(screenMainMenu, fadePurposeScreen)
-	case hitTest:
-		g.startGunLibraryTest()
-	case hitPreviousPage:
-		g.changeGunLibraryPage(-1)
-	case hitNextPage:
-		g.changeGunLibraryPage(1)
-	default:
-		if pressed <= -200 && pressed > -200-throwableTypeCount {
-			g.gunLibraryThrowableSelected = -200 - pressed
-			return
-		}
-		if pressed <= -100 && pressed > -100-len(organizedGunLibraryTabs) {
-			g.gunLibraryCategory = -100 - pressed
-			g.gunLibraryPage = 0
-			return
-		}
-		if isGunLibraryGunNumber(pressed) && g.gunUnlocked(pressed) {
-			g.gunLibrarySelected = pressed
-		}
-	}
 }
 
 func drawGunLibraryCleanThumb(screen *ebiten.Image, raster *SourceRaster, x, y, maxW, maxH, scale, rotation float64) {

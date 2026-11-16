@@ -3,7 +3,6 @@ package game
 import (
 	"image"
 	"math"
-	"os/exec"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -130,7 +129,7 @@ func (g *Game) buildMainMenu(ctx *uiCtx) {
 		InfoTitle: "MORE GAMES", InfoBody: "Opens armorgames.com in the browser, like the original button."}) {
 		// Exact source action: getURL("http://armorgames.com", _blank). The
 		// original btn6 deliberately plays no menu.wav.
-		_ = exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", "http://armorgames.com").Start()
+		openExternalURL("http://armorgames.com")
 	}
 	if ctx.Button("main.quit", mainQuitRect, "QUIT", uiButtonOpts{Size: uiSizeBody}) {
 		g.mainMenuSelectSound()

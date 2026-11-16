@@ -126,38 +126,6 @@ func (g *Game) resolveMenuRelease(hit int) (int, bool) {
 	return menuHitNone, false
 }
 
-func (g *Game) updatePostGameMenu() {
-	if g.onlineMatchSetup && g.netplay != nil && g.netplay.mode == netplayHost {
-		g.updateOnlineHostPostGame()
-		return
-	}
-
-	mx, my := g.cursorPos()
-	r := sourceMenuHitRect(campaignBackLocal, 638.15, 532.1, 1.86492919921875, 1.0372772216796875)
-	hit := menuHitNone
-	if r.Contains(float64(mx), float64(my)) {
-		hit = menuHitGameContinue
-	}
-	activated, ok := g.resolveMenuRelease(hit)
-	if ok && activated == menuHitGameContinue {
-		// DefineSprite_1019.btn_back.
-		g.playSourceSFX("menu.wav", false)
-	}
-	if (inpututil.IsKeyJustPressed(ebiten.KeyEscape)) || (ok && activated == menuHitGameContinue) {
-		if g.customSeriesRound > 0 {
-			if !g.customSeriesIsFinalRound() {
-				g.startNextCustomSeriesRound()
-				return
-			}
-			g.finishCustomSeriesToSummary()
-			return
-		}
-		g.customPage = customPageGame
-		g.customMenuX = 1800
-		g.beginFade(screenCustomGame, fadePurposeScreen)
-	}
-}
-
 func (g *Game) updateCustomGameMenu() {
 	// Online (server browser, host setup, lobby) and local Custom Game are
 	// Mayhem UI kit screens: online_browser_menu.go / online_lobby_menu.go
@@ -334,41 +302,23 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 	case screenCampaign:
 		g.drawCampaignMenu(screen)
 	case screenGunLibrary:
-		g.assets.EnsureGunLibrary()
-		if g.assets.GunLibraryMenu != nil {
-			drawSourceRaster(screen, g.assets.GunLibraryMenu, 0, 0, 1, 1, 1)
-			g.drawGunLibraryInteractions(screen)
-		} else {
-			g.drawSecondaryMenuFallback(screen, "GUN LIBRARY")
-		}
+		g.drawGunLibraryMenu(screen)
 	case screenOptions:
 		// Mayhem UI Options (options_menu.go) replaces the flattened Flash
 		// OptionsMenu raster and its patched-over controls.
 		g.drawOptionsMenu(screen)
 	case screenCredits:
-		if g.assets.CreditsMenu != nil {
-			drawSourceRaster(screen, g.assets.CreditsMenu, 0, 0, 1, 1, 1)
-		} else {
-			g.drawSecondaryMenuFallback(screen, "CREDITS")
-		}
+		g.drawCreditsMenu(screen)
 	case screenMultiplayerLobby:
 		g.drawCustomGameMenu(screen)
 	case screenSeriesSummary:
-		g.drawSeriesSummary(screen)
+		g.drawResultsMenu(screen)
 	case screenZombieSetup:
 		g.drawZombieSetupMenu(screen)
 	case screenZombieResults:
 		g.drawZombieResultsMenu(screen)
 	case screenPostGame:
-		if !g.drawPostGameScreen(screen) {
-			// Flattened Symbol1019 is fallback-only because it contains baked
-			// Cool Dude / 89 authoring placeholders in all four player columns.
-			if g.assets.PostGameMenu != nil {
-				drawSourceRaster(screen, g.assets.PostGameMenu, 0, 0, 1, 1, 1)
-			} else {
-				g.drawSecondaryMenuFallback(screen, "RESULTS")
-			}
-		}
+		g.drawResultsMenu(screen)
 	}
 	if g.menuDebug {
 		g.drawMenuDebug(screen)

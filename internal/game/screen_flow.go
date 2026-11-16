@@ -115,6 +115,12 @@ func (g *Game) finishSourceGameBeforeScreenChange() {
 			g.recordCampaignResult(playerWin)
 		}
 	}
+	g.resetMatchEndState()
+}
+
+// resetMatchEndState clears pause, winner and test-range state when a match
+// ends (or restarts from the pause menu).
+func (g *Game) resetMatchEndState() {
 	g.paused = false
 	g.GameWin = false
 	g.teamGameWin = false
@@ -159,6 +165,8 @@ func (g *Game) openPause() {
 	}
 	g.paused = true
 	g.pausePressed = pauseHitNone
+	g.pauseOptions = false
+	g.pauseUI.reset()
 }
 
 func pauseHitAt(x, y float64) int {
@@ -170,43 +178,6 @@ func pauseHitAt(x, y float64) int {
 		return pauseHitExit
 	}
 	return pauseHitNone
-}
-
-func (g *Game) updatePause() {
-	mx, my := g.cursorPos()
-	hit := pauseHitAt(float64(mx), float64(my))
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.pausePressed = hit
-	}
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		pressed := g.pausePressed
-		g.pausePressed = pauseHitNone
-		if pressed != hit || pressed == pauseHitNone {
-			return
-		}
-		switch pressed {
-		case pauseHitResume:
-			g.paused = false
-		case pauseHitExit:
-			g.paused = false
-			if g.zombieSimulating() {
-				// Leaving a zombie match ends it: results (and the record).
-				g.finishZombieMatch()
-				return
-			}
-			if !g.campaignMode && !g.gototest && g.customSeriesRound > 0 {
-				g.abortCustomSeriesToSetup()
-				return
-			}
-			target := screenPostGame
-			if g.gototest {
-				target = screenGunLibrary
-			} else if g.campaignMode {
-				target = screenCampaign
-			}
-			g.beginFade(target, fadePurposeEndGame)
-		}
-	}
 }
 
 // updateGameplayInteractionInput must run before simulation. GAMEPAUSED halts
@@ -400,11 +371,9 @@ func (g *Game) drawGameplayInteractions(screen *ebiten.Image) {
 	if g.zombieWaveFrame > 0 {
 		drawSourceRaster(screen, g.assets.ZombieWaveFrames[g.zombieWaveFrame], 0, 0, 1, 1, 1)
 	}
-	if g.paused {
-		// game_pause copies hud._x/_y, cancelling the root camera and staying
-		// screen-fixed. Our screen is already in final coordinates.
-		drawSourceRaster(screen, g.assets.PauseMenu, 0, 0, 1, 1, 1)
-	}
+	// Pause menu, guest menu or the host-pause banner (pause_ui.go), screen-
+	// fixed like game_pause.
+	g.drawPauseOverlay(screen)
 }
 
 var sourceFadeX = [...]float64{
