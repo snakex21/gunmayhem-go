@@ -51,10 +51,14 @@ func (g *Game) updateFade() {
 			}
 		}
 		if g.fadePurpose == fadePurposeEndGame {
-			g.finishSourceGameBeforeScreenChange()
+			// Record the series round while the winner is still set:
+			// finishSourceGameBeforeScreenChange clears winnerPlayerID and
+			// teamGameWin (resetMatchEndState). recordCustomSeriesRound is
+			// idempotent per round, so it never double counts.
 			if g.fadeTarget == screenPostGame && !g.campaignMode {
 				g.recordCustomSeriesRound()
 			}
+			g.finishSourceGameBeforeScreenChange()
 		}
 		g.screen = g.fadeTarget
 		if g.screen == screenPostGame && g.onlineMatchSetup && g.netplay != nil && g.netplay.mode == netplayHost {
