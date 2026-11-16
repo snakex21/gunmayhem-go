@@ -213,7 +213,7 @@ func (g *Game) chaosIntervalFrames() int {
 	if seconds > 90 {
 		seconds = 90
 	}
-	return seconds * 60
+	return seconds * TicksPerSecond
 }
 
 func (g *Game) resetChaosRuntime() {
@@ -734,15 +734,17 @@ func (g *Game) chaosTeleportPlayers() {
 	}
 }
 
+// chaosSecondsLeft is the HUD countdown to the next chaos event, in real
+// seconds (rounded up).
+func (g *Game) chaosSecondsLeft() int {
+	return ticksToSecondsCeil(g.chaosIntervalFrames() - g.chaosFrame)
+}
+
 func (g *Game) drawChaosHUD(screen *ebiten.Image) {
 	if g == nil || !g.customChaosEnabled || g.chaosCurrentEffect == chaosEffectNone || g.GameWin || g.teamGameWin {
 		return
 	}
-	remaining := g.chaosIntervalFrames() - g.chaosFrame
-	if remaining < 0 {
-		remaining = 0
-	}
-	seconds := (remaining + 59) / 60
+	seconds := g.chaosSecondsLeft()
 	w := 390.0
 	x := (900 - w) / 2
 	fill := color.NRGBA{R: 0x18, G: 0x1b, B: 0x21, A: 0xe8}

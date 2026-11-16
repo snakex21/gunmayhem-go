@@ -3,6 +3,7 @@ package game
 import (
 	"math"
 	"math/rand"
+	"strconv"
 )
 
 // Second loadout slot: ABILITY / GEAR. Every player picks one original perk
@@ -51,10 +52,10 @@ const (
 	dashSpeed          = 17.0 // horizontal velocity set by a dash (run top speed is ~9)
 	dashAirLift        = 2.0  // an air dash cancels falling and lifts slightly
 	dashTrailFrames    = 12   // frames of dash after-image trail
-	dashCooldownFrames = 240  // 4 s
+	dashCooldownFrames = 240  // 8 s
 
-	anchorMaxFrames      = 90  // 1.5 s per use
-	anchorCooldownFrames = 210 // 3.5 s, starts when the anchor is released
+	anchorMaxFrames      = 90  // 3 s per use
+	anchorCooldownFrames = 210 // 7 s, starts when the anchor is released
 	anchorBrake          = 0.55
 
 	heavyKnockbackScale = 0.80
@@ -177,14 +178,19 @@ func abilityShortName(n int) string {
 	return abilityName(n)
 }
 
+// framesAsSeconds formats a tick count as real seconds ("8", "1.5").
+func framesAsSeconds(frames int) string {
+	return strconv.FormatFloat(float64(frames)/TicksPerSecond, 'f', -1, 64)
+}
+
 func abilityDescription(n int) string {
 	switch n {
 	case abilityNone:
 		return "No ability."
 	case abilityDash:
-		return "Ability key: quick dash (also once in the air). 4 s cooldown."
+		return "Ability key: quick dash (also once in the air). " + framesAsSeconds(dashCooldownFrames) + " s cooldown."
 	case abilityAnchor:
-		return "Hold ability key: no knockback, but no moving or shooting. Max 1.5 s."
+		return "Hold ability key: no knockback, but no moving or shooting. Max " + framesAsSeconds(anchorMaxFrames) + " s."
 	case abilityTripleJump:
 		return "A third, weaker mid-air jump."
 	case abilityHeavy:

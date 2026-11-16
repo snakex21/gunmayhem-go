@@ -35,6 +35,15 @@ import (
 // TicksPerSecond is the fixed simulation rate (ebiten.SetTPS in main.go).
 const TicksPerSecond = 30
 
+// ticksToSecondsCeil converts a tick countdown to the whole real seconds a
+// HUD shows (3.2 s left reads 4; never negative).
+func ticksToSecondsCeil(ticks int) int {
+	if ticks <= 0 {
+		return 0
+	}
+	return (ticks + TicksPerSecond - 1) / TicksPerSecond
+}
+
 const (
 	// A player whose new position is further than this from where its
 	// previous velocity would carry it teleported (portal, push-out, wrap).

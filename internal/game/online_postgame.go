@@ -144,7 +144,7 @@ func (g *Game) onlinePostGameStatusText() string {
 		return ""
 	}
 	if g.postGameReadyCountdown > 0 {
-		seconds := (g.postGameReadyCountdown + 59) / 60
+		seconds := ticksToSecondsCeil(g.postGameReadyCountdown)
 		return fmt.Sprintf("READY %d/%d   NEXT ROUND IN %d", ready, total, seconds)
 	}
 	if g.localPostGameReady() {

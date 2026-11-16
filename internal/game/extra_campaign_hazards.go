@@ -244,6 +244,16 @@ func (g *Game) applyExtraWind(force float64) {
 	}
 }
 
+// extraHazardSecondsLeft is the HUD countdown to the next hazard in real
+// seconds.
+func (g *Game) extraHazardSecondsLeft() float64 {
+	remaining := g.extraHazardInterval() - g.extraHazardFrame
+	if remaining < 0 {
+		remaining = 0
+	}
+	return float64(remaining) / TicksPerSecond
+}
+
 func (g *Game) drawExtraCampaignHazardHUD(screen *ebiten.Image) {
 	hazard := g.activeExtraCampaignHazard()
 	interval := g.extraHazardInterval()
@@ -254,7 +264,7 @@ func (g *Game) drawExtraCampaignHazardHUD(screen *ebiten.Image) {
 	if remaining < 0 {
 		remaining = 0
 	}
-	seconds := float64(remaining) / 60
+	seconds := g.extraHazardSecondsLeft()
 	fill := color.NRGBA{R: 0x22, G: 0x25, B: 0x2a, A: 0xe8}
 	accent := color.NRGBA{R: 0xff, G: 0xd0, B: 0x35, A: 0xff}
 	warn := remaining <= 45
