@@ -844,14 +844,6 @@ func (g *Game) zombieAward(id, amount, kind int, x, y float64) {
 	g.zombie.addPopIn(zone, x, y, amount, kind)
 }
 
-func (m *zombieMatch) addPop(x, y float64, amount, kind int) {
-	zone := m.viewZone
-	if m.passZone >= 0 {
-		zone = m.passZone
-	}
-	m.addPopIn(zone, x, y, amount, kind)
-}
-
 // addPopIn adds a popup in a zone (multi-zone matches show it only there).
 func (m *zombieMatch) addPopIn(zone int, x, y float64, amount, kind int) {
 	if kind == zombiePopHit {

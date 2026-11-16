@@ -230,7 +230,6 @@ func (g *Game) buildGunLibrary(ctx *uiCtx) {
 }
 
 func (g *Game) leaveGunLibrary() {
-	g.gunLibraryPressed = 0
 	g.playSourceSFX("menu.wav", false)
 	g.beginFade(screenMainMenu, fadePurposeScreen)
 }

@@ -3,6 +3,7 @@ package game
 import (
 	"image/color"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -437,4 +438,24 @@ func wrapTextToWidth(text string, maxWidth float64, measure func(string) float64
 	}
 	flush()
 	return lines
+}
+
+// PlayerCard is the paper card of one player slot (Custom Game, online lobby,
+// campaign briefing, Loadout, results): a colour strip on top (ink when the
+// slot shows no character), the P# badge and an optional right-aligned kind.
+func (ctx *uiCtx) PlayerCard(r Rect, slot, colour int, noColour bool, kind string) {
+	if !ctx.drawing() {
+		return
+	}
+	ctx.Card(r, "")
+	strip := uiInk500
+	if !noColour {
+		strip = developedPlayerColorSwatch(colour)
+		strip.A = 0xff
+	}
+	uiFillRound(ctx.dst, Rect{X: r.X, Y: r.Y, W: r.W, H: 8}, 4, strip)
+	ctx.Badge(Rect{X: r.X + 12, Y: r.Y + 16, W: 34, H: 24}, "P"+strconv.Itoa(slot+1), uiInk900)
+	if kind != "" {
+		uiText(ctx.dst, kind, true, uiSizeHint, uiTextMutedDk, r.X+r.W-12, r.Y+28, uiAlignRight)
+	}
 }

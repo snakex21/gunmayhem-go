@@ -155,49 +155,6 @@ func renderSolidXFLFrame(libraryName string, frame int) (*SourceRaster, error) {
 	return &SourceRaster{Image: img, Bounds: Rect{X: minX, Y: minY, W: float64(w), H: float64(h)}}, nil
 }
 
-// renderSolidXFLFrameShapesOnly renders only shapes owned directly by the
-// requested symbol/frame and deliberately skips nested symbol instances. This
-// is useful for source overlays such as Symbol913 frame2: the white locked-gun
-// mask is a direct shape, while its nested Symbol595 dropgun must not be
-// flattened again (FFDec exposes helper/control-point artwork there).
-func renderSolidXFLFrameShapesOnly(libraryName string, frame int) (*SourceRaster, error) {
-	bounds, err := sourceFrameVisualBounds(libraryName, frame)
-	if err != nil {
-		return nil, err
-	}
-	minX := math.Floor(bounds.X)
-	minY := math.Floor(bounds.Y)
-	maxX := math.Ceil(bounds.X + bounds.W)
-	maxY := math.Ceil(bounds.Y + bounds.H)
-	w := int(maxX - minX)
-	h := int(maxY - minY)
-	if w <= 0 || h <= 0 {
-		return nil, errors.New("XFL vector frame has empty bounds")
-	}
-	doc, err := loadXFLVectorDoc(libraryName)
-	if err != nil {
-		return nil, err
-	}
-	img := ebiten.NewImage(w, h)
-	root := xflMatrix{A: 1, D: 1, TX: -minX, TY: -minY}
-	for li := len(doc.Timeline.Layers) - 1; li >= 0; li-- {
-		layer := doc.Timeline.Layers[li]
-		if layer.Visible == "false" {
-			continue
-		}
-		active, ok := activeVectorFrame(layer.Frames, frame)
-		if !ok {
-			continue
-		}
-		for _, shape := range active.Elements.Shapes {
-			if err := drawSolidXFLShape(img, shape, root, 1); err != nil {
-				return nil, fmt.Errorf("%s frame %d direct shape: %w", libraryName, frame, err)
-			}
-		}
-	}
-	return &SourceRaster{Image: img, Bounds: Rect{X: minX, Y: minY, W: float64(w), H: float64(h)}}, nil
-}
-
 func drawSolidXFLFrame(dst *ebiten.Image, libraryName string, frame int, parent xflMatrix, alpha float64, visiting map[string]bool) error {
 	key := fmt.Sprintf("%s#%d", libraryName, frame)
 	if visiting[key] {

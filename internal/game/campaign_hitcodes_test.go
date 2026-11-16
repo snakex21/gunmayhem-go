@@ -34,13 +34,6 @@ func campaignPlayerHitCases() []campaignHitCase {
 			}
 			return nil
 		})
-		add(campaignPlayerHitBackBase+slot, fmt.Sprintf("editor back slot%d", slot), nil)
-		add(campaignPlayerHitHatPageBase+slot, fmt.Sprintf("hat page slot%d", slot), func(g *Game) error {
-			if g.campaignEditor[slot] != customEditHat1 && g.campaignEditor[slot] != customEditHat2 {
-				return fmt.Errorf("editor=%d", g.campaignEditor[slot])
-			}
-			return nil
-		})
 		add(campaignPlayerHitNameBase+slot, fmt.Sprintf("name slot%d", slot), func(g *Game) error {
 			if g.campaignNameFocus != slot+1 {
 				return fmt.Errorf("name focus=%d", g.campaignNameFocus)
@@ -49,12 +42,6 @@ func campaignPlayerHitCases() []campaignHitCase {
 		})
 		for _, editor := range editors {
 			editor := editor
-			add(campaignPlayerHitEditBase+slot*10+editor, fmt.Sprintf("open editor %d slot%d", editor, slot), func(g *Game) error {
-				if g.campaignEditor[slot] == 0 {
-					return fmt.Errorf("editor not opened")
-				}
-				return nil
-			})
 			for _, item := range developedCustomSelectionItems(editor) {
 				n := item.Number
 				switch {
@@ -111,27 +98,22 @@ func campaignPlayerHitCases() []campaignHitCase {
 			}
 		}
 	}
+	// The Loadout lists both hat pages on one grid and writes every hat
+	// through the page-1 hat code (activateCampaignPlayerHit takes both).
+	for slot := 0; slot < 2; slot++ {
+		slot := slot
+		for _, item := range developedCustomSelectionItems(customEditHat2) {
+			n := item.Number
+			add(campaignSelectHit(slot, customEditHat1, n), fmt.Sprintf("hat page 2 item %d slot%d", n, slot), func(g *Game) error {
+				if g.campaignPlayers[slot].Hat != n {
+					return fmt.Errorf("hat=%d", g.campaignPlayers[slot].Hat)
+				}
+				return nil
+			})
+		}
+	}
 	add(campaignPlayerHitClearBase+1, "clear slot1", nil)
 	return cases
-}
-
-func campaignScreenHitCodes() map[int]string {
-	codes := map[int]string{
-		campaignHitBack: "back", campaignHitStart: "start", campaignHitUnlockContinue: "unlock continue",
-		campaignHitSetGM1: "tab GM1", campaignHitSetGM2: "tab GM2", campaignHitSetExtra: "tab EXTRA",
-		gm2CampaignHitStart: "GM2 start", extraCampaignHitStart: "EXTRA start",
-		extraCampaignHitPrevPage: "EXTRA prev", extraCampaignHitNextPage: "EXTRA next",
-	}
-	for i := 0; i < 10; i++ {
-		codes[campaignHitPanelBase+i] = fmt.Sprintf("GM1 panel %d", i)
-	}
-	for i := 1; i <= 16; i++ {
-		codes[gm2CampaignHitMissionBase+i] = fmt.Sprintf("GM2 mission %d", i)
-	}
-	for i := 1; i <= extraCampaignMissionCount; i++ {
-		codes[extraCampaignHitMissionBase+i] = fmt.Sprintf("EXTRA mission %d", i)
-	}
-	return codes
 }
 
 // Every hit code on the campaign screens must mean exactly one thing.
@@ -172,36 +154,39 @@ func TestCampaignPlayerSetupHitCodesActivateTheirOwnAction(t *testing.T) {
 	}
 }
 
-// Clicking the centre of each grid item of the editors that used to collide
-// (colour, eyes, hats) returns that item's enumerated selection code. (A full
-// pixel scan is too slow: one campaignPlayerHitAt call costs ~10 ms.)
-func TestCampaignPlayerHitAtReturnsEnumeratedSelectionCodes(t *testing.T) {
+// campaignScreenHitCodes: the campaign screens are Mayhem UI kit screens
+// (campaign_ui.go) with string ids, so only the player codes remain.
+func campaignScreenHitCodes() map[int]string { return map[int]string{} }
+
+// Every tile of the campaign Loadout writes an enumerated player code of
+// its own slot.
+func TestCampaignLoadoutTilesUseEnumeratedCodes(t *testing.T) {
 	known := map[int]bool{}
 	for _, c := range campaignPlayerHitCases() {
 		known[c.code] = true
 	}
-	for _, editor := range []int{customEditColor, customEditEyes, customEditHat1} {
-		g := freshCampaignSetupGame()
-		g.campaignEditor[0] = editor
-		g.campaignCardY[0] = 100
-		checked := 0
-		for _, item := range developedCustomSelectionItems(editor) {
-			if !g.campaignSelectionUnlocked(editor, item.Number) {
+	g := freshCampaignSetupGame()
+	for slot := 0; slot < 2; slot++ {
+		b := g.campaignLoadoutBinding(slot)
+		var all []loadoutChoice
+		for part := range loadoutPartLabels() {
+			c, _ := g.loadoutCharacterChoicesFor(b, part)
+			all = append(all, c...)
+		}
+		all = append(all, g.loadoutWeaponChoicesFor(b)...)
+		all = append(all, g.loadoutPerkChoicesFor(b)...)
+		all = append(all, g.loadoutGearChoicesFor(b)...)
+		all = append(all, g.loadoutThrowableChoicesFor(b)...)
+		for _, c := range all {
+			if c.locked {
 				continue
 			}
-			x := campaignCardX(0) + item.Rect.X + item.Rect.W/2
-			y := g.campaignCardY[0] + item.Rect.Y + item.Rect.H/2
-			hit := g.campaignPlayerHitAt(x, y)
-			if hit != campaignSelectHit(0, editor, item.Number) || !known[hit] {
-				t.Fatalf("editor %d item %d: hit=%d want %d", editor, item.Number, hit, campaignSelectHit(0, editor, item.Number))
-			}
-			checked++
-			if checked >= 12 {
-				break
+			if !known[c.code] {
+				t.Fatalf("slot %d: %s code %d is not an enumerated campaign code", slot, c.id, c.code)
 			}
 		}
-		if checked == 0 {
-			t.Fatalf("editor %d: no items checked", editor)
+		if b.nameHit != campaignPlayerHitNameBase+slot {
+			t.Fatalf("slot %d name code %d", slot, b.nameHit)
 		}
 	}
 }

@@ -8,43 +8,51 @@ import (
 	"testing"
 )
 
-// organizedLibraryButton finds the card for gun on the ALL tab.
-func organizedLibraryButton(t *testing.T, gun int) (gunLibraryButton, int) {
+// libraryShowWeapon opens the ALL category page that lists gun and returns
+// its kit tile.
+func libraryShowWeapon(t *testing.T, g *Game, gun int) uiItem {
 	t.Helper()
+	g.screen = screenGunLibrary
+	g.setGunLibraryView(gunLibraryViewWeapons)
+	g.gunLibraryCategory = 0
 	for page := 0; page < organizedGunLibraryPageCount(0); page++ {
-		for _, b := range organizedGunLibraryButtons(0, page) {
-			if b.Gun == gun {
-				return b, page
+		g.gunLibraryPage = page
+		for _, n := range g.gunLibraryPageWeapons() {
+			if n == gun {
+				g.runGunLibraryUpdate(uiInput{X: -10, Y: -10})
+				it, ok := g.libraryUI.item(fmt.Sprintf("lib.gun.%d", gun))
+				if !ok {
+					t.Fatalf("gun %d listed on page %d but has no tile", gun, page)
+				}
+				return it
 			}
 		}
 	}
-	t.Fatalf("gun %d has no Gun Library card", gun)
-	return gunLibraryButton{}, 0
+	t.Fatalf("gun %d has no Gun Library tile", gun)
+	return uiItem{}
 }
 
 func TestGunLibraryRespectsCampaignUnlockArray(t *testing.T) {
-	g := &Game{}
+	g := New()
 	for i := range g.campaignGuns {
 		g.campaignGuns[i] = true
 	}
-	handgun, handgunPage := organizedLibraryButton(t, 1)
-	campaignGun, campaignPage := organizedLibraryButton(t, 10)
-	hit := func(b gunLibraryButton, page int) int {
-		g.gunLibraryPage = page
-		return g.organizedGunLibraryHitAt(b.X, b.Y)
+	if it := libraryShowWeapon(t, g, 1); it.disabled {
+		t.Fatal("source handgun should always be selectable")
 	}
-	if got := hit(handgun, handgunPage); got != 1 {
-		t.Fatalf("source handgun should always be clickable, hit=%d", got)
-	}
-	if got := hit(campaignGun, campaignPage); got != 10 {
-		t.Fatalf("unlocked campaign gun hit=%d want10", got)
+	if it := libraryShowWeapon(t, g, 10); it.disabled {
+		t.Fatal("unlocked campaign gun 10 is disabled")
 	}
 	g.campaignGuns[0] = false
-	if got := hit(campaignGun, campaignPage); got != 0 {
-		t.Fatalf("locked campaign gun remained clickable: %d", got)
+	if it := libraryShowWeapon(t, g, 10); !it.disabled {
+		t.Fatal("locked campaign gun remained selectable")
 	}
-	if got := hit(handgun, handgunPage); got != 1 {
-		t.Fatalf("campaign lock array must not lock starter handgun, hit=%d", got)
+	g.selectGunLibraryWeapon(10)
+	if g.gunLibrarySelected == 10 {
+		t.Fatal("locked campaign gun was selected")
+	}
+	if it := libraryShowWeapon(t, g, 1); it.disabled {
+		t.Fatal("campaign lock array must not lock the starter handgun")
 	}
 }
 

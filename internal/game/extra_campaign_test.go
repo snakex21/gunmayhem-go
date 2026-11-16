@@ -160,17 +160,6 @@ func TestAllCampaignSetupsStartWithEveryPerkAvailable(t *testing.T) {
 	}
 }
 
-func TestExtraCampaignTabIsClickable(t *testing.T) {
-	_, _, extra := campaignSetRects()
-	if got := campaignSetHitAt(extra.X+extra.W/2, extra.Y+extra.H/2); got != campaignHitSetExtra {
-		t.Fatalf("EXTRA campaign tab hit=%d want%d", got, campaignHitSetExtra)
-	}
-	g := &Game{campaignSetExtra: true}
-	if g.campaignUsesOriginalGM1Rules() {
-		t.Fatal("EXTRA campaign accidentally enables GM1 scripted rules")
-	}
-}
-
 func TestExtraCampaignEndsWhenEitherSideIsEliminated(t *testing.T) {
 	human := &Player{ID: 1, Active: true, Team: 1}
 	enemyA := &Player{ID: 3, Active: false, AI: true, Team: 2}
@@ -286,28 +275,6 @@ func TestExtraJuggernautUsesDeliberateHarpoonShots(t *testing.T) {
 	g := &Game{campaignMode: true, campaignSetExtra: true, campaignLevel: 11}
 	if got := countCadenceTriggers(extraMissionBot(11, 0), g, 225); got != 3 {
 		t.Fatalf("mission11 harpoon trigger frames=%d want3", got)
-	}
-}
-
-func TestExtraCampaignCardsFitPagedThreeRowsAboveNavigation(t *testing.T) {
-	if want := (extraCampaignMissionCount + extraCampaignPageSize - 1) / extraCampaignPageSize; extraCampaignPageCount() != want || want < 3 {
-		t.Fatalf("EXTRA pages=%d want%d", extraCampaignPageCount(), want)
-	}
-	for page := 0; page < extraCampaignPageCount(); page++ {
-		start, end := extraCampaignPageRange(page)
-		for i := start; i < end; i++ {
-			a := extraCampaignCardRect(i - start)
-			if a.X < 0 || a.Y < 100 || a.X+a.W > ScreenWidth || a.Y+a.H >= 525 {
-				t.Fatalf("mission card %d outside menu area: %+v", i+1, a)
-			}
-			for j := i + 1; j < end; j++ {
-				b := extraCampaignCardRect(j - start)
-				overlaps := a.X < b.X+b.W && a.X+a.W > b.X && a.Y < b.Y+b.H && a.Y+a.H > b.Y
-				if overlaps {
-					t.Fatalf("mission cards %d and %d overlap: %+v %+v", i+1, j+1, a, b)
-				}
-			}
-		}
 	}
 }
 
@@ -452,4 +419,44 @@ func extraCampaignEnemyLives(spec extraCampaignMission) int {
 		total += enemy.Lives
 	}
 	return total
+}
+
+func TestExtraCampaignTabIsClickable(t *testing.T) {
+	g := New()
+	g.screen = screenCampaign
+	g.enterCampaignMenu()
+	g.runCampaignUpdate(uiInput{X: -10, Y: -10})
+	it, ok := g.campaignUI.item("camp.set/EXTRA")
+	if !ok || it.disabled {
+		t.Fatal("EXTRA campaign tab missing")
+	}
+	x, y := it.rect.X+it.rect.W/2, it.rect.Y+it.rect.H/2
+	g.runCampaignUpdate(uiInput{X: x, Y: y, Moved: true})
+	g.runCampaignUpdate(uiInput{X: x, Y: y, Pressed: true, Down: true})
+	g.runCampaignUpdate(uiInput{X: x, Y: y, Released: true})
+	if !g.campaignSetExtra || g.campaignUsesOriginalGM1Rules() {
+		t.Fatal("EXTRA tab did not select the EXTRA campaign")
+	}
+}
+
+func TestExtraCampaignCardsFitPagedThreeRowsAboveNavigation(t *testing.T) {
+	if want := (extraCampaignMissionCount + extraCampaignPageSize - 1) / extraCampaignPageSize; extraCampaignPageCount() != want || want < 3 {
+		t.Fatalf("EXTRA pages=%d want%d", extraCampaignPageCount(), want)
+	}
+	for page := 0; page < extraCampaignPageCount(); page++ {
+		start, end := extraCampaignPageRange(page)
+		for i := start; i < end; i++ {
+			a := campaignTileRect(campaignSetExtra, i-start)
+			if a.X < uiMargin || a.Y < uiContentTop || a.X+a.W > campaignInfoRect.X || a.Y+a.H > uiContentBottom {
+				t.Fatalf("mission tile %d outside the grid: %+v", i+1, a)
+			}
+			for j := i + 1; j < end; j++ {
+				b := campaignTileRect(campaignSetExtra, j-start)
+				overlaps := a.X < b.X+b.W && a.X+a.W > b.X && a.Y < b.Y+b.H && a.Y+a.H > b.Y
+				if overlaps {
+					t.Fatalf("mission tiles %d and %d overlap: %+v %+v", i+1, j+1, a, b)
+				}
+			}
+		}
+	}
 }

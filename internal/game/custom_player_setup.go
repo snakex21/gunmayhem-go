@@ -1,9 +1,5 @@
 package game
 
-import (
-	"math"
-)
-
 type CustomPlayerConfig struct {
 	Name      string `cbor:",omitempty"`
 	Color     int    `cbor:",omitempty"`
@@ -36,8 +32,6 @@ const (
 	playerSlotActionClear = 3
 )
 
-var customPlayerTypeButtonLocal = Rect{X: 0, Y: 0, W: 148.5, H: 24} // Symbol806
-
 func playerSlotHit(slot, action int) int {
 	return menuHitPlayerSlotBase + slot*10 + action
 }
@@ -56,42 +50,6 @@ func decodePlayerSlotHit(hit int) (slot, action int, ok bool) {
 
 func (g *Game) initCustomPlayerSetup() {
 	g.customPlayers = sourceDefaultCustomPlayers()
-	for i := range g.customPlayers {
-		g.customColorMask[i] = 100
-		if g.customPlayers[i].Type == 0 {
-			g.customCardY[i] = 500
-		} else {
-			g.customCardY[i] = 100
-		}
-	}
-}
-
-// Symbol1302.onEnterFrame: slide0 -> originy+400 (500), slide1 -> originy
-// (100), each with half-distance easing and integer rounding.
-func (g *Game) updateCustomPlayerCards() {
-	mx, my := g.cursorPos()
-	mouseX, mouseY := float64(mx), float64(my)
-	for i := range g.customPlayers {
-		target := 100.0
-		if g.customPlayers[i].Type == 0 {
-			target = 500
-		} else if g.customEditor[i] != 0 {
-			// Symbol1302.slide=2 -> originy-400 = -300.
-			target = -300
-		}
-		g.customCardY[i] += (target - g.customCardY[i]) / 2
-		if math.Abs(g.customCardY[i]-target) < 0.5 {
-			g.customCardY[i] = target
-		} else if math.Mod(g.customCardY[i], 1) != 0 {
-			g.customCardY[i] = math.Round(g.customCardY[i])
-		}
-		hovered := false
-		if g.customPage == customPagePlayers && g.customPlayers[i].Type != 0 && g.customEditor[i] == 0 {
-			cardX := g.customMenuX + 20 + float64(i)*220
-			hovered = sourceColorSelectorRect(cardX, g.customCardY[i]).Contains(mouseX, mouseY)
-		}
-		g.customColorMask[i] = advanceSourceColorMask(g.customColorMask[i], hovered)
-	}
 }
 
 func (g *Game) updateCustomWarning() {

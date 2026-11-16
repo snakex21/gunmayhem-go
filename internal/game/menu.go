@@ -104,28 +104,6 @@ const (
 	menuHitMapBase  = 200
 )
 
-func sourceMenuHitRect(local Rect, tx, ty, sx, sy float64) Rect {
-	return transformedLocalRect(local, tx, ty, sx, sy)
-}
-
-func (g *Game) resolveMenuRelease(hit int) (int, bool) {
-	// The Flash menus use onRelease, not onPress. Remember which source button
-	// received the mouse-down and trigger only if the mouse is released over
-	// that same clip. This prevents neighbouring/animating buttons from firing.
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.menuPressed = hit
-		return menuHitNone, false
-	}
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		pressed := g.menuPressed
-		g.menuPressed = menuHitNone
-		if pressed != menuHitNone && pressed == hit {
-			return hit, true
-		}
-	}
-	return menuHitNone, false
-}
-
 func (g *Game) updateCustomGameMenu() {
 	// Online (server browser, host setup, lobby) and local Custom Game are
 	// Mayhem UI kit screens: online_browser_menu.go / online_lobby_menu.go
@@ -325,14 +303,6 @@ func (g *Game) drawMenu(screen *ebiten.Image) {
 	}
 }
 
-func (g *Game) drawSecondaryMenuFallback(screen *ebiten.Image, title string) {
-	// Exact source screen names; used only if the flattened source raster for
-	// that menu was not exported by FFDec. ESC or the bottom BACK area returns
-	// to the main menu, matching each source screen's btn_back action.
-	drawSourceHUDText(screen, title, 50.75, color.NRGBA{A: 255}, 28, 24)
-	drawSourceHUDText(screen, "BACK", 53, color.NRGBA{A: 255}, 28, 520)
-}
-
 func drawMenuDebugRect(dst *ebiten.Image, r Rect) {
 	if r.W <= 0 || r.H <= 0 {
 		return
@@ -344,19 +314,40 @@ func drawMenuDebugRect(dst *ebiten.Image, r Rect) {
 	ebitenutil.DrawRect(dst, r.X+r.W-1, r.Y, 1, r.H, c)
 }
 
-func (g *Game) drawMenuDebug(screen *ebiten.Image) {
-	mx, my := g.cursorPos()
-	var st *uiState
+// activeKitState is the Mayhem UI state of the screen currently shown (the
+// F1 debug overlay outlines its registry), or nil.
+func (g *Game) activeKitState() *uiState {
 	switch g.screen {
 	case screenMainMenu:
-		st = &g.mainMenuUI
+		return &g.mainMenuUI
 	case screenOptions:
-		st = &g.optionsUI
-	case screenCustomGame:
-		if !g.customOnlineMode && !g.customNetworkOpen {
-			st = &g.customUI
+		return &g.optionsUI
+	case screenCustomGame, screenMultiplayerLobby:
+		if (g.customOnlineMode || g.customNetworkOpen) && g.onlineScreenKind() != onlineScreenLobby {
+			return &g.onlineUI
+		}
+		return &g.customUI
+	case screenCampaign:
+		return &g.campaignUI
+	case screenGunLibrary:
+		return &g.libraryUI
+	case screenCredits:
+		return &g.creditsUI
+	case screenPostGame, screenSeriesSummary:
+		return &g.resultsUI
+	case screenZombieSetup, screenZombieResults:
+		return &g.zombieUI
+	case screenGameplay:
+		if g.paused || g.guestMenuOpen {
+			return &g.pauseUI
 		}
 	}
+	return nil
+}
+
+func (g *Game) drawMenuDebug(screen *ebiten.Image) {
+	mx, my := g.cursorPos()
+	st := g.activeKitState()
 	hot := ""
 	if st != nil {
 		for _, it := range st.items {
@@ -364,5 +355,9 @@ func (g *Game) drawMenuDebug(screen *ebiten.Image) {
 		}
 		hot = st.hot
 	}
-	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("MENU DEBUG  mouse=%d,%d  hot=%s  pressed=%d  page=%d", mx, my, hot, g.menuPressed, g.customPage), 8, 8)
+	focus := ""
+	if st != nil {
+		focus = st.focus
+	}
+	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("MENU DEBUG  mouse=%d,%d  hot=%s  focus=%s  screen=%d", mx, my, hot, focus, g.screen), 8, 8)
 }

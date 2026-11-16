@@ -1,21 +1,12 @@
 package game
 
 import (
-	"image/color"
 	"strconv"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const (
-	extraCampaignHitMissionBase = 3000
-	extraCampaignHitStart       = 3100
-	extraCampaignHitPrevPage    = 3101
-	extraCampaignHitNextPage    = 3102
-	extraCampaignMissionCount   = 28
-	extraCampaignPageSize       = 12
+	extraCampaignMissionCount = 28
+	extraCampaignPageSize     = 12
 )
 
 var extraCampaignTitles = [extraCampaignMissionCount]string{
@@ -237,12 +228,6 @@ var extraCampaignMissions = [extraCampaignMissionCount]extraCampaignMission{
 	}},
 }
 
-func extraCampaignCardRect(index int) Rect {
-	col := index % 4
-	row := index / 4
-	return Rect{X: 28 + float64(col)*216, Y: 116 + float64(row)*132, W: 198, H: 116}
-}
-
 func extraCampaignPageCount() int {
 	return (extraCampaignMissionCount + extraCampaignPageSize - 1) / extraCampaignPageSize
 }
@@ -262,11 +247,6 @@ func extraCampaignPageRange(page int) (start, end int) {
 	return start, end
 }
 
-var (
-	extraCampaignPrevPageRect = Rect{X: 238, Y: 528, W: 122, H: 38}
-	extraCampaignNextPageRect = Rect{X: 376, Y: 528, W: 122, H: 38}
-)
-
 func (g *Game) unlockAllExtraCampaignLevelsCheat() {
 	for i := range g.extraCampaignLevels {
 		if g.extraCampaignLevels[i] == 0 {
@@ -274,143 +254,6 @@ func (g *Game) unlockAllExtraCampaignLevelsCheat() {
 		}
 	}
 	_ = g.saveProgress()
-}
-
-func (g *Game) updateExtraCampaignMenu() {
-	if g.allowCheats && inpututil.IsKeyJustPressed(ebiten.KeyF10) && g.campaignPhase == 1 {
-		g.unlockAllExtraCampaignLevelsCheat()
-		g.playSourceSFX("menu.wav", false)
-	}
-	if g.extraCampaignPage < 0 || g.extraCampaignPage >= extraCampaignPageCount() {
-		g.extraCampaignPage = 0
-	}
-	if g.campaignPhase == 1 {
-		if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) && g.extraCampaignPage > 0 {
-			g.extraCampaignPage--
-			g.playSourceSFX("menu.wav", false)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) && g.extraCampaignPage+1 < extraCampaignPageCount() {
-			g.extraCampaignPage++
-			g.playSourceSFX("menu.wav", false)
-		}
-	}
-	if g.campaignPhase != 1 {
-		g.updateCampaignPlayerCards()
-		g.updateCampaignNameInput()
-	}
-	if g.campaignPhase == 2 {
-		g.campaignDetailAlpha += .2
-		if g.campaignDetailAlpha >= 1 {
-			g.campaignDetailAlpha = 1
-			g.campaignPhase = 3
-		}
-	} else if g.campaignPhase == 4 {
-		g.campaignDetailAlpha -= .2
-		if g.campaignDetailAlpha <= 0 {
-			g.campaignDetailAlpha = 0
-			g.campaignPhase = 1
-		}
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		if g.campaignPhase == 1 {
-			g.beginFade(screenMainMenu, fadePurposeScreen)
-		} else if g.campaignPhase == 3 {
-			g.campaignPhase = 4
-			g.campaignNameFocus = 0
-		}
-		return
-	}
-
-	mx, my := g.cursorPos()
-	x, y := float64(mx), float64(my)
-	hit := campaignHitNone
-	if g.campaignPhase == 1 {
-		hit = campaignSetHitAt(x, y)
-		back := sourceMenuHitRect(campaignBackLocal, 27, 525.15, 1, 1)
-		if hit == campaignHitNone && back.Contains(x, y) {
-			hit = campaignHitBack
-		} else if hit == campaignHitNone && g.extraCampaignPage > 0 && extraCampaignPrevPageRect.Contains(x, y) {
-			hit = extraCampaignHitPrevPage
-		} else if hit == campaignHitNone && g.extraCampaignPage+1 < extraCampaignPageCount() && extraCampaignNextPageRect.Contains(x, y) {
-			hit = extraCampaignHitNextPage
-		} else if hit == campaignHitNone {
-			start, end := extraCampaignPageRange(g.extraCampaignPage)
-			for i := start; i < end; i++ {
-				if extraCampaignCardRect(i-start).Contains(x, y) && g.extraCampaignLevels[i] != 0 {
-					hit = extraCampaignHitMissionBase + i + 1
-					break
-				}
-			}
-		}
-	} else if g.campaignPhase == 3 {
-		if playerHit := g.campaignPlayerHitAt(x, y); playerHit != campaignHitNone {
-			hit = playerHit
-		}
-		back := sourceMenuHitRect(campaignBackLocal, 27, 525.15, 1, 1)
-		start := sourceMenuHitRect(campaignStartLocal, 469.1, 522.15, 1, 1)
-		if hit == campaignHitNone && back.Contains(x, y) {
-			hit = campaignHitBack
-		} else if hit == campaignHitNone && start.Contains(x, y) {
-			hit = extraCampaignHitStart
-		}
-	}
-
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.campaignPressed = hit
-		return
-	}
-	if !inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		return
-	}
-	pressed := g.campaignPressed
-	g.campaignPressed = campaignHitNone
-	if pressed == campaignHitNone || pressed != hit {
-		return
-	}
-	if g.activateCampaignPlayerHit(pressed) {
-		return
-	}
-	switch {
-	case pressed == campaignHitSetGM1:
-		g.campaignSetExtra = false
-		g.campaignSetGM2 = false
-		g.campaignLevel = 0
-		g.campaignPhase = 1
-		g.playSourceSFX("menu.wav", false)
-	case pressed == campaignHitSetGM2:
-		g.campaignSetExtra = false
-		g.campaignSetGM2 = true
-		g.campaignLevel = 0
-		g.playSourceSFX("menu.wav", false)
-	case pressed == campaignHitSetExtra:
-		// Already selected.
-	case pressed == campaignHitBack:
-		g.playSourceSFX("menu.wav", false)
-		if g.campaignPhase == 1 {
-			g.beginFade(screenMainMenu, fadePurposeScreen)
-		} else if g.campaignPhase == 3 {
-			g.campaignPhase = 4
-			g.campaignNameFocus = 0
-		}
-	case pressed == extraCampaignHitStart:
-		g.playSourceSFX("menu.wav", false)
-		g.startExtraCampaignMission()
-	case pressed == extraCampaignHitPrevPage && g.extraCampaignPage > 0:
-		g.extraCampaignPage--
-		g.playSourceSFX("menu.wav", false)
-	case pressed == extraCampaignHitNextPage && g.extraCampaignPage+1 < extraCampaignPageCount():
-		g.extraCampaignPage++
-		g.playSourceSFX("menu.wav", false)
-	case pressed > extraCampaignHitMissionBase && pressed <= extraCampaignHitMissionBase+len(extraCampaignMissions):
-		g.campaignLevel = pressed - extraCampaignHitMissionBase
-		g.campaignPhase = 2
-		g.campaignDetailAlpha = 0
-		g.campaignNameFocus = 0
-		for i := range g.campaignEditor {
-			g.campaignEditor[i] = 0
-		}
-		g.playSourceSFX("menu.wav", false)
-	}
 }
 
 // extraCampaignUnitCount is the number of non-player enemies to defeat.
@@ -463,94 +306,6 @@ func extraCampaignEnemyRespawns(spec extraCampaignMission) int {
 		}
 	}
 	return total
-}
-
-func (g *Game) drawExtraCampaignMenu(screen *ebiten.Image) {
-	drawSourceRaster(screen, g.assets.CampaignBase, 0, 0, 1, 1, 1)
-	drawSourceMenuText(screen, "CAMPAIGN", menuFontCondensed, 42.4, color.Black, 34, 27.75)
-	if g.campaignPhase == 1 {
-		g.drawCampaignSetTabs(screen)
-	}
-	drawSourceMenuText(screen, "EXTRA CAMPAIGN - "+strconv.Itoa(extraCampaignMissionCount)+" MISSIONS", menuFontCondensedExtraBold, 23, color.Black, 28, 80)
-	drawSourceMenuText(screen, "New enemies, arena hazards and changing match rules.", menuFontTwCen, 14, color.Black, 390, 86)
-	drawSourceRaster(screen, g.assets.CampaignBack, 27, 525.15, 1, 1, 1)
-	drawSourceMenuText(screen, "Back", menuFontCondensed, 26.5, color.Black, 74.05, 536.35)
-	if g.campaignPhase != 1 {
-		a := g.campaignDetailAlpha
-		if a > 0 {
-			g.drawCampaignPlayerCards(screen, a)
-			g.drawExtraCampaignMissionInfo(screen, a)
-			if g.campaignPhase == 3 {
-				drawSourceRaster(screen, g.assets.CampaignStartButton, 469.1, 522.15, 1, 1, a)
-				drawSourceMenuText(screen, "Start Mission", menuFontCondensedExtraBold, 30,
-					uiWithAlpha(uiTextLight, a), 580, 529) // B6: was black on dark red
-			}
-		}
-		return
-	}
-
-	start, end := extraCampaignPageRange(g.extraCampaignPage)
-	for i := start; i < end; i++ {
-		spec := extraCampaignMissions[i]
-		r := extraCampaignCardRect(i - start)
-		state := g.extraCampaignLevels[i]
-		fill := color.NRGBA{R: 0xb8, G: 0xb8, B: 0xb8, A: 0xff}
-		if state == 0 {
-			fill = color.NRGBA{R: 0x72, G: 0x72, B: 0x72, A: 0xff}
-		}
-		if g.campaignLevel == i+1 {
-			fill = color.NRGBA{R: 0xff, G: 0x99, B: 0x00, A: 0xff}
-		}
-		ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, fill)
-		drawSourceMenuText(screen, extraCampaignTitles[i], menuFontCondensedExtraBold, 16.5, color.Black, r.X+7, r.Y+7)
-		drawSourceMenuText(screen, sourceMapDisplayNames[spec.MapNumber], menuFontTwCen, 11.5, color.Black, r.X+7, r.Y+31)
-		drawSourceMenuText(screen, spec.Mode, menuFontCondensedExtraBold, 10.5, color.Black, r.X+7, r.Y+51)
-		returns := "ENEMY RETURNS  " + strconv.Itoa(extraCampaignEnemyRespawns(spec))
-		if units := extraCampaignUnitCount(spec); units > 0 {
-			returns += "   UNITS  " + strconv.Itoa(units)
-		}
-		drawSourceMenuText(screen, returns, menuFontCondensedExtraBold, 11, color.Black, r.X+7, r.Y+71)
-		drawSourceMenuText(screen, gm2CampaignStateLabel(state), menuFontTwCen, 11.5, color.Black, r.X+7, r.Y+94)
-		drawSourceMenuText(screen, "#"+itoaFast(i+1), menuFontCondensedExtraBold, 18, color.Black, r.X+r.W-32, r.Y+93)
-	}
-
-	if g.extraCampaignPage > 0 {
-		drawModifierButton(screen, extraCampaignPrevPageRect, "< PREVIOUS", false)
-	}
-	if g.extraCampaignPage+1 < extraCampaignPageCount() {
-		drawModifierButton(screen, extraCampaignNextPageRect, "NEXT >", false)
-	}
-	drawSourceMenuText(screen, "PAGE "+strconv.Itoa(g.extraCampaignPage+1)+" / "+strconv.Itoa(extraCampaignPageCount()), menuFontCondensedExtraBold, 13, color.Black, 514, 538)
-	drawSourceMenuText(screen, "CLICK A MISSION TO CUSTOMIZE", menuFontCondensedExtraBold, 15, color.Black, 650, 538)
-}
-
-func (g *Game) drawExtraCampaignMissionInfo(screen *ebiten.Image, alpha float64) {
-	if g.campaignLevel < 1 || g.campaignLevel > len(extraCampaignMissions) || alpha <= 0 {
-		return
-	}
-	spec := extraCampaignMissions[g.campaignLevel-1]
-	a := uint8(255 * alpha)
-	panel := color.NRGBA{R: 0x55, G: 0x55, B: 0x55, A: a}
-	white := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: a}
-	orange := color.NRGBA{R: 0xff, G: 0x99, B: 0x00, A: a}
-	ebitenutil.DrawRect(screen, 467.1, 100, 405, 400, panel)
-	drawSourceMenuText(screen, "MISSION "+strconv.Itoa(g.campaignLevel), menuFontCondensedExtraBold, 17, orange, 489, 122)
-	drawSourceMenuText(screen, extraCampaignTitles[g.campaignLevel-1], menuFontTwCen, 29, white, 489, 151)
-	drawSourceMenuText(screen, sourceMapDisplayNames[spec.MapNumber], menuFontCondensedExtraBold, 17, white, 489, 202)
-	drawSourceMenuText(screen, "YOUR LIVES: "+strconv.Itoa(spec.PlayerLives), menuFontCondensedExtraBold, 15, white, 489, 232)
-	drawSourceMenuText(screen, "ENEMY RETURNS: "+strconv.Itoa(extraCampaignEnemyRespawns(spec)), menuFontCondensedExtraBold, 15, white, 489, 255)
-	drawSourceMenuText(screen, "TYPE: "+spec.Mode, menuFontCondensedExtraBold, 14, orange, 489, 279)
-	rules := spec.RuleText
-	if rules == "" {
-		rules = "STANDARD ARENA RULES"
-	}
-	drawSourceMenuText(screen, "RULES: "+rules, menuFontCondensedExtraBold, 11.5, white, 489, 302)
-	drawSourceMenuText(screen, "OPPONENTS", menuFontCondensedExtraBold, 16, orange, 489, 327)
-	for i, line := range extraCampaignOpponentLines(spec) {
-		drawSourceMenuText(screen, line, menuFontCondensed, 13.5, white, 489, 351+float64(i)*19)
-	}
-	drawSourceMenuText(screen, spec.Briefing, menuFontTwCen, 13.5, white, 489, 414)
-	drawSourceMenuText(screen, "Customize character, handgun, perk and throwable on the left.", menuFontTwCen, 12.5, white, 489, 451)
 }
 
 func (g *Game) startExtraCampaignMission() {

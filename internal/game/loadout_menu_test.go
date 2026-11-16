@@ -108,7 +108,7 @@ func TestLoadoutCharacterWritesConfig(t *testing.T) {
 		if g.customLoadoutPart != part {
 			t.Fatalf("part %s not selected", parts[part])
 		}
-		choices, _ := g.loadoutCharacterChoices(1, part)
+		choices, _ := g.loadoutCharacterChoicesFor(g.customLoadoutBinding(1), part)
 		pick := choices[len(choices)-1]
 		customLocalClickItem(t, g, pick.id)
 		if got := fmt.Sprintf("%d", field()); !strings.HasSuffix(pick.id, "."+got) {
@@ -296,13 +296,13 @@ func TestLoadoutCodesStayInTheirSlot(t *testing.T) {
 	for slot := 0; slot < 4; slot++ {
 		var all []loadoutChoice
 		for part := range loadoutPartLabels() {
-			c, _ := g.loadoutCharacterChoices(slot, part)
+			c, _ := g.loadoutCharacterChoicesFor(g.customLoadoutBinding(slot), part)
 			all = append(all, c...)
 		}
-		all = append(all, g.loadoutWeaponChoices(slot)...)
-		all = append(all, g.loadoutPerkChoices(slot)...)
-		all = append(all, g.loadoutGearChoices(slot)...)
-		all = append(all, g.loadoutThrowableChoices(slot)...)
+		all = append(all, g.loadoutWeaponChoicesFor(g.customLoadoutBinding(slot))...)
+		all = append(all, g.loadoutPerkChoicesFor(g.customLoadoutBinding(slot))...)
+		all = append(all, g.loadoutGearChoicesFor(g.customLoadoutBinding(slot))...)
+		all = append(all, g.loadoutThrowableChoicesFor(g.customLoadoutBinding(slot))...)
 		for _, c := range all {
 			s, ok := customPlayerEditorHitSlot(c.code)
 			if !ok || s != slot {

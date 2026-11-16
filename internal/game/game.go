@@ -74,9 +74,7 @@ type Game struct {
 	customMapThumbCache            map[int]*ebiten.Image
 	customMapThumbPreloadCursor    int
 	customPlayers                  [4]CustomPlayerConfig
-	customCardY                    [4]float64
 	customEditor                   [4]int
-	customColorMask                [4]float64
 	customNameFocus                int
 	customLivesFocus               bool
 	customWarning                  int
@@ -137,17 +135,10 @@ type Game struct {
 	campaignMode         bool
 	campaignLevel        int
 	campaignShowUnlock   int
-	campaignSliderX      float64
-	campaignSliderVX     float64
 	campaignPhase        int
-	campaignDetailAlpha  float64
 	campaignLevels       [10]int
 	campaignGuns         [57]bool
-	campaignPressed      int
 	campaignPlayers      [2]CustomPlayerConfig
-	campaignCardY        [2]float64
-	campaignEditor       [2]int
-	campaignColorMask    [2]float64
 	campaignNameFocus    int
 	campaignDynamiteTime int
 
@@ -276,7 +267,6 @@ type Game struct {
 	powerSaveTick   int64
 
 	gunLibrarySelected          int
-	gunLibraryPressed           int
 	gunLibraryPage              int
 	gunLibraryCategory          int
 	gunLibraryThrowableSelected int

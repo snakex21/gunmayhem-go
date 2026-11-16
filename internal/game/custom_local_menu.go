@@ -97,7 +97,6 @@ func (g *Game) updateCustomLocalMenu() {
 	}
 	if g.customPage == customPagePlayers {
 		g.customMenuX = 0
-		g.updateCustomPlayerCards()
 		g.updateCustomNameInput()
 	}
 	g.updateCustomV2MapThumbPreload()
@@ -491,24 +490,14 @@ func (g *Game) buildCustomLocalPlayerCard(ctx *uiCtx, slot int) {
 	x := r.X + 12
 	w := r.W - 24
 	empty := cfg.Type == 0
-	if ctx.drawing() {
-		ctx.Card(r, "")
-		strip := uiInk500
-		if !empty {
-			strip = developedPlayerColorSwatch(cfg.Color)
-			strip.A = 0xff
-		}
-		uiFillRound(ctx.dst, Rect{X: r.X, Y: r.Y, W: r.W, H: 8}, 4, strip)
-		ctx.Badge(Rect{X: x, Y: r.Y + 16, W: 34, H: 24}, fmt.Sprintf("P%d", slot+1), uiInk900)
-		kind := "EMPTY"
-		switch cfg.Type {
-		case 1:
-			kind = "HUMAN"
-		case 2:
-			kind = "AI BOT"
-		}
-		uiText(ctx.dst, kind, true, uiSizeHint, uiTextMutedDk, r.X+r.W-12, r.Y+28, uiAlignRight)
+	kind := "EMPTY"
+	switch cfg.Type {
+	case 1:
+		kind = "HUMAN"
+	case 2:
+		kind = "AI BOT"
 	}
+	ctx.PlayerCard(r, slot, cfg.Color, empty, kind)
 
 	nameID := fmt.Sprintf("cust.p%d.name", slot)
 	focused := g.customNameFocus == slot+1

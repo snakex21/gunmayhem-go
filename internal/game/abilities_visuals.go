@@ -150,23 +150,6 @@ func drawAbilityIcon(dst *ebiten.Image, n int, cx, cy, s, alpha float64) {
 	}
 }
 
-// drawSetupAbilityThumb is one tile of the ABILITY / GEAR editor and picker.
-func drawSetupAbilityThumb(dst *ebiten.Image, n int, r Rect, alpha float64) {
-	if r.W <= 0 || r.H <= 0 {
-		return
-	}
-	iconS := math.Min(10, math.Min(r.W, r.H-14)/2.6)
-	drawAbilityIcon(dst, n, r.X+r.W/2, r.Y+4+iconS+2, iconS, alpha)
-	name := abilityName(n)
-	size := 9.5
-	for size > 6.5 && measureMenuText(menuFontCondensedExtraBold, size, name) > r.W-4 {
-		size -= 0.5
-	}
-	w := measureMenuText(menuFontCondensedExtraBold, size, name)
-	drawSourceMenuText(dst, name, menuFontCondensedExtraBold, size,
-		color.NRGBA{A: uint8(255 * alpha)}, r.X+(r.W-w)/2, r.Y+r.H-size-5)
-}
-
 // developedAbilitySelectionItems lays out the ABILITY / GEAR editor page
 // (Symbol835 local coordinates) like the throwable page: three columns that
 // end above BACK (y=759.45). Number is the menu index + 1.
@@ -188,32 +171,6 @@ func developedAbilitySelectionItems() []customSelectionItem {
 		}})
 	}
 	return out
-}
-
-// setupAbilityButtonX is the ABILITY edit button on the collapsed player card,
-// right of the PERK button (Symbol806 at the PERK row's scale, 80 px wide).
-const setupAbilityButtonX = 103.0
-
-// drawSetupAbilityDescription explains the selected ability under the grid.
-func drawSetupAbilityDescription(dst *ebiten.Image, ability int, localY, alpha float64) {
-	text := abilityName(ability) + ": " + abilityDescription(ability)
-	lines := wrapTextToWidth(text, 186, func(s string) float64 { return measureMenuText(menuFontCondensed, 9.5, s) })
-	for i, line := range lines {
-		if i >= 3 {
-			break
-		}
-		drawSourceMenuText(dst, line, menuFontCondensed, 9.5,
-			color.NRGBA{R: 0xe0, G: 0xe0, B: 0xe0, A: uint8(255 * alpha)}, 7, localY+718+float64(i)*12)
-	}
-}
-
-// drawSetupCardAbilitySummary shows the chosen ability next to the GRENADE
-// button on the collapsed player card.
-func drawSetupCardAbilitySummary(dst *ebiten.Image, ability int, localY, alpha float64) {
-	drawAbilityIcon(dst, ability, 112, localY+260, 8, alpha)
-	name := abilityShortName(ability)
-	drawSourceMenuText(dst, name, menuFontCondensedExtraBold, 9,
-		color.NRGBA{R: 0x33, G: 0x33, B: 0x33, A: uint8(255 * alpha)}, 124, localY+254)
 }
 
 // ---------------------------------------------------------------------------

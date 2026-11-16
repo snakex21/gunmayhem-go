@@ -1,20 +1,5 @@
 package game
 
-const (
-	campaignHitNone = iota
-	campaignHitBack
-	campaignHitStart
-	campaignHitUnlockContinue
-	campaignHitPanelBase = 100
-)
-
-var (
-	campaignPanelLocal    = Rect{X: 0, Y: -0.013818359375, W: 310.0006103515625, H: 184.991455078125} // Symbol95
-	campaignBackLocal     = Rect{X: 0, Y: 0, W: 135.05, H: 53}                                        // Symbol792
-	campaignStartLocal    = Rect{X: 0, Y: 0, W: 398.1, H: 53}                                         // Symbol902
-	campaignContinueLocal = Rect{X: 0, Y: 0, W: 148.5, H: 24}                                         // Symbol806
-)
-
 func (g *Game) campaignUsesOriginalGM1Rules() bool {
 	return !g.campaignSetGM2 && !g.campaignSetExtra
 }
@@ -22,8 +7,6 @@ func (g *Game) campaignUsesOriginalGM1Rules() bool {
 func (g *Game) enterCampaignMenu() {
 	g.campaignMode = false
 	g.campaignPhase = 1
-	g.campaignDetailAlpha = 0
-	g.campaignPressed = campaignHitNone
 	// Both Flash campaigns expose missions 1 and 2 from a fresh save and then
 	// propagate completion forward. Keep the two progress arrays independent.
 	if g.campaignSetExtra {
@@ -46,27 +29,6 @@ func (g *Game) enterCampaignMenu() {
 				g.campaignLevels[i+1] = 1
 			}
 		}
-	}
-	if g.campaignSliderX > 0 {
-		g.campaignSliderX = 0
-	}
-	if g.campaignSliderX < -857 {
-		g.campaignSliderX = -857
-	}
-}
-
-func campaignPanelPlacements() [10]Rect {
-	return [10]Rect{
-		{X: 28, Y: 100, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 375, Y: 100, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 722, Y: 100, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 1069, Y: 100, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 1416, Y: 100, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 28, Y: 316.05, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 375, Y: 316.05, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 722, Y: 316.05, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 1069, Y: 316.05, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
-		{X: 1416, Y: 316.05, W: campaignPanelLocal.W, H: campaignPanelLocal.H},
 	}
 }
 

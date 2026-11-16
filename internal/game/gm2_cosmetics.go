@@ -3,8 +3,6 @@ package game
 import (
 	"image/color"
 	"sync"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 const (
@@ -325,9 +323,4 @@ func developedCustomSelectionItems(editor int) []customSelectionItem {
 		}
 	}
 	return sourceCustomSelectionItems()[editor]
-}
-
-func drawGM2FaceGridLabel(dst *ebiten.Image, localY, alpha float64) {
-	drawSourceMenuText(dst, "GM1 + GM2 FACES", menuFontCondensedExtraBold, 15,
-		color.NRGBA{A: uint8(255 * alpha)}, 36, localY+420)
 }

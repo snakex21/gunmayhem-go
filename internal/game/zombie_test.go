@@ -1079,22 +1079,11 @@ func TestZombieMatchIgnoresSoloWinRule(t *testing.T) {
 
 // --- menus ---------------------------------------------------------------------------------------
 
-func zombieKitIDsUnique(t *testing.T, st *uiState, name string) {
-	t.Helper()
-	seen := map[string]bool{}
-	for _, it := range st.items {
-		if seen[it.id] {
-			t.Fatalf("%s: duplicate kit id %q", name, it.id)
-		}
-		seen[it.id] = true
-	}
-}
-
 func TestZombieSetupMenu(t *testing.T) {
 	g := New()
 	g.screen = screenZombieSetup
 	g.runZombieSetupUpdate(uiInput{})
-	zombieKitIDsUnique(t, &g.zombieUI, "setup")
+	assertKitIDsUnique(t, &g.zombieUI, "setup")
 	for _, id := range []string{"zs.mode", "zs.arena.0", "zs.arena.1", "zs.slot.1", "zs.slot.3", "zs.start", "zs.back", "zs.online"} {
 		if _, ok := g.zombieUI.item(id); !ok {
 			t.Fatalf("setup item %q missing", id)
@@ -1154,7 +1143,7 @@ func TestZombieResultsMenu(t *testing.T) {
 	g.zombie.hud.Wave = 7
 	g.screen = screenZombieResults
 	g.runZombieResultsUpdate(uiInput{})
-	zombieKitIDsUnique(t, &g.zombieUI, "results")
+	assertKitIDsUnique(t, &g.zombieUI, "results")
 	if _, ok := g.zombieUI.item("zr.again"); !ok {
 		t.Fatal("PLAY AGAIN missing")
 	}
@@ -1179,7 +1168,7 @@ func TestZombieShopPanelKitAndKeys(t *testing.T) {
 	zp.Points = 5000
 	r := zombieShopRects(2)[0]
 	g.runZombieShopPanel(p, PlayerInputState{}, false, uiInput{}, r)
-	zombieKitIDsUnique(t, &m.shop[0].st, "shop")
+	assertKitIDsUnique(t, &m.shop[0].st, "shop")
 	if _, ok := m.shop[0].st.item("zs.p1.ready"); !ok {
 		t.Fatal("READY missing")
 	}
@@ -1239,7 +1228,7 @@ func TestZombieOnlineLobbyShowsZombieSettings(t *testing.T) {
 	ctx := g.customUI.begin(uiPassUpdate, nil, uiInput{})
 	g.buildZombieOnlineSettings(ctx)
 	ctx.end()
-	zombieKitIDsUnique(t, &g.customUI, "online settings")
+	assertKitIDsUnique(t, &g.customUI, "online settings")
 	if _, ok := g.customUI.item("zo.mode"); !ok {
 		t.Fatal("online zombie mode control missing")
 	}

@@ -115,7 +115,6 @@ func (g *Game) selectCampaignSet(set int) {
 	g.campaignSetExtra = set == campaignSetExtra
 	g.campaignLevel = 0
 	g.campaignPhase = 1
-	g.campaignSliderVX = 0
 	if set == campaignSetExtra {
 		g.extraCampaignPage = 0
 	}
@@ -134,16 +133,10 @@ func (g *Game) openCampaignMission(level int) {
 	case campaignSetExtra:
 		g.campaignLevel = level
 		g.campaignPhase = 2
-		g.campaignDetailAlpha = 0
 		g.campaignNameFocus = 0
-		for i := range g.campaignEditor {
-			g.campaignEditor[i] = 0
-		}
 	default:
 		g.campaignLevel = level
 		g.campaignPhase = 2
-		g.campaignDetailAlpha = 0
-		g.campaignSliderVX = 0
 	}
 	g.playSourceSFX("menu.wav", false)
 	if set == campaignSetExtra {
@@ -173,7 +166,6 @@ func (g *Game) closeCampaignBriefing() {
 	g.closeCampaignLoadout()
 	g.campaignLoadoutReturn = 0
 	g.campaignPhase = 1
-	g.campaignDetailAlpha = 0
 	g.campaignNameFocus = 0
 }
 
@@ -205,6 +197,7 @@ type campaignMissionInfo struct {
 	rules     string
 	opponents []string
 	briefing  string
+	returns   string // EXTRA: enemy respawns and non-player units
 	boss      bool
 	solo      bool
 	rewards   []int
@@ -250,6 +243,10 @@ func (g *Game) campaignMission(set, level int) campaignMissionInfo {
 			rules:     spec.RuleText,
 			opponents: extraCampaignOpponentLines(spec),
 			briefing:  spec.Briefing,
+			returns:   fmt.Sprint(extraCampaignEnemyRespawns(spec)),
+		}
+		if units := extraCampaignUnitCount(spec); units > 0 {
+			info.returns += fmt.Sprintf("  /  %d UNITS", units)
 		}
 		for _, e := range spec.Enemies {
 			info.boss = info.boss || e.Boss != nil
@@ -363,9 +360,9 @@ func (g *Game) buildCampaign(ctx *uiCtx) {
 	if ctx.pass == uiPassUpdate {
 		switch g.campaignPhase {
 		case 2:
-			g.campaignPhase, g.campaignDetailAlpha = 3, 1
+			g.campaignPhase = 3
 		case 4:
-			g.campaignPhase, g.campaignDetailAlpha = 1, 0
+			g.campaignPhase = 1
 		}
 	}
 	ctx.Page(0.9)
@@ -548,11 +545,7 @@ func (g *Game) drawCampaignMissionTile(dst *ebiten.Image, r Rect, set, level int
 	if r.Y+r.H-y > 30 {
 		uiText(dst, uiFit(strings.ToUpper(sub), false, uiSizeHint, r.W-8), false, uiSizeHint, uiTextMutedDk, r.X+4, y, uiAlignLeft)
 	}
-	fill, text := campaignStateColor(state)
-	label := campaignStateLabel(state)
-	chip := Rect{X: r.X + 4, Y: r.Y + r.H - 20, W: uiMeasure(true, uiSizeHint, label) + 14, H: 18}
-	uiFillRound(dst, chip, 3, fill)
-	uiTextIn(dst, label, true, uiSizeHint, text, chip, uiAlignCenter, 2)
+	drawCampaignStateChip(dst, r.X+4, r.Y+r.H-20, 18, state, false)
 }
 
 // drawCampaignMissionArt fills r with the GM1 level thumbnail (Symbol 52...)
@@ -618,11 +611,7 @@ func (g *Game) drawCampaignListInfo(ctx *uiCtx, set, level int) {
 	g.drawCampaignMissionArt(ctx.dst, art, set, level, info.mapID)
 	y := art.Y + art.H + 22
 	uiText(ctx.dst, fmt.Sprintf("MISSION %d", level), true, uiSizeHint, uiOrange, r.X+14, y, uiAlignLeft)
-	fill, text := campaignStateColor(state)
-	label := campaignStateLabel(state)
-	chip := Rect{X: r.X + r.W - 14 - uiMeasure(true, uiSizeHint, label) - 14, Y: y - 10, W: uiMeasure(true, uiSizeHint, label) + 14, H: 20}
-	uiFillRound(ctx.dst, chip, 3, fill)
-	uiTextIn(ctx.dst, label, true, uiSizeHint, text, chip, uiAlignCenter, 2)
+	drawCampaignStateChip(ctx.dst, r.X+r.W-14, y-10, 20, state, true)
 	y += 24
 	uiText(ctx.dst, uiFit(info.title, true, uiSizeSection, r.W-28), true, uiSizeSection, uiTextLight, r.X+14, y, uiAlignLeft)
 	y += 24
@@ -719,21 +708,11 @@ func (g *Game) buildCampaignPlayerCard(ctx *uiCtx, slot int) {
 	r := campaignPlayerCardRect(slot)
 	x, w := r.X+12, r.W-24
 	empty := cfg.Type == 0
-	if ctx.drawing() {
-		ctx.Card(r, "")
-		strip := uiInk500
-		if !empty {
-			strip = developedPlayerColorSwatch(cfg.Color)
-			strip.A = 0xff
-		}
-		uiFillRound(ctx.dst, Rect{X: r.X, Y: r.Y, W: r.W, H: 8}, 4, strip)
-		ctx.Badge(Rect{X: x, Y: r.Y + 16, W: 34, H: 24}, fmt.Sprintf("P%d", slot+1), uiInk900)
-		kind := "HUMAN"
-		if empty {
-			kind = "EMPTY"
-		}
-		uiText(ctx.dst, kind, true, uiSizeHint, uiTextMutedDk, r.X+r.W-12, r.Y+28, uiAlignRight)
+	kind := "HUMAN"
+	if empty {
+		kind = "EMPTY"
 	}
+	ctx.PlayerCard(r, slot, cfg.Color, empty, kind)
 	if empty {
 		allowed := g.campaignCoopAllowed()
 		if ctx.drawing() {
@@ -787,11 +766,7 @@ func (g *Game) drawCampaignBriefingCard(ctx *uiCtx, set, level int, info campaig
 	uiFillRound(ctx.dst, art, 4, uiInk900)
 	g.drawCampaignMissionArt(ctx.dst, art, set, level, info.mapID)
 	state := g.campaignMissionState(set, level)
-	fill, text := campaignStateColor(state)
-	label := campaignStateLabel(state)
-	chip := Rect{X: art.X + art.W - uiMeasure(true, uiSizeHint, label) - 22, Y: art.Y + 8, W: uiMeasure(true, uiSizeHint, label) + 14, H: 20}
-	uiFillRound(ctx.dst, chip, 3, fill)
-	uiTextIn(ctx.dst, label, true, uiSizeHint, text, chip, uiAlignCenter, 2)
+	drawCampaignStateChip(ctx.dst, art.X+art.W-8, art.Y+8, 20, state, true)
 
 	x, w := r.X+16, r.W-32
 	y := art.Y + art.H + 22
@@ -800,6 +775,9 @@ func (g *Game) drawCampaignBriefingCard(ctx *uiCtx, set, level int, info campaig
 	rows := [][2]string{{"MODE", info.mode}, {"YOUR LIVES", info.lives}, {"PICKUPS", info.pickups}}
 	if info.rules != "" {
 		rows = append(rows, [2]string{"RULES", info.rules})
+	}
+	if info.returns != "" {
+		rows = append(rows, [2]string{"ENEMY RETURNS", info.returns})
 	}
 	for _, row := range rows {
 		uiText(ctx.dst, row[0], true, uiSizeHint, uiTextMutedDk, x, y, uiAlignLeft)
@@ -873,9 +851,6 @@ func (g *Game) closeCampaignLoadout() {
 	}
 	g.campaignLoadoutSlot = 0
 	g.campaignNameFocus = 0
-	for i := range g.campaignEditor {
-		g.campaignEditor[i] = 0
-	}
 	g.customLoadoutFocusPending = false
 }
 
@@ -1018,4 +993,18 @@ func (g *Game) preloadCampaignMapThumbs() {
 		g.ensureOnlineMapThumb(id)
 		return
 	}
+}
+
+// drawCampaignStateChip draws the LOCKED / AVAILABLE / COMPLETED chip with its
+// left edge (or right edge when alignRight) at x.
+func drawCampaignStateChip(dst *ebiten.Image, x, y, h float64, state int, alignRight bool) {
+	fill, text := campaignStateColor(state)
+	label := campaignStateLabel(state)
+	w := uiMeasure(true, uiSizeHint, label) + 14
+	if alignRight {
+		x -= w
+	}
+	chip := Rect{X: x, Y: y, W: w, H: h}
+	uiFillRound(dst, chip, 3, fill)
+	uiTextIn(dst, label, true, uiSizeHint, text, chip, uiAlignCenter, 2)
 }

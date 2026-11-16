@@ -8,22 +8,16 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+// pauseHitNone: the old Flash pause buttons are gone (pause_ui.go), but
+// netSnapshot.PausePressed stays on the wire (protocol 26), always this value.
+const pauseHitNone = 0
+
 type fadePurpose int
 
 const (
 	fadePurposeScreen fadePurpose = iota
 	fadePurposeEndGame
 )
-
-const (
-	pauseHitNone = iota
-	pauseHitResume
-	pauseHitExit
-)
-
-// Symbol630 button hit shape, decoded from the XFL hexadecimal edge values:
-// #BAE.FC / 20 = 149.5498px, #29D.F9 / 20 = 33.4980px.
-var pauseButtonLocal = Rect{X: 0, Y: 0, W: 149.5498, H: 33.4980}
 
 func (g *Game) beginFade(target gameScreen, purpose fadePurpose) {
 	if g.fadeActive {
@@ -167,17 +161,6 @@ func (g *Game) openPause() {
 	g.pausePressed = pauseHitNone
 	g.pauseOptions = false
 	g.pauseUI.reset()
-}
-
-func pauseHitAt(x, y float64) int {
-	// Symbol633: btn1 Resume Game, btn2 exit game.
-	if sourceMenuHitRect(pauseButtonLocal, 373.1, 253.1, 1, 1.35821533203125).Contains(x, y) {
-		return pauseHitResume
-	}
-	if sourceMenuHitRect(pauseButtonLocal, 373.1, 313.6, 1, 0.6119384765625).Contains(x, y) {
-		return pauseHitExit
-	}
-	return pauseHitNone
 }
 
 // updateGameplayInteractionInput must run before simulation. GAMEPAUSED halts
@@ -374,6 +357,9 @@ func (g *Game) drawGameplayInteractions(screen *ebiten.Image) {
 	// Pause menu, guest menu or the host-pause banner (pause_ui.go), screen-
 	// fixed like game_pause.
 	g.drawPauseOverlay(screen)
+	if g.menuDebug && (g.paused || g.guestMenuOpen) {
+		g.drawMenuDebug(screen)
+	}
 }
 
 var sourceFadeX = [...]float64{

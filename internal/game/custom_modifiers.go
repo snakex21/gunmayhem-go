@@ -1,11 +1,7 @@
 package game
 
 import (
-	"image/color"
 	"math/rand"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 const (
@@ -486,14 +482,4 @@ func (g *Game) customCrateInterval() int {
 		return 100
 	}
 	return 400
-}
-
-func drawModifierButton(screen *ebiten.Image, r Rect, label string, selected bool) {
-	fill := color.NRGBA{R: 0x2e, G: 0x31, B: 0x36, A: 0xff}
-	if selected {
-		fill = color.NRGBA{R: 0xff, G: 0x66, B: 0x00, A: 0xff}
-	}
-	ebitenutil.DrawRect(screen, r.X, r.Y, r.W, r.H, color.NRGBA{R: 0x55, G: 0x58, B: 0x60, A: 0xff})
-	ebitenutil.DrawRect(screen, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
-	drawSourceMenuText(screen, label, menuFontCondensedExtraBold, 12.5, color.White, r.X+8, r.Y+10)
 }

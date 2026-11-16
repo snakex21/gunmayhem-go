@@ -6,28 +6,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type gunLibraryButton struct {
-	Gun   int
-	X, Y  float64
-	Scale float64
-	W, H  float64
-}
-
-func (b gunLibraryButton) contains(x, y float64) bool {
-	if b.W > 0 && b.H > 0 {
-		return x >= b.X-b.W/2 && x <= b.X+b.W/2 && y >= b.Y-b.H/2 && y <= b.Y+b.H/2
-	}
-	// Constructor forces the clip to _rotation=-20 after extracting gunnumber.
-	// Invert that runtime transform and test the exact Symbol913 frame square.
-	dx := x - b.X
-	dy := y - b.Y
-	rad := 20 * math.Pi / 180 // inverse of -20 degrees
-	c, s := math.Cos(rad), math.Sin(rad)
-	lx := (dx*c - dy*s) / b.Scale
-	ly := (dx*s + dy*c) / b.Scale
-	return lx >= -20 && lx <= 20 && ly >= -20 && ly <= 20
-}
-
 func isGunLibraryGunNumber(gun int) bool {
 	if (gun >= 1 && gun <= 6) || (gun >= 10 && gun <= 86) {
 		return true
@@ -69,11 +47,6 @@ func drawGunLibraryCleanThumb(screen *ebiten.Image, raster *SourceRaster, x, y, 
 	op.GeoM.Rotate(rotation * math.Pi / 180)
 	op.GeoM.Translate(x, y)
 	screen.DrawImage(raster.Image, op)
-}
-
-func (g *Game) drawGunLibraryInteractions(screen *ebiten.Image) {
-	g.assets.EnsureGunLibrary()
-	g.drawDevelopedGunLibrary(screen)
 }
 
 func (g *Game) gunLibraryRaster(number int) *SourceRaster {

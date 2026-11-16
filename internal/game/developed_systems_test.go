@@ -1,6 +1,9 @@
 package game
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestPortalGunAlternatesPortalColours(t *testing.T) {
 	p := &Player{ID: 1, Active: true, AI: true, AIShoot: true, Facing: 1, Team: 1, MiniMulti: 1, PlayerScale: .8, PortalNextColor: PortalBlue}
@@ -248,22 +251,6 @@ func TestOrganizedGunLibraryIncludesWholeCatalogueAndNewSpecials(t *testing.T) {
 	}
 }
 
-func TestGunLibraryThrowableTabHasClickableCards(t *testing.T) {
-	throwableTab := len(organizedGunLibraryTabs) - 1
-	if !organizedGunLibraryTabs[throwableTab].throwables {
-		t.Fatal("last gun library tab is not THROWABLES")
-	}
-	r := organizedThrowableLibraryCardRect(ThrowableStielhand)
-	kind, ok := organizedGunLibraryThrowableAt(r.X+r.W/2, r.Y+r.H/2)
-	if !ok || kind != ThrowableStielhand {
-		t.Fatalf("throwable card hit kind=%d ok=%v", kind, ok)
-	}
-	g := &Game{gunLibraryCategory: throwableTab}
-	if !g.organizedGunLibraryThrowableTab() {
-		t.Fatal("throwable tab not recognized as throwable library")
-	}
-}
-
 func TestGeneratedThrowableSpritesHaveTransparentVisibleArtwork(t *testing.T) {
 	files := []string{"mk2.png", "f1.png", "m24.png", "rgd5.png", "molotov.png"}
 	for _, filename := range files {
@@ -279,5 +266,23 @@ func TestGeneratedThrowableSpritesHaveTransparentVisibleArtwork(t *testing.T) {
 		if cornerAlpha != 0 {
 			t.Fatalf("generated throwable %s does not have a transparent corner", filename)
 		}
+	}
+}
+
+func TestGunLibraryThrowableTabHasClickableCards(t *testing.T) {
+	throwableTab := len(organizedGunLibraryTabs) - 1
+	if !organizedGunLibraryTabs[throwableTab].throwables || throwableTab != gunLibraryThrowableCategory {
+		t.Fatal("last gun library tab is not THROWABLES")
+	}
+	g := New()
+	g.screen = screenGunLibrary
+	g.setGunLibraryView(gunLibraryViewThrowables)
+	g.runGunLibraryUpdate(uiInput{X: -10, Y: -10})
+	it, ok := g.libraryUI.item(fmt.Sprintf("lib.throw.%d", ThrowableStielhand))
+	if !ok || it.disabled {
+		t.Fatalf("throwable card missing or disabled: ok=%v", ok)
+	}
+	if !g.organizedGunLibraryThrowableTab() {
+		t.Fatal("throwable tab not recognized as throwable library")
 	}
 }

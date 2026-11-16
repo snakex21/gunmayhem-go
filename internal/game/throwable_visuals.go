@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -94,29 +93,6 @@ func loadGeneratedThrowableImage(filename string) *ebiten.Image {
 	trimmed := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
 	draw.Draw(trimmed, trimmed.Bounds(), src, bounds.Min, draw.Src)
 	return ebiten.NewImageFromImage(trimmed)
-}
-
-func (g *Game) drawThrowableSetupChoice(dst *ebiten.Image, kind int, r Rect, selected bool) {
-	if dst == nil || r.W <= 0 || r.H <= 0 || kind < 0 || kind >= throwableTypeCount {
-		return
-	}
-	border := color.NRGBA{R: 0xa7, G: 0xa7, B: 0xa7, A: 0xff}
-	fill := color.NRGBA{R: 0xee, G: 0xee, B: 0xee, A: 0xff}
-	if selected {
-		border = color.NRGBA{R: 0xff, G: 0x91, B: 0x00, A: 0xff}
-		fill = color.NRGBA{R: 0xff, G: 0xdd, B: 0xa8, A: 0xff}
-	}
-	ebitenutil.DrawRect(dst, r.X, r.Y, r.W, r.H, border)
-	ebitenutil.DrawRect(dst, r.X+2, r.Y+2, r.W-4, r.H-4, fill)
-	// Reserve a dedicated strip at the bottom for the throwable name. Keeping
-	// the sprite out of that strip prevents long names from being printed over
-	// the artwork, especially on the tall F-1/RGD-5/Molotov sprites.
-	innerH := r.H - 27
-	if innerH < 10 {
-		innerH = r.H - 6
-	}
-	inner := Rect{X: r.X + 4, Y: r.Y + 4, W: r.W - 8, H: innerH}
-	g.drawThrowableArt(dst, kind, inner)
 }
 
 // drawThrowableArt fits the throwable's sprite (the original dynamite or the

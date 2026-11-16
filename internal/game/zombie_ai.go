@@ -52,7 +52,6 @@ type zombieNavState struct {
 	hasLink   bool
 	upPrev    bool
 	jumped    bool
-	repath    int
 	lastPlat  int
 	airFrames int
 }

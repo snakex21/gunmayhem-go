@@ -1,23 +1,9 @@
 package game
 
-import "testing"
-
-func TestGM2WeaponLibraryExposesAllTwentyAdditions(t *testing.T) {
-	g := &Game{}
-	for i := range g.campaignGuns {
-		g.campaignGuns[i] = true
-	}
-	for n := 67; n <= 86; n++ {
-		if !isGunLibraryGunNumber(n) {
-			t.Fatalf("GM2 weapon %d is not accepted by Gun Library", n)
-		}
-		b, page := organizedLibraryButton(t, n)
-		g.gunLibraryPage = page
-		if hit := g.organizedGunLibraryHitAt(b.X, b.Y); hit != n {
-			t.Fatalf("GM2 weapon card %d hit=%d", n, hit)
-		}
-	}
-}
+import (
+	"fmt"
+	"testing"
+)
 
 func TestCombinedGunLibraryExposesWholePlayableCatalogue(t *testing.T) {
 	seen := map[int]bool{}
@@ -45,43 +31,6 @@ func TestCombinedGunLibraryExposesWholePlayableCatalogue(t *testing.T) {
 	}
 }
 
-func TestCustomGunLibraryPagesExposeEveryAvailableDefinedWeapon(t *testing.T) {
-	want := availableCustomWeaponNumbers()
-	if len(want) != 147 {
-		t.Fatalf("available custom weapon count=%d want147", len(want))
-	}
-	g := &Game{}
-	for i := range g.campaignGuns {
-		g.campaignGuns[i] = true
-	}
-	seen := map[int]bool{}
-	pages := organizedGunLibraryPageCount(0)
-	for page := 0; page < pages; page++ {
-		buttons := organizedGunLibraryButtons(0, page)
-		if len(buttons) == 0 || len(buttons) > organizedGunLibraryPageSize {
-			t.Fatalf("page %d card count=%d", page, len(buttons))
-		}
-		g.gunLibraryPage = page
-		for _, b := range buttons {
-			if seen[b.Gun] {
-				t.Fatalf("duplicate weapon card %d", b.Gun)
-			}
-			seen[b.Gun] = true
-			if !isGunLibraryGunNumber(b.Gun) {
-				t.Fatalf("weapon %d is rejected by Gun Library", b.Gun)
-			}
-			if hit := g.organizedGunLibraryHitAt(b.X, b.Y); hit != b.Gun {
-				t.Fatalf("page %d weapon %d hit=%d", page, b.Gun, hit)
-			}
-		}
-	}
-	for _, number := range want {
-		if !seen[number] {
-			t.Fatalf("available custom weapon %d has no library card", number)
-		}
-	}
-}
-
 func TestGM2FaceGridUsesAvailableEditorSpace(t *testing.T) {
 	items := gm2FaceSelectionItems()
 	if len(items) != maxDevelopedEyeValue() {
@@ -98,36 +47,6 @@ func TestGM2FaceGridUsesAvailableEditorSpace(t *testing.T) {
 		if x < 0 || x+item.Rect.W > 200 || y < 45 || y+item.Rect.H > 320 {
 			t.Fatalf("GM2 face %d outside editor area: x=%.1f y=%.1f w=%.1f h=%.1f", item.Number, x, y, item.Rect.W, item.Rect.H)
 		}
-	}
-}
-
-func TestGM2CampaignExposesSixteenMissions(t *testing.T) {
-	for i := 0; i < 16; i++ {
-		if gm2CampaignTitles[i] == "" {
-			t.Fatalf("GM2 mission %d has no visible title", i+1)
-		}
-		r := gm2CampaignCardRect(i)
-		if r.W <= 0 || r.H <= 0 {
-			t.Fatalf("GM2 mission %d has no visible card", i+1)
-		}
-		if gm2CampaignMissions[i].MapNumber < 1 || gm2CampaignMissions[i].MapNumber > 21 {
-			t.Fatalf("GM2 mission %d bad map=%d", i+1, gm2CampaignMissions[i].MapNumber)
-		}
-	}
-}
-
-func TestGM2MissionSelectionOpensCharacterSetup(t *testing.T) {
-	g := New()
-	g.screen = screenCampaign
-	g.campaignSetGM2 = true
-	g.openGM2CampaignMissionSetup(2)
-	if g.campaignLevel != 2 || g.campaignPhase != 2 || g.campaignDetailAlpha != 0 {
-		t.Fatalf("GM2 mission did not enter character setup: level=%d phase=%d alpha=%v", g.campaignLevel, g.campaignPhase, g.campaignDetailAlpha)
-	}
-	cx, cy := campaignCardX(0), g.campaignCardY[0]
-	hit := g.campaignPlayerHitAt(cx+30, cy+170)
-	if hit == campaignHitNone {
-		t.Fatal("GM2 character card exposes no editable controls")
 	}
 }
 
@@ -227,5 +146,96 @@ func TestGM2CampaignProgressStaysSeparateFromGM1(t *testing.T) {
 	}
 	if g.campaignLevels != gm1 {
 		t.Fatalf("GM2 completion changed GM1 progress: got=%v want=%v", g.campaignLevels, gm1)
+	}
+}
+
+func TestGM2WeaponLibraryExposesAllTwentyAdditions(t *testing.T) {
+	g := New()
+	for i := range g.campaignGuns {
+		g.campaignGuns[i] = true
+	}
+	for n := 67; n <= 86; n++ {
+		if !isGunLibraryGunNumber(n) {
+			t.Fatalf("GM2 weapon %d is not accepted by Gun Library", n)
+		}
+		if it := libraryShowWeapon(t, g, n); it.disabled {
+			t.Fatalf("GM2 weapon tile %d is disabled", n)
+		}
+		g.selectGunLibraryWeapon(n)
+		if g.gunLibrarySelected != n {
+			t.Fatalf("GM2 weapon %d not selectable", n)
+		}
+	}
+}
+
+func TestCustomGunLibraryPagesExposeEveryAvailableDefinedWeapon(t *testing.T) {
+	want := availableCustomWeaponNumbers()
+	if len(want) != 147 {
+		t.Fatalf("available custom weapon count=%d want147", len(want))
+	}
+	g := New()
+	g.screen = screenGunLibrary
+	for i := range g.campaignGuns {
+		g.campaignGuns[i] = true
+	}
+	seen := map[int]bool{}
+	pages := organizedGunLibraryPageCount(0)
+	for page := 0; page < pages; page++ {
+		g.gunLibraryPage = page
+		weapons := g.gunLibraryPageWeapons()
+		if len(weapons) == 0 || len(weapons) > organizedGunLibraryPageSize {
+			t.Fatalf("page %d card count=%d", page, len(weapons))
+		}
+		g.runGunLibraryUpdate(uiInput{X: -10, Y: -10})
+		for _, n := range weapons {
+			if seen[n] {
+				t.Fatalf("duplicate weapon card %d", n)
+			}
+			seen[n] = true
+			if !isGunLibraryGunNumber(n) {
+				t.Fatalf("weapon %d is rejected by Gun Library", n)
+			}
+			if it, ok := g.libraryUI.item(fmt.Sprintf("lib.gun.%d", n)); !ok || it.disabled {
+				t.Fatalf("page %d weapon %d tile ok=%v disabled=%v", page, n, ok, it.disabled)
+			}
+		}
+	}
+	for _, number := range want {
+		if !seen[number] {
+			t.Fatalf("available custom weapon %d has no library card", number)
+		}
+	}
+}
+
+func TestGM2CampaignExposesSixteenMissions(t *testing.T) {
+	g := New()
+	g.screen = screenCampaign
+	g.campaignSetGM2 = true
+	g.enterCampaignMenu()
+	g.runCampaignUpdate(uiInput{X: -10, Y: -10})
+	for i := 0; i < 16; i++ {
+		if gm2CampaignTitles[i] == "" {
+			t.Fatalf("GM2 mission %d has no visible title", i+1)
+		}
+		if it, ok := g.campaignUI.item(campaignMissionID(i + 1)); !ok || it.rect.W <= 0 || it.rect.H <= 0 {
+			t.Fatalf("GM2 mission %d has no visible tile", i+1)
+		}
+		if gm2CampaignMissions[i].MapNumber < 1 || gm2CampaignMissions[i].MapNumber > 21 {
+			t.Fatalf("GM2 mission %d bad map=%d", i+1, gm2CampaignMissions[i].MapNumber)
+		}
+	}
+}
+
+func TestGM2MissionSelectionOpensCharacterSetup(t *testing.T) {
+	g := New()
+	g.screen = screenCampaign
+	g.campaignSetGM2 = true
+	g.openGM2CampaignMissionSetup(2)
+	if g.campaignLevel != 2 || g.campaignPhase != 2 {
+		t.Fatalf("GM2 mission did not enter character setup: level=%d phase=%d", g.campaignLevel, g.campaignPhase)
+	}
+	g.runCampaignUpdate(uiInput{X: -10, Y: -10})
+	if _, ok := g.campaignUI.item("camp.p0.edit"); !ok {
+		t.Fatal("GM2 briefing exposes no loadout control")
 	}
 }

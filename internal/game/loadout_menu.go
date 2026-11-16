@@ -142,10 +142,6 @@ func cosmeticSetLabel(gm2 bool) string {
 	return "GUN MAYHEM"
 }
 
-func (g *Game) loadoutCharacterChoices(slot, part int) (choices []loadoutChoice, cols int) {
-	return g.loadoutCharacterChoicesFor(g.customLoadoutBinding(slot), part)
-}
-
 func (g *Game) loadoutCharacterChoicesFor(b loadoutBinding, part int) (choices []loadoutChoice, cols int) {
 	cfg := b.cfg
 	switch part {
@@ -217,10 +213,6 @@ func (g *Game) loadoutCharacterChoicesFor(b loadoutBinding, part int) (choices [
 	return choices, 10
 }
 
-func (g *Game) loadoutWeaponChoices(slot int) []loadoutChoice {
-	return g.loadoutWeaponChoicesFor(g.customLoadoutBinding(slot))
-}
-
 func (g *Game) loadoutWeaponChoicesFor(b loadoutBinding) []loadoutChoice {
 	cfg := b.cfg
 	var out []loadoutChoice
@@ -252,10 +244,6 @@ var loadoutPerkInfo = map[int]string{
 	9: "Respawn with a random gun instead of the handgun (not in Gun Game or Instagib).",
 }
 
-func (g *Game) loadoutPerkChoices(slot int) []loadoutChoice {
-	return g.loadoutPerkChoicesFor(g.customLoadoutBinding(slot))
-}
-
 func (g *Game) loadoutPerkChoicesFor(b loadoutBinding) []loadoutChoice {
 	cfg := migrateLegacyGearPerk(b.cfg)
 	var out []loadoutChoice
@@ -280,14 +268,10 @@ func (g *Game) loadoutPerkChoicesFor(b loadoutBinding) []loadoutChoice {
 	return out
 }
 
-func (g *Game) loadoutGearChoices(slot int) []loadoutChoice {
-	return g.loadoutGearChoicesFor(g.customLoadoutBinding(slot))
-}
-
 func (g *Game) loadoutGearChoicesFor(b loadoutBinding) []loadoutChoice {
 	cfg := migrateLegacyGearPerk(b.cfg)
 	var out []loadoutChoice
-	for i, a := range selectableAbilityNumbers() {
+	for _, a := range selectableAbilityNumbers() {
 		a := a
 		body := abilityDescription(a)
 		switch {
@@ -305,7 +289,7 @@ func (g *Game) loadoutGearChoicesFor(b loadoutBinding) []loadoutChoice {
 				s := math.Min(22, math.Min(inner.W, inner.H)/2.4)
 				drawAbilityIcon(dst, a, inner.X+inner.W/2, inner.Y+inner.H/2, s, 1)
 			},
-			code: b.selectHit(customEditAbility, i+1), locked: !b.unlocked(customEditAbility, i+1),
+			code: b.selectHit(customEditAbility, abilityMenuIndex(a)+1), locked: !b.unlocked(customEditAbility, abilityMenuIndex(a)+1),
 		})
 	}
 	return out
@@ -327,10 +311,6 @@ func throwableLoadoutDescription(kind int) string {
 		return fmt.Sprintf("Fuse %.1f s. Tear gas: players inside cough, move slower, jump lower and aim worse.", fuse)
 	}
 	return fmt.Sprintf("Explosive. Fuse %.1f s, blast radius %.0f, push %.0f.", fuse, p.Radius, p.HorizontalPush)
-}
-
-func (g *Game) loadoutThrowableChoices(slot int) []loadoutChoice {
-	return g.loadoutThrowableChoicesFor(g.customLoadoutBinding(slot))
 }
 
 func (g *Game) loadoutThrowableChoicesFor(b loadoutBinding) []loadoutChoice {
@@ -598,11 +578,6 @@ func (g *Game) drawLoadoutPreview(ctx *uiCtx, slot int, cfg CustomPlayerConfig) 
 		return
 	}
 	r := loadoutPreviewCard
-	ctx.Card(r, "")
-	strip := developedPlayerColorSwatch(cfg.Color)
-	strip.A = 0xff
-	uiFillRound(ctx.dst, Rect{X: r.X, Y: r.Y, W: r.W, H: 8}, 4, strip)
-	ctx.Badge(Rect{X: r.X + 12, Y: r.Y + 16, W: 34, H: 24}, fmt.Sprintf("P%d", slot+1), uiInk900)
 	kind := "HUMAN"
 	if cfg.Type == 2 {
 		kind = "AI BOT"
@@ -611,8 +586,8 @@ func (g *Game) drawLoadoutPreview(ctx *uiCtx, slot int, cfg CustomPlayerConfig) 
 	if strings.TrimSpace(name) == "" {
 		name = fmt.Sprintf("Player %d", slot+1)
 	}
+	ctx.PlayerCard(r, slot, cfg.Color, false, kind)
 	uiText(ctx.dst, uiFit(strings.ToUpper(name), true, uiSizeButton, r.W-120), true, uiSizeButton, uiTextDark, r.X+54, r.Y+28, uiAlignLeft)
-	uiText(ctx.dst, kind, true, uiSizeHint, uiTextMutedDk, r.X+r.W-12, r.Y+28, uiAlignRight)
 
 	stage := Rect{X: r.X + 12, Y: r.Y + 48, W: r.W - 24, H: 132}
 	uiFillRound(ctx.dst, stage, 6, uiPaperShade)

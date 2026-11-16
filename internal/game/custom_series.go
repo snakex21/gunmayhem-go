@@ -2,11 +2,6 @@ package game
 
 import (
 	"fmt"
-	"image/color"
-	"sort"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 const (
@@ -193,80 +188,4 @@ func seriesKD(s customSeriesPlayerStats) string {
 		return fmt.Sprintf("%.2f", float64(s.Kills))
 	}
 	return fmt.Sprintf("%.2f", float64(s.Kills)/float64(s.Deaths))
-}
-
-func (g *Game) drawSeriesSummary(screen *ebiten.Image) {
-	ebitenutil.DrawRect(screen, 0, 0, 900, 600, color.NRGBA{R: 0x18, G: 0x1c, B: 0x22, A: 0xff})
-	ebitenutil.DrawRect(screen, 28, 22, 844, 556, color.NRGBA{R: 0xf3, G: 0xf3, B: 0xf3, A: 0xff})
-	drawSourceMenuText(screen, "SERIES SUMMARY", menuFontTwCen, 42, color.Black, 52, 42)
-	drawSourceMenuText(screen, fmt.Sprintf("%d MAPS PLAYED", clampCustomSeriesRounds(g.customSeriesRounds)), menuFontCondensedExtraBold, 16, color.NRGBA{R: 0x55, G: 0x55, B: 0x55, A: 0xff}, 55, 91)
-	drawSourceMenuText(screen, "RANKING: MAP WINS > KILLS > POINTS", menuFontCondensed, 13.5, color.NRGBA{R: 0x66, G: 0x66, B: 0x66, A: 0xff}, 610, 94)
-
-	headY := 134.0
-	ebitenutil.DrawRect(screen, 52, headY, 796, 34, color.NRGBA{R: 0x28, G: 0x32, B: 0x42, A: 0xff})
-	cols := []struct {
-		text string
-		x    float64
-	}{{"PLAYER", 68}, {"MAP WINS", 330}, {"KILLS", 455}, {"DEATHS", 535}, {"K/D", 625}, {"ACC", 700}, {"POINTS", 770}}
-	for _, c := range cols {
-		drawSourceMenuText(screen, c.text, menuFontCondensedExtraBold, 14, color.White, c.x, headY+8)
-	}
-
-	type row struct {
-		slot int
-		stat customSeriesPlayerStats
-	}
-	rows := make([]row, 0, 4)
-	for i, s := range g.customSeriesStats {
-		if s.RoundsPlayed <= 0 {
-			continue
-		}
-		rows = append(rows, row{slot: i, stat: s})
-	}
-	sort.SliceStable(rows, func(i, j int) bool {
-		if rows[i].stat.MapWins != rows[j].stat.MapWins {
-			return rows[i].stat.MapWins > rows[j].stat.MapWins
-		}
-		if rows[i].stat.Kills != rows[j].stat.Kills {
-			return rows[i].stat.Kills > rows[j].stat.Kills
-		}
-		return rows[i].stat.Score > rows[j].stat.Score
-	})
-
-	for i, r := range rows {
-		y := 176.0 + float64(i)*72
-		fill := color.NRGBA{R: 0xe3, G: 0xe3, B: 0xe3, A: 0xff}
-		if i == 0 {
-			fill = color.NRGBA{R: 0xff, G: 0xcc, B: 0x80, A: 0xff}
-		}
-		ebitenutil.DrawRect(screen, 52, y, 796, 60, fill)
-		name := r.stat.Name
-		if name == "" {
-			name = fmt.Sprintf("Player %d", r.slot+1)
-		}
-		drawSourceMenuText(screen, name, menuFontTwCen, 20, color.Black, 68, y+16)
-		drawSourceMenuText(screen, fmt.Sprintf("%d", r.stat.MapWins), menuFontCenturyGothicBold, 22, color.Black, 360, y+14)
-		drawSourceMenuText(screen, fmt.Sprintf("%d", r.stat.Kills), menuFontCenturyGothicBold, 20, color.Black, 470, y+15)
-		drawSourceMenuText(screen, fmt.Sprintf("%d", r.stat.Deaths), menuFontCenturyGothicBold, 20, color.Black, 552, y+15)
-		drawSourceMenuText(screen, seriesKD(r.stat), menuFontCenturyGothicBold, 18, color.Black, 620, y+17)
-		drawSourceMenuText(screen, fmt.Sprintf("%d%%", seriesAccuracy(r.stat)), menuFontCenturyGothicBold, 18, color.Black, 700, y+17)
-		drawSourceMenuText(screen, fmt.Sprintf("%d", r.stat.Score), menuFontCenturyGothicBold, 18, color.Black, 777, y+17)
-	}
-
-	if len(rows) > 0 {
-		winner := rows[0].stat.Name
-		if winner == "" {
-			winner = fmt.Sprintf("Player %d", rows[0].slot+1)
-		}
-		drawSourceMenuText(screen, "SERIES WINNER: "+winner, menuFontCondensedExtraBold, 24, color.Black, 55, 492)
-	}
-
-	button := Rect{X: 615, Y: 525, W: 240, H: 48}
-	ebitenutil.DrawRect(screen, button.X, button.Y, button.W, button.H, color.NRGBA{R: 0x24, G: 0x27, B: 0x2d, A: 0xff})
-	ebitenutil.DrawRect(screen, button.X+2, button.Y+2, button.W-4, button.H-4, color.NRGBA{R: 0xf2, G: 0x8c, B: 0x00, A: 0xff})
-	label := "BACK TO CUSTOM GAME"
-	if g.netplay != nil && g.netplay.mode == netplayClient {
-		label = "WAITING FOR HOST"
-	}
-	drawSourceMenuText(screen, label, menuFontTwCen, 17, color.Black, button.X+12, button.Y+13)
 }

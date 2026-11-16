@@ -111,12 +111,3 @@ func TestCampaignAISoleSurvivorUsesCampaignLoseNotGameWin(t *testing.T) {
 		t.Fatalf("campaign AI survivor state: teamWin=%v gameWin=%v loseFrame=%d", g.teamGameWin, g.GameWin, g.campaignLoseFrame)
 	}
 }
-
-func TestPauseButtonsMatchSourcePositions(t *testing.T) {
-	if got := pauseHitAt(448, 275); got != pauseHitResume {
-		t.Fatalf("resume hit=%d", got)
-	}
-	if got := pauseHitAt(448, 324); got != pauseHitExit {
-		t.Fatalf("exit hit=%d", got)
-	}
-}

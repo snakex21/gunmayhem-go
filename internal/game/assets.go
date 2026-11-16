@@ -25,63 +25,21 @@ type Assets struct {
 	playerVisualsLoaded bool
 	gameplayLoaded      bool
 	MainMenu            *SourceRaster
-	CustomMenu          *SourceRaster
-	MenuChosen          *SourceRaster
-	CampaignMenu        *SourceRaster
-	OptionsMenu         *SourceRaster
 	CreditsMenu         *SourceRaster
-	GunLibraryMenu      *SourceRaster
 
 	// Root/menu interaction clips. These are kept frame-by-frame because the
 	// source ActionScript drives their timelines directly (fadeaway, countdown,
 	// campaign unlocks, etc.) rather than treating them as static overlays.
-	CampaignBase          *SourceRaster
-	CampaignSlider        *SourceRaster
-	CampaignBack          *SourceRaster
-	CampaignUnlock        map[int]*SourceRaster
-	CampaignPlayerCard    *SourceRaster
-	CampaignInfoPanel     *SourceRaster
-	CampaignStartButton   *SourceRaster
-	CampaignInfoFrames    map[int]*SourceRaster
-	CampaignLevelIcons    map[int]*SourceRaster
-	CampaignLevelLocks    map[int]*SourceRaster
-	CampaignLevelBase     *SourceRaster
-	PauseMenu             *SourceRaster
-	FadeFrames            map[int]*SourceRaster
-	WinCountdownFrames    map[int]*SourceRaster // FFDec fallback only; exported frames are frozen on "3"
 	WinCountdownTimelines map[int][]SourceTransformFrame
 	WinnerFrames          map[int]*SourceRaster
 	CampaignLoseFrames    map[int]*SourceRaster
 	TeamWinFrames         map[int]*SourceRaster
 	ZombieWaveFrames      map[int]*SourceRaster
-	PostGameMenu          *SourceRaster // flattened fallback only; contains baked placeholder values
-	PostGameBackground    *SourceRaster
-	PostGamePanelBase     *SourceRaster
-	PostGameButton        *SourceRaster
-	PostGameWinnerBorder  *SourceRaster
-	OptionToggleFrames    map[int]*SourceRaster
-	OptionLockup          *SourceRaster
-	OptionPanelBase       *SourceRaster
-	OptionKeyFrames       map[int]*SourceRaster
-	OptionArrowGlyphs     map[int]*SourceRaster
-	OptionLockupBase      *SourceRaster
-	GunLibraryDrops       map[int]*SourceRaster
 	GunLibraryThumbs      map[int]*SourceRaster
 	TestPickupBase        *SourceRaster
-	CustomWarningLives    map[int]*SourceRaster
-	CustomWarningPlayers  map[int]*SourceRaster
-	CustomPlayerCard      *SourceRaster
-	CustomEditButton      *SourceRaster
-	PlayerColorMask       *SourceRaster
-	CustomSelectionFrames map[int]*SourceRaster
 	StarterGunFrames      map[int]*SourceRaster
-	PerkFrames            map[int]*SourceRaster
-	ModeDisplayFrames     map[int]*SourceRaster
-	ModeCheckFrames       map[int]*SourceRaster
 	MapPreviewImages      map[int]*SourceRaster
 	CampaignThumbs        map[int]*SourceRaster
-	CampaignLockOverlay   *SourceRaster
-	CampaignDoneOverlay   *SourceRaster
 
 	TorsoColors       map[int]*SourceRaster
 	HeadColors        map[int]*SourceRaster
@@ -165,29 +123,13 @@ func LoadAssets() *Assets {
 		// Only Main Menu is needed before the first frame. Secondary screens are
 		// loaded behind the first source fade by EnsureInteractions/EnsureGunLibrary.
 		MainMenu:                loadSourceRaster("Symbol 28", 0, "sprites", "DefineSprite_28_mainmenu", "1.png"),
-		CampaignUnlock:          make(map[int]*SourceRaster),
-		CampaignInfoFrames:      make(map[int]*SourceRaster),
-		CampaignLevelIcons:      make(map[int]*SourceRaster),
-		CampaignLevelLocks:      make(map[int]*SourceRaster),
-		FadeFrames:              make(map[int]*SourceRaster),
-		WinCountdownFrames:      make(map[int]*SourceRaster),
 		WinCountdownTimelines:   make(map[int][]SourceTransformFrame),
 		WinnerFrames:            make(map[int]*SourceRaster),
 		CampaignLoseFrames:      make(map[int]*SourceRaster),
 		TeamWinFrames:           make(map[int]*SourceRaster),
 		ZombieWaveFrames:        make(map[int]*SourceRaster),
-		OptionToggleFrames:      make(map[int]*SourceRaster),
-		OptionKeyFrames:         make(map[int]*SourceRaster),
-		OptionArrowGlyphs:       make(map[int]*SourceRaster),
-		GunLibraryDrops:         make(map[int]*SourceRaster),
 		GunLibraryThumbs:        make(map[int]*SourceRaster),
-		CustomWarningLives:      make(map[int]*SourceRaster),
-		CustomWarningPlayers:    make(map[int]*SourceRaster),
-		CustomSelectionFrames:   make(map[int]*SourceRaster),
 		StarterGunFrames:        make(map[int]*SourceRaster),
-		PerkFrames:              make(map[int]*SourceRaster),
-		ModeDisplayFrames:       make(map[int]*SourceRaster),
-		ModeCheckFrames:         make(map[int]*SourceRaster),
 		MapPreviewImages:        make(map[int]*SourceRaster),
 		CampaignThumbs:          make(map[int]*SourceRaster),
 		TorsoColors:             make(map[int]*SourceRaster),

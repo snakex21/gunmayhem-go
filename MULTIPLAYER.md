@@ -75,6 +75,8 @@ The host runs the match. A guest draws the other players from a small buffer of 
 
 SLOW-MO (crate powerup or the Chaos event SLOW-MO EVERYONE) slows the whole match for everyone, guests included, for 5 seconds. The host decides it; a guest that is moving when it starts sees its own character pause for a moment while the slowed prediction catches up (it is never pulled backwards).
 
+Pausing is the host's: **ESC** on the host opens the pause menu (RESUME, RESTART the round, OPTIONS, END MATCH) and freezes the match for everyone, and guests see PAUSED BY HOST. On a guest, ESC during a match opens its own menu (RESUME, OPTIONS, LEAVE SESSION) while the match keeps running; your player stands still until you close it.
+
 Press **F6** to show the network overlay: frame rate, snapshots per second, arrival jitter, buffer depth, ping and the size of prediction corrections. **Ctrl+F6** switches the guest's own-player prediction off and on for comparison. Options > DISPLAY > SMOOTH MOTION and FRAME RATE control drawing between game ticks on 60/120/144 Hz screens.
 
 ## Security model

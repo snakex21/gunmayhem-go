@@ -119,7 +119,6 @@ func (g *Game) updateOnlineLobby() {
 	}
 	if g.customPage == customPagePlayers {
 		g.customMenuX = 0
-		g.updateCustomPlayerCards()
 		g.updateCustomNameInput()
 	}
 	if g.onlineLobbyTab() == onlineLobbyTabMaps {
@@ -143,7 +142,6 @@ func (g *Game) updateOnlineClientCustomGame() {
 	g.onlineEnterScreen(onlineScreenLobby)
 	textFocus := g.customLocalTextFocus()
 	if g.customPage == customPagePlayers {
-		g.updateCustomPlayerCards()
 		g.updateCustomNameInput()
 	}
 	if g.onlineLobbyTab() == onlineLobbyTabMaps {
@@ -748,15 +746,8 @@ func (g *Game) buildOnlinePlayerCard(ctx *uiCtx, slot int) {
 	waiting := cfg.Type == 1 && slot > 0 && !g.onlinePlayerSlots[slot]
 	empty := cfg.Type == 0
 
+	ctx.PlayerCard(r, slot, cfg.Color, empty || waiting, "")
 	if ctx.drawing() {
-		ctx.Card(r, "")
-		strip := uiInk500
-		if !empty && !waiting {
-			strip = developedPlayerColorSwatch(cfg.Color)
-			strip.A = 0xff
-		}
-		uiFillRound(ctx.dst, Rect{X: r.X, Y: r.Y, W: r.W, H: 8}, 4, strip)
-		ctx.Badge(Rect{X: x, Y: r.Y + 16, W: 34, H: 24}, fmt.Sprintf("P%d", slot+1), uiInk900)
 		if mine {
 			ctx.Badge(Rect{X: x + 40, Y: r.Y + 16, W: 40, H: 24}, "YOU", uiOrangePress)
 		}

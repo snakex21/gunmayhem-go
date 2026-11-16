@@ -103,7 +103,6 @@ type netPredictStats struct {
 	maxError  float64 // largest smoothed (non-snapped) correction in the window
 	snaps     int
 	offset    float64 // display offset still being blended out (px)
-	windowAt  time.Time
 }
 
 func (p *netPredictor) record(seq uint32, in PlayerInputState) {

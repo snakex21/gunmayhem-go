@@ -196,11 +196,7 @@ func (g *Game) drawPostGameTable(ctx *uiCtx) {
 			continue
 		}
 		values := postGameSourceValues(p)
-		ctx.Card(r, "")
-		strip := developedPlayerColorSwatch(p.PlayerColor)
-		strip.A = 0xff
-		uiFillRound(ctx.dst, Rect{X: r.X, Y: r.Y, W: r.W, H: 8}, 4, strip)
-		ctx.Badge(Rect{X: r.X + 10, Y: r.Y + 16, W: 32, H: 22}, fmt.Sprintf("P%d", slot+1), uiInk900)
+		ctx.PlayerCard(r, slot, p.PlayerColor, false, "")
 		name := strings.TrimSpace(values[0])
 		if name == "" {
 			name = fmt.Sprintf("Player %d", slot+1)
