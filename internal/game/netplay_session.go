@@ -24,7 +24,11 @@ const (
 	// BlowerTime/HarpoonTether*, Bullet.ShooterID, weapons 232-233 and
 	// projectile kinds Harpoon/Gust, ability 13, powerup kinds 7-8,
 	// OnlineBlockedWeapons/Abilities array sizes).
-	netplayProtocolVersion = 25
+	// 25: campaign EXTRA stage B (CampaignEnemy phase/aim fields, boss
+	// banner, harpoon ropes on zombies).
+	// 26: SLOW-MO (powerup kind 9, Chaos event, netSnapshot.SlowMoTicks /
+	// SlowMoAcc, netSFXEvent.Rate; InputAck is held on skipped sim ticks).
+	netplayProtocolVersion = 26
 	maxOnlinePlayers       = 4
 )
 
@@ -74,6 +78,9 @@ type netSFXEvent struct {
 	Name string
 	Loud bool
 	Gain float64
+	// Rate (protocol 26) is the playback rate; 0 means 1. SLOW-MO plays
+	// gameplay sounds slower (sanitizeSFXRate bounds it on the guest).
+	Rate float64 `cbor:",omitempty"`
 	// Zone (host only, never sent): 0 for every peer, z+1 only for peers
 	// that view zone z of a multi-zone zombie match.
 	Zone int `net:"-"`
@@ -176,6 +183,12 @@ type netSnapshot struct {
 	OnlineZombie     bool        `cbor:",omitempty"`
 	ZombieSetupMode  int         `cbor:",omitempty"`
 	ZombieSetupArena int         `cbor:",omitempty"`
+	// SLOW-MO clock (protocol 26, slowmo.go): real ticks left and the
+	// sim-step accumulator after this host tick (> 0: the host skipped the
+	// simulation this tick). Guests use it for the overlay, the render
+	// interpolation phase and to group their predicted input frames.
+	SlowMoTicks int     `cbor:",omitempty"`
+	SlowMoAcc   float64 `cbor:",omitempty"`
 	// SFXEvents travel in the per-peer envelope so a dropped snapshot never
 	// drops a sound (netsnapshot_wire.go).
 	SFXEvents []netSFXEvent `cbor:",omitempty" net:"-"`
@@ -265,6 +278,7 @@ type netplayPeer struct {
 
 	inputMu       sync.Mutex
 	input         netInputReplay
+	simAck        uint32 // InputAck sent with snapshots (held on SLOW-MO skipped ticks)
 	configMu      sync.RWMutex
 	config        CustomPlayerConfig
 	hasConfig     atomic.Bool
@@ -323,6 +337,9 @@ type netplaySession struct {
 	// Host: shared per-tick snapshot encoder (game thread).
 	hostEncMu sync.Mutex
 	hostEnc   netHostEncoder
+	// inputAckHold (game thread): this host tick skipped the simulation
+	// (SLOW-MO), so the input acks stay at the last sim step.
+	inputAckHold bool
 	// Client: playout buffer, received sounds, input history, ping.
 	playout      netPlayout
 	sfxMu        sync.Mutex

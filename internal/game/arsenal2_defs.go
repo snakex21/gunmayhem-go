@@ -95,7 +95,9 @@ const akimboFrames = 360
 const (
 	powerupAkimbo          = 7
 	powerupBallisticShield = 8
-	powerupKindCount       = 9
+	// SLOW-MO slows the whole match to half speed for everyone (slowmo.go).
+	powerupSlowMo    = 9
+	powerupKindCount = 10
 )
 
 // addArsenal2Weapons runs at the end of the developed catalog init
@@ -270,7 +272,7 @@ func (p *Player) tickArsenal2Timers() {
 }
 
 // extendedPickups: the developed arsenal is in this match's crate pool, so
-// the added powerups (AKIMBO, BALLISTIC SHIELD) may spawn too. The GM1
+// the added powerups (AKIMBO, BALLISTIC SHIELD, SLOW-MO) may spawn too. The GM1
 // campaign keeps its source-only pool and therefore the exact source roll.
 func (g *Game) extendedPickups() bool {
 	if g == nil {

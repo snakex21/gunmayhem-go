@@ -25,6 +25,12 @@ import (
 //     (snap) instead of being slid across the screen.
 //   - The same code runs for local matches and for online guests (there the
 //     "ticks" are the playout states applied by the client each update).
+//   - SLOW-MO (slowmo.go): the simulation steps on every other real tick.
+//     The pair drawn is always the last two SIM steps: a skipped tick undoes
+//     its capture (keepPrevPair), and alpha = simPhase + f*simInc spreads one
+//     sim step over the real ticks it takes. An online guest's predicted own
+//     player moves every real tick, so it keeps the plain tick alpha
+//     (freeID).
 
 // TicksPerSecond is the fixed simulation rate (ebiten.SetTPS in main.go).
 const TicksPerSecond = 30
@@ -92,6 +98,90 @@ type renderInterpState struct {
 	drawDynamite                      []DynamiteEffect
 	drawCrates                        []Crate
 	lastAlpha                         float64
+
+	// SLOW-MO: alpha = simPhase + f*simInc (zero simInc means 1). back is
+	// the capture before the latest one, restored on a skipped tick.
+	simPhase, simInc float64
+	freeID           int // player drawn with the plain tick alpha (0: none)
+	back             renderPrevSet
+}
+
+// renderPrevSet is one capture of the previous-tick samples.
+type renderPrevSet struct {
+	valid                             bool
+	arena, zone                       int
+	camX, camY                        float64
+	players, enemies, zombies         []renderSample
+	bullets, shells, grenades, blasts []renderSample
+	jets, drops, dynamite, crates     []renderSample
+}
+
+// swapPrevSet exchanges the live capture with back.
+func (r *renderInterpState) swapPrevSet() {
+	b := &r.back
+	r.valid, b.valid = b.valid, r.valid
+	r.arena, b.arena = b.arena, r.arena
+	r.zone, b.zone = b.zone, r.zone
+	r.camX, b.camX = b.camX, r.camX
+	r.camY, b.camY = b.camY, r.camY
+	r.players, b.players = b.players, r.players
+	r.enemies, b.enemies = b.enemies, r.enemies
+	r.zombies, b.zombies = b.zombies, r.zombies
+	r.bullets, b.bullets = b.bullets, r.bullets
+	r.shells, b.shells = b.shells, r.shells
+	r.grenades, b.grenades = b.grenades, r.grenades
+	r.blasts, b.blasts = b.blasts, r.blasts
+	r.jets, b.jets = b.jets, r.jets
+	r.drops, b.drops = b.drops, r.drops
+	r.dynamite, b.dynamite = b.dynamite, r.dynamite
+	r.crates, b.crates = b.crates, r.crates
+}
+
+// keepPrevPair undoes this tick's capture after a tick that did not step the
+// simulation, so Draw keeps interpolating between the last two sim steps.
+// keepID (non-zero) keeps the fresh sample of that player: the guest's
+// predicted own player, which moves every real tick.
+func (r *renderInterpState) keepPrevPair(keepID int) {
+	if !r.valid || !r.back.valid {
+		return
+	}
+	r.swapPrevSet()
+	if keepID == 0 {
+		return
+	}
+	for _, fresh := range r.back.players {
+		if fresh.key != keepID || fresh.double {
+			continue
+		}
+		for i := range r.players {
+			if r.players[i].key == keepID && !r.players[i].double {
+				r.players[i] = fresh
+				return
+			}
+		}
+		r.players = append(r.players, fresh)
+		return
+	}
+}
+
+// renderSimAlpha maps the fraction f of the real tick to the fraction of
+// the current sim step (slow motion).
+func (r *renderInterpState) renderSimAlpha(f float64) float64 {
+	if f >= 1 {
+		return 1
+	}
+	inc := r.simInc
+	if inc <= 0 {
+		inc = 1
+	}
+	a := r.simPhase + f*inc
+	if a < 0 {
+		return 0
+	}
+	if a > 1 {
+		return 1
+	}
+	return a
 }
 
 func samplePlayer(p *Player) renderSample {
@@ -150,6 +240,9 @@ func (g *Game) captureRenderPrev(now time.Time) {
 	r := &g.renderInterp
 	r.lastUpdate = now
 	r.screen = g.screen
+	// The previous capture moves to back (slow motion may restore it); its
+	// sample buffers are reused for this one.
+	r.swapPrevSet()
 	r.valid = g.screen == screenGameplay
 	if !r.valid {
 		return
@@ -317,12 +410,17 @@ func interpolateRenderList[T any](dst []T, list []T, prev []renderSample, sample
 // state and must be called before Draw returns.
 func (g *Game) beginRenderInterpolation(now time.Time) func() {
 	r := &g.renderInterp
-	alpha := 1.0
+	tickAlpha := 1.0
 	if g.renderInterpolationEnabled() && r.valid && r.screen == screenGameplay && g.screen == screenGameplay && r.arena == g.arena.Number && r.zone == g.zombieViewZone() {
-		alpha = renderAlphaAt(r.lastUpdate, now)
+		tickAlpha = renderAlphaAt(r.lastUpdate, now)
+	}
+	alpha := r.renderSimAlpha(tickAlpha)
+	freeAlpha := 1.0
+	if r.freeID != 0 {
+		freeAlpha = tickAlpha
 	}
 	r.lastAlpha = alpha
-	if alpha >= 1 {
+	if alpha >= 1 && freeAlpha >= 1 {
 		return func() {}
 	}
 
@@ -343,11 +441,15 @@ func (g *Game) beginRenderInterpolation(now time.Time) func() {
 		p := &r.drawPlayers[i]
 		cur := samplePlayer(p)
 		cur.zone = g.zombie.playerZone(p)
+		a := alpha
+		if r.freeID != 0 && p.ID == r.freeID && !p.IsDouble {
+			a = freeAlpha
+		}
 		for _, prev := range r.players {
 			if prev.key == cur.key && prev.double == cur.double {
 				if renderPlayerContinues(prev, cur) {
-					p.X = lerpRender(prev.x, cur.x, alpha)
-					p.Y = lerpRender(prev.y, cur.y, alpha)
+					p.X = lerpRender(prev.x, cur.x, a)
+					p.Y = lerpRender(prev.y, cur.y, a)
 				}
 				break
 			}

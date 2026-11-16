@@ -19,12 +19,54 @@ an assault rifle about 5.5; walking against a push gives 0.64).
 | BASEBALL BAT (233) | starter option and crate pickup, one-handed melee | push 26 plus a 4.5 pop-up, one swing every 15 ticks (2/s), reach 66 px in front, 80 px tall | DOUBLE KNOCKBACK doubles it (also the blower and the harpoon reel). Hits everyone in reach once per swing (1.7 push per tick sustained: the top of the starter band, but only up close). A starter bat never breaks; a crate bat lasts 20 swings. Bats grenades back (speed 15, lift 7, the grenade becomes the batter's) and reflects rockets in reach. Into a raised BALLISTIC SHIELD: 50%; into the campaign shield-bearer's plate: 50% and no hit. Never through a platform. Zombie mode: +16 bonus damage per hit (a wave-1 walker, 40 HP, drops in one swing). No muzzle flash. |
 | BALLISTIC SHIELD | gear (ability 13) and crate powerup (kind 8) | front bullets 22%, run x0.90, jump x0.93 | Always raised, no key. In front with one-handed weapons (pistols, the bat), **on the back** with every two-handed weapon and during AKIMBO; it comes back to the front when the player is on a pistol or the bat again. A covered hit is mostly horizontal (steeper than about 50 degrees from above is not covered) and comes at the shield's side. Bullets, pellets, bolts and flares (no ignition) are covered; the de-materializer's instagib kill, explosions, fire, gas, the blower and the harpoon are not. Zombie claws into the shield: half damage, 40% push. Drawn in code like the campaign shield-bearer's plate; it does not replace the hat. The crate pickup lasts until death. |
 | AKIMBO | crate powerup (kind 7) | 360 ticks (12 s) | Dual handguns: the fire delay is halved (rounded up), shots alternate between the two guns, and the off-hand gun has its own magazine (so the reload count stays the same). A source handgun can fire its second gun while the first one's shot timeline plays (never during a reload); that shot ejects its own casing. A new gun always starts on the main hand. With any non-pistol (a two-handed pickup or the bat) the effect is **suspended while the timer keeps running**; back on a pistol it resumes if time is left. Both hands are busy, so a BALLISTIC SHIELD goes on the back. |
+| SLOW-MO | crate powerup (kind 9), Chaos event SLOW-MO EVERYONE | 150 real ticks (5 s) at half speed | The **whole match** runs at 50 %: every player including the picker, bots, bullets, grenades, knockback, zombies, campaign enemies and effects. Another pickup while active restarts the 5 s (never slower than half). Feedback: a cool grey-blue tint with a blue vignette, a top-centre SLOW-MO timer bar, gameplay sounds played at 72 % speed (lower pitch) and a deep half-speed EMP cue on pickup. Details below. |
 | THERMAL GOGGLES vs invisibility | existing gear | bots: 420 px (normally 135) | A thermal viewer (online: each guest for itself; local: when there is one human) sees invisible enemies as a faint orange heat **outline**, not a silhouette. On a shared local screen with several humans, a thermal wearer marks invisible enemies with a small heat ripple in the wearer's colour (like the smoke chevrons). Bots with thermal goggles detect invisible players at 420 px. |
 
 The new powerups only spawn when the developed arsenal is in the match's crate
-pool (Custom Game, EXTRA campaign, zombie mode): after the source roll, 2 in 9
-spawns become AKIMBO or BALLISTIC SHIELD. The GM1 campaign keeps the exact
-source roll.
+pool (Custom Game, EXTRA campaign missions with powerups on): after the source
+roll, 3 in 10 spawns become AKIMBO, BALLISTIC SHIELD or SLOW-MO (1 in 10
+each). The GM1 campaign keeps the exact source roll. Zombie mode has no
+powerups (and does not sell SLOW-MO), but the effect works there when
+triggered.
+
+### SLOW-MO (`slowmo.go`, `slowmo_visuals.go`)
+
+* Update keeps its fixed 30 TPS; the gameplay simulation (the arena step and
+  the match rules around it: zombie input masks/box, zombie waves, win
+  checks) advances through a step accumulator. While slowed every real tick
+  adds 0.5 and a sim step runs when it reaches 1, so the game simulates
+  every other tick. Nothing scales velocities or timers by hand: physics,
+  AI and balance are bit-identical per sim step (a test checks that 2N slowed
+  ticks equal N normal ticks, knockback and a bullet hit included). Menus,
+  the pause screen, the zombie shop UI and the network run at the real rate;
+  the 5 s are counted in real gameplay ticks (pause stops them).
+* Input: a key (or remote input frame) seen on a skipped tick is latched
+  and OR-ed into the next sim step, so a tap between two steps is never
+  lost. A release and re-press within one sim step (66 ms) collapse into one
+  press.
+* Render interpolation draws between the last two sim steps (a skipped tick
+  restores the previous capture) with `alpha = phase + f * 0.5`, so motion
+  stays smooth at 60/144 Hz.
+* Chaos timers, powerup/crate timers and the winner countdown are sim
+  timers: they also run at half speed.
+
+### Online (protocol 26)
+
+`netSnapshot.SlowMoTicks` / `SlowMoAcc` (the host clock after the tick,
+bounded by `validSimClock`), powerup kind 9, Chaos event 45 and
+`netSFXEvent.Rate` (the guest plays the host's rate, clamped to 0.25..1).
+On a skipped tick the host does not advance the guest's `InputAck` (the
+consumed frame is latched, not simulated yet). The guest replays its
+unacknowledged frames from the clock of the host's last sim step, OR-ing
+them in the same groups, and draws an incomplete group as a partial step,
+so its character still moves every real tick. The start of a slow motion
+cannot be predicted (frames already shown at full speed): that one
+correction is blended while the character holds still, never pulled
+backwards. Predict harness (`TestPredictionSlowMoUnderLatency`, three
+windows, one refreshed): no snaps or backward steps; start corrections LAN
+11.6 px, RTT 80 ms 26 px, RTT 150 ms 34 px. In a steady slow motion the
+corrections are LAN 0.65 px, RTT 80/150 ms with 30 ms jitter 5.4/6.7 px
+(jumping included; normal speed with jumps: 8.2 px).
 
 ### Bots
 

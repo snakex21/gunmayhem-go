@@ -356,12 +356,12 @@ func (p *Player) refillAbilityOnLanding() {
 
 func (p *Player) abilityPressed() bool {
 	if p.RemoteControlled {
-		return p.RemoteInput.Ability
+		return p.RemoteInput.Ability || p.slowMoLatch&netInputBitAbility != 0
 	}
 	if p.AI {
 		return p.AIAbility
 	}
-	return sourceKeyDown(p.Controls.Ability)
+	return sourceKeyDown(p.Controls.Ability) || p.slowMoLatch&netInputBitAbility != 0
 }
 
 // ---------------------------------------------------------------------------

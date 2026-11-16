@@ -462,6 +462,9 @@ func validateNetSnapshot(s netSnapshot) error {
 			return errors.New("invalid custom playlist map in host snapshot")
 		}
 	}
+	if !validSimClock(s.SlowMoTicks, s.SlowMoAcc) {
+		return errors.New("invalid slow-mo clock in host snapshot")
+	}
 	if s.ChaosCurrentEffect < chaosEffectNone || s.ChaosCurrentEffect >= chaosEffectCount {
 		return errors.New("invalid chaos effect in host snapshot")
 	}

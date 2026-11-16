@@ -589,10 +589,11 @@ func (g *Game) drawHeatOutline(screen *ebiten.Image, drawP *Player) {
 // ---------------------------------------------------------------------------
 // Powerups and menu icons
 
-// arsenal2PowerupIcon is the floating icon of the AKIMBO / BALLISTIC SHIELD
-// powerups, in the source icons' yellow (#ffcc00), centred like Symbol 730.
+// arsenal2PowerupIcon is the floating icon of the AKIMBO / BALLISTIC SHIELD /
+// SLOW-MO powerups, in the source icons' yellow (#ffcc00), centred like
+// Symbol 730.
 func arsenal2PowerupIcon(kind int) *SourceRaster {
-	if kind != powerupAkimbo && kind != powerupBallisticShield {
+	if kind < powerupAkimbo || kind >= powerupKindCount {
 		return nil
 	}
 	arsenal2ArtMu.Lock()
@@ -619,6 +620,8 @@ func arsenal2PowerupIcon(kind int) *SourceRaster {
 			strokePolygon(img, slide, 1.2, dark)
 			fillPolygon(img, [][2]float64{pt(-14, -1), pt(-7, -1), pt(-9.5, 11), pt(-15, 11)}, yellow)
 		}
+	} else if kind == powerupSlowMo {
+		drawSlowMoHourglass(img, 24, 24, 1, yellow, dark)
 	} else {
 		pts := [][2]float64{{14, 6}, {34, 6}, {37, 12}, {37, 34}, {24, 44}, {11, 34}, {11, 12}}
 		fillPolygon(img, pts, yellow)
@@ -633,7 +636,7 @@ func arsenal2PowerupIcon(kind int) *SourceRaster {
 
 // arsenal2PowerupNameRaster mirrors fx_powerupname for the new kinds.
 func arsenal2PowerupNameRaster(kind int) *SourceRaster {
-	if kind != powerupAkimbo && kind != powerupBallisticShield {
+	if kind < powerupAkimbo || kind >= powerupKindCount {
 		return nil
 	}
 	arsenal2ArtMu.Lock()

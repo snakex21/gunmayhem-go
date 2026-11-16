@@ -73,6 +73,8 @@ On a multi-zone map (OUTBREAK) every player has their own view and walks through
 
 The host runs the match. A guest draws the other players from a small buffer of host snapshots (smooth even when snapshots arrive unevenly) and predicts its own character from its own keys, so movement answers immediately; the host's result (knockback, deaths, portals) always wins and small differences are blended out over a few frames.
 
+SLOW-MO (crate powerup or the Chaos event SLOW-MO EVERYONE) slows the whole match for everyone, guests included, for 5 seconds. The host decides it; a guest that is moving when it starts sees its own character pause for a moment while the slowed prediction catches up (it is never pulled backwards).
+
 Press **F6** to show the network overlay: frame rate, snapshots per second, arrival jitter, buffer depth, ping and the size of prediction corrections. **Ctrl+F6** switches the guest's own-player prediction off and on for comparison. Options > DISPLAY > SMOOTH MOTION and FRAME RATE control drawing between game ticks on 60/120/144 Hz screens.
 
 ## Security model

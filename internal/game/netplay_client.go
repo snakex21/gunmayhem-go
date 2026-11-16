@@ -537,6 +537,7 @@ func (g *Game) applyNetSnapshot(state netSnapshot) {
 	g.chaosCurrentEffect = state.ChaosCurrentEffect
 	g.chaosFrame = state.ChaosFrame
 	g.chaosBannerFrame = state.ChaosBannerFrame
+	g.slowMo = simClock{left: state.SlowMoTicks, acc: state.SlowMoAcc}
 	g.customChaosInterval = state.ChaosIntervalSeconds
 	g.onlinePlayerCount = state.OnlinePlayerCount
 	g.onlinePlayerSlots = state.OnlinePlayerSlots
@@ -603,7 +604,7 @@ func (g *Game) flushNetClientSFX() {
 				if gain <= 0 {
 					gain = 1
 				}
-				g.audio.playSFXGain(event.Name, volume, gain)
+				g.audio.playSFX(event.Name, volume, gain, event.Rate)
 			}
 		}
 	}
@@ -626,8 +627,19 @@ func (g *Game) updateNetClient() error {
 		networkDiagnostic("CLIENT disconnected err=%v", reason)
 		return nil
 	}
+	// SLOW-MO: the predicted own player (if any) keeps its own interpolation.
+	keepID := g.renderInterp.freeID
+	g.renderInterp.freeID = 0
 	if state, ok := g.netplay.nextPlayoutState(); ok {
 		g.applyNetSnapshot(state)
+		if g.screen == screenGameplay && state.SlowMoAcc > 0 {
+			// The host skipped its simulation on this tick: keep drawing
+			// between the last two sim steps.
+			g.renderInterp.keepPrevPair(keepID)
+		}
+	}
+	if g.screen == screenGameplay {
+		g.renderInterp.simPhase, g.renderInterp.simInc = g.slowMo.renderPhase()
 	}
 	g.netClientSFXPending = append(g.netClientSFXPending, g.netplay.drainClientSFX()...)
 	if g.screen == screenMultiplayerLobby {

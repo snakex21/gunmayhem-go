@@ -255,6 +255,7 @@ type simSnapshot struct {
 	self      Player
 	remote    Player
 	arena     Map
+	clock     simClock
 }
 
 type predSimConfig struct {
@@ -263,7 +264,9 @@ type predSimConfig struct {
 	script                func(k int) PlayerInputState // guest input per client tick
 	hostScript            func(k int) PlayerInputState // host player input per host tick
 	ticks                 int
-	shootAt               int // host tick at which the host player fires (0: never)
+	shootAt               int   // host tick at which the host player fires (0: never)
+	slowMoAt              []int // host ticks at which SLOW-MO starts
+	statsFrom             int   // client tick at which the correction stats restart (0: start)
 }
 
 type predSimResult struct {
@@ -319,6 +322,7 @@ func runPredictionSim(t *testing.T, cfg predSimConfig) predSimResult {
 	hostNext, clientNext := 0.0, 7.0
 	clientStep := simTickMS * 0.997 // the guest's clock runs slightly fast
 	var lastDrawn, lastRemote float64
+	var hostAck uint32
 	var drawn []float64
 	var held []int
 	hitTick := -1
@@ -339,6 +343,11 @@ func runPredictionSim(t *testing.T, cfg predSimConfig) predSimResult {
 				in.Shoot = true
 			}
 			host.players[0].RemoteInput = in
+			for _, at := range cfg.slowMoAt {
+				if hostTick == at {
+					host.startSlowMo()
+				}
+			}
 			hitTimerBefore := host.players[1].HitTimer
 			if err := host.Update(); err != nil {
 				t.Fatal(err)
@@ -348,7 +357,10 @@ func runPredictionSim(t *testing.T, cfg predSimConfig) predSimResult {
 				res.hostKnockVX = host.players[1].VX
 			}
 			arena := host.customRuntimeArena()
-			snap := simSnapshot{tick: uint32(hostTick), ack: replay.ackSeq(), self: *host.players[1], remote: *host.players[0], arena: arena}
+			if !host.slowMoSkipped {
+				hostAck = replay.ackSeq() // held on SLOW-MO skipped ticks, like queueStateViews
+			}
+			snap := simSnapshot{tick: uint32(hostTick), ack: hostAck, self: *host.players[1], remote: *host.players[0], arena: arena, clock: host.slowMo}
 			snap.self.PendingSounds, snap.remote.PendingSounds = nil, nil
 			down.send(now, snap)
 			if hitTick > 0 && hostTick > hitTick && len(res.hostAfterHit) < 40 {
@@ -362,6 +374,9 @@ func runPredictionSim(t *testing.T, cfg predSimConfig) predSimResult {
 				newest, have = s, true
 				playout.push(s.tick, netSnapshot{Players: []Player{s.remote}})
 			}
+			if cfg.statsFrom > 0 && clientTick == cfg.statsFrom {
+				pred.stats.maxError, pred.stats.snaps = 0, 0
+			}
 			in := cfg.script(clientTick)
 			seq, frames := history.record(in)
 			up.send(now, simInputMsg{seq: seq, frames: frames})
@@ -370,6 +385,7 @@ func runPredictionSim(t *testing.T, cfg predSimConfig) predSimResult {
 				continue
 			}
 			env.arena = newest.arena
+			env.clock = newest.clock
 			p, ok := pred.predict(newest.self, newest.tick, newest.ack, seq, env)
 			if !ok {
 				p = newest.self
@@ -550,6 +566,133 @@ func TestPredictSmoothsWhenHostAcksNewestInput(t *testing.T) {
 	for _, in := range pr.log {
 		if in.seq <= 1 {
 			t.Fatalf("log kept frames up to min(ack, prevSeq): %+v", pr.log)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SLOW-MO (slowmo.go)
+
+// The host simulates every other tick and ORs the frames between; the guest
+// groups its unacknowledged frames with the host clock, so after a whole
+// group the prediction equals the host exactly.
+func TestPredictGroupsFramesLikeTheSlowedHost(t *testing.T) {
+	env := predictTestEnv()
+	host := predictTestPlayer()
+	frames := []PlayerInputState{{Right: true}, {Up: true}, {}, {Right: true}, {Right: true}, {Left: true}, {}}
+	var pr netPredictor
+	for i, in := range frames {
+		pr.record(uint32(i+1), in)
+	}
+	// Host: slow motion started; tick 1 skips (frame 1 latched), tick 2
+	// steps with frames 1|2, tick 3 skips (frame 3 latched). Snapshot after
+	// tick 3: ack held at frame 2.
+	clock := simClock{left: 20}
+	base := host
+	var latch uint8
+	for i := 0; i < 3; i++ {
+		steps, next := clock.advance()
+		clock = next
+		bits := latch | packNetInput(frames[i])
+		if steps == 0 {
+			latch = bits
+			continue
+		}
+		latch = 0
+		predictStep(&base, unpackNetInput(bits), &env)
+	}
+	env.clock = clock
+	got, ok := pr.predict(base, 3, 2, 7, env)
+	if !ok {
+		t.Fatal("no prediction")
+	}
+	// The host continues: frames 3|4, 5|6 step; frame 7 is pending.
+	want := host
+	predictStep(&want, unpackNetInput(packNetInput(frames[0])|packNetInput(frames[1])), &env)
+	predictStep(&want, unpackNetInput(packNetInput(frames[2])|packNetInput(frames[3])), &env)
+	predictStep(&want, unpackNetInput(packNetInput(frames[4])|packNetInput(frames[5])), &env)
+	if pr.prev.X != want.X || pr.prev.Y != want.Y || pr.prev.VY != want.VY {
+		t.Fatalf("predicted %.3f,%.3f want %.3f,%.3f", pr.prev.X, pr.prev.Y, want.X, want.Y)
+	}
+	if !pr.prevPhase.held || pr.prevPhase.pending != packNetInput(frames[6]) {
+		t.Fatalf("pending group %+v", pr.prevPhase)
+	}
+	// Drawn half way towards the step the pending frame leads to.
+	next := want
+	predictStep(&next, frames[6], &env)
+	if math.Abs(got.X-(want.X+(next.X-want.X)*0.5)) > 1e-9 {
+		t.Fatalf("drawn %.3f, step %.3f -> %.3f", got.X, want.X, next.X)
+	}
+}
+
+// Slow motion starting and ending under latency must not rubber-band the
+// guest's own character beyond the normal bounds.
+func TestPredictionSlowMoUnderLatency(t *testing.T) {
+	const ticks = 900
+	cases := []struct {
+		name              string
+		jump              bool
+		rtt, jitter, loss float64
+		maxSmooth         float64
+		maxSnaps          int
+	}{
+		// The start of a slow motion is a correction the guest cannot
+		// avoid (frames already predicted at full speed): it must be
+		// blended (no snap) and must never pull the character backwards.
+		{"lan", false, 2, 1, 0, 16, 0},
+		{"rtt80 jitter30", false, 80, 30, 0, 36, 0},
+		{"rtt150 jitter30", false, 150, 30, 0, netPredictSnapPx, 0},
+		{"jumps rtt150 jitter30", true, 150, 30, 0, netPredictSnapPx, 2},
+		{"rtt150 jitter30 loss2%", false, 150, 30, 0.02, netPredictSnapPx, 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// Three slow-motion windows, one refreshed while active.
+			r := runPredictionSim(t, predSimConfig{rttMS: c.rtt, jitterMS: c.jitter, loss: c.loss, seed: 11, ticks: ticks,
+				script:   walkScript(ticks, c.jump),
+				slowMoAt: []int{100, 330, 400, 640},
+				hostScript: func(k int) PlayerInputState {
+					return PlayerInputState{Right: (k/50)%2 == 0, Left: (k/50)%2 == 1}
+				}})
+			t.Logf("%s: blended max %.2f px, snaps %d, backward steady steps %d, max unacked %d, final diff %.3f px, remote holds %d/%d",
+				c.name, r.smoothMaxErr, r.snaps, r.backwardSteady, r.maxUnacked, r.finalDiff, r.remoteHolds, r.remoteTicks)
+			if r.smoothMaxErr > c.maxSmooth {
+				t.Errorf("blended correction %.2f px > %.2f", r.smoothMaxErr, c.maxSmooth)
+			}
+			if r.snaps > c.maxSnaps {
+				t.Errorf("%d snapped corrections > %d", r.snaps, c.maxSnaps)
+			}
+			if r.backwardSteady > 0 {
+				t.Errorf("rubber-banding: %d backward steps during steady movement", r.backwardSteady)
+			}
+			if r.finalDiff > 0.5 {
+				t.Errorf("prediction did not converge to the host: %.3f px", r.finalDiff)
+			}
+		})
+	}
+}
+
+// Inside a long slow motion (after the unavoidable correction at its start)
+// the grouped prediction stays within the normal-speed bounds for walking
+// and jumping (jitter can shift which frames the host groups together).
+// The guest ends still slowed: its drawn character is half a pending step
+// ahead of the host's last sim step, hence the 1 px final tolerance.
+func TestPredictionSteadySlowMoMatchesTheHost(t *testing.T) {
+	const ticks = 900
+	var refresh []int
+	for k := 60; k < ticks-60; k += 20 {
+		refresh = append(refresh, k)
+	}
+	for _, c := range []struct {
+		name        string
+		rtt, jitter float64
+		maxSmooth   float64
+	}{{"lan", 2, 1, 1}, {"rtt80 jitter30", 80, 30, 16}, {"rtt150 jitter30", 150, 30, 16}} {
+		r := runPredictionSim(t, predSimConfig{rttMS: c.rtt, jitterMS: c.jitter, seed: 5, ticks: ticks,
+			script: walkScript(ticks, true), slowMoAt: refresh, statsFrom: 120})
+		t.Logf("steady slow-mo %s: blended max %.2f px, snaps %d, backward %d, final diff %.3f", c.name, r.smoothMaxErr, r.snaps, r.backwardSteady, r.finalDiff)
+		if r.smoothMaxErr > c.maxSmooth || r.snaps > 0 || r.backwardSteady > 0 || r.finalDiff > 1 {
+			t.Errorf("%s: steady slow-mo prediction drifts: %.2f px, %d snaps, %d backward", c.name, r.smoothMaxErr, r.snaps, r.backwardSteady)
 		}
 	}
 }

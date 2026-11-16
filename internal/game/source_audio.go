@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/xml"
 	"io"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -262,10 +263,19 @@ func (a *sourceAudioEngine) decodedPCM(name string) []byte {
 }
 
 func (a *sourceAudioEngine) playSFXGain(name string, volume, gain float64) {
+	a.playSFX(name, volume, gain, 1)
+}
+
+// playSFX plays a sound with a gain and a playback rate (< 1: slower and
+// lower, the SLOW-MO effect; the resampled PCM is cached).
+func (a *sourceAudioEngine) playSFX(name string, volume, gain, rate float64) {
 	if a == nil || name == "" {
 		return
 	}
 	pcm := a.amplifiedSoundPCM(name, gain)
+	if rate = sanitizeSFXRate(rate); rate != 1 && len(pcm) > 0 {
+		pcm = a.resampledSoundPCM(name, gain, rate, pcm)
+	}
 	if len(pcm) == 0 {
 		return
 	}
@@ -295,6 +305,61 @@ func (a *sourceAudioEngine) amplifiedSoundPCM(name string, gain float64) []byte 
 	boosted := amplifyPCM16(pcm, gain)
 	a.amplified[key] = boosted
 	return boosted
+}
+
+// sanitizeSFXRate keeps a playback rate (also from the network) in the
+// supported range; anything else plays at normal speed.
+func sanitizeSFXRate(rate float64) float64 {
+	if !(rate >= 0.25 && rate < 1) {
+		return 1
+	}
+	// Few distinct rates keep the resample cache small.
+	return math.Round(rate*100) / 100
+}
+
+func (a *sourceAudioEngine) resampledSoundPCM(name string, gain, rate float64, pcm []byte) []byte {
+	key := strings.ToLower(name) + "@" + strconv.FormatFloat(gain, 'f', 2, 64) + "@rate" + strconv.FormatFloat(rate, 'f', 2, 64)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.amplified == nil {
+		a.amplified = make(map[string][]byte)
+	}
+	if cached, ok := a.amplified[key]; ok {
+		return cached
+	}
+	out := resamplePCM16Stereo(pcm, rate)
+	a.amplified[key] = out
+	return out
+}
+
+// resamplePCM16Stereo plays 16-bit stereo PCM at rate (0.5 = half speed,
+// one octave lower) by linear interpolation.
+func resamplePCM16Stereo(pcm []byte, rate float64) []byte {
+	frames := len(pcm) / 4
+	if frames == 0 || rate <= 0 || rate == 1 {
+		return pcm
+	}
+	outFrames := int(float64(frames) / rate)
+	out := make([]byte, outFrames*4)
+	for i := 0; i < outFrames; i++ {
+		pos := float64(i) * rate
+		j := int(pos)
+		if j >= frames {
+			j = frames - 1
+		}
+		k := j + 1
+		if k >= frames {
+			k = frames - 1
+		}
+		t := pos - float64(j)
+		for ch := 0; ch < 2; ch++ {
+			s0 := float64(int16(binary.LittleEndian.Uint16(pcm[j*4+ch*2:])))
+			s1 := float64(int16(binary.LittleEndian.Uint16(pcm[k*4+ch*2:])))
+			v := math.Round(s0 + (s1-s0)*t)
+			binary.LittleEndian.PutUint16(out[i*4+ch*2:], uint16(int16(v)))
+		}
+	}
+	return out
 }
 
 func amplifyPCM16(pcm []byte, gain float64) []byte {
@@ -491,6 +556,16 @@ func (g *Game) playSourceSFX(name string, loud bool) {
 }
 
 func (g *Game) playSourceSFXGain(name string, loud bool, gain float64) {
+	rate := 1.0
+	if g.slowMoSounding() {
+		rate = slowMoSFXRate
+	}
+	g.playSourceSFXRate(name, loud, gain, rate)
+}
+
+// playSourceSFXRate plays a gameplay sound at a playback rate (SLOW-MO) and
+// forwards it to online guests.
+func (g *Game) playSourceSFXRate(name string, loud bool, gain, rate float64) {
 	if g == nil || g.audio == nil {
 		return
 	}
@@ -500,12 +575,17 @@ func (g *Game) playSourceSFXGain(name string, loud bool, gain float64) {
 	}
 	// A multi-zone zombie tick also simulates zones this screen does not
 	// show: their sounds go only to the guests in that zone.
+	rate = sanitizeSFXRate(rate)
 	if !g.sfxLocalMute {
-		g.audio.playSFXGain(name, volume, gain)
+		g.audio.playSFX(name, volume, gain, rate)
 	}
 	if g.netplay != nil && g.netplay.mode == netplayHost {
 		g.netSFXSeq++
-		g.netSFXPending = append(g.netSFXPending, netSFXEvent{Seq: g.netSFXSeq, Name: name, Loud: loud, Gain: gain, Zone: g.sfxZoneTag})
+		ev := netSFXEvent{Seq: g.netSFXSeq, Name: name, Loud: loud, Gain: gain, Zone: g.sfxZoneTag}
+		if rate != 1 {
+			ev.Rate = rate
+		}
+		g.netSFXPending = append(g.netSFXPending, ev)
 	}
 }
 

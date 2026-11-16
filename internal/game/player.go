@@ -245,6 +245,10 @@ type Player struct {
 	// hitW / hitH override the hitbox of a big campaign enemy body (host
 	// only: clients never hit-test).
 	hitW, hitH float64
+	// slowMoLatch (packNetInput bits, host only) holds the keys a human
+	// player pressed on real ticks that SLOW-MO skipped; the next sim step
+	// reads them OR-ed with the live keys, so no tap is lost (slowmo.go).
+	slowMoLatch uint8
 
 	Team                   int      `cbor:",omitempty"`
 	OwnerPlayerID          int      `cbor:",omitempty"`
@@ -311,16 +315,18 @@ func NewPlayer(id int, m Map) *Player {
 }
 
 func (p *Player) movementInput() (left, right, up, down bool) {
-	if p.RemoteControlled {
-		return p.RemoteInput.Left, p.RemoteInput.Right, p.RemoteInput.Up, p.RemoteInput.Down
-	}
-	if p.AI {
+	if p.AI && !p.RemoteControlled {
 		return p.AILeft, p.AIRight, p.AIUp, p.AIDown
 	}
-	left = sourceKeyDown(p.Controls.Left)
-	right = sourceKeyDown(p.Controls.Right)
-	up = sourceKeyDown(p.Controls.Up)
-	down = sourceKeyDown(p.Controls.Down)
+	latch := unpackNetInput(p.slowMoLatch)
+	if p.RemoteControlled {
+		return p.RemoteInput.Left || latch.Left, p.RemoteInput.Right || latch.Right,
+			p.RemoteInput.Up || latch.Up, p.RemoteInput.Down || latch.Down
+	}
+	left = sourceKeyDown(p.Controls.Left) || latch.Left
+	right = sourceKeyDown(p.Controls.Right) || latch.Right
+	up = sourceKeyDown(p.Controls.Up) || latch.Up
+	down = sourceKeyDown(p.Controls.Down) || latch.Down
 	return
 }
 
@@ -330,22 +336,22 @@ func (p *Player) shootPressed() bool {
 		return false
 	}
 	if p.RemoteControlled {
-		return p.RemoteInput.Shoot
+		return p.RemoteInput.Shoot || p.slowMoLatch&netInputBitShoot != 0
 	}
 	if p.AI {
 		return p.AIShoot
 	}
-	return sourceKeyDown(p.Controls.Shoot)
+	return sourceKeyDown(p.Controls.Shoot) || p.slowMoLatch&netInputBitShoot != 0
 }
 
 func (p *Player) grenadePressed() bool {
 	if p.RemoteControlled {
-		return p.RemoteInput.Grenade
+		return p.RemoteInput.Grenade || p.slowMoLatch&netInputBitGrenade != 0
 	}
 	if p.AI {
 		return p.AIGrenade
 	}
-	return sourceKeyDown(p.Controls.Grenade)
+	return sourceKeyDown(p.Controls.Grenade) || p.slowMoLatch&netInputBitGrenade != 0
 }
 
 func (p *Player) clearAIInput() {

@@ -432,11 +432,15 @@ func (s *netplaySession) queueStateViews(states []netSnapshot, zones []int, peer
 	}
 	s.peersMu.RUnlock()
 	// The frame is shared read-only once queued: record every peer's input
-	// acknowledgement first.
+	// acknowledgement first. On a tick SLOW-MO skipped, the consumed input
+	// is latched but not simulated yet: the ack stays at the last sim step.
 	for _, peer := range peers {
 		if peer.playerID > 0 && peer.playerID < len(frame.inputAck) {
 			peer.inputMu.Lock()
-			frame.inputAck[peer.playerID] = peer.input.ackSeq()
+			if !s.inputAckHold {
+				peer.simAck = peer.input.ackSeq()
+			}
+			frame.inputAck[peer.playerID] = peer.simAck
 			peer.inputMu.Unlock()
 		}
 	}
@@ -604,6 +608,8 @@ func (g *Game) makeNetSnapshot() netSnapshot {
 		OnlineZombie:                   g.onlineZombie,
 		ZombieSetupMode:                g.zombieSetup.Mode,
 		ZombieSetupArena:               g.zombieSetup.Arena,
+		SlowMoTicks:                    g.slowMo.left,
+		SlowMoAcc:                      g.slowMo.acc,
 		SFXEvents:                      append([]netSFXEvent(nil), g.netSFXPending...),
 		MapFXFrame:                     g.mapFXFrame,
 		CameraX:                        g.cameraX,
@@ -685,6 +691,7 @@ func (g *Game) queueNetHostSnapshot() {
 	if g == nil || g.netplay == nil || g.netplay.mode != netplayHost || !g.netplay.connected() {
 		return
 	}
+	g.netplay.inputAckHold = g.slowMoSkipped
 	if states, zones, peerView, ok := g.zombieNetViews(); ok {
 		g.netplay.queueStateViews(states, zones, peerView)
 	} else {

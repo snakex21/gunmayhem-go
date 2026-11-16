@@ -56,6 +56,8 @@ const (
 	chaosEffectWeaponRoulette
 	chaosEffectTeleportStorm
 	chaosEffectZeroGravity
+	// Appended (protocol 26): SLOW-MO EVERYONE (slowmo.go).
+	chaosEffectSlowMo
 	chaosEffectCount
 )
 
@@ -95,6 +97,7 @@ var chaosEffectSpecs = []chaosEffectSpec{
 	{chaosEffectJetpacks, "JETPACKS", "Everybody receives unlimited jetpack fuel until the next event."},
 	{chaosEffectMiniEveryone, "MINI EVERYONE", "All active players shrink for the duration of the chaos event."},
 	{chaosEffectInvisibleEveryone, "INVISIBLE EVERYONE", "All active players become invisible for the event duration."},
+	{chaosEffectSlowMo, "SLOW-MO EVERYONE", "The whole match runs at half speed for 5 seconds: players, bots, bullets and effects."},
 	{chaosEffectSpeedBoost, "SPEED BOOST", "All active players receive the source speed powerup effect."},
 	{chaosEffectCrateStorm, "CRATE STORM", "Several weapon crates fall immediately and continue spawning rapidly."},
 	{chaosEffectPowerupStorm, "POWERUP STORM", "Powerups spawn repeatedly around the arena."},
@@ -322,6 +325,9 @@ func (g *Game) activateChaosEffect(id int) {
 				p.SpeedTime = duration
 			}
 		}
+	case chaosEffectSlowMo:
+		// The same 5 s (real time) as the SLOW-MO crate powerup.
+		g.onSlowMoPickup()
 	case chaosEffectCrateStorm:
 		g.spawnChaosCrates(4)
 	case chaosEffectPowerupStorm:

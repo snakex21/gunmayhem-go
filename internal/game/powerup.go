@@ -25,9 +25,10 @@ type Powerup struct {
 // sample an integer point in ground.platform's bounds, retry until hitTest is
 // true, walk upward in 2 px steps until leaving collision, then spawn 40 px up.
 //
-// extended (the developed arsenal is in the crate pool) adds the AKIMBO and
-// BALLISTIC SHIELD powerups: after the source roll, 2 in 9 spawns become one
-// of them. Source/GM1 campaign pools keep the exact source roll.
+// extended (the developed arsenal is in the crate pool) adds the AKIMBO,
+// BALLISTIC SHIELD and SLOW-MO powerups: after the source roll, 3 in 10
+// spawns become one of them (the 7 source kinds keep 70 %). Source/GM1
+// campaign pools keep the exact source roll.
 func spawnPowerup(arena Map, doubleActive bool, extended ...bool) Powerup {
 	minX, minY, maxX, maxY, ok := platformBounds(arena.Platforms)
 	if !ok {
@@ -64,8 +65,8 @@ func spawnPowerup(arena Map, doubleActive bool, extended ...bool) Powerup {
 	if kind == 4 && doubleActive {
 		kind = 2
 	}
-	if len(extended) > 0 && extended[0] && rand.Intn(9) < 2 {
-		kind = powerupAkimbo + rand.Intn(2)
+	if len(extended) > 0 && extended[0] && rand.Intn(10) < 3 {
+		kind = powerupAkimbo + rand.Intn(powerupKindCount-powerupAkimbo)
 	}
 	return Powerup{
 		X: x, Y: y - 40, Type: kind,
@@ -160,6 +161,9 @@ func applyPowerup(p *Player, kind int) {
 		p.AkimboHand = 0
 	case powerupBallisticShield:
 		p.ShieldGearPickup = true
+	case powerupSlowMo:
+		// Global: Game.simulateArenaTick starts the match-wide slow motion
+		// for the pickup (startSlowMo); nothing is stored on the player.
 	}
 }
 
@@ -183,6 +187,8 @@ func powerupName(kind int) string {
 		return "AKIMBO"
 	case powerupBallisticShield:
 		return "BALLISTIC SHIELD"
+	case powerupSlowMo:
+		return "SLOW-MO"
 	default:
 		return "POWERUP"
 	}

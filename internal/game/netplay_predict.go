@@ -22,6 +22,14 @@ import (
 // between the previous prediction and the reconciled one is hidden by a
 // display offset that decays over a few ticks. Large corrections, respawns
 // and new hits snap at once.
+//
+// SLOW-MO (protocol 26): the host consumes one input frame per real tick but
+// simulates only every other tick, OR-ing the frames in between (slowmo.go),
+// and its InputAck stays at the last sim step. The snapshot carries the
+// host's clock, so the replay starts from the clock of that last sim step
+// (simClock.lastStepClock) and groups the frames exactly like the host. The
+// frames of an incomplete group are shown as a partial step towards where
+// they lead, so the own character still answers every real tick.
 
 const (
 	// netPredictMaxFrames bounds the replay (3 s of input). With a longer
@@ -48,6 +56,16 @@ type netPredictEnv struct {
 	// noDrop: areas where DOWN uses something (zombie mystery box, doors)
 	// instead of dropping through the platform, like on the host.
 	noDrop []Rect
+	// clock: the host's SLOW-MO clock after the base snapshot's tick.
+	clock simClock
+}
+
+// netPredictPhase is where a replay stands between host sim steps: the host
+// clock after the frame, and the frames consumed since the last sim step.
+type netPredictPhase struct {
+	clock   simClock
+	pending uint8 // OR of the frames of the incomplete group
+	held    bool  // pending holds at least one frame
 }
 
 // netPredictor runs on the client's game thread only.
@@ -56,6 +74,7 @@ type netPredictor struct {
 
 	have          bool
 	prev          Player // last prediction (without display offset)
+	prevPhase     netPredictPhase
 	prevSeq       uint32
 	baseTick      uint32
 	baseSerial    int
@@ -64,6 +83,12 @@ type netPredictor struct {
 	stats         netPredictStats
 	disabled      bool // Ctrl+F6 A/B switch
 	lastAppliedOK bool
+	// holdForward (SLOW-MO corrections): while the offset is blended out,
+	// the drawn character may stand still but never moves against the
+	// predicted motion. lastShown/lastDrawn are the previous output
+	// without and with the offset.
+	holdForward          bool
+	lastShown, lastDrawn [2]float64
 }
 
 // netPredictStats feeds the F6 network overlay.
@@ -96,6 +121,7 @@ func (p *netPredictor) reset() {
 	}
 	p.have = false
 	p.offX, p.offY = 0, 0
+	p.holdForward = false
 	p.stats.unacked = 0
 	p.stats.offset = 0
 	p.lastAppliedOK = false
@@ -146,9 +172,10 @@ func predictStep(p *Player, in PlayerInputState, env *netPredictEnv) bool {
 	return true
 }
 
-// replay runs the logged inputs in (from, to] on p. It returns false when an
-// input frame is missing from the log.
-func (p *netPredictor) replay(pl *Player, from, to uint32, env *netPredictEnv) bool {
+// replay runs the logged inputs in (from, to] on p, one host sim step per
+// complete group of frames (one frame per group at normal speed). It returns
+// false when an input frame is missing from the log.
+func (p *netPredictor) replay(pl *Player, ph *netPredictPhase, from, to uint32, env *netPredictEnv) bool {
 	if to <= from {
 		return true
 	}
@@ -163,12 +190,38 @@ func (p *netPredictor) replay(pl *Player, from, to uint32, env *netPredictEnv) b
 		if in.seq != next {
 			return false
 		}
-		if !predictStep(pl, unpackNetInput(in.bits), env) {
+		steps, clock := ph.clock.advance()
+		ph.clock = clock
+		bits := ph.pending | in.bits
+		next++
+		if steps == 0 {
+			ph.pending, ph.held = bits, true
+			continue
+		}
+		ph.pending, ph.held = 0, false
+		if !predictStep(pl, unpackNetInput(bits), env) {
 			return true // the host decides the death; keep the last alive state
 		}
-		next++
 	}
 	return next == to+1
+}
+
+// predictDisplay is the drawn copy of a replayed player: with frames of an
+// incomplete SLOW-MO group pending, the position is moved the matching part
+// of the way towards the step those frames lead to.
+func predictDisplay(pl Player, ph netPredictPhase, env *netPredictEnv) Player {
+	if !ph.held || ph.clock.acc <= 0 {
+		return pl
+	}
+	next := pl
+	next.PendingSounds = nil
+	if !predictStep(&next, unpackNetInput(ph.pending), env) {
+		return pl
+	}
+	t := ph.clock.acc
+	pl.X += (next.X - pl.X) * t
+	pl.Y += (next.Y - pl.Y) * t
+	return pl
 }
 
 // predict returns the own player to draw at input frame latest, given the
@@ -204,18 +257,22 @@ func (p *netPredictor) predict(base Player, baseTick, ack, latest uint32, env ne
 
 	pred := base
 	pred.PendingSounds = nil // never share the snapshot's backing array
-	if !p.replay(&pred, ack, latest, &env) {
+	phase := netPredictPhase{clock: env.clock.lastStepClock()}
+	if !p.replay(&pred, &phase, ack, latest, &env) {
 		p.reset()
 		return base, false
 	}
+	shown := predictDisplay(pred, phase, &env)
 
 	if p.have {
 		cont := p.prev
 		cont.PendingSounds = nil
-		if !p.replay(&cont, p.prevSeq, latest, &env) {
-			cont = pred
+		contPhase := p.prevPhase
+		contShown := shown
+		if p.replay(&cont, &contPhase, p.prevSeq, latest, &env) {
+			contShown = predictDisplay(cont, contPhase, &env)
 		}
-		ex, ey := cont.X-pred.X, cont.Y-pred.Y
+		ex, ey := contShown.X-shown.X, contShown.Y-shown.Y
 		err := math.Hypot(ex, ey)
 		respawned := base.DeathSerial != p.baseSerial
 		hit := baseTick != p.baseTick && base.HitTimer < p.baseHitTimer
@@ -227,24 +284,43 @@ func (p *netPredictor) predict(base Player, baseTick, ack, latest uint32, env ne
 				p.stats.snaps++
 			}
 			p.offX, p.offY = 0, 0
+			p.holdForward = false
 		} else {
 			p.offX += ex
 			p.offY += ey
 			p.stats.maxError = math.Max(p.stats.maxError, err)
+			// The start of a SLOW-MO cannot be predicted: the frames sent
+			// before the guest heard of it were predicted at full speed, so
+			// the character is ahead. Let the slowed prediction catch up
+			// (hold) instead of pulling the character backwards.
+			if err > 0.01 && (env.clock.active() || env.clock.acc > 0 || p.prevPhase.clock.active() || p.prevPhase.clock.acc > 0) {
+				p.holdForward = true
+			}
 		}
 	}
+	lastShown, lastDrawn := p.lastShown, p.lastDrawn
+	hadDrawn := p.have
 	p.have = true
 	p.prev = pred
 	p.prev.PendingSounds = nil
+	p.prevPhase = phase
 	p.prevSeq = latest
 	p.baseTick = baseTick
 	p.baseSerial = base.DeathSerial
 	p.baseHitTimer = base.HitTimer
 	p.stats.unacked = int(latest - ack)
 
-	out := pred
+	out := shown
+	if p.holdForward && hadDrawn {
+		p.offX = holdNoReverse(p.offX, shown.X, lastShown[0], lastDrawn[0])
+		p.offY = holdNoReverse(p.offY, shown.Y, lastShown[1], lastDrawn[1])
+	}
 	out.X += p.offX
 	out.Y += p.offY
+	p.lastShown, p.lastDrawn = [2]float64{shown.X, shown.Y}, [2]float64{out.X, out.Y}
+	if p.offX == 0 && p.offY == 0 {
+		p.holdForward = false
+	}
 	p.stats.offset = math.Hypot(p.offX, p.offY)
 	p.offX *= netPredictSmoothKeep
 	p.offY *= netPredictSmoothKeep
@@ -260,16 +336,17 @@ func (p *netPredictor) predict(base Player, baseTick, ack, latest uint32, env ne
 
 // predictionBase returns the guest's own player from the newest snapshot,
 // with that snapshot's tick, input acknowledgement and physics.
-func (s *netplaySession) predictionBase(playerID int) (base Player, tick, ack uint32, arena Map, ok bool) {
+func (s *netplaySession) predictionBase(playerID int) (base Player, tick, ack uint32, arena Map, clock simClock, ok bool) {
 	if s == nil || s.mode != netplayClient || !s.hasState.Load() {
-		return Player{}, 0, 0, Map{}, false
+		return Player{}, 0, 0, Map{}, simClock{}, false
 	}
 	s.stateMu.RLock()
 	defer s.stateMu.RUnlock()
 	st := &s.state
 	if gameScreen(st.Screen) != screenGameplay || st.GameWin || st.Paused || st.FadeActive {
-		return Player{}, 0, 0, Map{}, false
+		return Player{}, 0, 0, Map{}, simClock{}, false
 	}
+	clock = simClock{left: st.SlowMoTicks, acc: st.SlowMoAcc}
 	for i := range st.Players {
 		if st.Players[i].ID == playerID && !st.Players[i].IsDouble {
 			arena = st.Arena
@@ -277,10 +354,10 @@ func (s *netplaySession) predictionBase(playerID int) (base Player, tick, ack ui
 				arena.Gravity = st.RuntimeGravity
 			}
 			arena.LowFriction = st.RuntimeLowFriction
-			return st.Players[i], s.stateTick, s.stateInputAck, arena, true
+			return st.Players[i], s.stateTick, s.stateInputAck, arena, clock, true
 		}
 	}
-	return Player{}, 0, 0, Map{}, false
+	return Player{}, 0, 0, Map{}, simClock{}, false
 }
 
 // applyNetPrediction replaces the guest's own player (taken from the delayed
@@ -291,7 +368,7 @@ func (g *Game) applyNetPrediction(latest uint32) {
 		return
 	}
 	id := g.netplay.assignedPlayer()
-	base, tick, ack, arena, ok := g.netplay.predictionBase(id)
+	base, tick, ack, arena, clock, ok := g.netplay.predictionBase(id)
 	if !ok || g.GameWin || g.paused {
 		g.netPredict.reset()
 		return
@@ -303,7 +380,7 @@ func (g *Game) applyNetPrediction(latest uint32) {
 		g.netPredict.reset()
 		return
 	}
-	env := netPredictEnv{arena: arena, noDrop: g.zombieNoDropAreas()}
+	env := netPredictEnv{arena: arena, noDrop: g.zombieNoDropAreas(), clock: clock}
 	if g.assets != nil {
 		env.leg1, env.leg2 = len(g.assets.Leg1Timeline), len(g.assets.Leg2Timeline)
 		env.head = g.assets.HeadTimeline
@@ -316,6 +393,9 @@ func (g *Game) applyNetPrediction(latest uint32) {
 		if p != nil && p.ID == id && !p.IsDouble {
 			cp := pred
 			g.players[i] = &cp
+			// Drawn with the plain tick alpha: it moves every real tick,
+			// also in SLOW-MO (render_interp.go).
+			g.renderInterp.freeID = id
 			return
 		}
 	}
@@ -382,4 +462,18 @@ func (p *netPlayout) stats() (buffered int, delay int64) {
 		}
 	}
 	return buffered, p.delay
+}
+
+// holdNoReverse returns the display offset for one axis so that the drawn
+// position does not move against the predicted motion (shown - lastShown):
+// it stays where it was drawn last instead.
+func holdNoReverse(off, shown, lastShown, lastDrawn float64) float64 {
+	moved := shown - lastShown
+	if moved == 0 {
+		return off
+	}
+	if drawnMove := shown + off - lastDrawn; drawnMove*moved < 0 {
+		return lastDrawn - shown
+	}
+	return off
 }

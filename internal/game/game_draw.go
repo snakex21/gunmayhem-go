@@ -106,6 +106,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawPlayerArrows(screen)
 	g.drawCampaignEnemyArrows(screen)
 	endZoneView()
+	// SLOW-MO tint and vignette over the arena, below the HUD.
+	g.drawSlowMoOverlay(screen)
 	if g.zombieActive() {
 		g.drawZombieHUD(screen)
 	} else if !g.GameWin {
@@ -113,6 +115,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawExtraCampaignHazardHUD(screen)
 		g.drawExtraCampaignBossHUD(screen)
 		g.drawChaosHUD(screen)
+	}
+	if !g.GameWin {
+		g.drawSlowMoBar(screen)
 	}
 	g.drawViewerBlindWhiteout(screen)
 	g.drawZombieShops(screen)

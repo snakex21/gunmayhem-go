@@ -120,6 +120,10 @@ type Game struct {
 	teamWinAnimFrame  int
 	campaignLoseFrame int
 	zombieWaveFrame   int
+	// SLOW-MO (slowmo.go): the sim-step clock, and whether this real tick
+	// skipped the simulation (the host then holds the input acks).
+	slowMo        simClock
+	slowMoSkipped bool
 
 	// Symbol1480.lastlife keeps an independent 270-frame playhead per HUD card.
 	// Frame indexes here are zero-based XFL frames; stop points are 0, 89, 179, 269.
@@ -429,6 +433,8 @@ func (g *Game) Update() error {
 	}
 	// Render interpolation: remember where everything was before this tick.
 	g.captureRenderPrev(time.Now())
+	g.slowMoSkipped = false
+	g.renderInterp.simPhase, g.renderInterp.simInc = 0, 1
 	g.trackWindowPersistence()
 	g.updateUnfocusedRunPolicy()
 	g.updateNetDebugKeys()
@@ -467,6 +473,7 @@ func (g *Game) Update() error {
 	}
 	g.assets.EnsureGameplay()
 	if g.updateGameplayInteractionInput() {
+		g.clearSlowMoLatches()
 		return nil
 	}
 	if g.allowCheats {
@@ -489,10 +496,16 @@ func (g *Game) Update() error {
 		}
 	}
 
-	// ZOMBIE: guests' shop requests, the local shop panels, then input masks
-	// and the mystery box (DOWN) before the players move.
+	// ZOMBIE: guests' shop requests and the local shop panels run every
+	// real tick; input masks and the mystery box (DOWN) belong to the sim
+	// step, before the players move.
 	g.processZombieRequests()
 	g.updateZombieShopUI()
+	// SLOW-MO: everything below is one gameplay sim step; while slowed only
+	// every other real tick runs it (slowmo.go).
+	if !g.beginSimTick() {
+		return nil
+	}
 	g.updateZombiePreInput()
 
 	if !g.runZombieZoneTick() {
@@ -500,6 +513,7 @@ func (g *Game) Update() error {
 	}
 	g.updateZombieMatch()
 	g.updateMatchInteractions()
+	g.clearSlowMoLatches()
 	return nil
 }
 
@@ -802,6 +816,9 @@ func (g *Game) simulateArenaTick(primary bool) {
 		// uses playsound("emp.wav") and creates fx_powerupname.
 		g.playSourceSFX("emp.wav", false)
 		g.powerupNameFX = append(g.powerupNameFX, newPowerupNameEffect(pu))
+		if pu.Type == powerupSlowMo && pu.PickedByID > 0 {
+			g.onSlowMoPickup()
+		}
 		if pu.Type == 0 && pu.PickedByID > 0 {
 			// lifebling() -> fx_bling mod=6 -> source green "1-UP".
 			g.lifeBlingFX = append(g.lifeBlingFX, newLifeBlingEffect(pu.PickedByID))
@@ -880,6 +897,8 @@ func (g *Game) resetArenaState() {
 	// not ~400, while powerups still use their full 600-tick delay.
 	g.crateTimer = 200
 	g.powerupTimer = 0
+	g.slowMo = simClock{}
+	g.clearSlowMoLatches()
 	for _, p := range g.players {
 		p.ResetRound(g.arena)
 		g.seenDeaths[p.ID] = 0
