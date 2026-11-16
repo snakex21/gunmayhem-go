@@ -143,7 +143,11 @@ func cosmeticSetLabel(gm2 bool) string {
 }
 
 func (g *Game) loadoutCharacterChoices(slot, part int) (choices []loadoutChoice, cols int) {
-	cfg := g.customPlayers[slot]
+	return g.loadoutCharacterChoicesFor(g.customLoadoutBinding(slot), part)
+}
+
+func (g *Game) loadoutCharacterChoicesFor(b loadoutBinding, part int) (choices []loadoutChoice, cols int) {
+	cfg := b.cfg
 	switch part {
 	case loadoutPartHat:
 		headgear := 0
@@ -163,7 +167,7 @@ func (g *Game) loadoutCharacterChoices(slot, part int) (choices []loadoutChoice,
 				art: func(dst *ebiten.Image, inner Rect) {
 					drawSetupThumbFit(dst, g.loadoutCosmeticThumb(customEditHat1, n), inner, 1)
 				},
-				code: customSelectHit(slot, customEditHat1, n),
+				code: b.selectHit(customEditHat1, n), locked: !b.unlocked(customEditHat1, n),
 			})
 		}
 		return choices, 12
@@ -177,7 +181,7 @@ func (g *Game) loadoutCharacterChoices(slot, part int) (choices []loadoutChoice,
 				art: func(dst *ebiten.Image, inner Rect) {
 					drawSetupThumbFit(dst, g.loadoutCosmeticThumb(customEditShirt, n), inner, 1)
 				},
-				code: customSelectHit(slot, customEditShirt, n),
+				code: b.selectHit(customEditShirt, n), locked: !b.unlocked(customEditShirt, n),
 			})
 		}
 		return choices, 10
@@ -191,7 +195,7 @@ func (g *Game) loadoutCharacterChoices(slot, part int) (choices []loadoutChoice,
 				art: func(dst *ebiten.Image, inner Rect) {
 					drawSetupThumbFit(dst, g.loadoutCosmeticThumb(customEditEyes, n), inner, 1)
 				},
-				code: customSelectHit(slot, customEditEyes, n),
+				code: b.selectHit(customEditEyes, n), locked: !b.unlocked(customEditEyes, n),
 			})
 		}
 		return choices, 8
@@ -207,28 +211,29 @@ func (g *Game) loadoutCharacterChoices(slot, part int) (choices []loadoutChoice,
 				sw.A = 0xff
 				uiFillRound(dst, uiInset(inner, 2), 5, sw)
 			},
-			code: customColorHit(slot, n),
+			code: b.colorHit(n), locked: !b.unlocked(customEditColor, n),
 		})
 	}
 	return choices, 10
 }
 
 func (g *Game) loadoutWeaponChoices(slot int) []loadoutChoice {
-	cfg := g.customPlayers[slot]
+	return g.loadoutWeaponChoicesFor(g.customLoadoutBinding(slot))
+}
+
+func (g *Game) loadoutWeaponChoicesFor(b loadoutBinding) []loadoutChoice {
+	cfg := b.cfg
 	var out []loadoutChoice
 	for _, n := range loadoutNumbers(customEditGun) {
 		n := n
-		code := customSelectHit(slot, customEditGun, n)
-		if n >= 98 {
-			code = customDevelopedGunHit(slot, n)
-		}
 		out = append(out, loadoutChoice{
 			id: fmt.Sprintf("lo.gun.%d", n), label: strings.ToUpper(weaponDisplayName(n)), selected: cfg.Gun == n,
+			locked:    !b.unlocked(customEditGun, n),
 			infoTitle: strings.ToUpper(weaponDisplayName(n)), infoBody: weaponStatsLine(n),
 			art: func(dst *ebiten.Image, inner Rect) {
 				drawSetupThumbFit(dst, g.setupSelectionRaster(customEditGun, n), inner, 1)
 			},
-			code: code, gun: n,
+			code: b.gunHit(n), gun: n,
 		})
 	}
 	return out
@@ -248,7 +253,11 @@ var loadoutPerkInfo = map[int]string{
 }
 
 func (g *Game) loadoutPerkChoices(slot int) []loadoutChoice {
-	cfg := migrateLegacyGearPerk(g.customPlayers[slot])
+	return g.loadoutPerkChoicesFor(g.customLoadoutBinding(slot))
+}
+
+func (g *Game) loadoutPerkChoicesFor(b loadoutBinding) []loadoutChoice {
+	cfg := migrateLegacyGearPerk(b.cfg)
 	var out []loadoutChoice
 	offered := map[int]bool{}
 	for _, item := range developedPerkSelectionItems() {
@@ -262,17 +271,21 @@ func (g *Game) loadoutPerkChoices(slot int) []loadoutChoice {
 		}
 		out = append(out, loadoutChoice{
 			id: fmt.Sprintf("lo.perk.%d", n), label: onlinePerkName(n), selected: cfg.Perk == n,
-			locked:    !g.customSelectionUnlocked(customEditPerk, n),
+			locked:    !b.unlocked(customEditPerk, n),
 			infoTitle: onlinePerkName(n), infoBody: loadoutPerkInfo[n],
 			art:  func(dst *ebiten.Image, inner Rect) { g.drawLoadoutPerkArt(dst, n, inner) },
-			code: customSelectHit(slot, customEditPerk, n),
+			code: b.selectHit(customEditPerk, n),
 		})
 	}
 	return out
 }
 
 func (g *Game) loadoutGearChoices(slot int) []loadoutChoice {
-	cfg := migrateLegacyGearPerk(g.customPlayers[slot])
+	return g.loadoutGearChoicesFor(g.customLoadoutBinding(slot))
+}
+
+func (g *Game) loadoutGearChoicesFor(b loadoutBinding) []loadoutChoice {
+	cfg := migrateLegacyGearPerk(b.cfg)
 	var out []loadoutChoice
 	for i, a := range selectableAbilityNumbers() {
 		a := a
@@ -292,7 +305,7 @@ func (g *Game) loadoutGearChoices(slot int) []loadoutChoice {
 				s := math.Min(22, math.Min(inner.W, inner.H)/2.4)
 				drawAbilityIcon(dst, a, inner.X+inner.W/2, inner.Y+inner.H/2, s, 1)
 			},
-			code: customSelectHit(slot, customEditAbility, i+1),
+			code: b.selectHit(customEditAbility, i+1), locked: !b.unlocked(customEditAbility, i+1),
 		})
 	}
 	return out
@@ -317,7 +330,11 @@ func throwableLoadoutDescription(kind int) string {
 }
 
 func (g *Game) loadoutThrowableChoices(slot int) []loadoutChoice {
-	cfg := g.customPlayers[slot]
+	return g.loadoutThrowableChoicesFor(g.customLoadoutBinding(slot))
+}
+
+func (g *Game) loadoutThrowableChoicesFor(b loadoutBinding) []loadoutChoice {
+	cfg := b.cfg
 	var out []loadoutChoice
 	for kind := 0; kind < throwableTypeCount; kind++ {
 		kind := kind
@@ -325,7 +342,7 @@ func (g *Game) loadoutThrowableChoices(slot int) []loadoutChoice {
 			id: fmt.Sprintf("lo.throw.%d", kind), label: throwableName(kind), selected: cfg.Throwable == kind,
 			infoTitle: throwableName(kind), infoBody: throwableLoadoutDescription(kind),
 			art:  func(dst *ebiten.Image, inner Rect) { g.drawThrowableArt(dst, kind, inner) },
-			code: customThrowableChoiceHit(slot, kind),
+			code: b.throwHit(kind), locked: !b.unlocked(customEditThrowable, kind+1),
 		})
 	}
 	return out
@@ -389,24 +406,84 @@ func loadoutWeaponMaxima() (rounds, rate, push float64) {
 // ---------------------------------------------------------------------------
 // Screen
 
+// loadoutBinding connects the Loadout screen to one player's config. Custom
+// Game slots write through the custom player-editor codes
+// (customLocalActivate), campaign P1 / P2 through the campaign card codes
+// (activateCampaignPlayerHit), so each keeps its own setters and rules.
+type loadoutBinding struct {
+	slot      int
+	cfg       CustomPlayerConfig
+	locked    bool // the whole loadout is read-only (online remote slot)
+	unlocked  func(editor, n int) bool
+	activate  func(code int)
+	selectHit func(editor, n int) int
+	colorHit  func(n int) int
+	gunHit    func(n int) int
+	throwHit  func(kind int) int
+	nameHit   int
+	nameFocus *int // 1-based slot whose name field owns the keyboard
+}
+
+func (g *Game) customLoadoutBinding(slot int) loadoutBinding {
+	return loadoutBinding{
+		slot: slot, cfg: g.customPlayers[slot], locked: !g.onlineMayEditCustomCharacterSlot(slot),
+		unlocked:  g.customSelectionUnlocked,
+		activate:  g.customLocalActivate,
+		selectHit: func(editor, n int) int { return customSelectHit(slot, editor, n) },
+		colorHit:  func(n int) int { return customColorHit(slot, n) },
+		gunHit: func(n int) int {
+			if n >= 98 {
+				return customDevelopedGunHit(slot, n)
+			}
+			return customSelectHit(slot, customEditGun, n)
+		},
+		throwHit:  func(kind int) int { return customThrowableChoiceHit(slot, kind) },
+		nameHit:   menuHitPlayerColorBase + 500 + slot,
+		nameFocus: &g.customNameFocus,
+	}
+}
+
+// loadoutScreenOpts are the parts of the Loadout screen that depend on where
+// it was opened from.
+type loadoutScreenOpts struct {
+	trail          string
+	switchable     bool // the player stepper can move to another player
+	switchDisabled bool // the stepper is greyed out (online guest)
+	onSwitch       func(delta int)
+	onClose        func()
+	doneInfo       string
+}
+
 func (g *Game) buildCustomLoadout(ctx *uiCtx) {
 	slot := g.loadoutSlot()
-	cfg := g.customPlayers[slot]
-	locked := !g.onlineMayEditCustomCharacterSlot(slot)
-	name := strings.TrimSpace(cfg.Name)
-	if name == "" {
-		name = fmt.Sprintf("PLAYER %d", slot+1)
-	}
 	trail := "MAIN MENU  /  VERSUS  /  PLAYERS"
 	if g.customOnlineMode {
 		trail = "ONLINE  /  LOBBY  /  PLAYERS"
 	}
-	ctx.Header("LOADOUT", fmt.Sprintf("%s  /  P%d %s", trail, slot+1, strings.ToUpper(name)))
+	// A guest only has its own loadout; the host may look at every slot
+	// (remote ones read-only, see onlineMayEditCustomCharacterSlot).
+	g.buildLoadoutScreen(ctx, g.customLoadoutBinding(slot), loadoutScreenOpts{
+		trail:          trail,
+		switchable:     g.activeCustomPlayerCount() > 1 && !g.onlineLobbyIsClient(),
+		switchDisabled: g.onlineLobbyIsClient(),
+		onSwitch:       g.loadoutSwitchPlayer,
+		onClose:        g.closeCustomLoadout,
+		doneInfo:       "Back to the PLAYERS tab.",
+	})
+}
+
+func (g *Game) buildLoadoutScreen(ctx *uiCtx, b loadoutBinding, o loadoutScreenOpts) {
+	slot, cfg := b.slot, b.cfg
+	name := strings.TrimSpace(cfg.Name)
+	if name == "" {
+		name = fmt.Sprintf("PLAYER %d", slot+1)
+	}
+	ctx.Header("LOADOUT", fmt.Sprintf("%s  /  P%d %s", o.trail, slot+1, strings.ToUpper(name)))
 
 	tab := g.customLoadoutTab
 	if t := ctx.TabBar("lo.tabs", loadoutTabBarRect, loadoutTabLabels, tab); t != tab {
 		g.customLoadoutTab = t
-		g.customNameFocus = 0
+		*b.nameFocus = 0
 		g.customLoadoutFocusPending = true
 	}
 
@@ -416,54 +493,51 @@ func (g *Game) buildCustomLoadout(ctx *uiCtx) {
 	cols, tileH := 5, 0.0
 	switch g.customLoadoutTab {
 	case loadoutTabCharacter:
-		grid = g.buildLoadoutCharacterHead(ctx, slot, locked)
-		choices, cols = g.loadoutCharacterChoices(slot, g.customLoadoutPart)
+		grid = g.buildLoadoutCharacterHead(ctx, b)
+		choices, cols = g.loadoutCharacterChoicesFor(b, g.customLoadoutPart)
 	case loadoutTabWeapon:
-		choices, cols, tileH = g.loadoutWeaponChoices(slot), 6, 70
+		choices, cols, tileH = g.loadoutWeaponChoicesFor(b), 6, 70
 	case loadoutTabPerk:
-		choices, cols, tileH = g.loadoutPerkChoices(slot), 3, 112
+		choices, cols, tileH = g.loadoutPerkChoicesFor(b), 3, 112
 	case loadoutTabGear:
-		choices, cols, tileH = g.loadoutGearChoices(slot), 5, 88
+		choices, cols, tileH = g.loadoutGearChoicesFor(b), 5, 88
 	case loadoutTabThrowable:
-		choices, cols, tileH = g.loadoutThrowableChoices(slot), 5, 150
+		choices, cols, tileH = g.loadoutThrowableChoicesFor(b), 5, 150
 	}
-	info := g.buildLoadoutGrid(ctx, grid, cols, tileH, choices, locked)
+	info := g.buildLoadoutGrid(ctx, grid, cols, tileH, choices, b)
 
-	g.drawLoadoutPreview(ctx, slot)
-	g.drawLoadoutInfo(ctx, slot, info)
+	g.drawLoadoutPreview(ctx, slot, cfg)
+	g.drawLoadoutInfo(ctx, info)
 
-	// A guest only has its own loadout; the host may look at every slot
-	// (remote ones read-only, see onlineMayEditCustomCharacterSlot).
-	switchable := g.activeCustomPlayerCount() > 1 && !g.onlineLobbyIsClient()
-	if d := ctx.Stepper("lo.player", loadoutPlayerRect, fmt.Sprintf("P%d  %s", slot+1, strings.ToUpper(name)), switchable, switchable, g.onlineLobbyIsClient(),
-		"PLAYER", "Switch to another player's loadout."); d != 0 {
-		g.loadoutSwitchPlayer(d)
+	if d := ctx.Stepper("lo.player", loadoutPlayerRect, fmt.Sprintf("P%d  %s", slot+1, strings.ToUpper(name)), o.switchable, o.switchable, o.switchDisabled,
+		"PLAYER", "Switch to another player's loadout."); d != 0 && o.onSwitch != nil {
+		o.onSwitch(d)
 		return
 	}
-	if ctx.Button("lo.done", loadoutDoneRect, "DONE", uiButtonOpts{Kind: uiButtonPrimary, InfoTitle: "DONE", InfoBody: "Back to the PLAYERS tab."}) {
-		g.closeCustomLoadout()
+	if ctx.Button("lo.done", loadoutDoneRect, "DONE", uiButtonOpts{Kind: uiButtonPrimary, InfoTitle: "DONE", InfoBody: o.doneInfo}) {
+		o.onClose()
 		return
 	}
 	ctx.KeyHintBar([]uiKeyHint{{"ESC", "Done"}, {"UP/DOWN", "Move"}, {"LEFT/RIGHT", "Move"}, {"ENTER", "Pick"}, {"Q", "Prev tab"}, {"E", "Next tab"}, {"TAB", "Next control"}})
 	ctx.Toasts()
 	if ctx.Back() {
-		g.closeCustomLoadout()
+		o.onClose()
 	}
 }
 
 // buildLoadoutCharacterHead draws the NAME field and the part selector and
 // returns the grid area under them.
-func (g *Game) buildLoadoutCharacterHead(ctx *uiCtx, slot int, locked bool) Rect {
+func (g *Game) buildLoadoutCharacterHead(ctx *uiCtx, b loadoutBinding) Rect {
 	p := loadoutContentPanel
-	cfg := g.customPlayers[slot]
+	slot := b.slot
 	ctx.Label("NAME", true, uiSizeButton, uiTextLight, p.X+14, p.Y+32, uiAlignLeft)
-	focused := g.customNameFocus == slot+1
-	if ctx.TextField("lo.name", Rect{X: p.X + 70, Y: p.Y + 14, W: 200, H: 36}, cfg.Name, fmt.Sprintf("Player %d", slot+1), focused, locked,
+	focused := *b.nameFocus == slot+1
+	if ctx.TextField("lo.name", Rect{X: p.X + 70, Y: p.Y + 14, W: 200, H: 36}, b.cfg.Name, fmt.Sprintf("Player %d", slot+1), focused, b.locked,
 		"NAME", "Click or press ENTER to type a name. ENTER or ESC finishes.") {
-		g.customLocalActivate(menuHitPlayerColorBase + 500 + slot)
+		b.activate(b.nameHit)
 	}
 	if focused && ctx.PressedOutside("lo.name") {
-		g.customNameFocus = 0
+		*b.nameFocus = 0
 	}
 	labels := loadoutPartLabels()
 	if g.customLoadoutPart >= len(labels) {
@@ -479,7 +553,7 @@ func (g *Game) buildLoadoutCharacterHead(ctx *uiCtx, slot int, locked bool) Rect
 // buildLoadoutGrid lays the choices out in cols columns (tileH 0 fits the
 // rows into area) and returns the choice whose details the info panel shows:
 // the hovered / focused one, else the selected one.
-func (g *Game) buildLoadoutGrid(ctx *uiCtx, area Rect, cols int, tileH float64, choices []loadoutChoice, locked bool) *loadoutChoice {
+func (g *Game) buildLoadoutGrid(ctx *uiCtx, area Rect, cols int, tileH float64, choices []loadoutChoice, b loadoutBinding) *loadoutChoice {
 	if len(choices) == 0 || cols <= 0 {
 		return nil
 	}
@@ -494,9 +568,9 @@ func (g *Game) buildLoadoutGrid(ctx *uiCtx, area Rect, cols int, tileH float64, 
 	for i := range choices {
 		c := &choices[i]
 		r := Rect{X: area.X + float64(i%cols)*(w+gap), Y: area.Y + float64(i/cols)*(tileH+gap), W: w, H: tileH}
-		if ctx.Tile(c.id, r, c.label, uiTileOpts{Selected: c.selected, Disabled: locked || c.locked, Locked: c.locked,
+		if ctx.Tile(c.id, r, c.label, uiTileOpts{Selected: c.selected, Disabled: b.locked || c.locked, Locked: c.locked,
 			InfoTitle: c.infoTitle, InfoBody: c.infoBody, Art: c.art}) {
-			g.customLocalActivate(c.code)
+			b.activate(c.code)
 		}
 		if c.id == infoID {
 			info = c
@@ -519,11 +593,10 @@ func (g *Game) buildLoadoutGrid(ctx *uiCtx, area Rect, cols int, tileH float64, 
 	return info
 }
 
-func (g *Game) drawLoadoutPreview(ctx *uiCtx, slot int) {
+func (g *Game) drawLoadoutPreview(ctx *uiCtx, slot int, cfg CustomPlayerConfig) {
 	if !ctx.drawing() {
 		return
 	}
-	cfg := g.customPlayers[slot]
 	r := loadoutPreviewCard
 	ctx.Card(r, "")
 	strip := developedPlayerColorSwatch(cfg.Color)
@@ -544,7 +617,12 @@ func (g *Game) drawLoadoutPreview(ctx *uiCtx, slot int) {
 	stage := Rect{X: r.X + 12, Y: r.Y + 48, W: r.W - 24, H: 132}
 	uiFillRound(ctx.dst, stage, 6, uiPaperShade)
 	g.drawLoadoutCharacterIn(ctx.dst, cfg, uiInset(stage, 4))
+	drawLoadoutGearRows(ctx.dst, cfg, r.X+12, r.Y+196, r.W-24, 18, uiTextMutedDk, uiTextDark)
+}
 
+// drawLoadoutGearRows lists gun, perk, ability and throwable of a player
+// (loadout preview, campaign briefing cards).
+func drawLoadoutGearRows(dst *ebiten.Image, cfg CustomPlayerConfig, x, firstMid, w, step float64, labelClr, valueClr color.NRGBA) {
 	gear := migrateLegacyGearPerk(cfg)
 	rows := [][2]string{
 		{"GUN", weaponDisplayName(cfg.Gun)},
@@ -553,13 +631,13 @@ func (g *Game) drawLoadoutPreview(ctx *uiCtx, slot int) {
 		{"THROWABLE", throwableName(cfg.Throwable)},
 	}
 	for i, row := range rows {
-		mid := r.Y + 196 + float64(i)*18
-		uiText(ctx.dst, row[0], true, uiSizeHint, uiTextMutedDk, r.X+12, mid, uiAlignLeft)
-		uiText(ctx.dst, uiFit(strings.ToUpper(row[1]), true, uiSizeHint, r.W-110), true, uiSizeHint, uiTextDark, r.X+96, mid, uiAlignLeft)
+		mid := firstMid + float64(i)*step
+		uiText(dst, row[0], true, uiSizeHint, labelClr, x, mid, uiAlignLeft)
+		uiText(dst, uiFit(strings.ToUpper(row[1]), true, uiSizeHint, w-86), true, uiSizeHint, valueClr, x+84, mid, uiAlignLeft)
 	}
 }
 
-func (g *Game) drawLoadoutInfo(ctx *uiCtx, slot int, info *loadoutChoice) {
+func (g *Game) drawLoadoutInfo(ctx *uiCtx, info *loadoutChoice) {
 	if !ctx.drawing() {
 		return
 	}
@@ -574,14 +652,21 @@ func (g *Game) drawLoadoutInfo(ctx *uiCtx, slot int, info *loadoutChoice) {
 		return
 	}
 	ctx.InfoPanel(r, info.infoTitle, "")
-	def, ok := WeaponByNumber(info.gun)
-	if !ok {
-		return
-	}
 	maxRounds, maxRate, maxPush := loadoutWeaponMaxima()
+	drawWeaponStatBars(ctx.dst, info.gun, r.X+18, r.Y+54, r.W-32, maxRounds, maxRate, maxPush)
+}
+
+// drawWeaponStatBars draws ROUNDS / FIRE RATE / PUSH bars scaled to the given
+// maxima plus the fire-mode line (Loadout, Gun Library) and returns the
+// middle y of the line after it.
+func drawWeaponStatBars(dst *ebiten.Image, gun int, x, firstMid, w, maxRounds, maxRate, maxPush float64) float64 {
+	def, ok := WeaponByNumber(gun)
+	if !ok {
+		return firstMid
+	}
 	rounds := fmt.Sprint(def.Bullets)
 	roundsV := float64(def.Bullets) / maxRounds
-	if def.Bullets >= 9999 || isMeleeWeapon(info.gun) {
+	if def.Bullets >= 9999 || isMeleeWeapon(gun) {
 		// A starter bat never breaks (crate bats do, see arsenal2_defs.go).
 		rounds, roundsV = "INF", 1
 	}
@@ -595,19 +680,20 @@ func (g *Game) drawLoadoutInfo(ctx *uiCtx, slot int, info *loadoutChoice) {
 		{"PUSH", fmt.Sprintf("%.0f", def.Firepower), def.Firepower / maxPush},
 	}
 	for i, s := range stats {
-		mid := r.Y + 54 + float64(i)*22
-		uiText(ctx.dst, s.label, true, uiSizeHint, uiTextMuted, r.X+18, mid, uiAlignLeft)
-		bar := Rect{X: r.X + 92, Y: mid - 4, W: r.W - 160, H: 8}
-		uiFillRound(ctx.dst, bar, 4, uiInk500)
+		mid := firstMid + float64(i)*22
+		uiText(dst, s.label, true, uiSizeHint, uiTextMuted, x, mid, uiAlignLeft)
+		bar := Rect{X: x + 74, Y: mid - 4, W: w - 128, H: 8}
+		uiFillRound(dst, bar, 4, uiInk500)
 		v := math.Max(0.04, math.Min(1, s.v))
-		uiFillRound(ctx.dst, Rect{X: bar.X, Y: bar.Y, W: bar.W * v, H: bar.H}, 4, uiOrange)
-		uiText(ctx.dst, s.value, true, uiSizeHint, uiTextLight, r.X+r.W-14, mid, uiAlignRight)
+		uiFillRound(dst, Rect{X: bar.X, Y: bar.Y, W: bar.W * v, H: bar.H}, 4, uiOrange)
+		uiText(dst, s.value, true, uiSizeHint, uiTextLight, x+w, mid, uiAlignRight)
 	}
-	extra := weaponFireModeLabel(info.gun)
+	extra := weaponFireModeLabel(gun)
 	if def.Recoil > 0 {
 		extra += fmt.Sprintf("  /  RECOIL %.1f", def.Recoil)
 	}
-	uiText(ctx.dst, extra, true, uiSizeHint, uiTextMuted, r.X+18, r.Y+54+3*22, uiAlignLeft)
+	uiText(dst, extra, true, uiSizeHint, uiTextMuted, x, firstMid+3*22, uiAlignLeft)
+	return firstMid + 4*22
 }
 
 // ---------------------------------------------------------------------------

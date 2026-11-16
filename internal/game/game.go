@@ -231,8 +231,24 @@ type Game struct {
 	loadoutPreviewImg         *ebiten.Image
 	loadoutThumbs             map[[2]int]*SourceRaster // UI-only tight GM2 cosmetic crops
 	setupPreviewImg           *ebiten.Image
-	uiLastCursorX             float64
-	uiLastCursorY             float64
+	// Campaign Mayhem UI (campaign_ui.go): mission list, briefing, the
+	// campaign Loadout (1-based player, 0 closed) and the results modal.
+	campaignUI            uiState
+	campaignLoadoutSlot   int
+	campaignLoadoutReturn int
+	campaignResult        campaignResultInfo
+	// Gun Library, pause, results and credits (library_ui.go, pause_ui.go,
+	// results_ui.go, credits_menu.go).
+	libraryUI      uiState
+	gunLibraryView int // gunLibraryView* tab
+	gunLibraryGear int // GEAR / POWERUPS tab: selected entry
+	pauseUI        uiState
+	pauseOptions   bool // the pause menu shows its OPTIONS view
+	guestMenuOpen  bool // online guest: in-match menu (the match keeps running)
+	resultsUI      uiState
+	creditsUI      uiState
+	uiLastCursorX  float64
+	uiLastCursorY  float64
 
 	// Local display settings (ui_display.go). Presentation only: never part of
 	// the simulation, the netplay snapshot or the host's authority.

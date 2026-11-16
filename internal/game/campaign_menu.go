@@ -1,13 +1,5 @@
 package game
 
-import (
-	"image/color"
-	"math"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
-)
-
 const (
 	campaignHitNone = iota
 	campaignHitBack
@@ -88,261 +80,10 @@ func (g *Game) unlockAllCampaignLevelsCheat() {
 	}
 }
 
-func (g *Game) updateCampaignMenu() {
-	if g.campaignSetExtra {
-		g.updateExtraCampaignMenu()
-		return
-	}
-	if g.campaignSetGM2 {
-		g.updateGM2CampaignMenu()
-		return
-	}
-
-	// Developed branch selector. It lives above the source GM1 campaign and is
-	// only active on the mission-slider phase so it cannot interfere with the
-	// original player/detail controls.
-	if g.campaignPhase == 1 {
-		mx, my := g.cursorPos()
-		tabHit := campaignSetHitAt(float64(mx), float64(my))
-		if tabHit != campaignHitNone {
-			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-				g.campaignPressed = tabHit
-				return
-			}
-			if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-				pressed := g.campaignPressed
-				g.campaignPressed = campaignHitNone
-				if pressed == campaignHitSetGM2 && tabHit == campaignHitSetGM2 {
-					g.campaignSetGM2 = true
-					g.campaignSetExtra = false
-					g.campaignLevel = 0
-					g.campaignSliderVX = 0
-					g.playSourceSFX("menu.wav", false)
-				}
-				if pressed == campaignHitSetExtra && tabHit == campaignHitSetExtra {
-					g.campaignSetGM2 = false
-					g.campaignSetExtra = true
-					g.campaignLevel = 0
-					g.extraCampaignPage = 0
-					g.campaignSliderVX = 0
-					g.playSourceSFX("menu.wav", false)
-				}
-				return
-			}
-		}
-	}
-
-	if g.allowCheats && inpututil.IsKeyJustPressed(ebiten.KeyF10) {
-		g.unlockAllCampaignLevelsCheat()
-		g.playSourceSFX("menu.wav", false)
-	}
-
-	if g.campaignShowUnlock > 0 {
-		g.updateCampaignUnlockPopup()
-		return
-	}
-
-	if g.campaignPhase != 1 {
-		g.updateCampaignPlayerCards()
-		g.updateCampaignNameInput()
-	}
-	mx, my := g.cursorPos()
-	if g.campaignPhase == 1 {
-		// Symbol948.onEnterFrame phase1 edge-scroll physics.
-		if my > 100 && my < 510 {
-			if mx < 150 && g.campaignSliderX < 0 {
-				g.campaignSliderVX += (150 - float64(mx)) / 8
-			}
-			if mx > 750 && g.campaignSliderX > -857 {
-				g.campaignSliderVX -= (float64(mx) - 750) / 8
-			}
-		}
-		g.campaignSliderVX *= 0.8
-		g.campaignSliderX += g.campaignSliderVX
-		if g.campaignSliderX > 0 {
-			g.campaignSliderX = 0
-			g.campaignSliderVX = 0
-		}
-		if g.campaignSliderX < -857 {
-			g.campaignSliderX = -857
-			g.campaignSliderVX = 0
-		}
-		g.campaignSliderX = math.Round(g.campaignSliderX)
-
-		// Symbol95 uses onPress, unlike most menu buttons.
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			localX := float64(mx) - g.campaignSliderX
-			for i, r := range campaignPanelPlacements() {
-				if r.Contains(localX, float64(my)) && g.campaignLevels[i] != 0 {
-					// Symbol95.onPress plays menu.wav before opening the level detail.
-					g.playSourceSFX("menu.wav", false)
-					g.campaignLevel = i + 1
-					g.campaignPhase = 2
-					g.campaignDetailAlpha = 0
-					g.campaignSliderVX = 0
-					return
-				}
-			}
-		}
-	} else if g.campaignPhase == 2 {
-		// Source alpha +=20 until the detail/player panels are fully visible.
-		g.campaignDetailAlpha += 0.2
-		if g.campaignDetailAlpha >= 1 {
-			g.campaignDetailAlpha = 1
-			g.campaignPhase = 3
-		}
-	} else if g.campaignPhase == 4 {
-		g.campaignDetailAlpha -= 0.2
-		if g.campaignDetailAlpha <= 0 {
-			g.campaignDetailAlpha = 0
-			g.campaignPhase = 1
-		}
-	}
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		if g.campaignPhase == 1 {
-			g.beginFade(screenMainMenu, fadePurposeScreen)
-		} else if g.campaignPhase == 3 {
-			g.campaignPhase = 4
-		}
-		return
-	}
-
-	// Symbol948 btn_back is onRelease. In phase1 it returns to root frame10;
-	// in phase3 it transitions back to the slider.
-	back := sourceMenuHitRect(campaignBackLocal, 27, 525.15, 1, 1)
-	start := sourceMenuHitRect(campaignStartLocal, 469.1, 522.15, 1, 1)
-	hit := campaignHitNone
-	if g.campaignPhase == 3 {
-		if playerHit := g.campaignPlayerHitAt(float64(mx), float64(my)); playerHit != campaignHitNone {
-			hit = playerHit
-		}
-	}
-	if hit == campaignHitNone && back.Contains(float64(mx), float64(my)) {
-		hit = campaignHitBack
-	} else if hit == campaignHitNone && g.campaignPhase == 3 && start.Contains(float64(mx), float64(my)) {
-		hit = campaignHitStart
-	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.campaignPressed = hit
-	}
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		pressed := g.campaignPressed
-		g.campaignPressed = campaignHitNone
-		if pressed == campaignHitNone || pressed != hit {
-			return
-		}
-		if g.activateCampaignPlayerHit(pressed) {
-			return
-		}
-		switch pressed {
-		case campaignHitBack:
-			// Symbol948.btn_back plays menu.wav in both slider and detail phases.
-			g.playSourceSFX("menu.wav", false)
-			if g.campaignPhase == 1 {
-				g.beginFade(screenMainMenu, fadePurposeScreen)
-			} else if g.campaignPhase == 3 {
-				g.campaignPhase = 4
-			}
-		case campaignHitStart:
-			// Symbol904 frame2 btn_start plays menu.wav on release.
-			g.playSourceSFX("menu.wav", false)
-			g.startCampaignMission()
-		}
-	}
-}
-
-func (g *Game) updateCampaignUnlockPopup() {
-	// Symbol947 frame-specific popup consumes interaction and disables all
-	// slider panel hand cursors until Continue is released.
-	mx, my := g.cursorPos()
-	continueRect := sourceMenuHitRect(campaignContinueLocal, 344.85, 356.1, 1.3468017578125, 1.25)
-	hit := campaignHitNone
-	if continueRect.Contains(float64(mx), float64(my)) {
-		hit = campaignHitUnlockContinue
-	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.campaignPressed = hit
-	}
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		pressed := g.campaignPressed
-		g.campaignPressed = campaignHitNone
-		if pressed == campaignHitUnlockContinue && hit == campaignHitUnlockContinue {
-			// Symbol947 Continue plays menu.wav after clearing the unlock popup.
-			g.playSourceSFX("menu.wav", false)
-			g.campaignShowUnlock = 0
-		}
-	}
-}
-
-func (g *Game) drawCampaignMenu(screen *ebiten.Image) {
-	if g.campaignSetExtra {
-		g.drawExtraCampaignMenu(screen)
-		return
-	}
-	if g.campaignSetGM2 {
-		g.drawGM2CampaignMenu(screen)
-		return
-	}
-	// Recompose Symbol948 instead of using its flattened FFDec PNG. The flat
-	// export bakes show_unlock into the image even though ActionScript removes
-	// that movie clip whenever root.showunlocks==0.
-	drawSourceRaster(screen, g.assets.CampaignBase, 0, 0, 1, 1, 1)
-	drawSourceMenuText(screen, "CAMPAIGN", menuFontCondensed, 42.4, color.Black, 34, 27.75)
-	// GM1/GM2/EXTRA is a campaign-set selector, not a level-detail control.
-	// Once a GM1 mission has been opened for player setup/info, keep the header
-	// clean and let Back return to the campaign list before changing sets.
-	if g.campaignPhase == 1 {
-		g.drawCampaignSetTabs(screen)
-	}
-	drawSourceRaster(screen, g.assets.CampaignBack, 27, 525.15, 1, 1, 1)
-	drawSourceMenuText(screen, "Back", menuFontCondensed, 26.5, color.Black, 74.05, 536.35)
-
-	sliderAlpha := 1.0
-	if g.campaignPhase != 1 {
-		sliderAlpha = 1 - g.campaignDetailAlpha
-	}
-	if sliderAlpha > 0 {
-		g.drawCampaignSlider(screen, sliderAlpha)
-	}
-
-	if g.campaignPhase != 1 && g.campaignDetailAlpha > 0 {
-		a := g.campaignDetailAlpha
-		g.drawCampaignPlayerCards(screen, a)
-		drawSourceRaster(screen, g.assets.CampaignInfoPanel, 467.1, 100, 1, 1, a)
-		if g.campaignLevel >= 1 && g.campaignLevel <= 10 {
-			g.drawCampaignInfoRuntime(screen, g.campaignLevel, a)
-		}
-		// Symbol904 frame2: Symbol902 button at local (2,422.15) and the
-		// "Start Level" text at (126.05,429). This runtime child disappeared
-		// when the broken flattened Symbol904 frame was replaced.
-		if g.campaignPhase == 3 {
-			drawSourceRaster(screen, g.assets.CampaignStartButton, 469.1, 522.15, 1, 1, a)
-			drawSourceMenuText(screen, "Start Level", menuFontCondensedExtraBold, 31.95,
-				uiWithAlpha(uiTextLight, a), 593.15, 529.0) // B6: was black on dark red
-		}
-	}
-
-	if g.campaignShowUnlock >= 1 && g.campaignShowUnlock <= 10 {
-		drawSourceRaster(screen, g.assets.CampaignUnlock[g.campaignShowUnlock], 0, 0, 1, 1, 1)
-	}
-}
-
 // startCampaignMission mirrors the root frame10 campaign switch. Specialized
 // AI classes (AI3/AI4/boss) still share the common playerAI movement in the Go
 // reconstruction, but their source names/loadout/perks/team/map/mode are set
 // here so the campaign flow and interactions are no longer placeholders.
-func (g *Game) drawCampaignSlider(screen *ebiten.Image, alpha float64) {
-	for i, p := range campaignPanelPlacements() {
-		x := g.campaignSliderX + p.X
-		y := p.Y
-		// Symbol95 source hierarchy. FFDec flattened Symbol90/Symbol94 to
-		// their first frame, so compose the actual level/card state directly.
-		drawSourceRaster(screen, g.assets.CampaignLevelBase, x, y+61.65, 1.5500030517578125, 0.1541595458984375, alpha)
-		g.drawCampaignLevelRuntime(screen, i+1, x, y, alpha)
-	}
-}
-
 func (g *Game) startCampaignMission() {
 	g.campaignSetGM2 = false
 	g.campaignSetExtra = false
@@ -350,33 +91,7 @@ func (g *Game) startCampaignMission() {
 	if level < 1 || level > 10 || g.fadeActive {
 		return
 	}
-	type campaignSpec struct {
-		mapNumber int
-		lives     int
-		mode      int
-		crate     bool
-		power     bool
-		enemies   int
-		name      string
-		color     int
-		shirt     int
-		hat       int
-		gun       int
-		perk      int
-	}
-	specs := [10]campaignSpec{
-		{13, 3, SourceGameModeNormal, false, false, 1, "Dummy", 8, 24, 1, 0, 0},
-		{12, 7, SourceGameModeNormal, true, true, 1, "Caveman Johnson", 8, 10, 7, 1, 0},
-		{10, 7, SourceGameModeGunGame, true, true, 1, "Santa", 1, 11, 3, 2, 7},
-		{8, 7, SourceGameModeNormal, true, false, 1, "Pylon Man", 9, 1, 9, 1, 0},
-		{5, 7, SourceGameModeNormal, true, true, 1, "Gun Fu Master", 7, 9, 10, 3, 6},
-		{11, 5, SourceGameModeTeams, true, true, 2, "Mafia Guy", 2, 3, 5, 2, 0},
-		{2, 7, SourceGameModeNormal, true, true, 1, "Jet Pack Bunny", 4, 30, 17, 4, 5},
-		{3, 7, SourceGameModeInstagib, true, true, 1, "Pirate", 10, 8, 15, 1, 5},
-		{1, 7, SourceGameModeNormal, true, true, 1, "Sinusoidal Sam", 5, 5, 1, 6, 2},
-		{7, 5, SourceGameModeNormal, true, false, 1, "The Boss", 6, 14, 13, 6, 6},
-	}
-	spec := specs[level-1]
+	spec := gm1CampaignSpecs[level-1]
 	arena, ok := g.ensureMap(spec.mapNumber)
 	if !ok {
 		arena, _ = g.ensureMap(1)
@@ -494,4 +209,35 @@ func (g *Game) startCampaignMission() {
 	}
 	g.resetArenaState()
 	g.beginFade(screenGameplay, fadePurposeScreen)
+}
+
+// gm1CampaignSpec is one root frame10 campaign level: arena, lives, mode,
+// pickups and the (first) enemy's loadout. The campaign UI reads it for the
+// briefing; startCampaignMission uses it to build the match.
+type gm1CampaignSpec struct {
+	mapNumber int
+	lives     int
+	mode      int
+	crate     bool
+	power     bool
+	enemies   int
+	name      string
+	color     int
+	shirt     int
+	hat       int
+	gun       int
+	perk      int
+}
+
+var gm1CampaignSpecs = [10]gm1CampaignSpec{
+	{13, 3, SourceGameModeNormal, false, false, 1, "Dummy", 8, 24, 1, 0, 0},
+	{12, 7, SourceGameModeNormal, true, true, 1, "Caveman Johnson", 8, 10, 7, 1, 0},
+	{10, 7, SourceGameModeGunGame, true, true, 1, "Santa", 1, 11, 3, 2, 7},
+	{8, 7, SourceGameModeNormal, true, false, 1, "Pylon Man", 9, 1, 9, 1, 0},
+	{5, 7, SourceGameModeNormal, true, true, 1, "Gun Fu Master", 7, 9, 10, 3, 6},
+	{11, 5, SourceGameModeTeams, true, true, 2, "Mafia Guy", 2, 3, 5, 2, 0},
+	{2, 7, SourceGameModeNormal, true, true, 1, "Jet Pack Bunny", 4, 30, 17, 4, 5},
+	{3, 7, SourceGameModeInstagib, true, true, 1, "Pirate", 10, 8, 15, 1, 5},
+	{1, 7, SourceGameModeNormal, true, true, 1, "Sinusoidal Sam", 5, 5, 1, 6, 2},
+	{7, 5, SourceGameModeNormal, true, false, 1, "The Boss", 6, 14, 13, 6, 6},
 }

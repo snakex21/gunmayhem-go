@@ -109,6 +109,11 @@ func (g *Game) finishSourceGameBeforeScreenChange() {
 				g.campaignShowUnlock = g.campaignLevel
 			}
 		}
+		// Results modal (campaign_ui.go) only for a match that ended by
+		// itself; leaving through the pause menu returns to the list.
+		if g.GameWin || g.teamGameWin {
+			g.recordCampaignResult(playerWin)
+		}
 	}
 	g.paused = false
 	g.GameWin = false
@@ -417,4 +422,11 @@ func (g *Game) drawGlobalFade(screen *ebiten.Image) {
 	// it at (sourceFadeX,-50). Net source rectangle: x=tx-100,y=-150,w=1200,h=900.
 	x := sourceFadeX[g.fadeFrame-1] - 100
 	ebitenutil.DrawRect(screen, x, -150, 1200, 900, color.Black)
+}
+
+// gm1CampaignRewards are the two source gunarray entries (gun number - 10)
+// each GM1 level unlocks.
+var gm1CampaignRewards = [10][2]int{
+	{18, 29}, {40, 52}, {19, 30}, {41, 53}, {20, 31},
+	{42, 54}, {21, 32}, {43, 55}, {22, 33}, {44, 56},
 }
